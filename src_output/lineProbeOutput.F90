@@ -1,5 +1,5 @@
 module lineProbeOutput_m
-   use FDETYPES_m, only: RKIND, RKIND_TIME, SINGLE, BUFSIZE, direction_t, xyzlimit_t, iEx, iEy, IEZ
+   use FDETYPES_m, only: RKIND, RKIND_TIME, SINGLE, BUFSIZE, direction_t, xyzlimit_t, IEX, IEY, IEZ
    use outputTypes_m, only: field_data_t, line_probe_output_t, domain_t, TIME_DOMAIN, OUTPUT_TIME_BUFFER_SIZE, &
                             OUTPUT_ARTIFACT_TEXT, DATFILEEXTENSION, TIMEEXTENSION, declare_probe_artifacts
    use allocationUtils_m, only: alloc_and_init
@@ -26,11 +26,11 @@ contains
       do segment_index = 1, size(segments)
          orientation = segments(segment_index)%orientation
          select case (abs(orientation))
-         case (iEx)
+         case (IEX)
             scalarValue = scalarValue + electric_field%x(segments(segment_index)%x, segments(segment_index)%y, &
                                              segments(segment_index)%z)*sign(1, orientation)* &
                     electric_field%deltaX(segments(segment_index)%x)
-         case (iEy)
+         case (IEY)
             scalarValue = scalarValue + electric_field%y(segments(segment_index)%x, segments(segment_index)%y, &
                                              segments(segment_index)%z)*sign(1, orientation)* &
                     electric_field%deltaY(segments(segment_index)%y)
@@ -109,7 +109,7 @@ contains
          return
       end if
       owned_upper_z = sweeps(component)%ZE
-      if (local_rank < local_rank_count - 1 .and. any(component == [iEx, iEy])) owned_upper_z = owned_upper_z - 1
+      if (local_rank < local_rank_count - 1 .and. any(component == [IEX, IEY])) owned_upper_z = owned_upper_z - 1
       line_segment_is_local = segment%x >= sweeps(component)%XI .and. segment%x <= sweeps(component)%XE .and. &
                               segment%y >= sweeps(component)%YI .and. segment%y <= sweeps(component)%YE .and. &
                               segment%z >= sweeps(component)%ZI .and. segment%z <= owned_upper_z

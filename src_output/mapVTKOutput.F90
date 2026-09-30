@@ -78,7 +78,7 @@ contains
       do k = this%mainCoords%Z, this%auxCoords%Z
       do j = this%mainCoords%Y, this%auxCoords%Y
       do i = this%mainCoords%X, this%auxCoords%X
-         do field = iEx, IEZ
+         do field = IEX, IEZ
             if (isEdge(field, i, j, k, problemInfo)) then
                counter = counter + 1
             end if
@@ -113,7 +113,7 @@ contains
       do k = this%mainCoords%Z, this%auxCoords%Z
       do j = this%mainCoords%Y, this%auxCoords%Y
       do i = this%mainCoords%X, this%auxCoords%X
-         do field = iEx, IEZ
+         do field = IEX, IEZ
             if (isEdge(field, i, j, k, problemInfo)) then
                counter = counter + 1
                call writeFaceTagInfo(this, counter, i, j, k, field, problemInfo%materialTag%getEdgeTag(field, i, j, k))
@@ -561,8 +561,8 @@ contains
          integer(kind=SINGLE), intent(in) :: current_type
 
          select case (current_type)
-         case (IJX); electric_field = iEx
-         case (IJY); electric_field = iEy
+         case (IJX); electric_field = IEX
+         case (IJY); electric_field = IEY
          case (IJZ); electric_field = IEZ
          end select
       end function electric_field

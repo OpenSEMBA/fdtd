@@ -301,7 +301,7 @@ contains
                end if
 #endif
 
-            case (iEx, iEy, IEZ, IHX, IHY, IHZ)
+            case (IEX, IEY, IEZ, IHX, IHY, IHZ)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = POINT_PROBE_ID
 
@@ -528,7 +528,7 @@ contains
 
          local_lower = request_lower
          local_upper = request_upper
-         do field = iEx, IHZ
+         do field = IEX, IHZ
             ! Restrict iteration to owned cells; isEdge uses Alloc halos for neighbours.
             local_lower%x = max(local_lower%x, sgg%Sweep(field)%XI)
             local_lower%y = max(local_lower%y, sgg%Sweep(field)%YI)

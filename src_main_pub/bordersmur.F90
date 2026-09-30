@@ -60,8 +60,8 @@ contains
       type(SGGFDTDINFO_t), intent(in) :: sgg
 
       real(kind=RKIND) , dimension(:)   , intent(in) :: &
-      Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
-      Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
+      Idxh(sgg%ALLOC(IEX)%XI : sgg%ALLOC(IEX)%XE), &
+      Idyh(sgg%ALLOC(IEY)%YI : sgg%ALLOC(IEY)%YE), &
       Idzh(sgg%ALLOC(IEZ)%ZI : sgg%ALLOC(IEZ)%ZE)
       !!!
       !
@@ -297,8 +297,8 @@ contains
         integer(kind=4) :: i,j,k,region,field,i1
         real(kind=RKIND) :: cnum
         real(kind=RKIND) , dimension(:)   , intent(in) :: &
-        Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
-        Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
+        Idxh(sgg%ALLOC(IEX)%XI : sgg%ALLOC(IEX)%XE), &
+        Idyh(sgg%ALLOC(IEY)%YI : sgg%ALLOC(IEY)%YE), &
         Idzh(sgg%ALLOC(IEZ)%ZI : sgg%ALLOC(IEZ)%ZE)
 !
         eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
@@ -307,22 +307,22 @@ contains
 
         do i1=0,sgg%NumMedia
             !MORE THAN NEEDED ARE CREATED BUT LATER ONLY THE NECESSARY ONES ARE USED
-            cnum=(1.0_RKIND/Idxh(sgg%ALLOC(iEx)%XI))/(sgg%dt * cluz/sqrt(sgg%Med(i1)%Epr * sgg%Med(i1)%Mur))
+            cnum=(1.0_RKIND/Idxh(sgg%ALLOC(IEX)%XI))/(sgg%dt * cluz/sqrt(sgg%Med(i1)%Epr * sgg%Med(i1)%Mur))
             back_CAB1(i1) = (1.0_RKIND-CNUM)/(1.0_RKIND+CNUM)
             back_CAB3(i1) = 1.0_RKIND / (2.0_RKIND * CNUM*(1.0_RKIND+CNUM))
             back_cab4(i1) = (2.0_RKIND * CNUM/(1.0_RKIND+CNUM)-4.0_RKIND * (1.0_RKIND / (2.0_RKIND * CNUM*(1.0_RKIND+CNUM))))
             !
-            cnum=(1.0_RKIND/Idxh(sgg%ALLOC(iEx)%XE))/(sgg%dt * cluz/sqrt(sgg%Med(i1)%Epr * sgg%Med(i1)%Mur))
+            cnum=(1.0_RKIND/Idxh(sgg%ALLOC(IEX)%XE))/(sgg%dt * cluz/sqrt(sgg%Med(i1)%Epr * sgg%Med(i1)%Mur))
             front_CAB1(i1) = (1.0_RKIND-CNUM)/(1.0_RKIND+CNUM)
             front_CAB3(i1) = 1.0_RKIND / (2.0_RKIND * CNUM*(1.0_RKIND+CNUM))
             front_cab4(i1) = (2.0_RKIND * CNUM/(1.0_RKIND+CNUM)-4.0_RKIND * (1.0_RKIND / (2.0_RKIND * CNUM*(1.0_RKIND+CNUM))))
             !!
-            cnum=(1.0_RKIND/Idyh(sgg%ALLOC(iEy)%YI))/(sgg%dt * cluz/sqrt(sgg%Med(i1)%Epr * sgg%Med(i1)%Mur))
+            cnum=(1.0_RKIND/Idyh(sgg%ALLOC(IEY)%YI))/(sgg%dt * cluz/sqrt(sgg%Med(i1)%Epr * sgg%Med(i1)%Mur))
             left_CAB1(i1) = (1.0_RKIND-CNUM)/(1.0_RKIND+CNUM)
             left_CAB3(i1) = 1.0_RKIND / (2.0_RKIND * CNUM*(1.0_RKIND+CNUM))
             left_cab4(i1) = (2.0_RKIND * CNUM/(1.0_RKIND+CNUM)-4.0_RKIND * (1.0_RKIND / (2.0_RKIND * CNUM*(1.0_RKIND+CNUM))))
             !
-            cnum=(1.0_RKIND/Idyh(sgg%ALLOC(iEy)%YE))/(sgg%dt * cluz/sqrt(sgg%Med(i1)%Epr * sgg%Med(i1)%Mur))
+            cnum=(1.0_RKIND/Idyh(sgg%ALLOC(IEY)%YE))/(sgg%dt * cluz/sqrt(sgg%Med(i1)%Epr * sgg%Med(i1)%Mur))
             right_CAB1(i1) = (1.0_RKIND-CNUM)/(1.0_RKIND+CNUM)
             right_CAB3(i1) = 1.0_RKIND / (2.0_RKIND * CNUM*(1.0_RKIND+CNUM))
             right_cab4(i1) = (2.0_RKIND * CNUM/(1.0_RKIND+CNUM)-4.0_RKIND * (1.0_RKIND / (2.0_RKIND * CNUM*(1.0_RKIND+CNUM))))

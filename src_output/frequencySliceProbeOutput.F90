@@ -537,16 +537,16 @@ contains
 
       else if (any(VOLUMIC_X_MEASURE == request)) then
          select case (request)
-         case (ICURX); call save_current_component(this, this%xValueForFreq, fieldsReference, problemInfo, iEx, this%auxExp_E, this%nFreq, step)
-         case (IEXC); call save_field_component(this, this%xValueForFreq, fieldsReference%E%x, step, problemInfo, iEx)
+         case (ICURX); call save_current_component(this, this%xValueForFreq, fieldsReference, problemInfo, IEX, this%auxExp_E, this%nFreq, step)
+         case (IEXC); call save_field_component(this, this%xValueForFreq, fieldsReference%E%x, step, problemInfo, IEX)
          case (IHXC); call save_field_component(this, this%xValueForFreq, fieldsReference%H%x, step, problemInfo, IHX)
          case default; call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
          end select
 
       else if (any(VOLUMIC_Y_MEASURE == request)) then
          select case (request)
-         case (ICURY); call save_current_component(this, this%yValueForFreq, fieldsReference, problemInfo, iEy, this%auxExp_E, this%nFreq, step)
-         case (IEYC); call save_field_component(this, this%yValueForFreq, fieldsReference%E%y, step, problemInfo, iEy)
+         case (ICURY); call save_current_component(this, this%yValueForFreq, fieldsReference, problemInfo, IEY, this%auxExp_E, this%nFreq, step)
+         case (IEYC); call save_field_component(this, this%yValueForFreq, fieldsReference%E%y, step, problemInfo, IEY)
          case (IHYC); call save_field_component(this, this%yValueForFreq, fieldsReference%H%y, step, problemInfo, IHY)
          case default; call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
          end select
@@ -575,9 +575,9 @@ contains
       do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForCurrent(ICUR, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
-            call save_current(this%xValueForFreq, iEx, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
+            call save_current(this%xValueForFreq, IEX, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
                               this%quadratureDt, this%nFreq, step)
-            call save_current(this%yValueForFreq, iEy, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
+            call save_current(this%yValueForFreq, IEY, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
                               this%quadratureDt, this%nFreq, step)
             call save_current(this%zValueForFreq, IEZ, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
                               this%quadratureDt, this%nFreq, step)

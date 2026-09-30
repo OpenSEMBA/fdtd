@@ -748,7 +748,7 @@ module CreateMatrices_m
       pointPlus1%ZE = Min (point%ZE+1, Max(BoundingBox%ZI, BoundingBox%ZE))
       !
       select case (Abs(orientationIndex))
-       case (iEx)
+       case (IEX)
          !    i=punto%XI
          !    if ((i <= max(BoundingBox%XI,BoundingBox%XE)).and.(i >= min(BoundingBox%XI,BoundingBox%XE))) then
          do i = gridPoint%XI, pointBboxPlus1%XE
@@ -760,7 +760,7 @@ module CreateMatrices_m
                      Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
                      tags%edge%y(i,j,k) = 64*numertag
                   else if ((med(mediumIndex)%Priority == med(medium)%Priority) .AND. (medium /= mediumIndex)) then
-                     call AddToShared (iEy, i, j, k, mediumIndex, medium, Eshared)
+                     call AddToShared (IEY, i, j, k, mediumIndex, medium, Eshared)
                   end if
                end do
             end do
@@ -790,7 +790,7 @@ module CreateMatrices_m
             end do
          end do
          !    end if
-       case (iEy)
+       case (IEY)
          !    j=punto%YI
          !    if ((j <= max(BoundingBox%YI,BoundingBox%YE)).and.(j >= min(BoundingBox%YI,BoundingBox%YE))) then
          do j = gridPoint%YI, pointBboxPlus1%YE
@@ -814,7 +814,7 @@ module CreateMatrices_m
                      Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);
                      tags%edge%x(i,j,k) = 64*numertag
                   else if ((med(mediumIndex)%Priority == med(medium)%Priority) .AND. (medium /= mediumIndex)) then
-                     call AddToShared (iEx, i, j, k, mediumIndex, medium, Eshared)
+                     call AddToShared (IEX, i, j, k, mediumIndex, medium, Eshared)
                   end if
                end do
             end do
@@ -844,7 +844,7 @@ module CreateMatrices_m
                      Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);
                      tags%edge%x(i,j,k) = 64*numertag
                   else if ((med(mediumIndex)%Priority == med(medium)%Priority) .AND. (medium /= mediumIndex)) then
-                     call AddToShared (iEx, i, j, k, mediumIndex, medium, Eshared)
+                     call AddToShared (IEX, i, j, k, mediumIndex, medium, Eshared)
                   end if
                end do
             end do
@@ -855,7 +855,7 @@ module CreateMatrices_m
                      MMiEy (i, j, k) = mediumIndex; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
                      tags%edge%y(i,j,k) = 64*numertag
                   else if ((med(mediumIndex)%Priority == med(medium)%Priority) .AND. (medium /= mediumIndex)) then
-                     call AddToShared (iEy, i, j, k, mediumIndex, medium, Eshared)
+                     call AddToShared (IEY, i, j, k, mediumIndex, medium, Eshared)
                   end if
                end do
             end do
@@ -939,7 +939,7 @@ module CreateMatrices_m
       gridPoint%ZE = Min (point%ZE, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
       !
       select case (Abs(orientationIndex))
-       case (iEx)
+       case (IEX)
          !    j=punto%YI
          !    k=punto%ZI
          !    if ((j <= max(BoundingBox%YI,BoundingBox%YE)).and.(j >= min(BoundingBox%YI,BoundingBox%YE)).and. &
@@ -970,13 +970,13 @@ module CreateMatrices_m
                             ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);
                         end if
                      else if ((med(mediumIndex)%Priority == med(medium)%Priority) .AND. (medium /= mediumIndex)) then
-                        call AddToShared (iEx, i, j, k, mediumIndex, medium, Eshared)
+                        call AddToShared (IEX, i, j, k, mediumIndex, medium, Eshared)
                      end if
                end do
             end do
          end do
          !    end if
-       case (iEy)
+       case (IEY)
          !    i=punto%XI
          !    k=punto%ZI
          !    if ((i <= max(BoundingBox%XI,BoundingBox%XE)).and.(i >= min(BoundingBox%XI,BoundingBox%XE)).and. &
@@ -1008,7 +1008,7 @@ module CreateMatrices_m
                         end if
                         
                      else if ((med(mediumIndex)%Priority == med(medium)%Priority) .AND. (medium /= mediumIndex)) then
-                        call AddToShared (iEy, i, j, k, mediumIndex, medium, Eshared)
+                        call AddToShared (IEY, i, j, k, mediumIndex, medium, Eshared)
                      end if
                end do
             end do
@@ -1114,7 +1114,7 @@ module CreateMatrices_m
       !
       ! One E-edge (cell start index) and one H-face (same cell) per slot linel.
       select case (Abs(orientationIndex))
-       case (iEx)
+       case (IEX)
          do i = gridPoint%XI, pointBboxPlus1%XE
             select case (direccion)
              case (IEZ)
@@ -1128,7 +1128,7 @@ module CreateMatrices_m
                      end if
                   end do
                end do
-             case (iEy)
+             case (IEY)
                do j = gridPoint%YI, gridPoint%YE
                   do k = gridPoint%ZI, gridPoint%ZE
                      medium = MMiEz (i, j, k)
@@ -1151,10 +1151,10 @@ module CreateMatrices_m
                end do
             end do
          end do
-       case (iEy)
+       case (IEY)
          do j = gridPoint%YI, pointBboxPlus1%YE
             select case (direccion)
-             case (iEx)
+             case (IEX)
                do i = gridPoint%XI, gridPoint%XE
                   do k = gridPoint%ZI, gridPoint%ZE
                      medium = MMiEz (i, j, k)
@@ -1191,7 +1191,7 @@ module CreateMatrices_m
        case (IEZ)
          do k = gridPoint%ZI, pointBboxPlus1%ZE
             select case (direccion)
-             case (iEy)
+             case (IEY)
                do i = gridPoint%XI, gridPoint%XE
                   do j = gridPoint%YI, gridPoint%YE
                      medium = MMiEx (i, j, k)
@@ -1202,7 +1202,7 @@ module CreateMatrices_m
                      end if
                   end do
                end do
-             case (iEx)
+             case (IEX)
                do i = gridPoint%XI, gridPoint%XE
                   do j = gridPoint%YI, gridPoint%YE
                      medium = MMiEy (i, j, k)
@@ -1299,7 +1299,7 @@ module CreateMatrices_m
       pointPlus1%ZE = Min (point%ZE+1, Max(BoundingBox%ZI, BoundingBox%ZE))
       !
       select case (Abs(orientationIndex))
-       case (iEx)
+       case (IEX)
          do i = gridPoint%XI, gridPoint%XE
             do j = gridPoint%YI, pointPlus1%YE
                do k = gridPoint%ZI, gridPoint%ZE
@@ -1335,7 +1335,7 @@ module CreateMatrices_m
                end do
             end do
          end do
-       case (iEy)
+       case (IEY)
          do j = gridPoint%YI, gridPoint%YE
             do i = gridPoint%XI, gridPoint%XE
                do k = gridPoint%ZI, pointPlus1%ZE
@@ -1435,8 +1435,8 @@ module CreateMatrices_m
       !Inputs and Outputs
       type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: &
-      sggMiEx(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE), &
-      sggMiEy(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE), &
+      sggMiEx(sgg%Alloc(IEX)%XI : sgg%Alloc(IEX)%XE,sgg%Alloc(IEX)%YI : sgg%Alloc(IEX)%YE,sgg%Alloc(IEX)%ZI : sgg%Alloc(IEX)%ZE), &
+      sggMiEy(sgg%Alloc(IEY)%XI : sgg%Alloc(IEY)%XE,sgg%Alloc(IEY)%YI : sgg%Alloc(IEY)%YE,sgg%Alloc(IEY)%ZI : sgg%Alloc(IEY)%ZE), &
       sggMiEz(sgg%Alloc(IEZ)%XI : sgg%Alloc(IEZ)%XE,sgg%Alloc(IEZ)%YI : sgg%Alloc(IEZ)%YE,sgg%Alloc(IEZ)%ZI : sgg%Alloc(IEZ)%ZE), &
       sggMiHx(sgg%Alloc(IHX)%XI : sgg%Alloc(IHX)%XE,sgg%Alloc(IHX)%YI : sgg%Alloc(IHX)%YE,sgg%Alloc(IHX)%ZI : sgg%Alloc(IHX)%ZE), &
       sggMiHy(sgg%Alloc(IHY)%XI : sgg%Alloc(IHY)%XE,sgg%Alloc(IHY)%YI : sgg%Alloc(IHY)%YE,sgg%Alloc(IHY)%ZI : sgg%Alloc(IHY)%ZE), &
@@ -1459,7 +1459,7 @@ module CreateMatrices_m
       !FIRST CLIP THE MATRIX
       !readjust boundingbox for PML correct calculation
       !
-      do field = iEx, IHZ
+      do field = IEX, IHZ
          XIPML (field) = Max (BBox%XI, fullsize(IHX)%XI)
          XEPML (field) = Min (BBox%XE+on(field, ICOORD, FINE), fullsize(IHX)%XE)
          YIPML (field) = Max (BBox%YI, fullsize(IHY)%YI)
@@ -1477,7 +1477,7 @@ module CreateMatrices_m
       ! Build the interior of the PML regions in MediaMatrix
       ! temporarily assing minus sign to PML media
       ! corners are swept twice to assing the correct media (do not remove AbS!!)
-      field = iEx
+      field = IEX
       do j = YIPML (field), YEPML (field)
          do k = ZIPML (field), ZEPML (field)
             !!!!!!**Back
@@ -1522,7 +1522,7 @@ module CreateMatrices_m
          end do
       end do
       !
-      field = iEy
+      field = IEY
       do j = YIPML (field), YEPML (field)
          do k = ZIPML (field), ZEPML (field)
             !!!!!!**Back
@@ -1750,7 +1750,7 @@ module CreateMatrices_m
       newNumberOfMediaWithPML = NumMedia
      allocate(tempo(0:NumMedia))
       tempo = 0 !temporarily stores the index of the PML medium matching each original media
-      field = iEx
+      field = IEX
       do k = ZIPML (field), ZEPML (field)
          do j = YIPML (field), YEPML (field)
             do i = XIPML (field), XEPML (field)
@@ -1764,7 +1764,7 @@ module CreateMatrices_m
             end do
          end do
       end do
-      field = iEy
+      field = IEY
       do k = ZIPML (field), ZEPML (field)
          do j = YIPML (field), YEPML (field)
             do i = XIPML (field), XEPML (field)
@@ -1837,7 +1837,7 @@ module CreateMatrices_m
       !
      allocate(NewMed(NumMedia+1:newNumberOfMediaWithPML))
       !Reassing the PML media info with the compact indexes
-      field = iEx
+      field = IEX
       do k = ZIPML (field), ZEPML (field)
          do j = YIPML (field), YEPML (field)
             do i = XIPML (field), XEPML (field)
@@ -1849,7 +1849,7 @@ module CreateMatrices_m
             end do
          end do
       end do
-      field = iEy
+      field = IEY
       do k = ZIPML (field), ZEPML (field)
          do j = YIPML (field), YEPML (field)
             do i = XIPML (field), XEPML (field)
@@ -1913,7 +1913,7 @@ module CreateMatrices_m
       !Put PEC and the end if there exists PEC borders in the original problem
       !(PMC are handled with the image technique in the algorithm, no special index is used for PMC)
       !BACK AND FRONT
-      field = iEx !!!!!PEC only in fields where the net ends
+      field = IEX !!!!!PEC only in fields where the net ends
       !left and right
       if ((Border%IsLeftPEC)) then
          j = YIPML (field)
@@ -1951,7 +1951,7 @@ module CreateMatrices_m
          end do
       end if
       !
-      field = iEy !!!!!PEC only in fields where the net ends
+      field = IEY !!!!!PEC only in fields where the net ends
       !front and back
       if ((Border%IsBackPEC)) then
          i = XIPML (field)
@@ -2108,7 +2108,7 @@ module CreateMatrices_m
          !Put MEDIUM at the end if there exist PML borders in the original problem
          yapuesto=.false.
          !
-         field = iEx
+         field = IEX
          !left and right
          if ((Border%IsLeftPML)) then
             do j = YIPML (field),YIPML (field)+ extraMedium%pml_size
@@ -2254,7 +2254,7 @@ module CreateMatrices_m
             end do
          end if
          !
-         field = iEy
+         field = IEY
          !front and back
          if ((Border%IsBackPML)) then
             do i = XIPML (field),XIPML (field)+ extraMedium%pml_size

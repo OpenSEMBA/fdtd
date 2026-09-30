@@ -283,9 +283,9 @@ contains
       else if (any(VOLUMIC_X_MEASURE == request)) then
          select case (request)
          case (ICURX)
-            call save_current_component(this, this%xValueForTime, fieldsReference, step, problemInfo, iEx)
+            call save_current_component(this, this%xValueForTime, fieldsReference, step, problemInfo, IEX)
          case (IEXC)
-            call save_field_component(this, this%xValueForTime, fieldsReference%E%x, step, problemInfo, iEx)
+            call save_field_component(this, this%xValueForTime, fieldsReference%E%x, step, problemInfo, IEX)
          case (IHXC)
             call save_field_component(this, this%xValueForTime, fieldsReference%H%x, step, problemInfo, IHX)
          case default
@@ -294,9 +294,9 @@ contains
       else if (any(VOLUMIC_Y_MEASURE == request)) then
          select case (request)
          case (ICURY)
-            call save_current_component(this, this%yValueForTime, fieldsReference, step, problemInfo, iEy)
+            call save_current_component(this, this%yValueForTime, fieldsReference, step, problemInfo, IEY)
          case (IEYC)
-            call save_field_component(this, this%yValueForTime, fieldsReference%E%y, step, problemInfo, iEy)
+            call save_field_component(this, this%yValueForTime, fieldsReference%E%y, step, problemInfo, IEY)
          case (IHYC)
             call save_field_component(this, this%yValueForTime, fieldsReference%H%y, step, problemInfo, IHY)
          case default
@@ -691,8 +691,8 @@ contains
       do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForCurrent(ICUR, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
-            call save_current(this%xValueForTime, this%nTime, coordIdx, iEx, i, j, k, fieldsReference)
-            call save_current(this%yValueForTime, this%nTime, coordIdx, iEy, i, j, k, fieldsReference)
+            call save_current(this%xValueForTime, this%nTime, coordIdx, IEX, i, j, k, fieldsReference)
+            call save_current(this%yValueForTime, this%nTime, coordIdx, IEY, i, j, k, fieldsReference)
             call save_current(this%zValueForTime, this%nTime, coordIdx, IEZ, i, j, k, fieldsReference)
          end if
       end do

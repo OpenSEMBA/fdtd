@@ -95,8 +95,8 @@ contains
       type(XYZlimit_t), dimension(6), intent(in) :: sggAlloc
       type(taglist_t) :: r
 
-      allocate (r%edge%x(sggAlloc(iEx)%XI:sggAlloc(iEx)%XE, sggAlloc(iEx)%YI:sggAlloc(iEx)%YE, sggAlloc(iEx)%ZI:sggAlloc(iEx)%ZE))
-      allocate (r%edge%y(sggAlloc(iEy)%XI:sggAlloc(iEy)%XE, sggAlloc(iEy)%YI:sggAlloc(iEy)%YE, sggAlloc(iEy)%ZI:sggAlloc(iEy)%ZE))
+      allocate (r%edge%x(sggAlloc(IEX)%XI:sggAlloc(IEX)%XE, sggAlloc(IEX)%YI:sggAlloc(IEX)%YE, sggAlloc(IEX)%ZI:sggAlloc(IEX)%ZE))
+      allocate (r%edge%y(sggAlloc(IEY)%XI:sggAlloc(IEY)%XE, sggAlloc(IEY)%YI:sggAlloc(IEY)%YE, sggAlloc(IEY)%ZI:sggAlloc(IEY)%ZE))
       allocate (r%edge%z(sggAlloc(IEZ)%XI:sggAlloc(IEZ)%XE, sggAlloc(IEZ)%YI:sggAlloc(IEZ)%YE, sggAlloc(IEZ)%ZI:sggAlloc(IEZ)%ZE))
       allocate (r%face%x(sggAlloc(IHX)%XI:sggAlloc(IHX)%XE, sggAlloc(IHX)%YI:sggAlloc(IHX)%YE, sggAlloc(IHX)%ZI:sggAlloc(IHX)%ZE))
       allocate (r%face%y(sggAlloc(IHY)%XI:sggAlloc(IHY)%XE, sggAlloc(IHY)%YI:sggAlloc(IHY)%YE, sggAlloc(IHY)%ZI:sggAlloc(IHY)%ZE))
@@ -132,8 +132,8 @@ contains
       allocate (r%sggMtag(sggAlloc(IHX)%XI:sggAlloc(IHX)%XE, sggAlloc(IHY)%YI:sggAlloc(IHY)%YE, sggAlloc(IHZ)%ZI:sggAlloc(IHZ)%ZE))
       allocate (r%sggMiNo(sggAlloc(IHX)%XI:sggAlloc(IHX)%XE, sggAlloc(IHY)%YI:sggAlloc(IHY)%YE, sggAlloc(IHZ)%ZI:sggAlloc(IHZ)%ZE))
 
-      allocate (r%sggMiEx(sggAlloc(iEx)%XI:sggAlloc(iEx)%XE, sggAlloc(iEx)%YI:sggAlloc(iEx)%YE, sggAlloc(iEx)%ZI:sggAlloc(iEx)%ZE))
-      allocate (r%sggMiEy(sggAlloc(iEy)%XI:sggAlloc(iEy)%XE, sggAlloc(iEy)%YI:sggAlloc(iEy)%YE, sggAlloc(iEy)%ZI:sggAlloc(iEy)%ZE))
+      allocate (r%sggMiEx(sggAlloc(IEX)%XI:sggAlloc(IEX)%XE, sggAlloc(IEX)%YI:sggAlloc(IEX)%YE, sggAlloc(IEX)%ZI:sggAlloc(IEX)%ZE))
+      allocate (r%sggMiEy(sggAlloc(IEY)%XI:sggAlloc(IEY)%XE, sggAlloc(IEY)%YI:sggAlloc(IEY)%YE, sggAlloc(IEY)%ZI:sggAlloc(IEY)%ZE))
       allocate (r%sggMiEz(sggAlloc(IEZ)%XI:sggAlloc(IEZ)%XE, sggAlloc(IEZ)%YI:sggAlloc(IEZ)%YE, sggAlloc(IEZ)%ZI:sggAlloc(IEZ)%ZE))
 
       allocate (r%sggMiHx(sggAlloc(IHX)%XI:sggAlloc(IHX)%XE, sggAlloc(IHX)%YI:sggAlloc(IHX)%YE, sggAlloc(IHX)%ZI:sggAlloc(IHX)%ZE))
@@ -270,7 +270,7 @@ contains
 
       obs%nP = 1
       allocate (obs%P(obs%nP))
-      obs%P(1) = create_observable(1_SINGLE, 1_SINGLE, 1_SINGLE, 1_SINGLE, 1_SINGLE, 1_SINGLE, iEx)
+      obs%P(1) = create_observable(1_SINGLE, 1_SINGLE, 1_SINGLE, 1_SINGLE, 1_SINGLE, 1_SINGLE, IEX)
 
       obs%InitialTime = 0.0_RKIND_TIME
       obs%FinalTime = 1.0_RKIND_TIME
@@ -436,8 +436,8 @@ contains
       type(media_matrices_t), intent(inout) :: media
       integer(kind=SINGLE), intent(in) :: fieldComponent, i, j, k, materialId
       selectcase (fieldComponent)
-      case (iEx); media%sggMiEx(i, j, k) = materialId
-      case (iEy); media%sggMiEy(i, j, k) = materialId
+      case (IEX); media%sggMiEx(i, j, k) = materialId
+      case (IEY); media%sggMiEy(i, j, k) = materialId
       case (IEZ); media%sggMiEz(i, j, k) = materialId
       case (IHX); media%sggMiHx(i, j, k) = materialId
       case (IHY); media%sggMiHy(i, j, k) = materialId

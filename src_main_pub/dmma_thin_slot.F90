@@ -81,17 +81,17 @@ contains
          !  cap=(4.232*eabs)/pi-(2.0_RKIND *eabs*thickness)/(pi*cfm)*(log(omega*thickness/cfm)-1.0_RKIND)
          !2011 mathem
          cap = eabs * (0.9918536053486919-0.3183098861837907*Log((omega*thickness)/cfm))
-         if (direccion == iEx) then
+         if (direccion == IEX) then
             epse (2, 2) = (incy/incz) * (cap/eabs)
             mue (3, 3) = 1.0_RKIND / epse (2, 2)
          end if
-         if (direccion == iEy) then
+         if (direccion == IEY) then
             epse (1, 1) = (incx/incz) * (cap/eabs)
             mue (3, 3) = 1.0_RKIND / epse (1, 1)
          end if
       end if
       !
-      if (orientationIndex == iEy) then
+      if (orientationIndex == IEY) then
          !        cfm = Abs (dir(2)) / Sqrt (eabs*uabs)
          maxfreq = cfm / (incy*10.0)
          omega = 2.0_RKIND * pi * maxfreq
@@ -99,7 +99,7 @@ contains
          !
          !2011 mathem
          cap = eabs * (0.9918536053486919-0.3183098861837907*Log((omega*thickness)/cfm))
-         if (direccion == iEx) then
+         if (direccion == IEX) then
             epse (3, 3) = (incz/incy) * (cap/eabs)
             mue (2, 2) = 1.0_RKIND / epse (3, 3)
          end if
@@ -109,7 +109,7 @@ contains
          end if
       end if
       !
-      if (orientationIndex == iEx) then
+      if (orientationIndex == IEX) then
          !        cfm = Abs (dir(1)) / Sqrt (eabs*uabs)
          maxfreq = cfm / (incx*10.0)
          omega = 2.0_RKIND * pi * maxfreq
@@ -117,7 +117,7 @@ contains
          !
          !2011 mathem
          cap = eabs * (0.9918536053486919-0.3183098861837907*Log((omega*thickness)/cfm))
-         if (direccion == iEy) then
+         if (direccion == IEY) then
             epse (3, 3) = (incz/incx) * (cap/eabs)
             mue (1, 1) = 1.0_RKIND / epse (3, 3)
          end if

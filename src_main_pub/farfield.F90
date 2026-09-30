@@ -109,8 +109,8 @@ contains
       type(SGGFDTDINFO_t), intent(in) :: sgg
       logical , intent(in) :: resume
       integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: &
-      sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
-      sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
+      sggMiEx(sgg%alloc(IEX)%XI : sgg%alloc(IEX)%XE,sgg%alloc(IEX)%YI : sgg%alloc(IEX)%YE,sgg%alloc(IEX)%ZI : sgg%alloc(IEX)%ZE), &
+      sggMiEy(sgg%alloc(IEY)%XI : sgg%alloc(IEY)%XE,sgg%alloc(IEY)%YI : sgg%alloc(IEY)%YE,sgg%alloc(IEY)%ZI : sgg%alloc(IEY)%ZE), &
       sggMiEz(sgg%alloc(IEZ)%XI : sgg%alloc(IEZ)%XE,sgg%alloc(IEZ)%YI : sgg%alloc(IEZ)%YE,sgg%alloc(IEZ)%ZI : sgg%alloc(IEZ)%ZE), &
       sggMiHx(sgg%alloc(IHX)%XI : sgg%alloc(IHX)%XE,sgg%alloc(IHX)%YI : sgg%alloc(IHX)%YE,sgg%alloc(IHX)%ZI : sgg%alloc(IHX)%ZE), &
       sggMiHy(sgg%alloc(IHY)%XI : sgg%alloc(IHY)%XE,sgg%alloc(IHY)%YI : sgg%alloc(IHY)%YE,sgg%alloc(IHY)%ZI : sgg%alloc(IHY)%ZE), &
@@ -126,7 +126,7 @@ contains
       zvac=sqrt(mu0/eps0)
 !
 
-      do field=iEx,IHZ
+      do field=IEX,IHZ
         FF%gridPoint%PhysCoor(field)%x => null()
         FF%gridPoint%PhysCoor(field)%y => null()
         FF%gridPoint%PhysCoor(field)%z => null()
@@ -166,13 +166,13 @@ contains
 
       !!!
 
-      do field=iEx,IHZ
+      do field=IEX,IHZ
          allocate (FF%gridPoint%PhysCoor(field)%x(SINPML_fullsize(field)%XI-1 : SINPML_fullsize(field)%XE+1), &
          FF%gridPoint%PhysCoor(field)%y(SINPML_fullsize(field)%YI-1 : SINPML_fullsize(field)%YE+1), &
          FF%gridPoint%PhysCoor(field)%z(SINPML_fullsize(field)%ZI-1 : SINPML_fullsize(field)%ZE+1))
       end do
 
-      field=iEx
+      field=IEX
       do i=SINPML_fullsize(field)%XI-1,SINPML_fullsize(field)%XE+1
          FF%gridPoint%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
       end do
@@ -182,7 +182,7 @@ contains
       do k=SINPML_fullsize(field)%ZI-1,SINPML_fullsize(field)%ZE+1
          FF%gridPoint%PhysCoor(field)%z(k)=sgg%LineZ(k)
       end do
-      field=iEy
+      field=IEY
       do i=SINPML_fullsize(field)%XI-1,SINPML_fullsize(field)%XE+1
          FF%gridPoint%PhysCoor(field)%x(i)=sgg%LineX(i)
       end do
@@ -482,12 +482,12 @@ contains
       FF%TrFr%K%com%Ez=Max(sgg%SINPMLSweep(IEZ)%ZI,       FF%esqz1)
       FF%TrFr%K%fin%Ez=MIn(sgg%SINPMLSweep(IEZ)%ZE,       FF%esqz2-1)
       !
-      FF%TrFr%I%backDir%Ey=Max(sgg%SINPMLSweep(iEy)%XI,       FF%esqx1)
-      FF%TrFr%I%frontDir%Ey=Min(sgg%SINPMLSweep(iEy)%XE,       FF%esqx2)
-      FF%TrFr%J%com%Ey=Max(sgg%SINPMLSweep(iEy)%YI,       FF%esqy1)
-      FF%TrFr%J%fin%Ey=Min(sgg%SINPMLSweep(iEy)%YE,       FF%esqy2-1)
-      FF%TrFr%K%com%Ey=Max(sgg%SINPMLSweep(iEy)%ZI,       FF%esqz1)
-      FF%TrFr%K%fin%Ey=MIn(sgg%SINPMLSweep(iEy)%ZE-01,    FF%esqz2) !DO NOT DUPLICATE MPI COMPUTATIONS
+      FF%TrFr%I%backDir%Ey=Max(sgg%SINPMLSweep(IEY)%XI,       FF%esqx1)
+      FF%TrFr%I%frontDir%Ey=Min(sgg%SINPMLSweep(IEY)%XE,       FF%esqx2)
+      FF%TrFr%J%com%Ey=Max(sgg%SINPMLSweep(IEY)%YI,       FF%esqy1)
+      FF%TrFr%J%fin%Ey=Min(sgg%SINPMLSweep(IEY)%YE,       FF%esqy2-1)
+      FF%TrFr%K%com%Ey=Max(sgg%SINPMLSweep(IEY)%ZI,       FF%esqz1)
+      FF%TrFr%K%fin%Ey=MIn(sgg%SINPMLSweep(IEY)%ZE-01,    FF%esqz2) !DO NOT DUPLICATE MPI COMPUTATIONS
       !
       FF%TrFr%I%backDir%Hy= FF%TrFr%I%backDir%Ez - 1
       FF%TrFr%I%frontDir%Hy= FF%TrFr%I%frontDir%Ez
@@ -504,12 +504,12 @@ contains
       FF%TrFr%K%fin%Hz= FF%TrFr%K%fin%Ey
       !
       !
-      FF%IzDe%J%leftDir%Ex=Max(sgg%SINPMLSweep(iEx)%yI,       FF%esqy1)
-      FF%IzDe%J%rightDir%Ex=Min(sgg%SINPMLSweep(iEx)%yE,       FF%esqy2)
-      FF%IzDe%I%com%Ex=Max(sgg%SINPMLSweep(iEx)%xI,       FF%esqx1)
-      FF%IzDe%I%fin%Ex=Min(sgg%SINPMLSweep(iEx)%xE,       FF%esqx2-1)
-      FF%IzDe%K%com%Ex=Max(sgg%SINPMLSweep(iEx)%ZI,       FF%esqz1)
-      FF%IzDe%K%fin%Ex=MIn(sgg%SINPMLSweep(iEx)%ZE-01,    FF%esqz2) !DO NOT DUPLICATE MPI COMPUTATIONS
+      FF%IzDe%J%leftDir%Ex=Max(sgg%SINPMLSweep(IEX)%yI,       FF%esqy1)
+      FF%IzDe%J%rightDir%Ex=Min(sgg%SINPMLSweep(IEX)%yE,       FF%esqy2)
+      FF%IzDe%I%com%Ex=Max(sgg%SINPMLSweep(IEX)%xI,       FF%esqx1)
+      FF%IzDe%I%fin%Ex=Min(sgg%SINPMLSweep(IEX)%xE,       FF%esqx2-1)
+      FF%IzDe%K%com%Ex=Max(sgg%SINPMLSweep(IEX)%ZI,       FF%esqz1)
+      FF%IzDe%K%fin%Ex=MIn(sgg%SINPMLSweep(IEX)%ZE-01,    FF%esqz2) !DO NOT DUPLICATE MPI COMPUTATIONS
       !
       FF%IzDe%J%leftDir%Ez=Max(sgg%SINPMLSweep(IEZ)%yI,    FF%esqy1)
       FF%IzDe%J%rightDir%Ez=Min(sgg%SINPMLSweep(IEZ)%yE,    FF%esqy2)
@@ -533,19 +533,19 @@ contains
       FF%IzDe%K%fin%Hx= FF%IzDe%K%fin%Ez
       !
       !
-      FF%AbAr%K%downDir%Ey=Max(sgg%SINPMLSweep(iEy)%ZI,    FF%esqz1)
-      FF%AbAr%K%arr%Ey=Min(sgg%SINPMLSweep(iEy)%ZE,    FF%esqz2)
-      FF%AbAr%I%com%Ey=Max(sgg%SINPMLSweep(iEy)%XI,    FF%esqx1)
-      FF%AbAr%I%fin%Ey=Min(sgg%SINPMLSweep(iEy)%XE,    FF%esqx2)
-      FF%AbAr%J%com%Ey=Max(sgg%SINPMLSweep(iEy)%YI,    FF%esqy1)
-      FF%AbAr%J%fin%Ey=Min(sgg%SINPMLSweep(iEy)%YE,    FF%esqy2-1)
+      FF%AbAr%K%downDir%Ey=Max(sgg%SINPMLSweep(IEY)%ZI,    FF%esqz1)
+      FF%AbAr%K%arr%Ey=Min(sgg%SINPMLSweep(IEY)%ZE,    FF%esqz2)
+      FF%AbAr%I%com%Ey=Max(sgg%SINPMLSweep(IEY)%XI,    FF%esqx1)
+      FF%AbAr%I%fin%Ey=Min(sgg%SINPMLSweep(IEY)%XE,    FF%esqx2)
+      FF%AbAr%J%com%Ey=Max(sgg%SINPMLSweep(IEY)%YI,    FF%esqy1)
+      FF%AbAr%J%fin%Ey=Min(sgg%SINPMLSweep(IEY)%YE,    FF%esqy2-1)
       !
-      FF%AbAr%K%downDir%Ex=Max(sgg%SINPMLSweep(iEx)%ZI,    FF%esqz1)
-      FF%AbAr%K%arr%Ex=Min(sgg%SINPMLSweep(iEx)%ZE,    FF%esqz2)
-      FF%AbAr%I%com%Ex=Max(sgg%SINPMLSweep(iEx)%XI,    FF%esqx1)
-      FF%AbAr%I%fin%Ex=Min(sgg%SINPMLSweep(iEx)%XE,    FF%esqx2-1)
-      FF%AbAr%J%com%Ex=Max(sgg%SINPMLSweep(iEx)%YI,    FF%esqy1)
-      FF%AbAr%J%fin%Ex=Min(sgg%SINPMLSweep(iEx)%YE,    FF%esqy2)
+      FF%AbAr%K%downDir%Ex=Max(sgg%SINPMLSweep(IEX)%ZI,    FF%esqz1)
+      FF%AbAr%K%arr%Ex=Min(sgg%SINPMLSweep(IEX)%ZE,    FF%esqz2)
+      FF%AbAr%I%com%Ex=Max(sgg%SINPMLSweep(IEX)%XI,    FF%esqx1)
+      FF%AbAr%I%fin%Ex=Min(sgg%SINPMLSweep(IEX)%XE,    FF%esqx2-1)
+      FF%AbAr%J%com%Ex=Max(sgg%SINPMLSweep(IEX)%YI,    FF%esqy1)
+      FF%AbAr%J%fin%Ex=Min(sgg%SINPMLSweep(IEX)%YE,    FF%esqy2)
       !
       FF%AbAr%K%downDir%Hx= FF%AbAr%K%downDir%Ey - 1
       FF%AbAr%K%arr%Hx= FF%AbAr%K%arr%Ey
@@ -2343,7 +2343,7 @@ contains
    subroutine Destroyfarfield
       integer(kind=4) :: field
 
-      do field=iEx,IHZ
+      do field=IEX,IHZ
          if (associated(FF%gridPoint%PhysCoor(field)%x)) deallocate(FF%gridPoint%PhysCoor(field)%x)
          if (associated(FF%gridPoint%PhysCoor(field)%y)) deallocate(FF%gridPoint%PhysCoor(field)%y)
          if (associated(FF%gridPoint%PhysCoor(field)%z)) deallocate(FF%gridPoint%PhysCoor(field)%z)
@@ -2560,7 +2560,7 @@ contains
                               if (k.le.FF%TrFr%K%fin%Hz) Jy = + (Average(pasadas, HcampoZ(j_m, k_m,ii) , Hcampo2Z(j_m, k_m,ii))) *dye(j_m)*dzh(k_m)*NORMAL
                               if (j.le.FF%TrFr%J%fin%Hy) Jz = - (Average(pasadas, HcampoY(j_m, k_m,ii) , Hcampo2Y(j_m, k_m,ii))) *dyh(j_m)*dze(k_m)*NORMAL
                               co%x_My=FF%gridPoint%PhysCoor(IEZ)%x(i); co%y_My=FF%gridPoint%PhysCoor(IEZ)%y(j); co%z_My=FF%gridPoint%PhysCoor(IEZ)%z(k)
-                              co%x_Mz=FF%gridPoint%PhysCoor(iEy)%x(i); co%y_Mz=FF%gridPoint%PhysCoor(iEy)%y(j); co%z_Mz=FF%gridPoint%PhysCoor(iEy)%z(k)
+                              co%x_Mz=FF%gridPoint%PhysCoor(IEY)%x(i); co%y_Mz=FF%gridPoint%PhysCoor(IEY)%y(j); co%z_Mz=FF%gridPoint%PhysCoor(IEY)%z(k)
                               co%x_Jy=co%x_Mz;                     co%y_Jy=co%y_Mz;                     co%z_Jy=co%z_Mz;
                               co%x_Jz=co%x_My;                     co%y_Jz=co%y_My;                     co%z_Jz=co%z_My;
                               call update_LN(comun,co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,Mx,My,Mz,Jx,Jy,Jz,L_theta,L_phi,N_theta,N_phi)
@@ -2818,7 +2818,7 @@ contains
                               if (k.le.FF%IzDe%K%fin%Hz)  Jx = - (Average(pasadas, HcampoZ(i_m, k_m,ii) , Hcampo2Z(i_m, k_m,ii))) *dxe(i_m)*dzh(k_m)*NORMAL
                               if (i.le.FF%IzDe%I%fin%Hx)  Jz = + (Average(pasadas, HcampoX(i_m, k_m,ii) , Hcampo2X(i_m, k_m,ii))) *dxh(i_m)*dze(k_m)*NORMAL
                               co%x_Mx=FF%gridPoint%PhysCoor(IEZ)%x(i); co%y_Mx=FF%gridPoint%PhysCoor(IEZ)%y(j); co%z_Mx=FF%gridPoint%PhysCoor(IEZ)%z(k)
-                              co%x_Mz=FF%gridPoint%PhysCoor(iEx)%x(i); co%y_Mz=FF%gridPoint%PhysCoor(iEx)%y(j); co%z_Mz=FF%gridPoint%PhysCoor(iEx)%z(k)
+                              co%x_Mz=FF%gridPoint%PhysCoor(IEX)%x(i); co%y_Mz=FF%gridPoint%PhysCoor(IEX)%y(j); co%z_Mz=FF%gridPoint%PhysCoor(IEX)%z(k)
                               co%x_Jz=co%x_Mx;                     co%y_Jz=co%y_Mx;                     co%z_Jz=co%z_Mx;
                               co%x_Jx=co%x_Mz;                     co%y_Jx=co%y_Mz;                     co%z_Jx=co%z_Mz;
                               call update_LN(comun,co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,Mx,My,Mz,Jx,Jy,Jz,L_theta,L_phi,N_theta,N_phi)
@@ -3074,8 +3074,8 @@ contains
                               if (i.le.FF%AbAr%I%fin%Ex)  My = + EcampoX(i_m, j_m,ii) *dxe(i_m)*dyh(j_m)*NORMAL
                               if (j.le.FF%AbAr%J%fin%Hy)  Jx = + (Average(pasadas, HcampoY(i_m, j_m,ii) , Hcampo2Y(i_m, j_m,ii))) *dxe(i_m)*dyh(j_m)*NORMAL
                               if (i.le.FF%AbAr%I%fin%Hx)  Jy = - (Average(pasadas, HcampoX(i_m, j_m,ii) , Hcampo2X(i_m, j_m,ii))) *dxh(i_m)*dye(j_m)*NORMAL
-                              co%x_Mx=FF%gridPoint%PhysCoor(iEy)%x(i); co%y_Mx=FF%gridPoint%PhysCoor(iEy)%y(j); co%z_Mx=FF%gridPoint%PhysCoor(iEy)%z(k)
-                              co%x_My=FF%gridPoint%PhysCoor(iEx)%x(i); co%y_My=FF%gridPoint%PhysCoor(iEx)%y(j); co%z_My=FF%gridPoint%PhysCoor(iEx)%z(k)
+                              co%x_Mx=FF%gridPoint%PhysCoor(IEY)%x(i); co%y_Mx=FF%gridPoint%PhysCoor(IEY)%y(j); co%z_Mx=FF%gridPoint%PhysCoor(IEY)%z(k)
+                              co%x_My=FF%gridPoint%PhysCoor(IEX)%x(i); co%y_My=FF%gridPoint%PhysCoor(IEX)%y(j); co%z_My=FF%gridPoint%PhysCoor(IEX)%z(k)
                               co%x_Jx=co%x_My;                     co%y_Jx=co%y_My;                     co%z_Jx=co%z_My;
                               co%x_Jy=co%x_Mx;                     co%y_Jy=co%y_Mx;                     co%z_Jy=co%z_Mx;
                               call update_LN(comun,co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,Mx,My,Mz,Jx,Jy,Jz,L_theta,L_phi,N_theta,N_phi)!! symmetries

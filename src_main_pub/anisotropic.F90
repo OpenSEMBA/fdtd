@@ -113,9 +113,9 @@ contains
          tempindex=AniMed%info(jmed)%indexmed
          !!!Ex
          conta=0
-         do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
-            do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
-               do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
+         do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
+            do j1=sgg%SINPMLSweep(IEX)%YI,sgg%SINPMLSweep(IEX)%YE
+               do i1=sgg%SINPMLSweep(IEX)%XI,sgg%SINPMLSweep(IEX)%XE
                   if ((media%sggMiEx(i1,j1,k1)) == tempindex)  conta=conta+1
                end do
             end do
@@ -130,9 +130,9 @@ contains
          allocate (AniMed%info(jmed)%Ex_Shared(1 : conta))
          AniMed%info(jmed)%Ex_value=0.0_RKIND
          conta=0
-         do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
-            do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
-               do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
+         do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
+            do j1=sgg%SINPMLSweep(IEX)%YI,sgg%SINPMLSweep(IEX)%YE
+               do i1=sgg%SINPMLSweep(IEX)%XI,sgg%SINPMLSweep(IEX)%XE
                   if ((media%sggMiEx(i1,j1,k1))==tempindex)  then
                      conta=conta+1
                      AniMed%info(jmed)%Ex_Shared(conta)%times = 1
@@ -145,9 +145,9 @@ contains
          end do
          !!!Ey
          conta=0
-         do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
-            do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
-               do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
+         do k1=sgg%SINPMLSweep(IEY)%ZI,sgg%SINPMLSweep(IEY)%ZE
+            do j1=sgg%SINPMLSweep(IEY)%YI,sgg%SINPMLSweep(IEY)%YE
+               do i1=sgg%SINPMLSweep(IEY)%XI,sgg%SINPMLSweep(IEY)%XE
                   if ((media%sggMiEy(i1,j1,k1)) == tempindex)  conta=conta+1
                end do
             end do
@@ -162,9 +162,9 @@ contains
          allocate (AniMed%info(jmed)%Ey_Shared(1 : conta))
          AniMed%info(jmed)%Ey_value=0.0_RKIND
          conta=0
-         do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
-            do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
-               do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
+         do k1=sgg%SINPMLSweep(IEY)%ZI,sgg%SINPMLSweep(IEY)%ZE
+            do j1=sgg%SINPMLSweep(IEY)%YI,sgg%SINPMLSweep(IEY)%YE
+               do i1=sgg%SINPMLSweep(IEY)%XI,sgg%SINPMLSweep(IEY)%XE
                   if ((media%sggMiEy(i1,j1,k1))==tempindex)  then
                      conta=conta+1
                      AniMed%info(jmed)%Ey_Shared(conta)%times = 1
@@ -315,7 +315,7 @@ contains
                if ((sgg%Eshared%elem(j1)%i == AniMed%info(jmed)%Ex_i(i1)).and. &
                (sgg%Eshared%elem(j1)%j == AniMed%info(jmed)%Ex_j(i1)).and. &
                (sgg%Eshared%elem(j1)%k == AniMed%info(jmed)%Ex_k(i1)).and. &
-               (sgg%Eshared%elem(j1)%Field == iEx)) then
+               (sgg%Eshared%elem(j1)%Field == IEX)) then
                   AniMed%info(jmed)%Ex_Shared(i1)%times = sgg%Eshared%elem(j1)%Times
                   if (sgg%Eshared%elem(j1)%Times > 1) then
                      allocate (AniMed%info(jmed)%Ex_Shared(i1)%SharedMed(1:sgg%Eshared%elem(j1)%Times))    
@@ -330,7 +330,7 @@ contains
                if ((sgg%Eshared%elem(j1)%i == AniMed%info(jmed)%Ey_i(i1)).and. &
                (sgg%Eshared%elem(j1)%j == AniMed%info(jmed)%Ey_j(i1)).and. &
                (sgg%Eshared%elem(j1)%k == AniMed%info(jmed)%Ey_k(i1)).and. &
-               (sgg%Eshared%elem(j1)%Field == iEy)) then
+               (sgg%Eshared%elem(j1)%Field == IEY)) then
                   AniMed%info(jmed)%Ey_Shared(i1)%times = sgg%Eshared%elem(j1)%Times
                   if (sgg%Eshared%elem(j1)%Times > 1) then
                      allocate (AniMed%info(jmed)%Ey_Shared(i1)%SharedMed(1:sgg%Eshared%elem(j1)%Times))
@@ -416,7 +416,7 @@ contains
                if ((sgg%Eshared%elem(j1)%i == AniMed%info(jmed)%Ex_i(i1)).and. &
                (sgg%Eshared%elem(j1)%j == AniMed%info(jmed)%Ex_j(i1)).and. &
                (sgg%Eshared%elem(j1)%k == AniMed%info(jmed)%Ex_k(i1)).and. &
-               (sgg%Eshared%elem(j1)%Field == iEx)) then
+               (sgg%Eshared%elem(j1)%Field == IEX)) then
                   conta=conta+1
                   AniMed%info(jmed)%Ex_Shared(i1)%SharedMed(conta) =  sgg%Eshared%elem(j1)%SharedMed
                end if
@@ -431,7 +431,7 @@ contains
                if ((sgg%Eshared%elem(j1)%i == AniMed%info(jmed)%Ey_i(i1)).and. &
                (sgg%Eshared%elem(j1)%j == AniMed%info(jmed)%Ey_j(i1)).and. &
                (sgg%Eshared%elem(j1)%k == AniMed%info(jmed)%Ey_k(i1)).and. &
-               (sgg%Eshared%elem(j1)%Field == iEy)) then
+               (sgg%Eshared%elem(j1)%Field == IEY)) then
                   conta=conta+1
                   AniMed%info(jmed)%Ey_Shared(i1)%SharedMed(conta) =  sgg%Eshared%elem(j1)%SharedMed
                   continue
@@ -634,8 +634,8 @@ contains
       type(XYZlimit_t), dimension(1:6), intent(in)                      :: sggAlloc
 
       real(kind=RKIND)   , intent(inout) :: &
-      Ex(sggalloc(iEx)%XI : sggalloc(iEx)%XE,sggalloc(iEx)%YI : sggalloc(iEx)%YE,sggalloc(iEx)%ZI : sggalloc(iEx)%ZE),&
-      Ey(sggalloc(iEy)%XI : sggalloc(iEy)%XE,sggalloc(iEy)%YI : sggalloc(iEy)%YE,sggalloc(iEy)%ZI : sggalloc(iEy)%ZE),&
+      Ex(sggalloc(IEX)%XI : sggalloc(IEX)%XE,sggalloc(IEX)%YI : sggalloc(IEX)%YE,sggalloc(IEX)%ZI : sggalloc(IEX)%ZE),&
+      Ey(sggalloc(IEY)%XI : sggalloc(IEY)%XE,sggalloc(IEY)%YI : sggalloc(IEY)%YE,sggalloc(IEY)%ZI : sggalloc(IEY)%ZE),&
       Ez(sggalloc(IEZ)%XI : sggalloc(IEZ)%XE,sggalloc(IEZ)%YI : sggalloc(IEZ)%YE,sggalloc(IEZ)%ZI : sggalloc(IEZ)%ZE),&
       Hx(sggalloc(IHX)%XI : sggalloc(IHX)%XE,sggalloc(IHX)%YI : sggalloc(IHX)%YE,sggalloc(IHX)%ZI : sggalloc(IHX)%ZE),&
       Hy(sggalloc(IHY)%XI : sggalloc(IHY)%XE,sggalloc(IHY)%YI : sggalloc(IHY)%YE,sggalloc(IHY)%ZI : sggalloc(IHY)%ZE),&
@@ -644,8 +644,8 @@ contains
       Idxe(sggalloc(IHX)%XI : sggalloc(IHX)%XE), &
       Idye(sggalloc(IHY)%YI : sggalloc(IHY)%YE), &
       Idze(sggalloc(IHZ)%ZI : sggalloc(IHZ)%ZE), &
-      Idxh(sggalloc(iEx)%XI : sggalloc(iEx)%XE), &
-      Idyh(sggalloc(iEy)%YI : sggalloc(iEy)%YE), &
+      Idxh(sggalloc(IEX)%XI : sggalloc(IEX)%XE), &
+      Idyh(sggalloc(IEY)%YI : sggalloc(IEY)%YE), &
       Idzh(sggalloc(IEZ)%ZI : sggalloc(IEZ)%ZE)
       !
 
@@ -798,8 +798,8 @@ contains
 
 
       real(kind=RKIND)   , intent(inout) :: &
-      Ex(sggAlloc(iEx)%XI : sggAlloc(iEx)%XE,sggAlloc(iEx)%YI : sggAlloc(iEx)%YE,sggAlloc(iEx)%ZI : sggAlloc(iEx)%ZE),&
-      Ey(sggAlloc(iEy)%XI : sggAlloc(iEy)%XE,sggAlloc(iEy)%YI : sggAlloc(iEy)%YE,sggAlloc(iEy)%ZI : sggAlloc(iEy)%ZE),&
+      Ex(sggAlloc(IEX)%XI : sggAlloc(IEX)%XE,sggAlloc(IEX)%YI : sggAlloc(IEX)%YE,sggAlloc(IEX)%ZI : sggAlloc(IEX)%ZE),&
+      Ey(sggAlloc(IEY)%XI : sggAlloc(IEY)%XE,sggAlloc(IEY)%YI : sggAlloc(IEY)%YE,sggAlloc(IEY)%ZI : sggAlloc(IEY)%ZE),&
       Ez(sggAlloc(IEZ)%XI : sggAlloc(IEZ)%XE,sggAlloc(IEZ)%YI : sggAlloc(IEZ)%YE,sggAlloc(IEZ)%ZI : sggAlloc(IEZ)%ZE),&
       Hx(sggAlloc(IHX)%XI : sggAlloc(IHX)%XE,sggAlloc(IHX)%YI : sggAlloc(IHX)%YE,sggAlloc(IHX)%ZI : sggAlloc(IHX)%ZE),&
       Hy(sggAlloc(IHY)%XI : sggAlloc(IHY)%XE,sggAlloc(IHY)%YI : sggAlloc(IHY)%YE,sggAlloc(IHY)%ZI : sggAlloc(IHY)%ZE),&
@@ -808,8 +808,8 @@ contains
       Idxe(sggALLOC(IHX)%XI : sggALLOC(IHX)%XE), &
       Idye(sggALLOC(IHY)%YI : sggALLOC(IHY)%YE), &
       Idze(sggALLOC(IHZ)%ZI : sggALLOC(IHZ)%ZE), &
-      Idxh(sggALLOC(iEx)%XI : sggALLOC(iEx)%XE), &
-      Idyh(sggALLOC(iEy)%YI : sggALLOC(iEy)%YE), &
+      Idxh(sggALLOC(IEX)%XI : sggALLOC(IEX)%XE), &
+      Idyh(sggALLOC(IEY)%YI : sggALLOC(IEY)%YE), &
       Idzh(sggALLOC(IEZ)%ZI : sggALLOC(IEZ)%ZE)
       !
 

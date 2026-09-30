@@ -249,13 +249,13 @@ contains
          sgg%Border%IsDownPMC=.false.
          sgg%Border%IsDownPEC=.false.   
          !careful  in the future with this bare <  when the PML is right at the mpi division 1310124
-         if ((sgg%Sweep(iEx)%ZI<SINPML_fullsize(iEx)%ZI)) then
+         if ((sgg%Sweep(IEX)%ZI<SINPML_fullsize(IEX)%ZI)) then
             sgg%Border%IsDownPML=.true.
          else
             sgg%Border%IsDownPML=.false. !no PML layers DOWN
          end if
          !careful  in the future with this bare >  when the PML is right at the mpi division 1310124
-         if ((sgg%Sweep(iEx)%ZE>SINPML_fullsize(iEx)%ZE))   then 
+         if ((sgg%Sweep(IEX)%ZE>SINPML_fullsize(IEX)%ZE))   then 
             sgg%Border%IsUpPML=.true.
          else
             sgg%Border%IsUpPML=.false.  !no PML layers UP
@@ -313,17 +313,17 @@ contains
       FlushExtraInfoDown=.false.
       FlushExtraInfoUp=.false.
 
-      ExXI=sggalloc(iEx)%XI
-      ExXE=sggalloc(iEx)%XE
-      EyXI=sggalloc(iEy)%XI
-      EyXE=sggalloc(iEy)%XE
+      ExXI=sggalloc(IEX)%XI
+      ExXE=sggalloc(IEX)%XE
+      EyXI=sggalloc(IEY)%XI
+      EyXE=sggalloc(IEY)%XE
       EzXI=sggalloc(IEZ)%XI
       EzXE=sggalloc(IEZ)%XE
 
-      ExYI=sggalloc(iEx)%YI
-      ExYE=sggalloc(iEx)%YE
-      EyYI=sggalloc(iEy)%YI
-      EyYE=sggalloc(iEy)%YE
+      ExYI=sggalloc(IEX)%YI
+      ExYE=sggalloc(IEX)%YE
+      EyYI=sggalloc(IEY)%YI
+      EyYE=sggalloc(IEY)%YE
       EzYI=sggalloc(IEZ)%YI
       EzYE=sggalloc(IEZ)%YE
 
@@ -522,8 +522,8 @@ contains
 !!!! careful it must also be changed if this routine is ever used again to communicate reals INTEGERSIZE by REALSIZE
 !!!!      real(kind=RKIND)   , intent(inout) :: &
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) , intent(inout) :: &
-      Ex(sggalloc(iEx)%XI : sggalloc(iEx)%XE,sggalloc(iEx)%YI : sggalloc(iEx)%YE,sggalloc(iEx)%ZI : sggalloc(iEx)%ZE),&
-      Ey(sggalloc(iEy)%XI : sggalloc(iEy)%XE,sggalloc(iEy)%YI : sggalloc(iEy)%YE,sggalloc(iEy)%ZI : sggalloc(iEy)%ZE),&
+      Ex(sggalloc(IEX)%XI : sggalloc(IEX)%XE,sggalloc(IEX)%YI : sggalloc(IEX)%YE,sggalloc(IEX)%ZI : sggalloc(IEX)%ZE),&
+      Ey(sggalloc(IEY)%XI : sggalloc(IEY)%XE,sggalloc(IEY)%YI : sggalloc(IEY)%YE,sggalloc(IEY)%ZI : sggalloc(IEY)%ZE),&
       Ez(sggalloc(IEZ)%XI : sggalloc(IEZ)%XE,sggalloc(IEZ)%YI : sggalloc(IEZ)%YE,sggalloc(IEZ)%ZI : sggalloc(IEZ)%ZE)
 
 
@@ -1244,8 +1244,8 @@ contains
       Hy(sggalloc(IHY)%XI: sggalloc(IHY)%XE, sggalloc(IHY)%YI: sggalloc(IHY)%YE, sggalloc(IHY)%ZI: sggalloc(IHY)%ZE), &
       Hz(sggalloc(IHZ)%XI: sggalloc(IHZ)%XE, sggalloc(IHZ)%YI: sggalloc(IHZ)%YE, sggalloc(IHZ)%ZI: sggalloc(IHZ)%ZE)
       real(kind=RKIND)   , intent(in),target :: &
-      Ex(sggalloc(iEx)%XI: sggalloc(iEx)%XE, sggalloc(iEx)%YI: sggalloc(iEx)%YE, sggalloc(iEx)%ZI: sggalloc(iEx)%ZE), &
-      Ey(sggalloc(iEy)%XI: sggalloc(iEy)%XE, sggalloc(iEy)%YI: sggalloc(iEy)%YE, sggalloc(iEy)%ZI: sggalloc(iEy)%ZE), &
+      Ex(sggalloc(IEX)%XI: sggalloc(IEX)%XE, sggalloc(IEX)%YI: sggalloc(IEX)%YE, sggalloc(IEX)%ZI: sggalloc(IEX)%ZE), &
+      Ey(sggalloc(IEY)%XI: sggalloc(IEY)%XE, sggalloc(IEY)%YI: sggalloc(IEY)%YE, sggalloc(IEY)%ZI: sggalloc(IEY)%ZE), &
       Ez(sggalloc(IEZ)%XI: sggalloc(IEZ)%XE, sggalloc(IEZ)%YI: sggalloc(IEZ)%YE, sggalloc(IEZ)%ZI: sggalloc(IEZ)%ZE)
       integer(kind = 4), intent(in) :: layoutnumber, num_procs
       logical, intent(in) :: PBCDown, PBCUp
@@ -1253,17 +1253,17 @@ contains
       type(t_databuf_t), pointer :: databufH, databufE
       !---------------- starts InitMPI_Cray ---------------------------------------------------------
       !not necessary at this moment since nothing is read at this mmoment
-      ExXI=sggalloc(iEx)%XI
-      ExXE=sggalloc(iEx)%XE
-      EyXI=sggalloc(iEy)%XI
-      EyXE=sggalloc(iEy)%XE
+      ExXI=sggalloc(IEX)%XI
+      ExXE=sggalloc(IEX)%XE
+      EyXI=sggalloc(IEY)%XI
+      EyXE=sggalloc(IEY)%XE
       EzXI=sggalloc(IEZ)%XI
       EzXE=sggalloc(IEZ)%XE
       !--->
-      ExYI=sggalloc(iEx)%YI
-      ExYE=sggalloc(iEx)%YE
-      EyYI=sggalloc(iEy)%YI
-      EyYE=sggalloc(iEy)%YE
+      ExYI=sggalloc(IEX)%YI
+      ExYE=sggalloc(IEX)%YE
+      EyYI=sggalloc(IEY)%YI
+      EyYE=sggalloc(IEY)%YE
       EzYI=sggalloc(IEZ)%YI
       EzYE=sggalloc(IEZ)%YE
       !--->
@@ -1607,8 +1607,8 @@ contains
       Hy(sggalloc(IHY)%XI: sggalloc(IHY)%XE, sggalloc(IHY)%YI: sggalloc(IHY)%YE, sggalloc(IHY)%ZI: sggalloc(IHY)%ZE), &
       Hz(sggalloc(IHZ)%XI: sggalloc(IHZ)%XE, sggalloc(IHZ)%YI: sggalloc(IHZ)%YE, sggalloc(IHZ)%ZI: sggalloc(IHZ)%ZE)
       real(kind=RKIND), intent(in), target :: &
-      Ex(sggalloc(iEx)%XI: sggalloc(iEx)%XE, sggalloc(iEx)%YI: sggalloc(iEx)%YE, sggalloc(iEx)%ZI: sggalloc(iEx)%ZE), &
-      Ey(sggalloc(iEy)%XI: sggalloc(iEy)%XE, sggalloc(iEy)%YI: sggalloc(iEy)%YE, sggalloc(iEy)%ZI: sggalloc(iEy)%ZE), &
+      Ex(sggalloc(IEX)%XI: sggalloc(IEX)%XE, sggalloc(IEX)%YI: sggalloc(IEX)%YE, sggalloc(IEX)%ZI: sggalloc(IEX)%ZE), &
+      Ey(sggalloc(IEY)%XI: sggalloc(IEY)%XE, sggalloc(IEY)%YI: sggalloc(IEY)%YE, sggalloc(IEY)%ZI: sggalloc(IEY)%ZE), &
       Ez(sggalloc(IEZ)%XI: sggalloc(IEZ)%XE, sggalloc(IEZ)%YI: sggalloc(IEZ)%YE, sggalloc(IEZ)%ZI: sggalloc(IEZ)%ZE)
       integer(kind = 4), intent(in) :: nummed
       type(MediaData_t), dimension(0: NumMed), intent(in) :: med

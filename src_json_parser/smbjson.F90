@@ -1909,19 +1909,19 @@ contains
          allocate(tc(nTgc))
          do i = 1, size(cs)
             select case (abs(cs(i)%Or))
-            case (iEx)
+            case (IEX)
                do k = 1, (cs(i)%xe - cs(i)%xi + 1)
                   tc(j) = buildBaseThinSlotComponent(cs(i))
                   tc(j)%i = cs(i)%xi + k - 1
                   j = j + 1
                end do
-            case (iEy)
+            case (IEY)
                do k = 1, (cs(i)%ye - cs(i)%yi + 1)
                   tc(j) = buildBaseThinSlotComponent(cs(i))
                   tc(j)%j = cs(i)%yi + k - 1
                   j = j + 1
                end do
-            case (iEz)
+            case (IEZ)
                do k = 1, (cs(i)%ze - cs(i)%zi + 1)
                   tc(j) = buildBaseThinSlotComponent(cs(i))
                   tc(j)%k = cs(i)%zi + k - 1

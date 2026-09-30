@@ -289,11 +289,11 @@ contains
       case (ICUR); checker => volumicCurrentRequest; component = ICUR
       case (IMEC); checker => volumicElectricRequest; component = IMEC
       case (IMHC); checker => volumicMagneticRequest; component = IMHC
-      case (ICURX); checker => componentCurrentRequest; component = iEx
-      case (IEXC); checker => componentFieldRequest; component = iEx
+      case (ICURX); checker => componentCurrentRequest; component = IEX
+      case (IEXC); checker => componentFieldRequest; component = IEX
       case (IHXC); checker => componentFieldRequest; component = IHX
-      case (ICURY); checker => componentCurrentRequest; component = iEy
-      case (IEYC); checker => componentFieldRequest; component = iEy
+      case (ICURY); checker => componentCurrentRequest; component = IEY
+      case (IEYC); checker => componentFieldRequest; component = IEY
       case (IHYC); checker => componentFieldRequest; component = IHY
       case (ICURZ); checker => componentCurrentRequest; component = IEZ
       case (IEZC); checker => componentFieldRequest; component = IEZ
@@ -311,7 +311,7 @@ contains
       select case (request)
       case (ICUR)
          isValidPointForCurrent = volumicCurrentRequest(request, i, j, k, problemInfo)
-      case (iEx, iEy, IEZ)
+      case (IEX, IEY, IEZ)
          isValidPointForCurrent = componentCurrentRequest(request, i, j, k, problemInfo)
       case default
          isValidPointForCurrent = .false.
@@ -326,7 +326,7 @@ contains
          isValidPointForField = volumicElectricRequest(request, i, j, k, problemInfo)
       case (IMHC)
          isValidPointForField = volumicMagneticRequest(request, i, j, k, problemInfo)
-      case (iEx, iEy, IEZ, IHX, IHY, IHZ)
+      case (IEX, IEY, IEZ, IHX, IHY, IHZ)
          isValidPointForField = componentFieldRequest(request, i, j, k, problemInfo)
       case default
          isValidPointForField = .false.
@@ -336,16 +336,16 @@ contains
    logical function volumicCurrentRequest(request, i, j, k, problemInfo)
       integer(kind=SINGLE), intent(in) :: request, i, j, k
       type(problem_info_t), intent(in) :: problemInfo
-      volumicCurrentRequest = componentCurrentRequest(iEx, i, j, k, problemInfo) .or. &
-                              componentCurrentRequest(iEy, i, j, k, problemInfo) .or. &
+      volumicCurrentRequest = componentCurrentRequest(IEX, i, j, k, problemInfo) .or. &
+                              componentCurrentRequest(IEY, i, j, k, problemInfo) .or. &
                               componentCurrentRequest(IEZ, i, j, k, problemInfo)
    end function volumicCurrentRequest
 
    logical function volumicElectricRequest(request, i, j, k, problemInfo)
       integer(kind=SINGLE), intent(in) :: request, i, j, k
       type(problem_info_t), intent(in) :: problemInfo
-      volumicElectricRequest = componentFieldRequest(iEx, i, j, k, problemInfo) .or. &
-                               componentFieldRequest(iEy, i, j, k, problemInfo) .or. &
+      volumicElectricRequest = componentFieldRequest(IEX, i, j, k, problemInfo) .or. &
+                               componentFieldRequest(IEY, i, j, k, problemInfo) .or. &
                                componentFieldRequest(IEZ, i, j, k, problemInfo)
    end function volumicElectricRequest
 

@@ -606,12 +606,12 @@ contains
                    this%twires%tw(i)%tWc(ii)%K = oldy
 
                    select case (this%twires%tw(i)%tWc(ii)%d)
-                    case (iEx)
-                      this%twires%tw(i)%tWc(ii)%d = iEy
-                    case (iEY)
+                    case (IEX)
+                      this%twires%tw(i)%tWc(ii)%d = IEY
+                    case (IEY)
                       this%twires%tw(i)%tWc(ii)%d = IEZ
                     case (IEZ)
-                      this%twires%tw(i)%tWc(ii)%d = iEx
+                      this%twires%tw(i)%tWc(ii)%d = IEX
                    end select
             else if (MPIDIR==1) then
                       oldx = this%twires%tw(i)%tWc(ii)%i
@@ -622,12 +622,12 @@ contains
                       this%twires%tw(i)%tWc(ii)%K = oldx
       
                    select case (this%twires%tw(i)%tWc(ii)%d)
-                    case (iEx)
+                    case (IEX)
                       this%twires%tw(i)%tWc(ii)%d = IEZ
-                    case (iEY)
-                      this%twires%tw(i)%tWc(ii)%d = iEx
+                    case (IEY)
+                      this%twires%tw(i)%tWc(ii)%d = IEX
                     case (IEZ)
-                      this%twires%tw(i)%tWc(ii)%d = iEy
+                      this%twires%tw(i)%tWc(ii)%d = IEY
                    end select
              end if
       !!!END  
@@ -697,12 +697,12 @@ contains
                        this%tSlots%Tg(i)%TgC(ii)%j = oldx
                        this%tSlots%Tg(i)%TgC(ii)%K = oldy
                        select case (old_tsLots%Tg(i)%TgC(ii)%dir)
-                        case (iEx)
-                          this%tSlots%Tg(i)%TgC(ii)%dir = iEy
-                        case (iEY)
+                        case (IEX)
+                          this%tSlots%Tg(i)%TgC(ii)%dir = IEY
+                        case (IEY)
                           this%tSlots%Tg(i)%TgC(ii)%dir = IEZ
                         case (IEZ)
-                          this%tSlots%Tg(i)%TgC(ii)%dir = iEx
+                          this%tSlots%Tg(i)%TgC(ii)%dir = IEX
                        end select
               else if (MPIDIR==1) then
                        oldx = this%tSlots%Tg(i)%TgC(ii)%i
@@ -714,12 +714,12 @@ contains
                        this%tSlots%Tg(i)%TgC(ii)%K = oldx
 
                        select case (old_tsLots%Tg(i)%TgC(ii)%dir)
-                        case (iEx)
+                        case (IEX)
                           this%tSlots%Tg(i)%TgC(ii)%dir = IEZ
-                        case (iEY)
-                          this%tSlots%Tg(i)%TgC(ii)%dir = iEx
+                        case (IEY)
+                          this%tSlots%Tg(i)%TgC(ii)%dir = IEX
                         case (IEZ)
-                          this%tSlots%Tg(i)%TgC(ii)%dir = iEy
+                          this%tSlots%Tg(i)%TgC(ii)%dir = IEY
                        end select
               end if
         end do
@@ -997,12 +997,12 @@ contains
              this%BloquePRB%BP(i)%k1 =OYI
              this%BloquePRB%BP(i)%k2 =OYE
              select case (this%BloquePRB%BP(i)%nml)
-              case (iEx)
-                this%BloquePRB%BP(i)%nml =  iEy
-              case (iEy)
+              case (IEX)
+                this%BloquePRB%BP(i)%nml =  IEY
+              case (IEY)
                 this%BloquePRB%BP(i)%nml =  IEZ
               case (IEZ)
-                this%BloquePRB%BP(i)%nml =  iEx
+                this%BloquePRB%BP(i)%nml =  IEX
               case DEFAULT
              end select
           else if (MPIDIR==1) then
@@ -1020,12 +1020,12 @@ contains
              this%BloquePRB%BP(i)%k1 =OXI
              this%BloquePRB%BP(i)%k2 =OXE
              select case (this%BloquePRB%BP(i)%nml)
-              case (iEx)
+              case (IEX)
                 this%BloquePRB%BP(i)%nml =  IEZ
-              case (iEy)
-                this%BloquePRB%BP(i)%nml =  iEx
+              case (IEY)
+                this%BloquePRB%BP(i)%nml =  IEX
               case (IEZ)
-                this%BloquePRB%BP(i)%nml =  iEy
+                this%BloquePRB%BP(i)%nml =  IEY
               case DEFAULT
              end select
           end if           
@@ -1162,12 +1162,12 @@ contains
          COORDEN%ZI=OYI
          COORDEN%ZE=OYE     
          COORDEN%Ztrancos =TYI 
-         if (OOR== iEx) COORDEN%OR= iEy
-         if (OOR==-iEx) COORDEN%OR=-iEy
-         if (OOR== iEy) COORDEN%OR= IEZ
-         if (OOR==-iEy) COORDEN%OR=-IEZ
-         if (OOR== IEZ) COORDEN%OR= iEx
-         if (OOR==-IEZ) COORDEN%OR=-iEx
+         if (OOR== IEX) COORDEN%OR= IEY
+         if (OOR==-IEX) COORDEN%OR=-IEY
+         if (OOR== IEY) COORDEN%OR= IEZ
+         if (OOR==-IEY) COORDEN%OR=-IEZ
+         if (OOR== IEZ) COORDEN%OR= IEX
+         if (OOR==-IEZ) COORDEN%OR=-IEX
       else if (MPIDIR==1) then
          COORDEN%XI=OYI
          COORDEN%XE=OYE         
@@ -1178,12 +1178,12 @@ contains
          COORDEN%ZI=OXI
          COORDEN%ZE=OXE 
          COORDEN%Ztrancos =TXI 
-         if (OOR== iEx) COORDEN%OR= IEZ
-         if (OOR==-iEx) COORDEN%OR=-IEZ
-         if (OOR== iEy) COORDEN%OR= iEx
-         if (OOR==-iEy) COORDEN%OR=-iEx
-         if (OOR== IEZ) COORDEN%OR= iEy
-         if (OOR==-IEZ) COORDEN%OR=-iEy
+         if (OOR== IEX) COORDEN%OR= IEZ
+         if (OOR==-IEX) COORDEN%OR=-IEZ
+         if (OOR== IEY) COORDEN%OR= IEX
+         if (OOR==-IEY) COORDEN%OR=-IEX
+         if (OOR== IEZ) COORDEN%OR= IEY
+         if (OOR==-IEZ) COORDEN%OR=-IEY
       end if
       return
    end subroutine ROTATEMPI
@@ -1213,12 +1213,12 @@ contains
          COORDEN%XC=OzC
          COORDEN%YC=OxC
          COORDEN%ZC=OyC  
-         if (OOR== iEx) COORDEN%OR= iEy
-         if (OOR==-iEx) COORDEN%OR=-iEy
-         if (OOR== iEy) COORDEN%OR= IEZ
-         if (OOR==-iEy) COORDEN%OR=-IEZ
-         if (OOR== IEZ) COORDEN%OR= iEx
-         if (OOR==-IEZ) COORDEN%OR=-iEx
+         if (OOR== IEX) COORDEN%OR= IEY
+         if (OOR==-IEX) COORDEN%OR=-IEY
+         if (OOR== IEY) COORDEN%OR= IEZ
+         if (OOR==-IEY) COORDEN%OR=-IEZ
+         if (OOR== IEZ) COORDEN%OR= IEX
+         if (OOR==-IEZ) COORDEN%OR=-IEX
 
       else if (MPIDIR==1) then
          COORDEN%XI=OYI
@@ -1230,12 +1230,12 @@ contains
          COORDEN%XC=OyC
          COORDEN%YC=OzC
          COORDEN%ZC=OxC         
-         if (OOR== iEx) COORDEN%OR= IEZ
-         if (OOR==-iEx) COORDEN%OR=-IEZ
-         if (OOR== iEy) COORDEN%OR= iEx
-         if (OOR==-iEy) COORDEN%OR=-iEx
-         if (OOR== IEZ) COORDEN%OR= iEy
-         if (OOR==-IEZ) COORDEN%OR=-iEy
+         if (OOR== IEX) COORDEN%OR= IEZ
+         if (OOR==-IEX) COORDEN%OR=-IEZ
+         if (OOR== IEY) COORDEN%OR= IEX
+         if (OOR==-IEY) COORDEN%OR=-IEX
+         if (OOR== IEZ) COORDEN%OR= IEY
+         if (OOR==-IEZ) COORDEN%OR=-IEY
 
       end if
       return

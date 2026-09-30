@@ -1,7 +1,7 @@
 integer function test_output_partition_shared_interfaces() bind(c) result(err)
    ! Verifies unique ownership of shared interfaces across output partitions.
    use iso_fortran_env, only: int64
-   use FDETYPES_m, only: iEx, iEy, IHZ, limit_t
+   use FDETYPES_m, only: IEX, IEY, IHZ, limit_t
    use outputTypes_m, only: cell_coordinate_t
    use outputDecomposition_m
    use assertionTools_m, only: assert_integer_equal, assert_true
@@ -14,7 +14,7 @@ integer function test_output_partition_shared_interfaces() bind(c) result(err)
    integer :: component_index, coverage(0:10), k, rank, status
 
    err = 0
-   components = [iEx, iEy, IHZ]
+   components = [IEX, IEY, IHZ]
    expected_lower = [0, 4, 7]
    expected_upper = [3, 6, 10]
    request_lower = cell_coordinate_t(0, 0, 0)
@@ -106,7 +106,7 @@ end function test_output_partition_disjoint_intervals
 integer function test_output_partition_clipping_and_large_shape() bind(c) result(err)
    ! Verifies request clipping, empty ranks, large shapes, and invalid components.
    use iso_fortran_env, only: int64
-   use FDETYPES_m, only: iEx, limit_t
+   use FDETYPES_m, only: IEX, limit_t
    use outputTypes_m, only: cell_coordinate_t
    use outputDecomposition_m
    use assertionTools_m, only: assert_integer_equal, assert_true
@@ -124,7 +124,7 @@ integer function test_output_partition_clipping_and_large_shape() bind(c) result
    local_sweep = global_bounds
 
    call build_output_partition(request_lower, request_upper, global_bounds, local_sweep, &
-                               iEx, 0, 1, partition, status)
+                               IEX, 0, 1, partition, status)
 
    err = err + assert_integer_equal(status, OUTPUT_PARTITION_SUCCESS, "Clipped partition status")
    err = err + assert_true(partition%has_data, "Clipped serial partition unexpectedly empty")
@@ -140,7 +140,7 @@ integer function test_output_partition_clipping_and_large_shape() bind(c) result
    local_sweep = limit_t(0, 2, 0, 1, 0, 4, 3, 2, 5)
 
    call build_output_partition(request_lower, request_upper, global_bounds, local_sweep, &
-                               iEx, 0, 2, partition, status)
+                               IEX, 0, 2, partition, status)
 
    err = err + assert_integer_equal(status, OUTPUT_PARTITION_SUCCESS, "Empty rank partition status")
    err = err + assert_true(.not. partition%has_data, "Non-intersecting rank owns output data")
@@ -153,7 +153,7 @@ integer function test_output_partition_clipping_and_large_shape() bind(c) result
    local_sweep = global_bounds
 
    call build_output_partition(request_lower, request_upper, global_bounds, local_sweep, &
-                               iEx, 0, 1, partition, status)
+                               IEX, 0, 1, partition, status)
 
    err = err + assert_integer_equal(status, OUTPUT_PARTITION_SUCCESS, "Large partition status")
    err = err + assert_true(partition%global_shape(1) == 4000000001_int64, &
@@ -192,7 +192,7 @@ end function test_output_point_partition_eligibility
 
 integer function test_output_partition_all_components_cover_volume() bind(c) result(err)
    ! Verifies unique volume coverage for every electric and magnetic component.
-   use FDETYPES_m, only: iEx, iEy, IEZ, IHX, IHY, IHZ, limit_t
+   use FDETYPES_m, only: IEX, IEY, IEZ, IHX, IHY, IHZ, limit_t
    use outputTypes_m, only: cell_coordinate_t
    use outputDecomposition_m, only: output_partition_t, build_output_partition, OUTPUT_PARTITION_SUCCESS
    use assertionTools_m, only: assert_integer_equal
@@ -204,7 +204,7 @@ integer function test_output_partition_all_components_cover_volume() bind(c) res
    integer :: component, components(6), coverage(0:5), rank, status, z
 
    err = 0
-   components = [iEx, iEy, IEZ, IHX, IHY, IHZ]
+   components = [IEX, IEY, IEZ, IHX, IHY, IHZ]
    request_lower = cell_coordinate_t(0, 0, 0)
    request_upper = cell_coordinate_t(1, 1, 5)
    global_bounds = limit_t(0, 1, 0, 1, 0, 5, 2, 2, 6)
@@ -213,7 +213,7 @@ integer function test_output_partition_all_components_cover_volume() bind(c) res
       coverage = 0
       do rank = 0, 1
          if (rank == 0) then
-            if (any(components(component) == [iEx, iEy, IHZ])) then
+            if (any(components(component) == [IEX, IEY, IHZ])) then
                local_sweep = limit_t(0, 1, 0, 1, 0, 3, 2, 2, 4)
             else
                local_sweep = limit_t(0, 1, 0, 1, 0, 2, 2, 2, 3)

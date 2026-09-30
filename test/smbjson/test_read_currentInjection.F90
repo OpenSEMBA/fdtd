@@ -75,7 +75,7 @@ contains
       expected%pecRegs%Surfs(1)%tag = 'aluminum@body'
 
       ! Exit line
-      expected%pecRegs%Lins(1)%Or = +iEy
+      expected%pecRegs%Lins(1)%Or = +IEY
       expected%pecRegs%Lins(1)%Xi = 10
       expected%pecRegs%Lins(1)%Xe = 10
       expected%pecRegs%Lins(1)%Yi = 15
@@ -96,7 +96,7 @@ contains
       expected%nodSrc%NodalSource(1)%isInitialValue = .false.
       allocate(expected%nodSrc%NodalSource(1)%c2P(1))
       expected%nodSrc%NodalSource(1)%n_C2P = 1
-      expected%nodSrc%NodalSource(1)%c2P(1)%Or = iEy
+      expected%nodSrc%NodalSource(1)%c2P(1)%Or = IEY
       expected%nodSrc%NodalSource(1)%c2P(1)%Xi = 10
       expected%nodSrc%NodalSource(1)%c2P(1)%Xe = 10
       expected%nodSrc%NodalSource(1)%c2P(1)%Yi =  0
@@ -129,7 +129,7 @@ contains
       expected%BloquePrb%bp(1)%k1 = 9
       expected%BloquePrb%bp(1)%k2 = 10
       expected%BloquePrb%bp(1)%skip = 1
-      expected%BloquePrb%bp(1)%nml = iEy
+      expected%BloquePrb%bp(1)%nml = IEY
       expected%BloquePrb%bp(1)%t = BCELECT
       expected%BloquePrb%bp(1)%tag = "bulk_current_at_entry"
 
@@ -149,7 +149,7 @@ contains
       expected%BloquePrb%bp(2)%k1 = 9
       expected%BloquePrb%bp(2)%k2 = 10
       expected%BloquePrb%bp(2)%skip = 1
-      expected%BloquePrb%bp(2)%nml = iEy
+      expected%BloquePrb%bp(2)%nml = IEY
       expected%BloquePrb%bp(2)%t = BCELECT
       expected%BloquePrb%bp(2)%tag = "bulk_current_at_exit"
    end function

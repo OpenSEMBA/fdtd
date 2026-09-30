@@ -50,13 +50,13 @@ contains
       cluz=1.0_RKIND/sqrt(eps0*mu0) !incid will need it
       zvac=sqrt(mu0/eps0) !the variables below need it
 
-      do field=iEx,IHZ
+      do field=IEX,IHZ
          allocate (gridPoint%PhysCoor(field)%x(sgg%Sweep(field)%XI-1 : sgg%Sweep(field)%XE+1), &
          gridPoint%PhysCoor(field)%y(sgg%Sweep(field)%YI-1 : sgg%Sweep(field)%YE+1), &
          gridPoint%PhysCoor(field)%z(sgg%Sweep(field)%ZI-1 : sgg%Sweep(field)%ZE+1))
       end do
 
-      field=iEx
+      field=IEX
       do i=sgg%Sweep(field)%XI-1,sgg%Sweep(field)%XE
          gridPoint%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
       end do
@@ -66,7 +66,7 @@ contains
       do k=sgg%Sweep(field)%ZI-1,sgg%Sweep(field)%ZE+1
          gridPoint%PhysCoor(field)%z(k)=sgg%LineZ(k)
       end do
-      field=iEy
+      field=IEY
       do i=sgg%Sweep(field)%XI-1,sgg%Sweep(field)%XE+1
          gridPoint%PhysCoor(field)%x(i)=sgg%LineX(i)
       end do
@@ -180,12 +180,12 @@ contains
              TrFr(jjj)%K%com%Ez=Max(sgg%SINPMLSweep(IEZ)%ZI, sgg%PlaneWave(jjj)%esqz1)
              TrFr(jjj)%K%fin%Ez=MIn(sgg%SINPMLSweep(IEZ)%ZE, sgg%PlaneWave(jjj)%esqz2-1)
              !
-             TrFr(jjj)%I%backDir%Ey=Max(sgg%SINPMLSweep(iEy)%XI, sgg%PlaneWave(jjj)%esqx1)
-             TrFr(jjj)%I%frontDir%Ey=Min(sgg%SINPMLSweep(iEy)%XE, sgg%PlaneWave(jjj)%esqx2)
-             TrFr(jjj)%J%com%Ey=Max(sgg%SINPMLSweep(iEy)%YI, sgg%PlaneWave(jjj)%esqy1)
-             TrFr(jjj)%J%fin%Ey=Min(sgg%SINPMLSweep(iEy)%YE, sgg%PlaneWave(jjj)%esqy2-1)
-             TrFr(jjj)%K%com%Ey=Max(sgg%SINPMLSweep(iEy)%ZI ,sgg%PlaneWave(jjj)%esqz1)
-             TrFr(jjj)%K%fin%Ey=MIn(sgg%SINPMLSweep(iEy)%ZE ,sgg%PlaneWave(jjj)%esqz2)
+             TrFr(jjj)%I%backDir%Ey=Max(sgg%SINPMLSweep(IEY)%XI, sgg%PlaneWave(jjj)%esqx1)
+             TrFr(jjj)%I%frontDir%Ey=Min(sgg%SINPMLSweep(IEY)%XE, sgg%PlaneWave(jjj)%esqx2)
+             TrFr(jjj)%J%com%Ey=Max(sgg%SINPMLSweep(IEY)%YI, sgg%PlaneWave(jjj)%esqy1)
+             TrFr(jjj)%J%fin%Ey=Min(sgg%SINPMLSweep(IEY)%YE, sgg%PlaneWave(jjj)%esqy2-1)
+             TrFr(jjj)%K%com%Ey=Max(sgg%SINPMLSweep(IEY)%ZI ,sgg%PlaneWave(jjj)%esqz1)
+             TrFr(jjj)%K%fin%Ey=MIn(sgg%SINPMLSweep(IEY)%ZE ,sgg%PlaneWave(jjj)%esqz2)
              !
              TrFr(jjj)%I%backDir%Hy= TrFr(jjj)%I%backDir%Ez - 1
              TrFr(jjj)%I%frontDir%Hy= TrFr(jjj)%I%frontDir%Ez
@@ -202,12 +202,12 @@ contains
              TrFr(jjj)%K%fin%Hz= TrFr(jjj)%K%fin%Ey
              !
              !
-             IzDe(jjj)%J%leftDir%Ex=Max(sgg%SINPMLSweep(iEx)%yI, sgg%PlaneWave(jjj)%esqy1)
-             IzDe(jjj)%J%rightDir%Ex=Min(sgg%SINPMLSweep(iEx)%yE, sgg%PlaneWave(jjj)%esqy2)
-             IzDe(jjj)%I%com%Ex=Max(sgg%SINPMLSweep(iEx)%xI, sgg%PlaneWave(jjj)%esqx1)
-             IzDe(jjj)%I%fin%Ex=Min(sgg%SINPMLSweep(iEx)%xE, sgg%PlaneWave(jjj)%esqx2-1)
-             IzDe(jjj)%K%com%Ex=Max(sgg%SINPMLSweep(iEx)%ZI ,sgg%PlaneWave(jjj)%esqz1)
-             IzDe(jjj)%K%fin%Ex=MIn(sgg%SINPMLSweep(iEx)%ZE ,sgg%PlaneWave(jjj)%esqz2)
+             IzDe(jjj)%J%leftDir%Ex=Max(sgg%SINPMLSweep(IEX)%yI, sgg%PlaneWave(jjj)%esqy1)
+             IzDe(jjj)%J%rightDir%Ex=Min(sgg%SINPMLSweep(IEX)%yE, sgg%PlaneWave(jjj)%esqy2)
+             IzDe(jjj)%I%com%Ex=Max(sgg%SINPMLSweep(IEX)%xI, sgg%PlaneWave(jjj)%esqx1)
+             IzDe(jjj)%I%fin%Ex=Min(sgg%SINPMLSweep(IEX)%xE, sgg%PlaneWave(jjj)%esqx2-1)
+             IzDe(jjj)%K%com%Ex=Max(sgg%SINPMLSweep(IEX)%ZI ,sgg%PlaneWave(jjj)%esqz1)
+             IzDe(jjj)%K%fin%Ex=MIn(sgg%SINPMLSweep(IEX)%ZE ,sgg%PlaneWave(jjj)%esqz2)
              !
              IzDe(jjj)%J%leftDir%Ez=Max(sgg%SINPMLSweep(IEZ)%yI, sgg%PlaneWave(jjj)%esqy1)
              IzDe(jjj)%J%rightDir%Ez=Min(sgg%SINPMLSweep(IEZ)%yE, sgg%PlaneWave(jjj)%esqy2)
@@ -231,19 +231,19 @@ contains
              IzDe(jjj)%K%fin%Hx= IzDe(jjj)%K%fin%Ez
              !
              !
-             AbAr(jjj)%K%downDir%Ey=Max(sgg%SINPMLSweep(iEy)%ZI, sgg%PlaneWave(jjj)%esqz1)
-             AbAr(jjj)%K%arr%Ey=Min(sgg%SINPMLSweep(iEy)%ZE, sgg%PlaneWave(jjj)%esqz2)
-             AbAr(jjj)%I%com%Ey=Max(sgg%SINPMLSweep(iEy)%XI, sgg%PlaneWave(jjj)%esqx1)
-             AbAr(jjj)%I%fin%Ey=Min(sgg%SINPMLSweep(iEy)%XE, sgg%PlaneWave(jjj)%esqx2)
-             AbAr(jjj)%J%com%Ey=Max(sgg%SINPMLSweep(iEy)%YI, sgg%PlaneWave(jjj)%esqy1)
-             AbAr(jjj)%J%fin%Ey=Min(sgg%SINPMLSweep(iEy)%YE, sgg%PlaneWave(jjj)%esqy2-1)
+             AbAr(jjj)%K%downDir%Ey=Max(sgg%SINPMLSweep(IEY)%ZI, sgg%PlaneWave(jjj)%esqz1)
+             AbAr(jjj)%K%arr%Ey=Min(sgg%SINPMLSweep(IEY)%ZE, sgg%PlaneWave(jjj)%esqz2)
+             AbAr(jjj)%I%com%Ey=Max(sgg%SINPMLSweep(IEY)%XI, sgg%PlaneWave(jjj)%esqx1)
+             AbAr(jjj)%I%fin%Ey=Min(sgg%SINPMLSweep(IEY)%XE, sgg%PlaneWave(jjj)%esqx2)
+             AbAr(jjj)%J%com%Ey=Max(sgg%SINPMLSweep(IEY)%YI, sgg%PlaneWave(jjj)%esqy1)
+             AbAr(jjj)%J%fin%Ey=Min(sgg%SINPMLSweep(IEY)%YE, sgg%PlaneWave(jjj)%esqy2-1)
              !
-             AbAr(jjj)%K%downDir%Ex=Max(sgg%SINPMLSweep(iEx)%ZI, sgg%PlaneWave(jjj)%esqz1)
-             AbAr(jjj)%K%arr%Ex=Min(sgg%SINPMLSweep(iEx)%ZE, sgg%PlaneWave(jjj)%esqz2)
-             AbAr(jjj)%I%com%Ex=Max(sgg%SINPMLSweep(iEx)%XI, sgg%PlaneWave(jjj)%esqx1)
-             AbAr(jjj)%I%fin%Ex=Min(sgg%SINPMLSweep(iEx)%XE, sgg%PlaneWave(jjj)%esqx2-1)
-             AbAr(jjj)%J%com%Ex=Max(sgg%SINPMLSweep(iEx)%YI, sgg%PlaneWave(jjj)%esqy1)
-             AbAr(jjj)%J%fin%Ex=Min(sgg%SINPMLSweep(iEx)%YE, sgg%PlaneWave(jjj)%esqy2)
+             AbAr(jjj)%K%downDir%Ex=Max(sgg%SINPMLSweep(IEX)%ZI, sgg%PlaneWave(jjj)%esqz1)
+             AbAr(jjj)%K%arr%Ex=Min(sgg%SINPMLSweep(IEX)%ZE, sgg%PlaneWave(jjj)%esqz2)
+             AbAr(jjj)%I%com%Ex=Max(sgg%SINPMLSweep(IEX)%XI, sgg%PlaneWave(jjj)%esqx1)
+             AbAr(jjj)%I%fin%Ex=Min(sgg%SINPMLSweep(IEX)%XE, sgg%PlaneWave(jjj)%esqx2-1)
+             AbAr(jjj)%J%com%Ex=Max(sgg%SINPMLSweep(IEX)%YI, sgg%PlaneWave(jjj)%esqy1)
+             AbAr(jjj)%J%fin%Ex=Min(sgg%SINPMLSweep(IEX)%YE, sgg%PlaneWave(jjj)%esqy2)
              !
              AbAr(jjj)%K%downDir%Hx= AbAr(jjj)%K%downDir%Ey - 1
              AbAr(jjj)%K%arr%Hx= AbAr(jjj)%K%arr%Ey
@@ -818,7 +818,7 @@ contains
       type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=4) :: field
 
-      do field=iEx,IHZ
+      do field=IEX,IHZ
          if (associated(gridPoint%PhysCoor(field)%x)) deallocate(gridPoint%PhysCoor(field)%x)
          if (associated(gridPoint%PhysCoor(field)%y)) deallocate(gridPoint%PhysCoor(field)%y)
          if (associated(gridPoint%PhysCoor(field)%z)) deallocate(gridPoint%PhysCoor(field)%z)
@@ -1185,7 +1185,7 @@ contains
                     do j = TrFr(jjj)%J%com%Hz, TrFr(jjj)%J%fin%Hz
                        j_m = j - b%Hz%YI
                        !--->
-                       incidente = Incid(sgg,jjj, iEy, timei, i+1, j, k,still_planewave_time,called_fromobservation)
+                       incidente = Incid(sgg,jjj, IEY, timei, i+1, j, k,still_planewave_time,called_fromobservation)
                        Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) + Gm2_1 * incidente * Id
                     end do
                  end do
@@ -1228,7 +1228,7 @@ contains
                     do j = TrFr(jjj)%J%com%Hz, TrFr(jjj)%J%fin%Hz
                        j_m = j - b%Hz%YI
                        !--->
-                       incidente = Incid(sgg,jjj,  iEy, timei, i, j, k,still_planewave_time,called_fromobservation)
+                       incidente = Incid(sgg,jjj,  IEY, timei, i, j, k,still_planewave_time,called_fromobservation)
                        Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) - Gm2_1 * incidente * Id
                     end do
                  end do
@@ -1291,7 +1291,7 @@ contains
                     do i = IzDe(jjj)%I%com%Hz, IzDe(jjj)%I%fin%Hz
                        i_m = i - b%Hz%XI
                        !--->
-                       incidente = Incid(sgg,jjj,  iEx, timei, i, j+1, k,still_planewave_time,called_fromobservation)
+                       incidente = Incid(sgg,jjj,  IEX, timei, i, j+1, k,still_planewave_time,called_fromobservation)
                        Hz(i_m, j_m, k_m) = Hz(i_m, j_m, k_m) - Gm2_1 * incidente * Id
                     end do
                  end do
@@ -1334,7 +1334,7 @@ contains
                     do i = IzDe(jjj)%I%com%Hz, IzDe(jjj)%I%fin%Hz
                        i_m = i - b%Hz%XI
                        !--->
-                       incidente = Incid(sgg,jjj,  iEx, timei, i, j, k,still_planewave_time,called_fromobservation)
+                       incidente = Incid(sgg,jjj,  IEX, timei, i, j, k,still_planewave_time,called_fromobservation)
                        Hz(i_m, j_m, k_m)=Hz(i_m, j_m, k_m) + Gm2_1 * incidente * Id
                     end do
                  end do
@@ -1357,7 +1357,7 @@ contains
                     do i = AbAr(jjj)%I%com%Hx, AbAr(jjj)%I%fin%Hx
                        i_m = i - b%Hx%XI
                        !--->
-                       incidente = Incid(sgg,jjj,  iEy, timei, i, j, k+1,still_planewave_time,called_fromobservation)
+                       incidente = Incid(sgg,jjj,  IEY, timei, i, j, k+1,still_planewave_time,called_fromobservation)
                        Hx(i_m, j_m, k_m)=Hx(i_m, j_m, k_m) - Gm2_1 * incidente * Id
                     end do
                  end do
@@ -1377,7 +1377,7 @@ contains
                     do i=AbAr(jjj)%I%com%Hy,AbAr(jjj)%I%fin%Hy
                        i_m = i - b%Hy%XI
                        !--->
-                       incidente = Incid(sgg,jjj,  iEx, timei, i, j, k+1,still_planewave_time,called_fromobservation)
+                       incidente = Incid(sgg,jjj,  IEX, timei, i, j, k+1,still_planewave_time,called_fromobservation)
                        Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) + Gm2_1 * incidente * Id
                     end do
                  end do
@@ -1400,7 +1400,7 @@ contains
                     do i = AbAr(jjj)%I%com%Hx, AbAr(jjj)%I%fin%Hx
                        i_m = i - b%Hx%XI
                        !--->
-                       incidente = Incid(sgg,jjj,  iEy, timei, i, j, k,still_planewave_time,called_fromobservation)
+                       incidente = Incid(sgg,jjj,  IEY, timei, i, j, k,still_planewave_time,called_fromobservation)
                        Hx(i_m, j_m, k_m) = Hx(i_m, j_m, k_m) + Gm2_1 * incidente * Id
                     end do
                  end do
@@ -1420,7 +1420,7 @@ contains
                     do i = AbAr(jjj)%I%com%Hy, AbAr(jjj)%I%fin%Hy
                        i_m = i - b%Hy%XI
                        !--->
-                       incidente = Incid(sgg,jjj,  iEx, timei, i, j, k,still_planewave_time,called_fromobservation)
+                       incidente = Incid(sgg,jjj,  IEX, timei, i, j, k,still_planewave_time,called_fromobservation)
                        Hy(i_m, j_m, k_m) = Hy(i_m, j_m, k_m) - Gm2_1 * incidente * Id
                     end do
                  end do

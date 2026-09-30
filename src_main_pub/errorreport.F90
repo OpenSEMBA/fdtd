@@ -407,9 +407,9 @@ contains
       snapHowMany=1
       countersnap=0
 
-      megaceldas = (1.0_RKIND*sgg%sweep(iEx)%ZE-1.0_RKIND*sgg%sweep(iEx)%ZI)* &
-                   (1.0_RKIND*sgg%sweep(iEx)%YE-1.0_RKIND*sgg%sweep(iEx)%YI)* &
-                   (1.0_RKIND*sgg%sweep(iEy)%XE-1.0_RKIND*sgg%sweep(iEy)%XI)/1.0e6_RKIND
+      megaceldas = (1.0_RKIND*sgg%sweep(IEX)%ZE-1.0_RKIND*sgg%sweep(IEX)%ZI)* &
+                   (1.0_RKIND*sgg%sweep(IEX)%YE-1.0_RKIND*sgg%sweep(IEX)%YI)* &
+                   (1.0_RKIND*sgg%sweep(IEY)%XE-1.0_RKIND*sgg%sweep(IEY)%XI)/1.0e6_RKIND
 
 
 #ifdef CompileWithMPI
@@ -2235,7 +2235,7 @@ end function openfile_mpi
       integer(kind=4) :: i,j,k,field
 
 
-      do field=iEx,IHZ
+      do field=IEX,IHZ
          allocate (gridPoint%PhysCoor(field)%x(sgg%Sweep(field)%XI-1 : sgg%Sweep(field)%XE+1), &
          gridPoint%PhysCoor(field)%y(sgg%Sweep(field)%YI-1 : sgg%Sweep(field)%YE+1), &
          gridPoint%PhysCoor(field)%z(sgg%Sweep(field)%ZI-1 : sgg%Sweep(field)%ZE+1))
@@ -2247,7 +2247,7 @@ end function openfile_mpi
       !
 
       !
-      field=iEx
+      field=IEX
       do i=sgg%SINPMLSweep(field)%XI-1,sgg%SINPMLSweep(field)%XE+1
          gridPoint%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
       end do
@@ -2257,7 +2257,7 @@ end function openfile_mpi
       do k=sgg%SINPMLSweep(field)%ZI-1,sgg%SINPMLSweep(field)%ZE+1
          gridPoint%PhysCoor(field)%z(k)=sgg%LineZ(k)
       end do
-      field=iEy
+      field=IEY
       do i=sgg%SINPMLSweep(field)%XI-1,sgg%SINPMLSweep(field)%XE+1
          gridPoint%PhysCoor(field)%x(i)=sgg%LineX(i)
       end do

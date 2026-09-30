@@ -175,11 +175,11 @@ contains
             do i=1,sggNodalSource(j)%numPoints
                amplit = sggNodalSource(J)%gridPoint(i)%xc
                if (amplit /= 0.0_RKIND) then
-                  call CreateNodal(layoutnumber,Nodal_Ex,sggNodalSource(J),sggSweep(iEx),i,amplit)
+                  call CreateNodal(layoutnumber,Nodal_Ex,sggNodalSource(J),sggSweep(IEX),i,amplit)
                end if
                amplit = sggNodalSource(j)%gridPoint(i)%yc
                if (amplit /= 0.0_RKIND) then
-                  call CreateNodal(layoutnumber,Nodal_Ey,sggNodalSource(J),sggSweep(iEy),i,amplit)
+                  call CreateNodal(layoutnumber,Nodal_Ey,sggNodalSource(J),sggSweep(IEY),i,amplit)
                end if
                amplit = sggNodalSource(j)%gridPoint(i)%zc
                if (amplit /= 0.0_RKIND) then

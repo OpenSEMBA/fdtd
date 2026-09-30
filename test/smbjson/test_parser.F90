@@ -37,7 +37,7 @@ integer function test_parser_tools_interval_to_coords() result(err)
    call expect_eq_int(err,  4, cs(1)%Ye)
    call expect_eq_int(err, 10, cs(1)%Zi)
    call expect_eq_int(err, 10, cs(1)%Ze)
-   call expect_eq_int(err, +iEy, cs(1)%Or)
+   call expect_eq_int(err, +IEY, cs(1)%Or)
 
    ! -Z oriented linel interval.
    interval = cell_interval_t( &
@@ -64,7 +64,7 @@ integer function test_parser_tools_interval_to_coords() result(err)
    call expect_eq_int(err,  2, cs(1)%Ye)
    call expect_eq_int(err,  9, cs(1)%Zi)
    call expect_eq_int(err, 10, cs(1)%Ze)
-   call expect_eq_int(err, +iEy, cs(1)%Or)
+   call expect_eq_int(err, +IEY, cs(1)%Or)
 
 
 end function

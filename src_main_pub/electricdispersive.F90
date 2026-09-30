@@ -57,8 +57,8 @@ contains
       real(kind=RKIND)     , intent(inout) :: &
       G1(0 : sgg%NumMedia),G2(0 : sgg%NumMedia)
       real(kind=RKIND)   , intent(inout), target      :: &
-      Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE),&
-      Ey(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE),&
+      Ex(sgg%Alloc(IEX)%XI : sgg%Alloc(IEX)%XE,sgg%Alloc(IEX)%YI : sgg%Alloc(IEX)%YE,sgg%Alloc(IEX)%ZI : sgg%Alloc(IEX)%ZE),&
+      Ey(sgg%Alloc(IEY)%XI : sgg%Alloc(IEY)%XE,sgg%Alloc(IEY)%YI : sgg%Alloc(IEY)%YE,sgg%Alloc(IEY)%ZI : sgg%Alloc(IEY)%ZE),&
       Ez(sgg%Alloc(IEZ)%XI : sgg%Alloc(IEZ)%XE,sgg%Alloc(IEZ)%YI : sgg%Alloc(IEZ)%YE,sgg%Alloc(IEZ)%ZI : sgg%Alloc(IEZ)%ZE)
 
       !passing the EDispersive should be gradually deprecated, etc.. because there is direct access to sgg%Med%Dispersiv
@@ -120,9 +120,9 @@ contains
          tempindex=Dutton%Medium(jmed)%indexmed
          !!!Ex
          conta=0
-         do k1=sgg%Sweep(iEx)%ZI,sgg%Sweep(iEx)%ZE
-            do j1=sgg%Sweep(iEx)%YI,sgg%Sweep(iEx)%YE
-               do i1=sgg%Sweep(iEx)%XI,sgg%Sweep(iEx)%XE
+         do k1=sgg%Sweep(IEX)%ZI,sgg%Sweep(IEX)%ZE
+            do j1=sgg%Sweep(IEX)%YI,sgg%Sweep(IEX)%YE
+               do i1=sgg%Sweep(IEX)%XI,sgg%Sweep(IEX)%XE
                   if ((media%sggMiEx(i1,j1,k1)) == tempindex)  conta=conta+1
                end do
             end do
@@ -135,15 +135,15 @@ contains
             allocate (Dutton%Medium(jmed)%NodesEx(i1)%Current(1 : sgg%Med(tempindex)%EDispersive(1)%numpolres11))
          end do
          conta=0
-         do k1=sgg%Sweep(iEx)%ZI,sgg%Sweep(iEx)%ZE
-            do j1=sgg%Sweep(iEx)%YI,sgg%Sweep(iEx)%YE
-               do i1=sgg%Sweep(iEx)%XI,sgg%Sweep(iEx)%XE
+         do k1=sgg%Sweep(IEX)%ZI,sgg%Sweep(IEX)%ZE
+            do j1=sgg%Sweep(IEX)%YI,sgg%Sweep(IEX)%YE
+               do i1=sgg%Sweep(IEX)%XI,sgg%Sweep(IEX)%XE
                   if ((media%sggMiEx(i1,j1,k1))==tempindex)  then
                      conta=conta+1
                      Dutton%Medium(jmed)%NodesEx(conta)%i=i1
                      Dutton%Medium(jmed)%NodesEx(conta)%j=j1
                      Dutton%Medium(jmed)%NodesEx(conta)%k=k1
-                     Dutton%Medium(jmed)%NodesEx(conta)%WhatField=iEx
+                     Dutton%Medium(jmed)%NodesEx(conta)%WhatField=IEX
                      Dutton%Medium(jmed)%NodesEx(conta)%FieldPresent=>Ex(i1,j1,k1)
                   end if
                end do
@@ -151,9 +151,9 @@ contains
          end do
          !!!Ey
          conta=0
-         do k1=sgg%Sweep(iEy)%ZI,sgg%Sweep(iEy)%ZE
-            do j1=sgg%Sweep(iEy)%YI,sgg%Sweep(iEy)%YE
-               do i1=sgg%Sweep(iEy)%XI,sgg%Sweep(iEy)%XE
+         do k1=sgg%Sweep(IEY)%ZI,sgg%Sweep(IEY)%ZE
+            do j1=sgg%Sweep(IEY)%YI,sgg%Sweep(IEY)%YE
+               do i1=sgg%Sweep(IEY)%XI,sgg%Sweep(IEY)%XE
                   if ((media%sggMiEy(i1,j1,k1)) == tempindex)  conta=conta+1
                end do
             end do
@@ -166,15 +166,15 @@ contains
             allocate (Dutton%Medium(jmed)%NodesEy(i1)%Current(1 : sgg%Med(tempindex)%EDispersive(1)%numpolres11))
          end do
          conta=0
-         do k1=sgg%Sweep(iEy)%ZI,sgg%Sweep(iEy)%ZE
-            do j1=sgg%Sweep(iEy)%YI,sgg%Sweep(iEy)%YE
-               do i1=sgg%Sweep(iEy)%XI,sgg%Sweep(iEy)%XE
+         do k1=sgg%Sweep(IEY)%ZI,sgg%Sweep(IEY)%ZE
+            do j1=sgg%Sweep(IEY)%YI,sgg%Sweep(IEY)%YE
+               do i1=sgg%Sweep(IEY)%XI,sgg%Sweep(IEY)%XE
                   if ((media%sggMiEy(i1,j1,k1))==tempindex)  then
                      conta=conta+1
                      Dutton%Medium(jmed)%NodesEy(conta)%i=i1
                      Dutton%Medium(jmed)%NodesEy(conta)%j=j1
                      Dutton%Medium(jmed)%NodesEy(conta)%k=k1
-                     Dutton%Medium(jmed)%NodesEy(conta)%WhatField=iEy
+                     Dutton%Medium(jmed)%NodesEy(conta)%WhatField=IEY
                      Dutton%Medium(jmed)%NodesEy(conta)%FieldPresent=>Ey(i1,j1,k1)
                   end if
                end do

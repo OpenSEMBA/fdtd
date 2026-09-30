@@ -308,8 +308,8 @@ module Solver_m
    subroutine init_fields(this)
       class(solver_t) :: this
       allocate ( &
-      this%Ex(this%sgg%Alloc(iEx)%XI : this%sgg%Alloc(iEx)%XE,this%sgg%Alloc(iEx)%YI : this%sgg%Alloc(iEx)%YE,this%sgg%Alloc(iEx)%ZI : this%sgg%Alloc(iEx)%ZE),&
-      this%Ey(this%sgg%Alloc(iEy)%XI : this%sgg%Alloc(iEy)%XE,this%sgg%Alloc(iEy)%YI : this%sgg%Alloc(iEy)%YE,this%sgg%Alloc(iEy)%ZI : this%sgg%Alloc(iEy)%ZE),&
+      this%Ex(this%sgg%Alloc(IEX)%XI : this%sgg%Alloc(IEX)%XE,this%sgg%Alloc(IEX)%YI : this%sgg%Alloc(IEX)%YE,this%sgg%Alloc(IEX)%ZI : this%sgg%Alloc(IEX)%ZE),&
+      this%Ey(this%sgg%Alloc(IEY)%XI : this%sgg%Alloc(IEY)%XE,this%sgg%Alloc(IEY)%YI : this%sgg%Alloc(IEY)%YE,this%sgg%Alloc(IEY)%ZI : this%sgg%Alloc(IEY)%ZE),&
       this%Ez(this%sgg%Alloc(IEZ)%XI : this%sgg%Alloc(IEZ)%XE,this%sgg%Alloc(IEZ)%YI : this%sgg%Alloc(IEZ)%YE,this%sgg%Alloc(IEZ)%ZI : this%sgg%Alloc(IEZ)%ZE),&
       this%Hx(this%sgg%Alloc(IHX)%XI : this%sgg%Alloc(IHX)%XE,this%sgg%Alloc(IHX)%YI : this%sgg%Alloc(IHX)%YE,this%sgg%Alloc(IHX)%ZI : this%sgg%Alloc(IHX)%ZE),&
       this%Hy(this%sgg%Alloc(IHY)%XI : this%sgg%Alloc(IHY)%XE,this%sgg%Alloc(IHY)%YI : this%sgg%Alloc(IHY)%YE,this%sgg%Alloc(IHY)%ZI : this%sgg%Alloc(IHY)%ZE),&
@@ -327,11 +327,11 @@ module Solver_m
       this%Idxe(this%sgg%ALLOC(IHX)%XI : this%sgg%ALLOC(IHX)%XE), &
       this%Idye(this%sgg%ALLOC(IHY)%YI : this%sgg%ALLOC(IHY)%YE), &
       this%Idze(this%sgg%ALLOC(IHZ)%ZI : this%sgg%ALLOC(IHZ)%ZE), &
-      this%dxh (this%sgg%ALLOC(iEx)%XI : this%sgg%ALLOC(iEx)%XE), &
-      this%dyh (this%sgg%ALLOC(iEy)%YI : this%sgg%ALLOC(iEy)%YE), &
+      this%dxh (this%sgg%ALLOC(IEX)%XI : this%sgg%ALLOC(IEX)%XE), &
+      this%dyh (this%sgg%ALLOC(IEY)%YI : this%sgg%ALLOC(IEY)%YE), &
       this%dzh (this%sgg%ALLOC(IEZ)%ZI : this%sgg%ALLOC(IEZ)%ZE), &
-      this%Idxh(this%sgg%ALLOC(iEx)%XI : this%sgg%ALLOC(iEx)%XE), &
-      this%Idyh(this%sgg%ALLOC(iEy)%YI : this%sgg%ALLOC(iEy)%YE), &
+      this%Idxh(this%sgg%ALLOC(IEX)%XI : this%sgg%ALLOC(IEX)%XE), &
+      this%Idyh(this%sgg%ALLOC(IEY)%YI : this%sgg%ALLOC(IEY)%YE), &
       this%Idzh(this%sgg%ALLOC(IEZ)%ZI : this%sgg%ALLOC(IEZ)%ZE))
       this%dxe=-1.0e10_RKIND
       this%dye=-1.0e10_RKIND
@@ -349,10 +349,10 @@ module Solver_m
       do i=this%sgg%ALLOC(IHZ)%ZI,this%sgg%ALLOC(IHZ)%ZE
          this%dze(i)=this%sgg%DZ(i)
       end do
-      do i=this%sgg%ALLOC(iEx)%XI,this%sgg%ALLOC(iEx)%XE
+      do i=this%sgg%ALLOC(IEX)%XI,this%sgg%ALLOC(IEX)%XE
          this%dxh(i)=(this%sgg%DX(i)+this%sgg%DX(i-1))/2.0_RKIND
       end do
-      do i=this%sgg%ALLOC(iEy)%YI,this%sgg%ALLOC(iEy)%YE
+      do i=this%sgg%ALLOC(IEY)%YI,this%sgg%ALLOC(IEY)%YE
          this%dyh(i)=(this%sgg%DY(i)+this%sgg%DY(i-1))/2.0_RKIND
       end do
       do i=this%sgg%ALLOC(IEZ)%ZI,this%sgg%ALLOC(IEZ)%ZE
@@ -376,9 +376,9 @@ module Solver_m
       real(kind=rkind), pointer, dimension(:,:,:) :: field
       integer(kind=4) :: i, j, k
       select case(field_idx)
-      case(iEx)
+      case(IEX)
          field => this%Ex
-      case(iEy)
+      case(IEY)
          field => this%Ey
       case(IEZ)
          field => this%Ez
@@ -406,9 +406,9 @@ module Solver_m
       
       real(kind=rkind), pointer, dimension(:,:,:) :: field
       select case(field_idx)
-      case(iEx)
+      case(IEX)
          field => this%Ex
-      case(iEy)
+      case(IEY)
          field => this%Ey
       case(IEZ)
          field => this%Ez
@@ -457,10 +457,10 @@ module Solver_m
       this%thereAre%PMLMagneticMedia = this%sgg%therearePMLMagneticMedia
 
       !prechecking of no offsetting to prevent errors in case of modifications
-      I=this%sgg%Alloc(iEx)%XI
-      J=this%sgg%Alloc(iEx)%YI
-      K=this%sgg%Alloc(iEx)%ZI
-      do field=iEy,6
+      I=this%sgg%Alloc(IEX)%XI
+      J=this%sgg%Alloc(IEX)%YI
+      K=this%sgg%Alloc(IEX)%ZI
+      do field=IEY,6
          if (this%sgg%Alloc(field)%XI /= I) call stoponerror(this%control%layoutnumber,this%control%num_procs,'OFFSETS IN INITIAL COORD NOT ALLOWED')
          if (this%sgg%Alloc(field)%YI /= J) call stoponerror(this%control%layoutnumber,this%control%num_procs,'OFFSETS IN INITIAL COORD NOT ALLOWED')
          if (this%sgg%Alloc(field)%ZI /= K) call stoponerror(this%control%layoutnumber,this%control%num_procs,'OFFSETS IN INITIAL COORD NOT ALLOWED')
@@ -674,19 +674,19 @@ contains
          b%dze%ZI=this%sgg%alloc(IHZ)%ZI
          b%dze%ZE=this%sgg%alloc(IHZ)%ZE
          !
-         b%dxh%XI=this%sgg%alloc(iEx)%XI
-         b%dxh%XE=this%sgg%alloc(iEx)%XE
-         b%dyh%YI=this%sgg%alloc(iEy)%YI
-         b%dyh%YE=this%sgg%alloc(iEy)%YE
+         b%dxh%XI=this%sgg%alloc(IEX)%XI
+         b%dxh%XE=this%sgg%alloc(IEX)%XE
+         b%dyh%YI=this%sgg%alloc(IEY)%YI
+         b%dyh%YE=this%sgg%alloc(IEY)%YE
          b%dzh%ZI=this%sgg%alloc(IEZ)%ZI
          b%dzh%ZE=this%sgg%alloc(IEZ)%ZE
 
          !
          !Do not touch. Leave as they are allocated
-         b%Ex%XI=this%sgg%Alloc(iEx)%XI
-         b%Ex%XE=this%sgg%Alloc(iEx)%XE
-         b%Ey%XI=this%sgg%Alloc(iEy)%XI
-         b%Ey%XE=this%sgg%Alloc(iEy)%XE
+         b%Ex%XI=this%sgg%Alloc(IEX)%XI
+         b%Ex%XE=this%sgg%Alloc(IEX)%XE
+         b%Ey%XI=this%sgg%Alloc(IEY)%XI
+         b%Ey%XE=this%sgg%Alloc(IEY)%XE
          b%Ez%XI=this%sgg%Alloc(IEZ)%XI
          b%Ez%XE=this%sgg%Alloc(IEZ)%XE
          !
@@ -697,10 +697,10 @@ contains
          b%Hz%XI=this%sgg%Alloc(IHZ)%XI
          b%Hz%XE=this%sgg%Alloc(IHZ)%XE
          !
-         b%Ex%YI=this%sgg%Alloc(iEx)%YI
-         b%Ex%YE=this%sgg%Alloc(iEx)%YE
-         b%Ey%YI=this%sgg%Alloc(iEy)%YI
-         b%Ey%YE=this%sgg%Alloc(iEy)%YE
+         b%Ex%YI=this%sgg%Alloc(IEX)%YI
+         b%Ex%YE=this%sgg%Alloc(IEX)%YE
+         b%Ey%YI=this%sgg%Alloc(IEY)%YI
+         b%Ey%YE=this%sgg%Alloc(IEY)%YE
          b%Ez%YI=this%sgg%Alloc(IEZ)%YI
          b%Ez%YE=this%sgg%Alloc(IEZ)%YE
          !
@@ -711,10 +711,10 @@ contains
          b%Hz%YI=this%sgg%Alloc(IHZ)%YI
          b%Hz%YE=this%sgg%Alloc(IHZ)%YE
          !
-         b%Ex%ZI=this%sgg%Alloc(iEx)%ZI
-         b%Ex%ZE=this%sgg%Alloc(iEx)%ZE
-         b%Ey%ZI=this%sgg%Alloc(iEy)%ZI
-         b%Ey%ZE=this%sgg%Alloc(iEy)%ZE
+         b%Ex%ZI=this%sgg%Alloc(IEX)%ZI
+         b%Ex%ZE=this%sgg%Alloc(IEX)%ZE
+         b%Ey%ZI=this%sgg%Alloc(IEY)%ZI
+         b%Ey%ZE=this%sgg%Alloc(IEY)%ZE
          b%Ez%ZI=this%sgg%Alloc(IEZ)%ZI
          b%Ez%ZE=this%sgg%Alloc(IEZ)%ZE
          !
@@ -729,10 +729,10 @@ contains
          !
 
          !matrix indexes. Nothing to change. This is how they are allocated
-         b%sggMiEx%XI=this%sgg%Alloc(iEx)%XI
-         b%sggMiEx%XE=this%sgg%Alloc(iEx)%XE
-         b%sggMiEy%XI=this%sgg%Alloc(iEy)%XI
-         b%sggMiEy%XE=this%sgg%Alloc(iEy)%XE
+         b%sggMiEx%XI=this%sgg%Alloc(IEX)%XI
+         b%sggMiEx%XE=this%sgg%Alloc(IEX)%XE
+         b%sggMiEy%XI=this%sgg%Alloc(IEY)%XI
+         b%sggMiEy%XE=this%sgg%Alloc(IEY)%XE
          b%sggMiEz%XI=this%sgg%Alloc(IEZ)%XI
          b%sggMiEz%XE=this%sgg%Alloc(IEZ)%XE
          !
@@ -743,10 +743,10 @@ contains
          b%sggMiHz%XI=this%sgg%Alloc(IHZ)%XI
          b%sggMiHz%XE=this%sgg%Alloc(IHZ)%XE
          !
-         b%sggMiEx%YI=this%sgg%Alloc(iEx)%YI
-         b%sggMiEx%YE=this%sgg%Alloc(iEx)%YE
-         b%sggMiEy%YI=this%sgg%Alloc(iEy)%YI
-         b%sggMiEy%YE=this%sgg%Alloc(iEy)%YE
+         b%sggMiEx%YI=this%sgg%Alloc(IEX)%YI
+         b%sggMiEx%YE=this%sgg%Alloc(IEX)%YE
+         b%sggMiEy%YI=this%sgg%Alloc(IEY)%YI
+         b%sggMiEy%YE=this%sgg%Alloc(IEY)%YE
          b%sggMiEz%YI=this%sgg%Alloc(IEZ)%YI
          b%sggMiEz%YE=this%sgg%Alloc(IEZ)%YE
          !
@@ -757,10 +757,10 @@ contains
          b%sggMiHz%YI=this%sgg%Alloc(IHZ)%YI
          b%sggMiHz%YE=this%sgg%Alloc(IHZ)%YE
          !
-         b%sggMiEx%ZI=this%sgg%Alloc(iEx)%ZI
-         b%sggMiEx%ZE=this%sgg%Alloc(iEx)%ZE
-         b%sggMiEy%ZI=this%sgg%Alloc(iEy)%ZI
-         b%sggMiEy%ZE=this%sgg%Alloc(iEy)%ZE
+         b%sggMiEx%ZI=this%sgg%Alloc(IEX)%ZI
+         b%sggMiEx%ZE=this%sgg%Alloc(IEX)%ZE
+         b%sggMiEy%ZI=this%sgg%Alloc(IEY)%ZI
+         b%sggMiEy%ZE=this%sgg%Alloc(IEY)%ZE
          b%sggMiEz%ZI=this%sgg%Alloc(IEZ)%ZI
          b%sggMiEz%ZE=this%sgg%Alloc(IEZ)%ZE
          !
@@ -773,10 +773,10 @@ contains
          !
          !
          !
-         b%sweepEx%XI=this%sgg%Sweep(iEx)%XI
-         b%sweepEx%XE=this%sgg%Sweep(iEx)%XE
-         b%sweepEy%XI=this%sgg%Sweep(iEy)%XI
-         b%sweepEy%XE=this%sgg%Sweep(iEy)%XE
+         b%sweepEx%XI=this%sgg%Sweep(IEX)%XI
+         b%sweepEx%XE=this%sgg%Sweep(IEX)%XE
+         b%sweepEy%XI=this%sgg%Sweep(IEY)%XI
+         b%sweepEy%XE=this%sgg%Sweep(IEY)%XE
          b%sweepEz%XI=this%sgg%Sweep(IEZ)%XI
          b%sweepEz%XE=this%sgg%Sweep(IEZ)%XE
          !
@@ -788,10 +788,10 @@ contains
          b%sweepHz%XE=this%sgg%Sweep(IHZ)%XE
          !
          !
-         b%sweepEx%YI=this%sgg%Sweep(iEx)%YI
-         b%sweepEx%YE=this%sgg%Sweep(iEx)%YE
-         b%sweepEy%YI=this%sgg%Sweep(iEy)%YI
-         b%sweepEy%YE=this%sgg%Sweep(iEy)%YE
+         b%sweepEx%YI=this%sgg%Sweep(IEX)%YI
+         b%sweepEx%YE=this%sgg%Sweep(IEX)%YE
+         b%sweepEy%YI=this%sgg%Sweep(IEY)%YI
+         b%sweepEy%YE=this%sgg%Sweep(IEY)%YE
          b%sweepEz%YI=this%sgg%Sweep(IEZ)%YI
          b%sweepEz%YE=this%sgg%Sweep(IEZ)%YE
          !
@@ -802,10 +802,10 @@ contains
          b%sweepHz%YI=this%sgg%Sweep(IHZ)%YI
          b%sweepHz%YE=this%sgg%Sweep(IHZ)%YE
          !
-         b%sweepEx%ZI=this%sgg%Sweep(iEx)%ZI
-         b%sweepEx%ZE=this%sgg%Sweep(iEx)%ZE
-         b%sweepEy%ZI=this%sgg%Sweep(iEy)%ZI
-         b%sweepEy%ZE=this%sgg%Sweep(iEy)%ZE
+         b%sweepEx%ZI=this%sgg%Sweep(IEX)%ZI
+         b%sweepEx%ZE=this%sgg%Sweep(IEX)%ZE
+         b%sweepEy%ZI=this%sgg%Sweep(IEY)%ZI
+         b%sweepEy%ZE=this%sgg%Sweep(IEY)%ZE
          b%sweepEz%ZI=this%sgg%Sweep(IEZ)%ZI
          b%sweepEz%ZE=this%sgg%Sweep(IEZ)%ZE
          !
@@ -816,43 +816,43 @@ contains
          b%sweepHz%ZI=this%sgg%Sweep(IHZ)%ZI
          b%sweepHz%ZE=this%sgg%Sweep(IHZ)%ZE
          !
-         b%sweepSINPMLEx%XI=this%sgg%SINPMLSweep(iEx)%XI
-         b%sweepSINPMLEy%XI=this%sgg%SINPMLSweep(iEy)%XI
+         b%sweepSINPMLEx%XI=this%sgg%SINPMLSweep(IEX)%XI
+         b%sweepSINPMLEy%XI=this%sgg%SINPMLSweep(IEY)%XI
          b%sweepSINPMLEz%XI=this%sgg%SINPMLSweep(IEZ)%XI
          b%sweepSINPMLHx%XI=this%sgg%SINPMLSweep(IHX)%XI
          b%sweepSINPMLHy%XI=this%sgg%SINPMLSweep(IHY)%XI
          b%sweepSINPMLHz%XI=this%sgg%SINPMLSweep(IHZ)%XI
          !
-         b%sweepSINPMLEx%XE=this%sgg%SINPMLSweep(iEx)%XE
-         b%sweepSINPMLEy%XE=this%sgg%SINPMLSweep(iEy)%XE
+         b%sweepSINPMLEx%XE=this%sgg%SINPMLSweep(IEX)%XE
+         b%sweepSINPMLEy%XE=this%sgg%SINPMLSweep(IEY)%XE
          b%sweepSINPMLEz%XE=this%sgg%SINPMLSweep(IEZ)%XE
          b%sweepSINPMLHx%XE=this%sgg%SINPMLSweep(IHX)%XE
          b%sweepSINPMLHy%XE=this%sgg%SINPMLSweep(IHY)%XE
          b%sweepSINPMLHz%XE=this%sgg%SINPMLSweep(IHZ)%XE
          !
-         b%sweepSINPMLEx%YI=this%sgg%SINPMLSweep(iEx)%YI
-         b%sweepSINPMLEy%YI=this%sgg%SINPMLSweep(iEy)%YI
+         b%sweepSINPMLEx%YI=this%sgg%SINPMLSweep(IEX)%YI
+         b%sweepSINPMLEy%YI=this%sgg%SINPMLSweep(IEY)%YI
          b%sweepSINPMLEz%YI=this%sgg%SINPMLSweep(IEZ)%YI
          b%sweepSINPMLHx%YI=this%sgg%SINPMLSweep(IHX)%YI
          b%sweepSINPMLHy%YI=this%sgg%SINPMLSweep(IHY)%YI
          b%sweepSINPMLHz%YI=this%sgg%SINPMLSweep(IHZ)%YI
          !
-         b%sweepSINPMLEx%YE=this%sgg%SINPMLSweep(iEx)%YE
-         b%sweepSINPMLEy%YE=this%sgg%SINPMLSweep(iEy)%YE
+         b%sweepSINPMLEx%YE=this%sgg%SINPMLSweep(IEX)%YE
+         b%sweepSINPMLEy%YE=this%sgg%SINPMLSweep(IEY)%YE
          b%sweepSINPMLEz%YE=this%sgg%SINPMLSweep(IEZ)%YE
          b%sweepSINPMLHx%YE=this%sgg%SINPMLSweep(IHX)%YE
          b%sweepSINPMLHy%YE=this%sgg%SINPMLSweep(IHY)%YE
          b%sweepSINPMLHz%YE=this%sgg%SINPMLSweep(IHZ)%YE
          !
-         b%sweepSINPMLEx%ZI=this%sgg%SINPMLSweep(iEx)%ZI
-         b%sweepSINPMLEy%ZI=this%sgg%SINPMLSweep(iEy)%ZI
+         b%sweepSINPMLEx%ZI=this%sgg%SINPMLSweep(IEX)%ZI
+         b%sweepSINPMLEy%ZI=this%sgg%SINPMLSweep(IEY)%ZI
          b%sweepSINPMLEz%ZI=this%sgg%SINPMLSweep(IEZ)%ZI
          b%sweepSINPMLHx%ZI=this%sgg%SINPMLSweep(IHX)%ZI
          b%sweepSINPMLHy%ZI=this%sgg%SINPMLSweep(IHY)%ZI
          b%sweepSINPMLHz%ZI=this%sgg%SINPMLSweep(IHZ)%ZI
          !
-         b%sweepSINPMLEx%ZE=this%sgg%SINPMLSweep(iEx)%ZE
-         b%sweepSINPMLEy%ZE=this%sgg%SINPMLSweep(iEy)%ZE
+         b%sweepSINPMLEx%ZE=this%sgg%SINPMLSweep(IEX)%ZE
+         b%sweepSINPMLEy%ZE=this%sgg%SINPMLSweep(IEY)%ZE
          b%sweepSINPMLEz%ZE=this%sgg%SINPMLSweep(IEZ)%ZE
          b%sweepSINPMLHx%ZE=this%sgg%SINPMLSweep(IHX)%ZE
          b%sweepSINPMLHy%ZE=this%sgg%SINPMLSweep(IHY)%ZE

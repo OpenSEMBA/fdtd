@@ -106,7 +106,7 @@ integer function test_init_point_probe_with_incident() bind(c) result(err)
    path = join_path(get_temp_folder(), 'incidentPointProbe')
    domain%domainType = TIME_DOMAIN
    coordinates = cell_coordinate_t(1, 1, 1)
-   call init_point_probe_output(probe, coordinates, iEx, domain, path, 3, 0.1_RKIND_TIME, .true.)
+   call init_point_probe_output(probe, coordinates, IEX, domain, path, 3, 0.1_RKIND_TIME, .true.)
 
    err = err + assert_true(probe%hasIncident .and. allocated(probe%incidentForTime), &
                            'Incident point probe did not allocate incident samples')
@@ -177,7 +177,7 @@ end function test_scalar_probe_has_no_manifest
 
 integer function test_line_probe_integral() bind(c) result(err)
    ! Verifies the legacy signed E.dl line-integral convention in isolation.
-   use FDETYPES_m, only: RKIND, direction_t, iEx, iEy, IEZ
+   use FDETYPES_m, only: RKIND, direction_t, IEX, IEY, IEZ
    use outputTypes_m, only: field_data_t
    use lineProbeOutput_m, only: calculate_line_integral
    use assertionTools_m, only: assert_real_equal
@@ -204,8 +204,8 @@ integer function test_line_probe_integral() bind(c) result(err)
    dy(1) = 2.0_RKIND
    dz(1) = 1.5_RKIND
 
-   segments(1) = direction_t(1, 1, 1, iEx)
-   segments(2) = direction_t(2, 1, 1, -iEy)
+   segments(1) = direction_t(1, 1, 1, IEX)
+   segments(2) = direction_t(2, 1, 1, -IEY)
    segments(3) = direction_t(2, 2, 1, IEZ)
    reversed_segments = segments
    reversed_segments%orientation = -reversed_segments%orientation
@@ -264,7 +264,7 @@ end function test_line_probe_empty_path
 
 integer function test_line_probe_dat_output() bind(c) result(err)
    ! Verifies line-probe flush retains every sample in one text file.
-   use FDETYPES_m, only: RKIND, RKIND_TIME, direction_t, iEx
+   use FDETYPES_m, only: RKIND, RKIND_TIME, direction_t, IEX
    use outputTypes_m, only: line_probe_output_t, field_data_t, domain_t, TIME_DOMAIN
    use lineProbeOutput_m, only: init_line_probe_output, update_line_probe_output, flush_line_probe_output
    use assertionTools_m, only: assert_integer_equal, assert_true
@@ -285,7 +285,7 @@ integer function test_line_probe_dat_output() bind(c) result(err)
    err = 0
    path = join_path(get_temp_folder(), 'line-probe-artifacts')
    domain%domainType = TIME_DOMAIN
-   segments(1) = direction_t(1, 1, 1, iEx)
+   segments(1) = direction_t(1, 1, 1, IEX)
    call init_line_probe_output(probe, segments, domain, path)
    ex = 2.0_RKIND
    ey = 0.0_RKIND
@@ -315,7 +315,7 @@ integer function test_line_probe_dat_output() bind(c) result(err)
 end function test_line_probe_dat_output
 
 integer function test_line_probe_shared_interface_owner() bind(c) result(err)
-   use FDETYPES_m, only: direction_t, xyzlimit_t, iEx
+   use FDETYPES_m, only: direction_t, xyzlimit_t, IEX
    use lineProbeOutput_m, only: line_segment_is_local
    use assertionTools_m, only: assert_true
    implicit none
@@ -326,7 +326,7 @@ integer function test_line_probe_shared_interface_owner() bind(c) result(err)
    err = 0
    lower_rank_sweeps = xyzlimit_t(0, 4, 0, 4, 0, 2)
    upper_rank_sweeps = xyzlimit_t(0, 4, 0, 4, 2, 4)
-   segment = direction_t(1, 1, 2, iEx)
+   segment = direction_t(1, 1, 2, IEX)
    err = err + assert_true(.not. line_segment_is_local(segment, lower_rank_sweeps, 0, 2), &
                            'Lower rank retained a shared Ex interface segment')
    err = err + assert_true(line_segment_is_local(segment, upper_rank_sweeps, 1, 2), &
@@ -483,7 +483,7 @@ end function
 
 integer function test_output_serial_distributed_equivalence() bind(c) result(err)
    ! Verifies serial and distributed artifacts have equivalent coverage.
-   use FDETYPES_m, only: iEx, limit_t
+   use FDETYPES_m, only: IEX, limit_t
    use outputTypes_m, only: cell_coordinate_t, output_artifact_t, OUTPUT_ARTIFACT_BINARY
    use outputDecomposition_m, only: output_partition_t, build_output_partition, OUTPUT_PARTITION_SUCCESS
    use assertionTools_m, only: assert_integer_equal, assert_string_equal, assert_true
@@ -513,7 +513,7 @@ integer function test_output_serial_distributed_equivalence() bind(c) result(err
       else
          local_sweep = limit_t(0, 0, 0, 0, 3, 5, 1, 1, 3)
       end if
-      call build_output_partition(lower_bound, upper_bound, global_bounds, local_sweep, iEx, rank, 2, partition, status)
+      call build_output_partition(lower_bound, upper_bound, global_bounds, local_sweep, IEX, rank, 2, partition, status)
       err = err + assert_integer_equal(status, OUTPUT_PARTITION_SUCCESS, 'Partition construction failed')
       do z = partition%local_lower%z, partition%local_upper%z
          coverage(z) = coverage(z) + 1
@@ -789,7 +789,7 @@ integer function test_update_time_probe_ranges() bind(c) result(err)
    requestedOutput(1) = create_observable(2, 2, 2, 3, 3, 3, IBLOQUEMX)
    call set_observation(observations(BULK_OUTPUT), requestedOutput, 'bulkRange', domain, '')
 
-   lineSegments(1) = direction_t(3, 3, 3, iEx)
+   lineSegments(1) = direction_t(3, 3, 3, IEX)
    requestedOutput(1) = create_observable(3, 3, 3, 3, 3, 3, LINEINTEGRAL, lineSegments)
    call set_observation(observations(LINE_OUTPUT), requestedOutput, 'lineRange', domain, '')
 
@@ -808,7 +808,7 @@ integer function test_update_time_probe_ranges() bind(c) result(err)
    wires%CurrentSegment(1)%i = 3
    wires%CurrentSegment(1)%j = 3
    wires%CurrentSegment(1)%k = 3
-   wires%CurrentSegment(1)%fieldKind = iEx
+   wires%CurrentSegment(1)%fieldKind = IEX
    wires%CurrentSegment(1)%indexmed = 0
    wires%CurrentSegment(1)%reversedOrientation = .false.
    wires%CurrentSegment(1)%delta = 1.0_RKIND_WIRES
@@ -954,7 +954,7 @@ integer function test_flush_point_probe() bind(c) result(err)
    coordinates%y = 2
    coordinates%z = 2
 
-   call init_point_probe_output(probe, coordinates, iEx, domain, nInput, 3, 0.1_RKIND_TIME)
+   call init_point_probe_output(probe, coordinates, IEX, domain, nInput, 3, 0.1_RKIND_TIME)
 
    test_err = test_err + assert_integer_equal(size(probe%artifacts), 2, &
                                                'Point probe did not declare both text domains')
@@ -1133,7 +1133,7 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
    coordinates%y = 2
    coordinates%z = 2
 
-   call init_point_probe_output(probe, coordinates, iEx, domain, nInput, 3, 0.1_RKIND_TIME)
+   call init_point_probe_output(probe, coordinates, IEX, domain, nInput, 3, 0.1_RKIND_TIME)
 
    n = 10
    allocate (expectedTime(2*n, 2))
@@ -1287,10 +1287,10 @@ integer function test_init_movie_probe() bind(c) result(err)
 
    call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
 
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 3, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 4, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 4, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 3, 4, 3, simulationMaterials(0)%Id)
 
    expectedNumMeasurments = 4_SINGLE
    mediaPtr => media
@@ -1428,10 +1428,10 @@ integer function test_update_movie_probe() bind(c) result(err)
 
    call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
 
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 3, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 4, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 4, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 3, 4, 3, simulationMaterials(0)%Id)
 
    expectedNumMeasurments = 4_SINGLE
    mediaPtr => media
@@ -1594,20 +1594,20 @@ integer function test_flush_movie_probe() bind(c) result(err)
 
    call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
 
-   call assign_material_id_to_media_matrix_coordinate(media, iEx, 3, 3, 3, simulationMaterials(0)%Id)
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEX, 3, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 3, 3, 3, simulationMaterials(0)%Id)
    call assign_material_id_to_media_matrix_coordinate(media, IHY, 3, 3, 3, simulationMaterials(0)%Id)
 
-   call assign_material_id_to_media_matrix_coordinate(media, iEx, 3, 4, 3, simulationMaterials(0)%Id)
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEX, 3, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 3, 4, 3, simulationMaterials(0)%Id)
    call assign_material_id_to_media_matrix_coordinate(media, IHY, 3, 4, 3, simulationMaterials(0)%Id)
 
-   call assign_material_id_to_media_matrix_coordinate(media, iEx, 4, 4, 3, simulationMaterials(0)%Id)
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEX, 4, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 4, 4, 3, simulationMaterials(0)%Id)
    call assign_material_id_to_media_matrix_coordinate(media, IHY, 4, 4, 3, simulationMaterials(0)%Id)
 
-   call assign_material_id_to_media_matrix_coordinate(media, iEx, 4, 3, 3, simulationMaterials(0)%Id)
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEX, 4, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 4, 3, 3, simulationMaterials(0)%Id)
    call assign_material_id_to_media_matrix_coordinate(media, IHY, 4, 3, 3, simulationMaterials(0)%Id)
 
    expectedNumMeasurments = 4_SINGLE
@@ -1846,10 +1846,10 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
 
    call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
 
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 3, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 4, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 4, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 3, 4, 3, simulationMaterials(0)%Id)
 
    expectedNumMeasurments = 4_SINGLE
    mediaPtr => media
@@ -2001,10 +2001,10 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
 
    call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
 
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
-   call assign_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 3, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 4, 3, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 4, 4, 3, simulationMaterials(0)%Id)
+   call assign_material_id_to_media_matrix_coordinate(media, IEY, 3, 4, 3, simulationMaterials(0)%Id)
    expectedNumberFrequencies = 6_SINGLE
    expectedNumMeasurments = 4_SINGLE
    mediaPtr => media

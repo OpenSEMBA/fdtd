@@ -70,8 +70,8 @@ contains
       integer :: res
 
       select case (field)
-      case (iEx); res = CoordToMaterial%sggMiEx(i, j, k)
-      case (iEy); res = CoordToMaterial%sggMiEy(i, j, k)
+      case (IEX); res = CoordToMaterial%sggMiEx(i, j, k)
+      case (IEY); res = CoordToMaterial%sggMiEy(i, j, k)
       case (IEZ); res = CoordToMaterial%sggMiEz(i, j, k)
       case (IHX); res = CoordToMaterial%sggMiHx(i, j, k)
       case (IHY); res = CoordToMaterial%sggMiHy(i, j, k)
@@ -191,8 +191,8 @@ contains
       character(len=BUFSIZE)  ::  prefixExtension
       if (mpidir == 3) then
          select case (field)
-         case (iEx); prefixExtension = prefix(iEx)
-         case (iEy); prefixExtension = prefix(iEy)
+         case (IEX); prefixExtension = prefix(IEX)
+         case (IEY); prefixExtension = prefix(IEY)
          case (IEZ); prefixExtension = prefix(IEZ)
          case (IJX); prefixExtension = prefix(IJX)
          case (IJY); prefixExtension = prefix(IJY)
@@ -216,9 +216,9 @@ contains
          end select
       else if (mpidir == 2) then
          select case (field)
-         case (iEx); prefixExtension = prefix(IEZ)
-         case (iEy); prefixExtension = prefix(iEx)
-         case (IEZ); prefixExtension = prefix(iEy)
+         case (IEX); prefixExtension = prefix(IEZ)
+         case (IEY); prefixExtension = prefix(IEX)
+         case (IEZ); prefixExtension = prefix(IEY)
          case (IJX); prefixExtension = prefix(IJZ)
          case (IJY); prefixExtension = prefix(IJX)
          case (IJZ); prefixExtension = prefix(IJY)
@@ -241,9 +241,9 @@ contains
          end select
       else if (mpidir == 1) then
          select case (field)
-         case (iEx); prefixExtension = prefix(iEy)
-         case (iEy); prefixExtension = prefix(IEZ)
-         case (IEZ); prefixExtension = prefix(iEx)
+         case (IEX); prefixExtension = prefix(IEY)
+         case (IEY); prefixExtension = prefix(IEZ)
+         case (IEZ); prefixExtension = prefix(IEX)
          case (IJX); prefixExtension = prefix(IJY)
          case (IJY); prefixExtension = prefix(IJZ)
          case (IJZ); prefixExtension = prefix(IJX)
@@ -275,8 +275,8 @@ contains
       character(len=BUFSIZE)  ::  ext
 
       select case (fieldIndex)
-      case (iEx); ext = 'Ex'
-      case (iEy); ext = 'Ey'
+      case (IEX); ext = 'Ex'
+      case (IEY); ext = 'Ey'
       case (IEZ); ext = 'Ez'
       case (IVX); ext = 'Vx'
       case (IVY); ext = 'Vy'
@@ -320,17 +320,17 @@ contains
       character(len=1) :: dir
       fieldo2 = -1
       select case (field)
-      case (iEx, iEy, IEZ, IHX, IHY, IHZ); fieldo2 = field
-      case (IJX, IVX, IBLOQUEJX, IEXC, IQX); fieldo2 = iEx
-      case (IJY, IVY, IBLOQUEJY, IEYC, IQY); fieldo2 = iEy
+      case (IEX, IEY, IEZ, IHX, IHY, IHZ); fieldo2 = field
+      case (IJX, IVX, IBLOQUEJX, IEXC, IQX); fieldo2 = IEX
+      case (IJY, IVY, IBLOQUEJY, IEYC, IQY); fieldo2 = IEY
       case (IJZ, IVZ, IBLOQUEJZ, IEZC, IQZ); fieldo2 = IEZ
       case (IBLOQUEMX, IHXC); fieldo2 = IHX
       case (IBLOQUEMY, IHYC); fieldo2 = IHY
       case (IBLOQUEMZ, IHZC); fieldo2 = IHZ
       case (IMEC)
          select case (dir)
-         case ('X', 'x'); fieldo2 = iEx
-         case ('Y', 'y'); fieldo2 = iEY
+         case ('X', 'x'); fieldo2 = IEX
+         case ('Y', 'y'); fieldo2 = IEY
          case ('Z', 'z'); fieldo2 = IEZ
          end select
       case (IMHC)
@@ -341,8 +341,8 @@ contains
          end select
       case (ICUR, ICURX, ICURY, ICURZ, MAPVTK)  !I set them in efield to avoid problems with MPI
          select case (dir)
-         case ('X', 'x'); fieldo2 = iEx
-         case ('Y', 'y'); fieldo2 = iEY
+         case ('X', 'x'); fieldo2 = IEX
+         case ('Y', 'y'); fieldo2 = IEY
          case ('Z', 'z'); fieldo2 = IEZ
          end select
       end select
@@ -353,8 +353,8 @@ contains
       integer(kind=SINGLE), intent(in) :: fieldId
       real(kind=RKIND), pointer, dimension(:, :, :) :: component
       select case (fieldId)
-      case (iEx); component => fieldReference%E%x
-      case (iEy); component => fieldReference%E%y
+      case (IEX); component => fieldReference%E%x
+      case (IEY); component => fieldReference%E%y
       case (IEZ); component => fieldReference%E%z
       case (IHX); component => fieldReference%H%x
       case (IHY); component => fieldReference%H%y
@@ -518,13 +518,13 @@ contains
       ! -----------------------------------------------------------
 
       ! Shift for Term A
-      i_shift_a = i - merge(1, 0, curl_component_b == iex)
-      j_shift_a = j - merge(1, 0, curl_component_b == iey)
+      i_shift_a = i - merge(1, 0, curl_component_b == IEX)
+      j_shift_a = j - merge(1, 0, curl_component_b == IEY)
       k_shift_a = k - merge(1, 0, curl_component_b == IEZ)
 
       ! Shift for Term B
-      i_shift_b = i - merge(1, 0, curl_component_a == iex)
-      j_shift_b = j - merge(1, 0, curl_component_a == iey)
+      i_shift_b = i - merge(1, 0, curl_component_a == IEX)
+      j_shift_b = j - merge(1, 0, curl_component_a == IEY)
       k_shift_b = k - merge(1, 0, curl_component_a == IEZ)
 
       ! -----------------------------------------------------------
@@ -617,8 +617,8 @@ contains
    integer function currentType(field)
       integer(kind=4) :: field
       select case (field)
-      case (iEx); currentType = IJX
-      case (iEy); currentType = IJY
+      case (IEX); currentType = IJX
+      case (IEY); currentType = IJY
       case (IEZ); currentType = IJZ
       case (IHX); currentType = IBLOQUEJX
       case (IHY); currentType = IBLOQUEJY
@@ -633,11 +633,11 @@ contains
 
       select case (component)
       case (ICUR, IMEC)
-         get_volumetric_classification_field = iEx + axis - 1
+         get_volumetric_classification_field = IEX + axis - 1
       case (IMHC)
          get_volumetric_classification_field = IHX + axis - 1
-      case (ICURX, IEXC); get_volumetric_classification_field = iEx
-      case (ICURY, IEYC); get_volumetric_classification_field = iEy
+      case (ICURX, IEXC); get_volumetric_classification_field = IEX
+      case (ICURY, IEYC); get_volumetric_classification_field = IEY
       case (ICURZ, IEZC); get_volumetric_classification_field = IEZ
       case (IHXC); get_volumetric_classification_field = IHX
       case (IHYC); get_volumetric_classification_field = IHY
@@ -654,9 +654,9 @@ contains
       get_output_tag_number = 0_IKINDMTAG
       if (.not. associated(problemInfo%materialTag)) return
       select case (field)
-      case (iEx)
+      case (IEX)
          if (.not. allocated(problemInfo%materialTag%edge%x)) return
-      case (iEy)
+      case (IEY)
          if (.not. allocated(problemInfo%materialTag%edge%y)) return
       case (IEZ)
          if (.not. allocated(problemInfo%materialTag%edge%z)) return
@@ -765,7 +765,7 @@ contains
       integer :: candidate_field, candidate_media, candidate_position(3)
 
       edge_touches_another_medium = .false.
-      do candidate_field = iEx, IEZ
+      do candidate_field = IEX, IEZ
          candidate_media = getMediaIndex(candidate_field, position(1), position(2), position(3), &
                                          problemInfo%geometryToMaterialData)
          if (candidate_media /= 1 .and. candidate_media /= media) then
@@ -775,7 +775,7 @@ contains
       end do
       candidate_position = position
       candidate_position(field) = candidate_position(field) + 1
-      do candidate_field = iEx, IEZ
+      do candidate_field = IEX, IEZ
          candidate_media = getMediaIndex(candidate_field, candidate_position(1), candidate_position(2), &
                                          candidate_position(3), problemInfo%geometryToMaterialData)
          if (candidate_media /= 1 .and. candidate_media /= media) then
@@ -793,8 +793,8 @@ contains
 
       ! Retrieves the field value based on the field index (1-3 for E, 4-6 for H)
       select case (field)
-      case (iex); res = fields_reference%e%x(i, j, k)
-      case (iey); res = fields_reference%e%y(i, j, k)
+      case (IEX); res = fields_reference%e%x(i, j, k)
+      case (IEY); res = fields_reference%e%y(i, j, k)
       case (IEZ); res = fields_reference%e%z(i, j, k)
       case (IHX); res = fields_reference%h%x(i, j, k)
       case (IHY); res = fields_reference%h%y(i, j, k)
@@ -811,8 +811,8 @@ contains
       ! Retrieves the spatial step size (delta) corresponding to the field direction
       ! Note: i, j, k are used to select the correct array index if the grid is non-uniform.
       select case (field)
-      case (iex); res = fields_reference%e%deltax(i)
-      case (iey); res = fields_reference%e%deltay(j)
+      case (IEX); res = fields_reference%e%deltax(i)
+      case (IEY); res = fields_reference%e%deltay(j)
       case (IEZ); res = fields_reference%e%deltaz(k)
       case (IHX); res = fields_reference%h%deltax(i)
       case (IHY); res = fields_reference%h%deltay(j)

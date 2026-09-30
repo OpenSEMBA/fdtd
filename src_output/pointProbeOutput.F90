@@ -184,7 +184,7 @@ contains
                                   this%mainCoords%x, this%mainCoords%y, this%mainCoords%z, still_planewave_time, .true.)
          end if
          select case (this%component)
-         case (iEx, iEy, IEZ)
+         case (IEX, IEY, IEZ)
             do iter = 1, this%nFreq
                this%valueForFreq(iter) = &
                   this%valueForFreq(iter) + field(this%mainCoords%x, this%mainCoords%y, this%mainCoords%z)* &

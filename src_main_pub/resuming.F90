@@ -71,8 +71,8 @@ contains
 
       type(XYZlimit_t), dimension(1:6) :: sggalloc
       real(kind=RKIND)   , intent(inout) :: &
-      Ex(sggalloc(iEx)%XI : sggalloc(iEx)%XE,sggalloc(iEx)%YI : sggalloc(iEx)%YE,sggalloc(iEx)%ZI : sggalloc(iEx)%ZE),&
-      Ey(sggalloc(iEy)%XI : sggalloc(iEy)%XE,sggalloc(iEy)%YI : sggalloc(iEy)%YE,sggalloc(iEy)%ZI : sggalloc(iEy)%ZE),&
+      Ex(sggalloc(IEX)%XI : sggalloc(IEX)%XE,sggalloc(IEX)%YI : sggalloc(IEX)%YE,sggalloc(IEX)%ZI : sggalloc(IEX)%ZE),&
+      Ey(sggalloc(IEY)%XI : sggalloc(IEY)%XE,sggalloc(IEY)%YI : sggalloc(IEY)%YE,sggalloc(IEY)%ZI : sggalloc(IEY)%ZE),&
       Ez(sggalloc(IEZ)%XI : sggalloc(IEZ)%XE,sggalloc(IEZ)%YI : sggalloc(IEZ)%YE,sggalloc(IEZ)%ZI : sggalloc(IEZ)%ZE),&
       Hx(sggalloc(IHX)%XI : sggalloc(IHX)%XE,sggalloc(IHX)%YI : sggalloc(IHX)%YE,sggalloc(IHX)%ZI : sggalloc(IHX)%ZE),&
       Hy(sggalloc(IHY)%XI : sggalloc(IHY)%XE,sggalloc(IHY)%YI : sggalloc(IHY)%YE,sggalloc(IHY)%ZI : sggalloc(IHY)%ZE),&
@@ -86,28 +86,28 @@ contains
       cluz=1.0_RKIND/sqrt(mu0*eps0)
 
       read (14) lastexecutedtimestep,lastexecutedtime,ultimodt,eps0,mu0
-      do k=sggalloc(iEx)%ZI,sggalloc(iEx)%ZE
-         do j=sggalloc(iEx)%YI,sggalloc(iEx)%YE
-            n_block = int(((sggalloc(iEx)%XE) - (sggalloc(iEx)%XI) + 1) / BLOCK_SIZE)
-            ini = sggalloc(iEx)%XI
+      do k=sggalloc(IEX)%ZI,sggalloc(IEX)%ZE
+         do j=sggalloc(IEX)%YI,sggalloc(IEX)%YE
+            n_block = int(((sggalloc(IEX)%XE) - (sggalloc(IEX)%XI) + 1) / BLOCK_SIZE)
+            ini = sggalloc(IEX)%XI
             do i_block = 1, n_block
                fin = ini-1 + BLOCK_SIZE
                read (14) (Ex(i,j,k), i = ini, fin)
                ini = ini + BLOCK_SIZE
             end do
-            read (14) (Ex(i,j,k), i = ini, sggalloc(iEx)%XE)
+            read (14) (Ex(i,j,k), i = ini, sggalloc(IEX)%XE)
          end do
       end do
-      do k=sggalloc(iEy)%ZI,sggalloc(iEy)%ZE
-         do j=sggalloc(iEy)%YI,sggalloc(iEy)%YE
-            n_block = int(((sggalloc(iEy)%XE) - (sggalloc(iEy)%XI) + 1) / BLOCK_SIZE)
-            ini = sggalloc(iEy)%XI
+      do k=sggalloc(IEY)%ZI,sggalloc(IEY)%ZE
+         do j=sggalloc(IEY)%YI,sggalloc(IEY)%YE
+            n_block = int(((sggalloc(IEY)%XE) - (sggalloc(IEY)%XI) + 1) / BLOCK_SIZE)
+            ini = sggalloc(IEY)%XI
             do i_block = 1, n_block
                fin = ini-1 + BLOCK_SIZE
                read (14) (Ey(i,j,k), i = ini, fin)
                ini = ini + BLOCK_SIZE
             end do
-            read (14) (Ey(i,j,k), i = ini, sggalloc(iEy)%XE)
+            read (14) (Ey(i,j,k), i = ini, sggalloc(IEY)%XE)
          end do
       end do
       do k=sggalloc(IEZ)%ZI,sggalloc(IEZ)%ZE

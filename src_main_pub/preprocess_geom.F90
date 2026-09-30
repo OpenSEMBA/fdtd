@@ -243,18 +243,18 @@ contains
       BoundingBox%ZI = sgg%Alloc(IHZ)%ZI
       BoundingBox%ZE = sgg%Alloc(IHZ)%ZE
       !
-      Alloc_iEx_XI = sgg%Alloc(iEx)%XI
-      Alloc_iEx_XE = sgg%Alloc(iEx)%XE
-      Alloc_iEx_YI = sgg%Alloc(iEx)%YI
-      Alloc_iEx_YE = sgg%Alloc(iEx)%YE
-      Alloc_iEx_ZI = sgg%Alloc(iEx)%ZI
-      Alloc_iEx_ZE = sgg%Alloc(iEx)%ZE
-      Alloc_iEy_XI = sgg%Alloc(iEy)%XI
-      Alloc_iEy_XE = sgg%Alloc(iEy)%XE
-      Alloc_iEy_YI = sgg%Alloc(iEy)%YI
-      Alloc_iEy_YE = sgg%Alloc(iEy)%YE
-      Alloc_iEy_ZI = sgg%Alloc(iEy)%ZI
-      Alloc_iEy_ZE = sgg%Alloc(iEy)%ZE
+      Alloc_iEx_XI = sgg%Alloc(IEX)%XI
+      Alloc_iEx_XE = sgg%Alloc(IEX)%XE
+      Alloc_iEx_YI = sgg%Alloc(IEX)%YI
+      Alloc_iEx_YE = sgg%Alloc(IEX)%YE
+      Alloc_iEx_ZI = sgg%Alloc(IEX)%ZI
+      Alloc_iEx_ZE = sgg%Alloc(IEX)%ZE
+      Alloc_iEy_XI = sgg%Alloc(IEY)%XI
+      Alloc_iEy_XE = sgg%Alloc(IEY)%XE
+      Alloc_iEy_YI = sgg%Alloc(IEY)%YI
+      Alloc_iEy_YE = sgg%Alloc(IEY)%YE
+      Alloc_iEy_ZI = sgg%Alloc(IEY)%ZI
+      Alloc_iEy_ZE = sgg%Alloc(IEY)%ZE
       Alloc_iEz_XI = sgg%Alloc(IEZ)%XI
       Alloc_iEz_XE = sgg%Alloc(IEZ)%XE
       Alloc_iEz_YI = sgg%Alloc(IEZ)%YI
@@ -1336,9 +1336,9 @@ contains
                   delta=-1.0_RKIND
                   if (isInside) then
                      select case (abs(this%LossyThinSurfs%cs(j)%C(i)%or))
-                      case (iEx)
+                      case (IEX)
                         delta=(sgg%DX(pointXI)+sgg%DX(pointXI-1))/2.0_RKIND
-                      case (iEy)
+                      case (IEY)
                         delta=(sgg%DY(pointYI)+sgg%Dy(pointYI-1))/2.0_RKIND
                       case (IEZ)
                         delta=(sgg%DZ(pointZI)+sgg%Dz(pointZI-1))/2.0_RKIND
@@ -1519,9 +1519,9 @@ contains
                   delta=-1.0_RKIND
                   if (isInside) then
                      select case (abs(this%LossyThinSurfs%cs(j)%C(i)%or))
-                      case (iEx)
+                      case (IEX)
                         delta=(sgg%DX(pointXI)+sgg%DX(pointXI-1))/2.0_RKIND
-                      case (iEy)
+                      case (IEY)
                         delta=(sgg%DY(pointYI)+sgg%Dy(pointYI-1))/2.0_RKIND
                       case (IEZ)
                         delta=(sgg%DZ(pointZI)+sgg%Dz(pointZI-1))/2.0_RKIND
@@ -1621,7 +1621,7 @@ contains
                !!
 
                select case (Abs(orientationIndex))
-                case (iEx)
+                case (IEX)
                   gridPoint%XI = this%LossyThinSurfs%cs(j)%C(i)%XI
                   gridPoint%XE = this%LossyThinSurfs%cs(j)%C(i)%XI
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
@@ -1658,7 +1658,7 @@ contains
                   & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared,   &
                      BoundingBox, gridPoint, orientationIndex, &
                   & contamedia)
-                case (iEy)
+                case (IEY)
                   gridPoint%YI = this%LossyThinSurfs%cs(j)%C(i)%YI
                   gridPoint%YE = this%LossyThinSurfs%cs(j)%C(i)%YI
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
@@ -2021,7 +2021,7 @@ contains
                   kmenos1=k
                end if
                select case (orientationIndex)
-                case (iEx)
+                case (IEX)
                   if ((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k))%is%PEC)) then
                      paraerrhilo=.true.
                      write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   x-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
@@ -2090,7 +2090,7 @@ contains
                      &                                  media%sggMiEz(i+1,j,k)
                      if (verbose) call WarnErrReport (buff)
                   end if
-                case (iEy)
+                case (IEY)
                   if ((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k))%is%PEC)) then
                      paraerrhilo=.true.
                      write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   y-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
@@ -2643,7 +2643,7 @@ contains
                &    (j1 >= BoundingBox%YI) .AND. (j1 < BoundingBox%YE) .AND. &
                &    (k1 >= BoundingBox%ZI) .AND. (k1 < BoundingBox%ZE)) then
                   !find the orientation of the PEC plane containing the Slot
-                  oriX = (direccion == iEy)  .AND.   &
+                  oriX = (direccion == IEY)  .AND.   &
                   &       (((media%sggMiHx(i1, j1, k1) ==0).or.(sgg%med(media%sggMiHx(i1, j1, k1))%is%PEC)) .OR. &
                   &       (sgg%Med(media%sggMiHx(i1, j1, k1))%Is%ThinSlot))          !&
                   !& .AND. (((sggmiHz(i1, j1, k1) /=0).and.(.not.(sgg%med(sggmiHz(i1, j1, k1) )%is%pec))) .AND.                   &
@@ -2655,7 +2655,7 @@ contains
                   !& .AND. (((               sggmiHy(i1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHy(i1, j1, k1) )%is%pec))) .AND.      &
                   !&       ( .NOT.  sgg%Med(sggmiHy(i1, j1, k1))%Is%ThinSlot))
 
-                  oriY = (direccion == iEx) .AND.   &
+                  oriY = (direccion == IEX) .AND.   &
                   &       (((               media%sggMiHy(i1, j1, k1) ==0).or.(sgg%med(media%sggMiHy(i1, j1, k1))%is%PEC)) .OR.       &
                   &        (       sgg%Med(media%sggMiHy(i1, j1, k1))%Is%ThinSlot))   !&
                   !& .AND. (((               sggmiHz(i1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHz(i1, j1, k1) )%is%pec))) .AND.      &
@@ -2667,13 +2667,13 @@ contains
                   !&  .AND.(((               sggmiHx(i1, j1, k1) /=0).and.(.not.(sgg%med(              sggmiHx(i1, j1, k1) )%is%pec))) .AND.       &
                   !&       ( .NOT. sgg%Med(sggmiHx(i1, j1, k1))%Is%ThinSlot))
 
-                  oriZ = (direccion == iEx) .AND.  &
+                  oriZ = (direccion == IEX) .AND.  &
                   &       (((               media%sggMiHz(i1, j1, k1) ==0).or.(sgg%med(media%sggMiHz(i1, j1, k1))%is%PEC)) .OR.        &
                   &        (       sgg%Med(media%sggMiHz(i1, j1, k1))%Is%ThinSlot))    !&
                   !&       (((               sggmiHy(i1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHy(i1, j1, k1) )%is%pec))) .AND.       &
                   !&        (.NOT.  sgg%Med(sggmiHy(i1, j1, k1))%Is%ThinSlot))
 
-                  oriZ4 = (direccion == iEy) .AND.   &
+                  oriZ4 = (direccion == IEY) .AND.   &
                   &        (((               media%sggMiHz(i1, j1, k1) ==0).or.(sgg%med(media%sggMiHz(i1, j1, k1))%is%PEC)) .OR.       &
                   &         (       sgg%Med(media%sggMiHz(i1, j1, k1))%Is%ThinSlot))   !&
                   !& .AND.  (((              sggmiHx(i1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHx(i1, j1, k1) )%is%pec))) .AND.      &
@@ -2683,11 +2683,11 @@ contains
                   !bounds must be checked with nested if/else: Fortran .AND. does not short-circuit,
                   !so k1-1/j1-1/i1-1 could still be evaluated out-of-bounds otherwise (bug fix 2026)
                   if (k1 > BoundingBox%ZI) then
-                     oriX2 = (direccion == iEy) .AND.   &
+                     oriX2 = (direccion == IEY) .AND.   &
                      &        (((               media%sggMiHx(i1, j1, k1-1) ==0).or.(sgg%med(media%sggMiHx(i1, j1, k1-1))%is%PEC)) .OR.     &
                      &         (       sgg%Med(media%sggMiHx(i1, j1, k1-1))%Is%ThinSlot))
 
-                     oriY2 = (direccion == iEx) .AND.   &
+                     oriY2 = (direccion == IEX) .AND.   &
                      &        (((               media%sggMiHy(i1, j1, k1-1) ==0).or.(sgg%med(media%sggMiHy(i1, j1, k1-1))%is%PEC)) .OR.      &
                      &         (sgg%Med(media%sggMiHy(i1, j1, k1-1))%Is%ThinSlot))
                   else
@@ -2700,7 +2700,7 @@ contains
                      &        (((                media%sggMiHx(i1, j1-1, k1) ==0).or.(sgg%med(media%sggMiHx(i1, j1-1, k1))%is%PEC)) .OR.     &
                      &         (        sgg%Med(media%sggMiHx(i1, j1-1, k1))%Is%ThinSlot))
 
-                     oriZ2 = (direccion == iEx)  .AND.   &
+                     oriZ2 = (direccion == IEX)  .AND.   &
                      &        (((               media%sggMiHz(i1, j1-1, k1) ==0).or.(sgg%med(media%sggMiHz(i1, j1-1, k1))%is%PEC)) .OR.      &
                      &         (       sgg%Med(media%sggMiHz(i1, j1-1, k1))%Is%ThinSlot))
                   else
@@ -2713,7 +2713,7 @@ contains
                      &        (((               media%sggMiHy(i1-1, j1, k1) ==0).or.(sgg%med(media%sggMiHy(i1-1, j1, k1))%is%PEC)) .OR.      &
                      &         (       sgg%Med(media%sggMiHy(i1-1, j1, k1))%Is%ThinSlot))
 
-                     oriZ3 = (direccion == iEy) .AND.   &
+                     oriZ3 = (direccion == IEY) .AND.   &
                      &        (((               media%sggMiHz(i1-1, j1, k1) ==0).or.(sgg%med(media%sggMiHz(i1-1, j1, k1))%is%PEC)) .OR.      &
                      &         (       sgg%Med(media%sggMiHz(i1-1, j1, k1))%Is%ThinSlot))
                   else
@@ -2722,27 +2722,27 @@ contains
                   end if
 
                   if (oriX.or.oriX4) then
-                     orientationIndex = iEx
+                     orientationIndex = IEX
                   else if (oriY.or.oriY4) then
-                     orientationIndex = iEy
+                     orientationIndex = IEY
                   else if (oriZ.or.oriZ4) then
                      orientationIndex = IEZ
                      !neighbors
                   else if (oriX2) then
-                     orientationIndex = iEx
+                     orientationIndex = IEX
                      k1 = k1-1
                   else if (oriY2) then
-                     orientationIndex = iEy
+                     orientationIndex = IEY
                      k1 = k1-1
                   else if (oriZ2) then
                      orientationIndex = IEZ
                      j1 = j1-1
                      !neighbors
                   else if (oriX3) then
-                     orientationIndex = iEx
+                     orientationIndex = IEX
                      j1 = j1-1
                   else if (oriY3) then
-                     orientationIndex = iEy
+                     orientationIndex = IEY
                      i1 = i1-1
                   else if (oriZ3) then
                      orientationIndex = IEZ
@@ -2758,14 +2758,14 @@ contains
                   medium2=-1
                   medium1=-1
                   select case (Abs(orientationIndex))
-                   case (iEx)
+                   case (IEX)
                      medium1 = media%sggMiHx(i1,j1,k1) 
                      if (i1 > BoundingBox%XI) then
                         medium2 = media%sggMiHx(i1-1,j1,k1)
                      else
                         medium2=medium1
                      end if
-                   case (iEy)
+                   case (IEY)
                      medium1 = media%sggMiHy(i1,j1,k1) 
                      if (j1 > BoundingBox%YI) then
                         medium2 = media%sggMiHy(i1,j1-1,k1)
@@ -2803,11 +2803,11 @@ contains
                      !assume normal incidence
                      !
                      select case (Abs(orientationIndex))
-                      case (iEx)
+                      case (IEX)
                         dir (1) = 1.0_RKIND
                         dir (2) = 0.0_RKIND
                         dir (3) = 0.0_RKIND
-                      case (iEy)
+                      case (IEY)
                         dir (1) = 0.0_RKIND
                         dir (2) = 1.0_RKIND
                         dir (3) = 0.0_RKIND
@@ -3385,7 +3385,7 @@ contains
                         & (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
                            !
                            select case (this%twires%TW(j1)%TWC(i1)%D)
-                            case (iEx, iEy, IEZ)
+                            case (IEX, IEY, IEZ)
                               sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
                            end select
                            exit loop_busqueda1
@@ -3522,11 +3522,11 @@ contains
             ((gridPoint%ZI >= BoundingBox%ZI) .OR. (gridPoint%ZI <= BoundingBox%ZE)) .AND. ((gridPoint%XE >= BoundingBox%XI).OR. (gridPoint%XE <= BoundingBox%XE)) .AND. &
             ((gridPoint%YE >= BoundingBox%YI) .OR. (gridPoint%YE <= BoundingBox%YE)) .AND. ((gridPoint%ZE >= BoundingBox%ZI).OR. (gridPoint%ZE <= BoundingBox%ZE))) then
             select case (this%BloquePRB%BP(i)%NML)
-             case (iEx)
+             case (IEX)
                do k = this%BloquePRB%BP(i)%i1, this%BloquePRB%BP(i)%I2, this%BloquePRB%BP(i)%skip
                   sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
                end do
-             case (iEy)
+             case (IEY)
                do k = this%BloquePRB%BP(i)%j1, this%BloquePRB%BP(i)%J2, this%BloquePRB%BP(i)%skip
                   sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
                end do
@@ -3721,7 +3721,7 @@ contains
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = iEx
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = IEX
                   end if
                else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_EY) then
                   if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE) .AND. (gridPoint%YI >= BoundingBox%YI) .AND. &
@@ -3730,7 +3730,7 @@ contains
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = iEy
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = IEY
                   end if
                else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_EZ) then
                   if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE) .AND. (gridPoint%YI >= BoundingBox%YI) .AND. &
@@ -3783,7 +3783,7 @@ contains
                            &    (gridPoint%YI >= BoundingBox%YI) .AND. &
                            &    (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
                               select case (this%twires%TW(j1)%TWC(i1)%D)
-                               case (iEx)
+                               case (IEX)
                                  sgg%observation(i)%nP = sgg%observation(i)%nP + 1
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%node = this%twires%TW(j1)%TWC(i1)%nd
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%XI = gridPoint%XI
@@ -3797,7 +3797,7 @@ contains
 
                                  !it is noted with a different index
                                  !
-                               case (iEy)
+                               case (IEY)
                                  sgg%observation(i)%nP = sgg%observation(i)%nP + 1
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%node = this%twires%TW(j1)%TWC(i1)%nd
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%XI = gridPoint%XI
@@ -3870,25 +3870,25 @@ contains
                               sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = gridPoint%ZI
                               direccion = this%tSlots%Tg(j1)%TgC(i1)%dir
                               select case (thinSlotData(j1)%normal(i1))
-                               case (iEx)
+                               case (IEX)
                                  select case (direccion)
                                   case (IEZ)
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = IVY
-                                  case (iEy)
+                                  case (IEY)
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = IVZ
                                  end select
-                               case (iEy)
+                               case (IEY)
                                  select case (direccion)
-                                  case (iEx)
+                                  case (IEX)
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = IVZ
                                   case (IEZ)
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = IVX
                                  end select
                                case (IEZ)
                                  select case (direccion)
-                                  case (iEy)
+                                  case (IEY)
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = IVX
-                                  case (iEx)
+                                  case (IEX)
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = IVY
                                  end select
                               end select
@@ -4006,13 +4006,13 @@ contains
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = iEx
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = IEX
                      !
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%YI = gridPoint%YI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = gridPoint%ZI
-                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = iEy
+                     sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = IEY
                      !
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
@@ -4159,7 +4159,7 @@ contains
                end if
                !END COMPATIBILITY 15/07/15
                select case (this%BloquePRB%BP(i)%NML)
-                case (iEx)
+                case (IEX)
                   do k = this%BloquePRB%BP(i)%i1, this%BloquePRB%BP(i)%I2, this%BloquePRB%BP(i)%skip
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = k
@@ -4176,7 +4176,7 @@ contains
                         sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = IBLOQUEMX
                      end if
                   end do
-                case (iEy)
+                case (IEY)
                   do k = this%BloquePRB%BP(i)%j1, this%BloquePRB%BP(i)%J2, this%BloquePRB%BP(i)%skip
                      sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%XI = gridPoint%XI
@@ -4366,11 +4366,11 @@ contains
                do j = 1, tama2
                   !I clip these probes to allow out-of-the box snapshot probes
                   tempType = this%VolPrb%collection(i)%cordinates(j)%or
-                  gridPoint%XI = max(this%VolPrb%collection(i)%cordinates(j)%XI,SINPML_fullsize(iEx)%XI)
-                  gridPoint%YI = max(this%VolPrb%collection(i)%cordinates(j)%YI,SINPML_fullsize(iEy)%YI)
+                  gridPoint%XI = max(this%VolPrb%collection(i)%cordinates(j)%XI,SINPML_fullsize(IEX)%XI)
+                  gridPoint%YI = max(this%VolPrb%collection(i)%cordinates(j)%YI,SINPML_fullsize(IEY)%YI)
                   gridPoint%ZI = max(this%VolPrb%collection(i)%cordinates(j)%ZI,SINPML_fullsize(IEZ)%ZI)
-                  gridPoint%XE = min(this%VolPrb%collection(i)%cordinates(j)%XE,SINPML_fullsize(iEx)%XE)
-                  gridPoint%YE = min(this%VolPrb%collection(i)%cordinates(j)%YE,SINPML_fullsize(iEy)%YE)
+                  gridPoint%XE = min(this%VolPrb%collection(i)%cordinates(j)%XE,SINPML_fullsize(IEX)%XE)
+                  gridPoint%YE = min(this%VolPrb%collection(i)%cordinates(j)%YE,SINPML_fullsize(IEY)%YE)
                   gridPoint%ZE = min(this%VolPrb%collection(i)%cordinates(j)%ZE,SINPML_fullsize(IEZ)%ZE)
                   memo=memo+(gridPoint%XE-gridPoint%XI+1)*(gridPoint%YE-gridPoint%YI+1)*(gridPoint%ZE-gridPoint%ZI+1)
 
@@ -4706,9 +4706,9 @@ contains
                         (K>=sinpml_FULLSIZE(field)%ZI)  .AND.(K<=sinpml_FULLSIZE(field)%ZI+4).OR. &
                         (K>=sinpml_FULLSIZE(field)%ZE-4).AND.(K<=sinpml_FULLSIZE(field)%ZE  )) then
                         select case (field)
-                         case (iEx)
+                         case (IEX)
                            media%sggMIEX(I,J,K)=1
-                         case (iEy)
+                         case (IEY)
                            media%sggMIEY(I,J,K)=1
                          case (IEZ)
                            media%sggMIEZ(I,J,K)=1
@@ -4888,39 +4888,39 @@ contains
          plusMedium = -1
          getThinSlotParallelLines = .true.
          select case (abs(normal))
-         case (iEx)
+         case (IEX)
             select case (component%dir)
-            case (iEy)
+            case (IEY)
                if (inEyBounds(i, j, k)) ownMedium = media%sggMiEy(i, j, k)
                if (inEyBounds(i, j, k - 1)) minusMedium = media%sggMiEy(i, j, k - 1)
                if (inEyBounds(i, j, k + 1)) plusMedium = media%sggMiEy(i, j, k + 1)
-            case (iEz)
+            case (IEZ)
                if (inEzBounds(i, j, k)) ownMedium = media%sggMiEz(i, j, k)
                if (inEzBounds(i, j - 1, k)) minusMedium = media%sggMiEz(i, j - 1, k)
                if (inEzBounds(i, j + 1, k)) plusMedium = media%sggMiEz(i, j + 1, k)
             case default
                getThinSlotParallelLines = .false.
             end select
-         case (iEy)
+         case (IEY)
             select case (component%dir)
-            case (iEx)
+            case (IEX)
                if (inExBounds(i, j, k)) ownMedium = media%sggMiEx(i, j, k)
                if (inExBounds(i, j, k - 1)) minusMedium = media%sggMiEx(i, j, k - 1)
                if (inExBounds(i, j, k + 1)) plusMedium = media%sggMiEx(i, j, k + 1)
-            case (iEz)
+            case (IEZ)
                if (inEzBounds(i, j, k)) ownMedium = media%sggMiEz(i, j, k)
                if (inEzBounds(i - 1, j, k)) minusMedium = media%sggMiEz(i - 1, j, k)
                if (inEzBounds(i + 1, j, k)) plusMedium = media%sggMiEz(i + 1, j, k)
             case default
                getThinSlotParallelLines = .false.
             end select
-         case (iEz)
+         case (IEZ)
             select case (component%dir)
-            case (iEx)
+            case (IEX)
                if (inExBounds(i, j, k)) ownMedium = media%sggMiEx(i, j, k)
                if (inExBounds(i, j - 1, k)) minusMedium = media%sggMiEx(i, j - 1, k)
                if (inExBounds(i, j + 1, k)) plusMedium = media%sggMiEx(i, j + 1, k)
-            case (iEy)
+            case (IEY)
                if (inEyBounds(i, j, k)) ownMedium = media%sggMiEy(i, j, k)
                if (inEyBounds(i - 1, j, k)) minusMedium = media%sggMiEy(i - 1, j, k)
                if (inEyBounds(i + 1, j, k)) plusMedium = media%sggMiEy(i + 1, j, k)
@@ -4993,11 +4993,11 @@ contains
                if (sourceMedium < 0) cycle
 
                select case (abs(thinSlotData(slot)%normal(a)))
-               case (iEx)
+               case (IEX)
                   call stampHx(ax, ay, az, sourceMedium, sourceTag)
-               case (iEy)
+               case (IEY)
                   call stampHy(ax, ay, az, sourceMedium, sourceTag)
-               case (iEz)
+               case (IEZ)
                   call stampHz(ax, ay, az, sourceMedium, sourceTag)
                end select
             end do
@@ -5047,21 +5047,21 @@ contains
          integer(kind=4) :: ii, jj, kk
 
          select case (abs(normal))
-         case (iEx)
+         case (IEX)
             do kk = vz - 1, vz + 1
                do jj = vy - 1, vy + 1
                   if (faceCellDistance(jj, vy) + faceCellDistance(kk, vz) > 1) cycle
                   call reconcileHxFaceEdges(slot, vx, jj, kk)
                end do
             end do
-         case (iEy)
+         case (IEY)
             do kk = vz - 1, vz + 1
                do ii = vx - 1, vx + 1
                   if (faceCellDistance(ii, vx) + faceCellDistance(kk, vz) > 1) cycle
                   call reconcileHyFaceEdges(slot, ii, vy, kk)
                end do
             end do
-         case (iEz)
+         case (IEZ)
             do jj = vy - 1, vy + 1
                do ii = vx - 1, vx + 1
                   if (faceCellDistance(ii, vx) + faceCellDistance(jj, vy) > 1) cycle
@@ -5084,24 +5084,24 @@ contains
          integer(kind=4) :: sourceMedium
          integer(kind=IKINDMTAG) :: sourceTag
 
-         if (.not. isThinSlotFaceOfSlot(slot, iEx, ii, jj, kk)) return
+         if (.not. isThinSlotFaceOfSlot(slot, IEX, ii, jj, kk)) return
          sourceMedium = media%sggMiHx(ii,jj,kk); sourceTag = tag_numbers%face%x(ii,jj,kk)
-         if (isThinSlotFaceOfSlot(slot, iEx, ii, jj, kk - 1)) then
+         if (isThinSlotFaceOfSlot(slot, IEX, ii, jj, kk - 1)) then
             call stampEy(ii, jj, kk, sourceMedium, sourceTag)
          else
             call clearEyThinSlot(ii, jj, kk, slot)
          end if
-         if (isThinSlotFaceOfSlot(slot, iEx, ii, jj, kk + 1)) then
+         if (isThinSlotFaceOfSlot(slot, IEX, ii, jj, kk + 1)) then
             call stampEy(ii, jj, kk + 1, sourceMedium, sourceTag)
          else
             call clearEyThinSlot(ii, jj, kk + 1, slot)
          end if
-         if (isThinSlotFaceOfSlot(slot, iEx, ii, jj - 1, kk)) then
+         if (isThinSlotFaceOfSlot(slot, IEX, ii, jj - 1, kk)) then
             call stampEz(ii, jj, kk, sourceMedium, sourceTag)
          else
             call clearEzThinSlot(ii, jj, kk, slot)
          end if
-         if (isThinSlotFaceOfSlot(slot, iEx, ii, jj + 1, kk)) then
+         if (isThinSlotFaceOfSlot(slot, IEX, ii, jj + 1, kk)) then
             call stampEz(ii, jj + 1, kk, sourceMedium, sourceTag)
          else
             call clearEzThinSlot(ii, jj + 1, kk, slot)
@@ -5113,24 +5113,24 @@ contains
          integer(kind=4) :: sourceMedium
          integer(kind=IKINDMTAG) :: sourceTag
 
-         if (.not. isThinSlotFaceOfSlot(slot, iEy, ii, jj, kk)) return
+         if (.not. isThinSlotFaceOfSlot(slot, IEY, ii, jj, kk)) return
          sourceMedium = media%sggMiHy(ii,jj,kk); sourceTag = tag_numbers%face%y(ii,jj,kk)
-         if (isThinSlotFaceOfSlot(slot, iEy, ii, jj, kk - 1)) then
+         if (isThinSlotFaceOfSlot(slot, IEY, ii, jj, kk - 1)) then
             call stampEx(ii, jj, kk, sourceMedium, sourceTag)
          else
             call clearExThinSlot(ii, jj, kk, slot)
          end if
-         if (isThinSlotFaceOfSlot(slot, iEy, ii, jj, kk + 1)) then
+         if (isThinSlotFaceOfSlot(slot, IEY, ii, jj, kk + 1)) then
             call stampEx(ii, jj, kk + 1, sourceMedium, sourceTag)
          else
             call clearExThinSlot(ii, jj, kk + 1, slot)
          end if
-         if (isThinSlotFaceOfSlot(slot, iEy, ii - 1, jj, kk)) then
+         if (isThinSlotFaceOfSlot(slot, IEY, ii - 1, jj, kk)) then
             call stampEz(ii, jj, kk, sourceMedium, sourceTag)
          else
             call clearEzThinSlot(ii, jj, kk, slot)
          end if
-         if (isThinSlotFaceOfSlot(slot, iEy, ii + 1, jj, kk)) then
+         if (isThinSlotFaceOfSlot(slot, IEY, ii + 1, jj, kk)) then
             call stampEz(ii + 1, jj, kk, sourceMedium, sourceTag)
          else
             call clearEzThinSlot(ii + 1, jj, kk, slot)
@@ -5142,24 +5142,24 @@ contains
          integer(kind=4) :: sourceMedium
          integer(kind=IKINDMTAG) :: sourceTag
 
-         if (.not. isThinSlotFaceOfSlot(slot, iEz, ii, jj, kk)) return
+         if (.not. isThinSlotFaceOfSlot(slot, IEZ, ii, jj, kk)) return
          sourceMedium = media%sggMiHz(ii,jj,kk); sourceTag = tag_numbers%face%z(ii,jj,kk)
-         if (isThinSlotFaceOfSlot(slot, iEz, ii, jj - 1, kk)) then
+         if (isThinSlotFaceOfSlot(slot, IEZ, ii, jj - 1, kk)) then
             call stampEx(ii, jj, kk, sourceMedium, sourceTag)
          else
             call clearExThinSlot(ii, jj, kk, slot)
          end if
-         if (isThinSlotFaceOfSlot(slot, iEz, ii, jj + 1, kk)) then
+         if (isThinSlotFaceOfSlot(slot, IEZ, ii, jj + 1, kk)) then
             call stampEx(ii, jj + 1, kk, sourceMedium, sourceTag)
          else
             call clearExThinSlot(ii, jj + 1, kk, slot)
          end if
-         if (isThinSlotFaceOfSlot(slot, iEz, ii - 1, jj, kk)) then
+         if (isThinSlotFaceOfSlot(slot, IEZ, ii - 1, jj, kk)) then
             call stampEy(ii, jj, kk, sourceMedium, sourceTag)
          else
             call clearEyThinSlot(ii, jj, kk, slot)
          end if
-         if (isThinSlotFaceOfSlot(slot, iEz, ii + 1, jj, kk)) then
+         if (isThinSlotFaceOfSlot(slot, IEZ, ii + 1, jj, kk)) then
             call stampEy(ii + 1, jj, kk, sourceMedium, sourceTag)
          else
             call clearEyThinSlot(ii + 1, jj, kk, slot)
@@ -5195,13 +5195,13 @@ contains
 
          isThinSlotFaceOfSlot = .false.
          select case (abs(normal))
-         case (iEx)
+         case (IEX)
             if (.not. inHxBounds(ii,jj,kk)) return
             isThinSlotFaceOfSlot = isThinSlotEdgeOfSlot(slot, media%sggMiHx(ii,jj,kk), tag_numbers%face%x(ii,jj,kk))
-         case (iEy)
+         case (IEY)
             if (.not. inHyBounds(ii,jj,kk)) return
             isThinSlotFaceOfSlot = isThinSlotEdgeOfSlot(slot, media%sggMiHy(ii,jj,kk), tag_numbers%face%y(ii,jj,kk))
-         case (iEz)
+         case (IEZ)
             if (.not. inHzBounds(ii,jj,kk)) return
             isThinSlotFaceOfSlot = isThinSlotEdgeOfSlot(slot, media%sggMiHz(ii,jj,kk), tag_numbers%face%z(ii,jj,kk))
          end select
@@ -5223,15 +5223,15 @@ contains
                call getThinSlotMedium(component, thinSlotData(slot)%normal(a), sourceMedium, sourceTag)
                if (sourceMedium < 0) cycle
                select case (abs(thinSlotData(slot)%normal(a)))
-               case (iEx)
-                  if (component%dir == iEy) call stampEz(vx, vy, vz, sourceMedium, sourceTag)
-                  if (component%dir == iEz) call stampEy(vx, vy, vz, sourceMedium, sourceTag)
-               case (iEy)
-                  if (component%dir == iEx) call stampEz(vx, vy, vz, sourceMedium, sourceTag)
-                  if (component%dir == iEz) call stampEx(vx, vy, vz, sourceMedium, sourceTag)
-               case (iEz)
-                  if (component%dir == iEx) call stampEy(vx, vy, vz, sourceMedium, sourceTag)
-                  if (component%dir == iEy) call stampEx(vx, vy, vz, sourceMedium, sourceTag)
+               case (IEX)
+                  if (component%dir == IEY) call stampEz(vx, vy, vz, sourceMedium, sourceTag)
+                  if (component%dir == IEZ) call stampEy(vx, vy, vz, sourceMedium, sourceTag)
+               case (IEY)
+                  if (component%dir == IEX) call stampEz(vx, vy, vz, sourceMedium, sourceTag)
+                  if (component%dir == IEZ) call stampEx(vx, vy, vz, sourceMedium, sourceTag)
+               case (IEZ)
+                  if (component%dir == IEX) call stampEy(vx, vy, vz, sourceMedium, sourceTag)
+                  if (component%dir == IEY) call stampEx(vx, vy, vz, sourceMedium, sourceTag)
                end select
                exit
             end do
@@ -5244,11 +5244,11 @@ contains
 
          vx = component%i; vy = component%j; vz = component%k
          select case (component%dir)
-         case (iEx)
+         case (IEX)
             vx = vx + 1
-         case (iEy)
+         case (IEY)
             vy = vy + 1
-         case (iEz)
+         case (IEZ)
             vz = vz + 1
          end select
       end subroutine
@@ -5275,19 +5275,19 @@ contains
          vertexOnPECSurfacePerimeter = .false.
          if (abs(normal) /= abs(surface%or)) return
          select case (abs(normal))
-         case (iEx)
+         case (IEX)
             vertexOnPECSurfacePerimeter = vx == min(surface%xi, surface%xe) .and. &
                vy >= min(surface%yi, surface%ye) .and. vy <= max(surface%yi, surface%ye) + 1 .and. &
                vz >= min(surface%zi, surface%ze) .and. vz <= max(surface%zi, surface%ze) + 1 .and. &
                (vy == min(surface%yi, surface%ye) .or. vy == max(surface%yi, surface%ye) + 1 .or. &
                 vz == min(surface%zi, surface%ze) .or. vz == max(surface%zi, surface%ze) + 1)
-         case (iEy)
+         case (IEY)
             vertexOnPECSurfacePerimeter = vy == min(surface%yi, surface%ye) .and. &
                vx >= min(surface%xi, surface%xe) .and. vx <= max(surface%xi, surface%xe) + 1 .and. &
                vz >= min(surface%zi, surface%ze) .and. vz <= max(surface%zi, surface%ze) + 1 .and. &
                (vx == min(surface%xi, surface%xe) .or. vx == max(surface%xi, surface%xe) + 1 .or. &
                 vz == min(surface%zi, surface%ze) .or. vz == max(surface%zi, surface%ze) + 1)
-         case (iEz)
+         case (IEZ)
             vertexOnPECSurfacePerimeter = vz == min(surface%zi, surface%ze) .and. &
                vx >= min(surface%xi, surface%xe) .and. vx <= max(surface%xi, surface%xe) + 1 .and. &
                vy >= min(surface%yi, surface%ye) .and. vy <= max(surface%yi, surface%ye) + 1 .and. &
@@ -5305,15 +5305,15 @@ contains
          sourceMedium = -1
          sourceTag = 0
          select case (abs(normal))
-         case (iEx)
-            if (component%dir == iEy) sourceMedium = media%sggMiEz(component%i, component%j, component%k)
-            if (component%dir == iEz) sourceMedium = media%sggMiEy(component%i, component%j, component%k)
-         case (iEy)
-            if (component%dir == iEx) sourceMedium = media%sggMiEz(component%i, component%j, component%k)
-            if (component%dir == iEz) sourceMedium = media%sggMiEx(component%i, component%j, component%k)
-         case (iEz)
-            if (component%dir == iEx) sourceMedium = media%sggMiEy(component%i, component%j, component%k)
-            if (component%dir == iEy) sourceMedium = media%sggMiEx(component%i, component%j, component%k)
+         case (IEX)
+            if (component%dir == IEY) sourceMedium = media%sggMiEz(component%i, component%j, component%k)
+            if (component%dir == IEZ) sourceMedium = media%sggMiEy(component%i, component%j, component%k)
+         case (IEY)
+            if (component%dir == IEX) sourceMedium = media%sggMiEz(component%i, component%j, component%k)
+            if (component%dir == IEZ) sourceMedium = media%sggMiEx(component%i, component%j, component%k)
+         case (IEZ)
+            if (component%dir == IEX) sourceMedium = media%sggMiEy(component%i, component%j, component%k)
+            if (component%dir == IEY) sourceMedium = media%sggMiEx(component%i, component%j, component%k)
          end select
          if (sourceMedium >= 0 .and. sourceMedium <= sgg%NumMedia) then
             if (sgg%Med(sourceMedium)%Is%ThinSlot) sourceTag = media%sggMtag(component%i, component%j, component%k)
@@ -6685,7 +6685,7 @@ contains
          end if
       end do
       !assign limits
-      do field = iEx, IHZ
+      do field = IEX, IHZ
          SINPML_fullsize(field)%XI = this%despl%mx1
          SINPML_fullsize(field)%YI = this%despl%my1
          SINPML_fullsize(field)%ZI = this%despl%mz1
@@ -6694,8 +6694,8 @@ contains
          SINPML_fullsize(field)%ZE = this%despl%mz2
       end do
       !adjust the endings
-      SINPML_fullsize(iEx)%XE = SINPML_fullsize(iEx)%XE - 1
-      SINPML_fullsize(iEy)%YE = SINPML_fullsize(iEy)%YE - 1
+      SINPML_fullsize(IEX)%XE = SINPML_fullsize(IEX)%XE - 1
+      SINPML_fullsize(IEY)%YE = SINPML_fullsize(IEY)%YE - 1
       SINPML_fullsize(IEZ)%ZE = SINPML_fullsize(IEZ)%ZE - 1
       !
       !
@@ -6706,7 +6706,7 @@ contains
       SINPML_fullsize(IHZ)%XE = SINPML_fullsize(IHZ)%XE - 1
       SINPML_fullsize(IHZ)%YE = SINPML_fullsize(IHZ)%YE - 1
       !
-      do field = iEx, IHZ
+      do field = IEX, IHZ
          fullsize(field)%XI = SINPML_fullsize(field)%XI - sgg%PML%NumLayers(ICOORD, COMI)
          fullsize(field)%YI = SINPML_fullsize(field)%YI - sgg%PML%NumLayers(JCOORD, COMI)
          fullsize(field)%ZI = SINPML_fullsize(field)%ZI - sgg%PML%NumLayers(KCOORD, COMI)
@@ -6916,13 +6916,13 @@ contains
       character(len=BUFSIZE) :: buff
 
       do k= sgg%Alloc(IEZ)%ZI , sgg%Alloc(IEZ)%ZE
-         do j= sgg%Alloc(iEy)%YI , sgg%Alloc(iEy)%YE
-            do i= sgg%Alloc(iEx)%XI , sgg%Alloc(iEx)%XE
+         do j= sgg%Alloc(IEY)%YI , sgg%Alloc(IEY)%YE
+            do i= sgg%Alloc(IEX)%XI , sgg%Alloc(IEX)%XE
                imenos1= i-1
                jmenos1= j-1
                kmenos1= k-1
-               if (i-1 <  sgg%alloc(iEx)%XI) imenos1=i
-               if (j-1 <  sgg%alloc(iEy)%YI) jmenos1=j
+               if (i-1 <  sgg%alloc(IEX)%XI) imenos1=i
+               if (j-1 <  sgg%alloc(IEY)%YI) jmenos1=j
                if (k-1 <  sgg%alloc(IEZ)%ZI) kmenos1=k
 
                med(0)  = media%sggMiEx(i       , j       , k)

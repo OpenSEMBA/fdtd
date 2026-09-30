@@ -97,13 +97,13 @@ contains
       res(:)%zc = 0.0
       do i = 1, size(cs)
          select case (cs(i)%Or)
-          case (iEx)
+          case (IEX)
             res(i)%xc = 1.0
-          case (-iEx)
+          case (-IEX)
             res(i)%xc = -1.0
-          case (iEy)
+          case (IEY)
             res(i)%yc = 1.0
-          case (-iEy)
+          case (-IEY)
             res(i)%yc = -1.0
           case (IEZ)
             res(i)%zc = 1.0

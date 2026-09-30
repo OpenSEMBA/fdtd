@@ -702,7 +702,7 @@ contains
             this%sgg%Sweep(1:6)%ZI = this%fullsize(1:6)%ZI
             this%sgg%Sweep(1:6)%ZE = this%fullsize(1:6)%ZE
             !!included here because it is needed for clip 16/07/15
-            do field = iEx, IHZ
+            do field = IEX, IHZ
                this%sgg%SINPMLSweep(field)%XI = Max (this%SINPML_fullsize(field)%XI, this%sgg%Sweep(field)%XI)
                this%sgg%SINPMLSweep(field)%XE = Min (this%SINPML_fullsize(field)%XE, this%sgg%Sweep(field)%XE)
                this%sgg%SINPMLSweep(field)%YI = Max (this%SINPML_fullsize(field)%YI, this%sgg%Sweep(field)%YI)
@@ -771,7 +771,7 @@ contains
       
             ! if the layout is pure PML then take at least a line of non PML to build the PML data insider read_geomDAta
             ! Uses extra memory but later matrix sggm is deallocated in favor of smaller sggMIEX, etc
-            do field = iEx, IHZ
+            do field = IEX, IHZ
                tempalloc(field)%ZE = this%sgg%Alloc(field)%ZE
                tempalloc(field)%ZI = this%sgg%Alloc(field)%ZI
                this%sgg%Alloc(field)%ZE = Max (this%sgg%Alloc(field)%ZE, this%SINPML_fullsize(field)%ZI+1)
@@ -780,7 +780,7 @@ contains
             !   
             call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)  
             !!included here because it is needed for clip 16/07/15
-            do field = iEx, IHZ
+            do field = IEX, IHZ
                this%sgg%SINPMLSweep(field)%XI = Max (this%SINPML_fullsize(field)%XI, this%sgg%Sweep(field)%XI)
                this%sgg%SINPMLSweep(field)%XE = Min (this%SINPML_fullsize(field)%XE, this%sgg%Sweep(field)%XE)
                this%sgg%SINPMLSweep(field)%YI = Max (this%SINPML_fullsize(field)%YI, this%sgg%Sweep(field)%YI)
@@ -813,7 +813,7 @@ contains
             write(dubuf,*) '[OK] ENDED NFDE --------> GEOM'
             call print11 (this%l%layoutnumber, dubuf)
             !restore back the indexes
-            do field = iEx, IHZ
+            do field = IEX, IHZ
                this%sgg%Alloc(field)%ZE = tempalloc(field)%ZE
                this%sgg%Alloc(field)%ZI = tempalloc(field)%ZI
             end do
@@ -826,7 +826,7 @@ contains
          call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
          !!!!!!!!!!!!!I also leave it here below even though it was already computed before for the clipping
-         do field = iEx, IHZ
+         do field = IEX, IHZ
             this%sgg%SINPMLSweep(field)%XI = Max (this%SINPML_fullsize(field)%XI, this%sgg%Sweep(field)%XI)
             this%sgg%SINPMLSweep(field)%XE = Min (this%SINPML_fullsize(field)%XE, this%sgg%Sweep(field)%XE)
             this%sgg%SINPMLSweep(field)%YI = Max (this%SINPML_fullsize(field)%YI, this%sgg%Sweep(field)%YI)

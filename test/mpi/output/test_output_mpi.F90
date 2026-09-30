@@ -1,6 +1,6 @@
 program test_output_mpi
    use mpi
-    use FDETYPES_m, only: iEx, IEZ, limit_t
+    use FDETYPES_m, only: IEX, IEZ, limit_t
    use outputCollective_m, only: output_collective_t, init_output_collective, &
                                  select_output_participants, &
                                  prepare_output_partition_publication, &
@@ -39,7 +39,7 @@ program test_output_mpi
       local_sweep = limit_t(0, 0, 0, 0, 2 * rank, 2 * (rank + 1), 1, 1, 3)
 
       call build_output_partition(request_lower, request_upper, global_bounds, local_sweep, &
-                                  iEx, rank, rank_count, partition, status)
+                                  IEX, rank, rank_count, partition, status)
       if (status /= OUTPUT_PARTITION_SUCCESS .or. .not. partition%has_data) failures = failures + 1
 
       allocate(rank_has_data(rank_count))

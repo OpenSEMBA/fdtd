@@ -124,14 +124,14 @@ integer function test_is_valid_point_field() bind(c) result(err)
      call setup_dummy_problem_info(problemInfo)
 
      ! Point inside boundary
-     valid = isValidPointForField(iEx, 5, 5, 5, problemInfo)
+     valid = isValidPointForField(IEX, 5, 5, 5, problemInfo)
      if (.not. valid) then
          print *, "Expected True for field probe in bounds"
          test_err = test_err + 1
      end if
 
      ! Point outside boundary (-1)
-     valid = isValidPointForField(iEx, -1, 5, 5, problemInfo)
+     valid = isValidPointForField(IEX, -1, 5, 5, problemInfo)
      if (valid) then
           print *, "Expected False for field probe out of bounds"
           test_err = test_err + 1

@@ -54,13 +54,13 @@ contains
            Idxe(sgg%ALLOC(IHX)%XI : sgg%ALLOC(IHX)%XE), &
            Idye(sgg%ALLOC(IHY)%YI : sgg%ALLOC(IHY)%YE), &
            Idze(sgg%ALLOC(IHZ)%ZI : sgg%ALLOC(IHZ)%ZE), &
-           Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
-           Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
+           Idxh(sgg%ALLOC(IEX)%XI : sgg%ALLOC(IEX)%XE), &
+           Idyh(sgg%ALLOC(IEY)%YI : sgg%ALLOC(IEY)%YE), &
            Idzh(sgg%ALLOC(IEZ)%ZI : sgg%ALLOC(IEZ)%ZE)
                                                            
         real(kind=RKIND)   , intent(in), target      :: &
-            Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE),&
-            Ey(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE),&
+            Ex(sgg%Alloc(IEX)%XI : sgg%Alloc(IEX)%XE,sgg%Alloc(IEX)%YI : sgg%Alloc(IEX)%YE,sgg%Alloc(IEX)%ZI : sgg%Alloc(IEX)%ZE),&
+            Ey(sgg%Alloc(IEY)%XI : sgg%Alloc(IEY)%XE,sgg%Alloc(IEY)%YI : sgg%Alloc(IEY)%YE,sgg%Alloc(IEY)%ZI : sgg%Alloc(IEY)%ZE),&
             Ez(sgg%Alloc(IEZ)%XI : sgg%Alloc(IEZ)%XE,sgg%Alloc(IEZ)%YI : sgg%Alloc(IEZ)%YE,sgg%Alloc(IEZ)%ZI : sgg%Alloc(IEZ)%ZE),&
             Hx(sgg%alloc(IHX)%XI : sgg%alloc(IHX)%XE,sgg%alloc(IHX)%YI : sgg%alloc(IHX)%YE,sgg%alloc(IHX)%ZI : sgg%alloc(IHX)%ZE),&
             Hy(sgg%alloc(IHY)%XI : sgg%alloc(IHY)%XE,sgg%alloc(IHY)%YI : sgg%alloc(IHY)%YE,sgg%alloc(IHY)%ZI : sgg%alloc(IHY)%ZE),&
@@ -70,8 +70,8 @@ contains
       integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: &
               sggMiNo(sgg%alloc(IHX)%XI : sgg%alloc(IHX)%XE,sgg%alloc(IHY)%YI : sgg%alloc(IHY)%YE,sgg%alloc(IHZ)%ZI : sgg%alloc(IHZ)%ZE)
       integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(inout) :: &
-              sggMiEx(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE), &
-              sggMiEy(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE), &
+              sggMiEx(sgg%Alloc(IEX)%XI : sgg%Alloc(IEX)%XE,sgg%Alloc(IEX)%YI : sgg%Alloc(IEX)%YE,sgg%Alloc(IEX)%ZI : sgg%Alloc(IEX)%ZE), &
+              sggMiEy(sgg%Alloc(IEY)%XI : sgg%Alloc(IEY)%XE,sgg%Alloc(IEY)%YI : sgg%Alloc(IEY)%YE,sgg%Alloc(IEY)%ZI : sgg%Alloc(IEY)%ZE), &
               sggMiEz(sgg%Alloc(IEZ)%XI : sgg%Alloc(IEZ)%XE,sgg%Alloc(IEZ)%YI : sgg%Alloc(IEZ)%YE,sgg%Alloc(IEZ)%ZI : sgg%Alloc(IEZ)%ZE), &
               sggMiHx(sgg%Alloc(IHX)%XI : sgg%Alloc(IHX)%XE,sgg%Alloc(IHX)%YI : sgg%Alloc(IHX)%YE,sgg%Alloc(IHX)%ZI : sgg%Alloc(IHX)%ZE), &
               sggMiHy(sgg%Alloc(IHY)%XI : sgg%Alloc(IHY)%XE,sgg%Alloc(IHY)%YI : sgg%Alloc(IHY)%YE,sgg%Alloc(IHY)%ZI : sgg%Alloc(IHY)%ZE), &
@@ -135,8 +135,8 @@ contains
       ZE=sgg%Sweep(IHZ)%ZE
 
 
-      dir(iEx)=' X '
-      dir(iEy)=' Y '
+      dir(IEX)=' X '
+      dir(IEY)=' Y '
       dir(IEZ)=' Z '
       thereAreVsources=.false.
       thereAreIsources=.false.
@@ -355,12 +355,12 @@ contains
                      origindex2= sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%origIndex
                      !
                      select case (whatfield) !cyclic
-                      case (iEx)
+                      case (IEX)
                         select case (whatfield2)
-                         case (iEx)
+                         case (IEX)
                            conectado1 = conectado1 .or. ((i1   == i2+1).and.(j1 == j2  ).and.(k1 == k2  ))
                            conectado2 = conectado2 .or. ((i1 +1== i2  ).and.(j1 == j2  ).and.(k1 == k2  ))
-                         case (iEy)
+                         case (IEY)
                            conectado1 = conectado1 .or. ((i1   == i2  ).and.(j1 == j2  ).and.(k1 == k2  ))
                            conectado1 = conectado1 .or. ((i1   == i2  ).and.(j1 == j2+1).and.(k1 == k2  ))
                            !
@@ -373,9 +373,9 @@ contains
                            conectado2 = conectado2 .or. ((i1 +1== i2  ).and.(j1 == j2  ).and.(k1 == k2  ))
                            conectado2 = conectado2 .or. ((i1 +1== i2  ).and.(j1 == j2  ).and.(k1 == k2+1))
                         end select
-                      case (iEy)
+                      case (IEY)
                         select case (whatfield2)
-                         case (iEy)
+                         case (IEY)
                            conectado1 = conectado1 .or. ((j1   == j2+1).and.(k1 == k2  ).and.(i1 == i2  ))
                            conectado2 = conectado2 .or. ((j1 +1== j2  ).and.(k1 == k2  ).and.(i1 == i2  ))
                          case (IEZ)
@@ -384,7 +384,7 @@ contains
                            !
                            conectado2 = conectado2 .or. ((j1 +1== j2  ).and.(k1 == k2  ).and.(i1 == i2  ))
                            conectado2 = conectado2 .or. ((j1 +1== j2  ).and.(k1 == k2+1).and.(i1 == i2  ))
-                         case (iEx)
+                         case (IEX)
                            conectado1 = conectado1 .or. ((j1   == j2  ).and.(k1 == k2  ).and.(i1 == i2  ))
                            conectado1 = conectado1 .or. ((j1   == j2  ).and.(k1 == k2  ).and.(i1 == i2+1))
                            !
@@ -396,13 +396,13 @@ contains
                          case (IEZ)
                            conectado1 = conectado1 .or. ((k1   == k2+1).and.(i1 == i2  ).and.(j1 == j2  ))
                            conectado2 = conectado2 .or. ((k1 +1== k2  ).and.(i1 == i2  ).and.(j1 == j2  ))
-                         case (iEx)
+                         case (IEX)
                            conectado1 = conectado1 .or. ((k1   == k2  ).and.(i1 == i2  ).and.(j1 == j2  ))
                            conectado1 = conectado1 .or. ((k1   == k2  ).and.(i1 == i2+1).and.(j1 == j2  ))
                            !
                            conectado2 = conectado2 .or. ((k1 +1== k2  ).and.(i1 == i2  ).and.(j1 == j2  ))
                            conectado2 = conectado2 .or. ((k1 +1== k2  ).and.(i1 == i2+1).and.(j1 == j2  ))
-                         case (iEy)
+                         case (IEY)
                            conectado1 = conectado1 .or. ((k1   == k2  ).and.(i1 == i2  ).and.(j1 == j2  ))
                            conectado1 = conectado1 .or. ((k1   == k2  ).and.(i1 == i2  ).and.(j1 == j2+1))
                            !
@@ -441,11 +441,11 @@ contains
                   !detect which is the free end
                   if ((.not.conectado).and.conectado1) then
                      select case (whatfield)
-                      case (iEx)
+                      case (IEX)
                         sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%ilibre = i1 +1
                         sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%jlibre = j1
                         sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%klibre = k1
-                      case (iEy)
+                      case (IEY)
                         sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%ilibre = i1
                         sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%jlibre = j1 +1
                         sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%klibre = k1
@@ -466,11 +466,11 @@ contains
                      sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%Is_LeftEnd              = .true.
                      sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%Is_RightEnd              = .true.
                      select case (whatfield)
-                      case (iEx)
+                      case (IEX)
                         sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%ilibre = i1 +1
                         sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%jlibre = j1
                         sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%klibre = k1
-                      case (iEy)
+                      case (IEY)
                         sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%ilibre = i1
                         sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%jlibre = j1 +1
                         sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%klibre = k1
@@ -576,9 +576,9 @@ contains
                               if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff,.true.)
                            end if
                            select case (whatfield)
-                            case (iEx)
+                            case (IEX)
                               if (i2 == i1) sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%ilibre = i1+1
-                            case (iEy)
+                            case (IEY)
                               if (j2 == j1) sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%jlibre = j1+1
                             case (IEZ)
                               if (k2 == k1) sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%klibre = k1+1
@@ -586,11 +586,11 @@ contains
                         end if
                      else !OF THE NUMBER OF SEGMENTS '2014 NOT PORTED TO !CHECK
                         select case (whatfield)
-                         case (iEx)
+                         case (IEX)
                            sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%ilibre = i1+1
                            sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%jlibre = j1
                            sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%klibre = k1
-                         case (iEy)
+                         case (IEY)
                            sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%ilibre = i1
                            sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%jlibre = j1+1
                            sgg%Med(HWires%wireMediumType(iwi))%wire(1)%segm(iwj)%klibre = k1
@@ -1268,7 +1268,7 @@ contains
                      end if
                      !
                      select case (HWires%CurrentSegment(conta)%fieldKind)
-                     case (iEx)
+                     case (IEX)
                         ! default
                         HWires%CurrentSegment(conta)%Efield_wire2main => Ex(i1,j1,k1) 
                         HWires%CurrentSegment(conta)%Efield_main2wire => Ex(i1,j1,k1) 
@@ -1289,7 +1289,7 @@ contains
                         HWires%CurrentSegment(conta)%y      = k1+0.25_RKIND_WIRES 
                         sggmiE = sggmiEx(i1,j1,k1); call deembed_peclossyconformal_segments(sggmiE); sggmiEx(i1,j1,k1)= sggmiE !in case it has been modified !aggressive note 180220 !note moved here 170323 from its place because the deltatrans had not been set and a division by zero occurred
                         !end dama
-                      case (iEy)    
+                      case (IEY)    
                         ! default
                         HWires%CurrentSegment(conta)%Efield_wire2main => Ey(i1,j1,k1) 
                         HWires%CurrentSegment(conta)%Efield_main2wire => Ey(i1,j1,k1)      
@@ -1357,7 +1357,7 @@ contains
                     call stoponerror(control%layoutnumber,control%num_procs,'Makeholes not available for MPI. Stoppping. ')
                 end if
                select case (whatfield)
-                case (iEx)
+                case (IEX)
                   sggmiHx(i  ,j  ,k) = 1
                   sggmiHx(i  ,j-1,k) = 1
                   sggmiHx(i  ,j  ,k -1) = 1
@@ -1428,7 +1428,7 @@ contains
                         call WarnErrReport(buff)
                      end if
                   end if
-                case (iEy)
+                case (IEY)
                   sggmiHy(i   ,j   ,k) = 1
                   sggmiHy(i   ,j   ,k-1) = 1
                   sggmiHy(i -1,j   ,k) = 1
@@ -1514,7 +1514,7 @@ contains
                      i,j,k,' for WIRE-segment ',segmento%origIndex,' '//dir(whatfield)
                      call WarnErrReport(buff)
                   end if
-                  if ((k   <=  sgg%alloc(iEx)%ZE).and.(k  >= sgg%alloc(iEx)%ZI)) then
+                  if ((k   <=  sgg%alloc(IEX)%ZE).and.(k  >= sgg%alloc(IEX)%ZI)) then
                      if (.not.sgg%med(sggmiEx(i  ,j  ,k))%Is%ThinWire)  then
                         sggmiEx(i  ,j  ,k) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
@@ -1528,7 +1528,7 @@ contains
                         call WarnErrReport(buff)
                      end if
                   end if
-                  if ((k   <=  sgg%alloc(iEy)%ZE).and.(k  >= sgg%alloc(iEy)%ZI)) then
+                  if ((k   <=  sgg%alloc(IEY)%ZE).and.(k  >= sgg%alloc(IEY)%ZI)) then
                      if (.not.sgg%med(sggmiEy(i  ,j  ,k))%Is%ThinWire)  then
                         sggmiEy(i  ,j  ,k) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
@@ -1542,7 +1542,7 @@ contains
                         call WarnErrReport(buff)
                      end if
                   end if
-                  if ((k + 1  <=  sgg%alloc(iEx)%ZE).and.(k + 1 >= sgg%alloc(iEx)%ZI)) then
+                  if ((k + 1  <=  sgg%alloc(IEX)%ZE).and.(k + 1 >= sgg%alloc(IEX)%ZI)) then
                      if (.not.sgg%med(sggmiEx(i  ,j  ,k + 1))%Is%ThinWire)  then
                         sggmiEx(i  ,j  ,k + 1) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
@@ -1556,7 +1556,7 @@ contains
                         call WarnErrReport(buff)
                      end if
                   end if
-                  if ((k + 1  <=  sgg%alloc(iEy)%ZE).and.(k + 1 >= sgg%alloc(iEy)%ZI)) then
+                  if ((k + 1  <=  sgg%alloc(IEY)%ZE).and.(k + 1 >= sgg%alloc(IEY)%ZI)) then
                      if (.not.sgg%med(sggmiEy(i  ,j  ,k + 1))%Is%ThinWire)  then
                         sggmiEy(i  ,j  ,k + 1) = 1
                         write (buff,'(a,3i7,a,i7,a)')  'wir0_WARNING: Making a two-cell free-space thru-hole  (take care of possible open air leftovers) at ', &
@@ -1859,9 +1859,9 @@ contains
          IsLossyMinu=.false. ; IsPECMinu = .false. ;       
 !!!! 
          select case (whatfield)
-             case (iEx)
+             case (IEX)
                 esPML= sgg%med(sggmiEx(i,j,k))%is%PML
-             case (iEy)
+             case (IEY)
                 esPML= sgg%med(sggmiEy(i,j,k))%is%PML
              case (IEZ)
                 esPML= sgg%med(sggmiEz(i,j,k))%is%PML
@@ -1879,7 +1879,7 @@ contains
                 ! the nodal information is used (what follows will someday be moved to the nodal generation routine created in preprocess and only what follows may be left 110815
                 !!!bug 270224 gg When the MPI boundary is exceeded kmenos1=k or kmas1=k gives a buggy error. But no decision is taken. it can be ignored with -ignoreerrors
                 select case (whatfield)
-                 case (iEx)
+                 case (IEX)
                    med(0)  = sggMiEx(i + 1  , j     , k)
                    med(1)  = sggMiEy(i + 1  , j     , k)
                    med(2)  = sggMiEy(i + 1  , j - 1 , k)
@@ -1893,7 +1893,7 @@ contains
                    med(9)  = sggMiEz(i      , j     , k)
                    if (kmenos1 <  sgg%alloc(IEZ)%ZI) kmenos1=k; med(10) = sggMiEz(i      , j     , kmenos1)
                    med(11) = sggMiNo(i      , j     , k)
-                 case (iEy)
+                 case (IEY)
                    med(0)  = sggMiEy(i      , j + 1 , k)
                    med(1)  = sggMiEz(i      , j + 1 , k)
                    if (kmenos1 <  sgg%alloc(IEZ)%ZI) kmenos1=k; med(2)  = sggMiEz(i      , j + 1 , kmenos1)
@@ -1911,10 +1911,10 @@ contains
 !!!careful 270224 this logic is wrong because I overwrite the variables kmas1 and kmenos1.... fix.... it has no impact because the loop is informative and no decisions are taken. in any case it would only affect MPI!
                      !!!but this is not the reason 27024 why the gg error occurs   (    8/   40) wir1_BUGGYERROR:  Lossy, pec,  2.           329         180         160   15000.0000000000      F F
                    if (kmas1   >  sgg%alloc(IEZ)%ZE) kmas1=k  ; med(0)  = sggMiEz(i     , j     , kmas1)
-                   if (kmas1   >  sgg%alloc(iEx)%ZE) kmas1=k  ; med(1)  = sggMiEx(i     , j     , kmas1)
-                   if (kmas1   >  sgg%alloc(iEx)%ZE) kmas1=k  ; med(2)  = sggMiEx(i - 1 , j     , kmas1)
-                   if (kmas1   >  sgg%alloc(iEy)%ZE) kmas1=k  ; med(3)  = sggMiEy(i     , j     , kmas1)
-                   if (kmas1   >  sgg%alloc(iEy)%ZE) kmas1=k  ; med(4)  = sggMiEy(i     , j - 1 , kmas1)
+                   if (kmas1   >  sgg%alloc(IEX)%ZE) kmas1=k  ; med(1)  = sggMiEx(i     , j     , kmas1)
+                   if (kmas1   >  sgg%alloc(IEX)%ZE) kmas1=k  ; med(2)  = sggMiEx(i - 1 , j     , kmas1)
+                   if (kmas1   >  sgg%alloc(IEY)%ZE) kmas1=k  ; med(3)  = sggMiEy(i     , j     , kmas1)
+                   if (kmas1   >  sgg%alloc(IEY)%ZE) kmas1=k  ; med(4)  = sggMiEy(i     , j - 1 , kmas1)
                    if (kmas1   >  sgg%alloc(IHZ)%ZE) kmas1=k  ; med(5)  = sggMiNo(i     , j     , kmas1)
                    !
                    if (kmenos1 <  sgg%alloc(IEZ)%ZI) kmenos1=k; med(6)  = sggMiEz(i     , j     , kmenos1)
@@ -2813,10 +2813,10 @@ contains
                if  ((segmento%i  ==wireNode%i).and.(segmento%j==wireNode%j).and.(segmento%k==wireNode%k)) then
                   segmento%ChargeMinus=>HWires%ChargeNode(i1)
                end if
-               if  ((segmento%i+1==wireNode%i).and.(segmento%j==wireNode%j).and.(segmento%k==wireNode%k).and.(segmento%fieldKind==iEx)) then
+               if  ((segmento%i+1==wireNode%i).and.(segmento%j==wireNode%j).and.(segmento%k==wireNode%k).and.(segmento%fieldKind==IEX)) then
                   segmento%ChargePlus=>HWires%ChargeNode(i1)
                end if
-               if  ((segmento%i==wireNode%i).and.(segmento%j+1==wireNode%j).and.(segmento%k==wireNode%k).and.(segmento%fieldKind==iEy)) then
+               if  ((segmento%i==wireNode%i).and.(segmento%j+1==wireNode%j).and.(segmento%k==wireNode%k).and.(segmento%fieldKind==IEY)) then
                   segmento%ChargePlus=>HWires%ChargeNode(i1)
                end if
                if  ((segmento%i==wireNode%i).and.(segmento%j==wireNode%j).and.(segmento%k+1==wireNode%k).and.(segmento%fieldKind==IEZ)) then
@@ -2901,10 +2901,10 @@ contains
             HWires%ChargeNode(conta)%j=HWires%ChargeNode(conta)%CurrentMinus_1%j
             HWires%ChargeNode(conta)%k=HWires%ChargeNode(conta)%CurrentMinus_1%k
             HWires%ChargeNode(conta)%Exists=.true.
-            if (HWires%ChargeNode(conta)%CurrentMinus_1%fieldKind==iEx) then
+            if (HWires%ChargeNode(conta)%CurrentMinus_1%fieldKind==IEX) then
                HWires%ChargeNode(conta)%i=HWires%ChargeNode(conta)%CurrentMinus_1%i+1
             end if
-            if (HWires%ChargeNode(conta)%CurrentMinus_1%fieldKind==iEy) then
+            if (HWires%ChargeNode(conta)%CurrentMinus_1%fieldKind==IEY) then
                HWires%ChargeNode(conta)%j=HWires%ChargeNode(conta)%CurrentMinus_1%j+1
             end if
             if (HWires%ChargeNode(conta)%CurrentMinus_1%fieldKind==IEZ) then
@@ -2921,10 +2921,10 @@ contains
             HWires%ChargeNode(conta)%j=HWires%ChargeNode(conta)%CurrentPlus_1%j
             HWires%ChargeNode(conta)%k=HWires%ChargeNode(conta)%CurrentPlus_1%k
             HWires%ChargeNode(conta)%Exists=.true.
-            if (HWires%ChargeNode(conta)%CurrentPlus_1%fieldKind==iEx) then
+            if (HWires%ChargeNode(conta)%CurrentPlus_1%fieldKind==IEX) then
                HWires%ChargeNode(conta)%i=HWires%ChargeNode(conta)%CurrentPlus_1%i
             end if
-            if (HWires%ChargeNode(conta)%CurrentPlus_1%fieldKind==iEy) then
+            if (HWires%ChargeNode(conta)%CurrentPlus_1%fieldKind==IEY) then
                HWires%ChargeNode(conta)%j=HWires%ChargeNode(conta)%CurrentPlus_1%j
             end if
             if (HWires%ChargeNode(conta)%CurrentPlus_1%fieldKind==IEZ) then
@@ -3071,14 +3071,14 @@ contains
       do i1=1,HWires%NumCurrentSegments
          segmento=>HWires%CurrentSegment(i1)
          select case (segmento%fieldKind)
-          case (iEx)
+          case (IEX)
             if ((segmento%i+1==sgg%Alloc(segmento%fieldKind)%XE).and.(sgg%Border%IsFrontPMC)) then
                segmento%IsPMC =.true.
             end if
             if ((segmento%i==sgg%Alloc(segmento%fieldKind)%XI).and.(sgg%Border%IsBackPMC)) then
                segmento%IsPMC =.true.
             end if
-          case (iEy)
+          case (IEY)
             if ((segmento%j+1==sgg%Alloc(segmento%fieldKind)%YE).and.(sgg%Border%IsRightPMC)) then
                segmento%IsPMC =.true.
             end if
@@ -3859,10 +3859,10 @@ end subroutine deembed_segment
          j = wireNode%j
          k = wireNode%k
 
-         if ((i >  SINPML_fullsize(iEx)%XI).and. &
-         (i <= SINPML_fullsize(iEx)%XE).and. &
-         (j >  SINPML_fullsize(iEy)%YI).and. &
-         (j <= SINPML_fullsize(iEy)%YE).and. &
+         if ((i >  SINPML_fullsize(IEX)%XI).and. &
+         (i <= SINPML_fullsize(IEX)%XE).and. &
+         (j >  SINPML_fullsize(IEY)%YI).and. &
+         (j <= SINPML_fullsize(IEY)%YE).and. &
          (k >  SINPML_fullsize(IEZ)%ZI).and. &
          (k <= SINPML_fullsize(IEZ)%ZE)) then
 
@@ -3955,7 +3955,7 @@ end subroutine deembed_segment
                            if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
                            !also note and set to zero the corresponding efield already_YEEadvanced_byconformal overriding the conformal_advance_E() that has already been done before from this version
                            if (sgg%med(medium1)%is%already_YEEadvanced_byconformal) then
-                               call check_embed(embed,iEx,i,j,k)
+                               call check_embed(embed,IEX,i,j,k)
                                if (.not.embed) then
                                   ! sggmiEx(i,j,k)=0;!careful, remove later, only for visualization
                                    wireNode%already_YEEadvanced_byconformal_changedtoPECfield1 => Ex(i,j,k)
@@ -3967,7 +3967,7 @@ end subroutine deembed_segment
                                 end if
                            end if  
                            if (sgg%med(medio1m)%is%already_YEEadvanced_byconformal) then
-                               call check_embed(embed,iEx,i-1,j,k)
+                               call check_embed(embed,IEX,i-1,j,k)
                                if (.not.embed) then
                                !    sggmiEx(i-1,j,k)=0;!careful, remove later, only for visualization
                                    wireNode%already_YEEadvanced_byconformal_changedtoPECfield2 => Ex(i-1,j,k)
@@ -3979,7 +3979,7 @@ end subroutine deembed_segment
                                 end if
                            end if 
                            if (sgg%med(medium2)%is%already_YEEadvanced_byconformal) then
-                               call check_embed(embed,iEy,i,j,k)
+                               call check_embed(embed,IEY,i,j,k)
                                if (.not.embed) then
                             !       sggmiEy(i,j,k)=0;!careful, remove later, only for visualization
                                    wireNode%already_YEEadvanced_byconformal_changedtoPECfield3 => Ey(i,j,k)
@@ -3991,7 +3991,7 @@ end subroutine deembed_segment
                                 end if
                            end if 
                            if (sgg%med(medio2m)%is%already_YEEadvanced_byconformal) then
-                               call check_embed(embed,iEy,i,j-1,k)
+                               call check_embed(embed,IEY,i,j-1,k)
                                if (.not.embed) then
                           !         sggmiEy(i,j-1,k)=0;!careful, remove later, only for visualization
                                    wireNode%already_YEEadvanced_byconformal_changedtoPECfield4 => Ey(i,j-1,k)
@@ -4412,8 +4412,8 @@ subroutine resume_casuistics
       character(len=BUFSIZE) :: buff
       RequestedConnection=.false. ;
 
-      dir(iEx)=' X '
-      dir(iEy)=' Y '
+      dir(IEX)=' X '
+      dir(IEY)=' Y '
       dir(IEZ)=' Z '
       adj%YESsegment(1:2) = -1
       adj%Is=.false.
@@ -4423,7 +4423,7 @@ subroutine resume_casuistics
       if (numfirst == numsecond) return !trivial case: equal segment
       !
       if (first%fieldKind==second%fieldKind) then
-         if    ((first%j==second%j).and.(first%k==second%k).and.(first%fieldKind==iEx)) then
+         if    ((first%j==second%j).and.(first%k==second%k).and.(first%fieldKind==IEX)) then
             adj%j=first%j
             adj%k=first%k
             if (first%i==second%i-1) then
@@ -4438,7 +4438,7 @@ subroutine resume_casuistics
                adj%Parallel=.true.
                adj%i=first%i
             end if
-         else if ((first%i==second%i).and.(first%k==second%k).and.(first%fieldKind==iEy)) then
+         else if ((first%i==second%i).and.(first%k==second%k).and.(first%fieldKind==IEY)) then
             adj%i=first%i
             adj%k=first%k
             if (first%j==second%j-1) then
@@ -4469,14 +4469,14 @@ subroutine resume_casuistics
                adj%k=first%k
             end if
          end if
-      else if (((first%fieldKind==iEx).and.(second%fieldKind==iEy)).and. &
+      else if (((first%fieldKind==IEX).and.(second%fieldKind==IEY)).and. &
       (((first%i==second%i  ).and.(first%j==second%j  ).and.(first%k==second%k  )).or. &
       ((first%i==second%i  ).and.(first%j==second%j+1).and.(first%k==second%k  )))) then
          adj%Is=.true.
          adj%i=first%i
          adj%j=first%j
          adj%k=first%k
-      else if (((first%fieldKind==iEx).and.(second%fieldKind==iEy)).and. &
+      else if (((first%fieldKind==IEX).and.(second%fieldKind==IEY)).and. &
       (((first%i==second%i-1).and.(first%j==second%j  ).and.(first%k==second%k  )).or. &
       ((first%i==second%i-1).and.(first%j==second%j+1).and.(first%k==second%k  )))) then
          adj%Is=.true.
@@ -4484,14 +4484,14 @@ subroutine resume_casuistics
          adj%j=first%j
          adj%k=first%k
          !
-      else if (((first%fieldKind==iEy).and.(second%fieldKind==IEZ)).and. &
+      else if (((first%fieldKind==IEY).and.(second%fieldKind==IEZ)).and. &
       (((first%j==second%j  ).and.(first%k==second%k  ).and.(first%i==second%i  )).or. &
       ((first%j==second%j  ).and.(first%k==second%k+1).and.(first%i==second%i  )))) then
          adj%Is=.true.
          adj%j=first%j
          adj%k=first%k
          adj%i=first%i
-      else if (((first%fieldKind==iEy).and.(second%fieldKind==IEZ)).and. &
+      else if (((first%fieldKind==IEY).and.(second%fieldKind==IEZ)).and. &
       (((first%j==second%j-1).and.(first%k==second%k  ).and.(first%i==second%i  )).or. &
       ((first%j==second%j-1).and.(first%k==second%k+1).and.(first%i==second%i  )))) then
          adj%Is=.true.
@@ -4499,14 +4499,14 @@ subroutine resume_casuistics
          adj%k=first%k
          adj%i=first%i
          !
-      else if (((first%fieldKind==IEZ).and.(second%fieldKind==iEx)).and. &
+      else if (((first%fieldKind==IEZ).and.(second%fieldKind==IEX)).and. &
       (((first%k==second%k  ).and.(first%i==second%i  ).and.(first%j==second%j  )).or. &
       ((first%k==second%k  ).and.(first%i==second%i+1).and.(first%j==second%j  )))) then
          adj%Is=.true.
          adj%k=first%k
          adj%i=first%i
          adj%j=first%j
-      else if (((first%fieldKind==IEZ).and.(second%fieldKind==iEx)).and. &
+      else if (((first%fieldKind==IEZ).and.(second%fieldKind==IEX)).and. &
       (((first%k==second%k-1).and.(first%i==second%i  ).and.(first%j==second%j  )).or. &
       ((first%k==second%k-1).and.(first%i==second%i+1).and.(first%j==second%j  )))) then
          adj%Is=.true.
@@ -4515,14 +4515,14 @@ subroutine resume_casuistics
          adj%j=first%j
          !
          !
-      else if (((first%fieldKind==iEy).and.(second%fieldKind==iEx)).and. &
+      else if (((first%fieldKind==IEY).and.(second%fieldKind==IEX)).and. &
       (((first%i==second%i  ).and.(first%j==second%j  ).and.(first%k==second%k  )).or. &
       ((first%i==second%i+1).and.(first%j==second%j  ).and.(first%k==second%k  )))) then
          adj%Is=.true.
          adj%i=first%i
          adj%j=first%j
          adj%k=first%k
-      else if (((first%fieldKind==iEy).and.(second%fieldKind==iEx)).and. &
+      else if (((first%fieldKind==IEY).and.(second%fieldKind==IEX)).and. &
       (((first%i==second%i  ).and.(first%j==second%j-1).and.(first%k==second%k  )).or. &
       ((first%i==second%i+1).and.(first%j==second%j-1).and.(first%k==second%k  )))) then
          adj%Is=.true.
@@ -4530,14 +4530,14 @@ subroutine resume_casuistics
          adj%j=first%j+1
          adj%k=first%k
          !
-      else if (((first%fieldKind==iEx).and.(second%fieldKind==IEZ)).and. &
+      else if (((first%fieldKind==IEX).and.(second%fieldKind==IEZ)).and. &
       (((first%k==second%k  ).and.(first%i==second%i  ).and.(first%j==second%j  )).or. &
       ((first%k==second%k+1).and.(first%i==second%i  ).and.(first%j==second%j  )))) then
          adj%Is=.true.
          adj%k=first%k
          adj%i=first%i
          adj%j=first%j
-      else if (((first%fieldKind==iEx).and.(second%fieldKind==IEZ)).and. &
+      else if (((first%fieldKind==IEX).and.(second%fieldKind==IEZ)).and. &
       (((first%k==second%k  ).and.(first%i==second%i-1).and.(first%j==second%j  )).or. &
       ((first%k==second%k+1).and.(first%i==second%i-1).and.(first%j==second%j  )))) then
          adj%Is=.true.
@@ -4545,14 +4545,14 @@ subroutine resume_casuistics
          adj%i=first%i+1
          adj%j=first%j
          !
-      else if (((first%fieldKind==IEZ).and.(second%fieldKind==iEy)).and. &
+      else if (((first%fieldKind==IEZ).and.(second%fieldKind==IEY)).and. &
       (((first%j==second%j  ).and.(first%k==second%k  ).and.(first%i==second%i  )).or. &
       ((first%j==second%j+1).and.(first%k==second%k  ).and.(first%i==second%i  )))) then
          adj%Is=.true.
          adj%j=first%j
          adj%k=first%k
          adj%i=first%i
-      else if (((first%fieldKind==IEZ).and.(second%fieldKind==iEy)).and. &
+      else if (((first%fieldKind==IEZ).and.(second%fieldKind==IEY)).and. &
       (((first%j==second%j  ).and.(first%k==second%k-1).and.(first%i==second%i  )).or. &
       ((first%j==second%j+1).and.(first%k==second%k-1).and.(first%i==second%i  )))) then
          adj%Is=.true.
@@ -4921,12 +4921,12 @@ subroutine resume_casuistics
                         end if
                         !
                         offx=0; offy=0; offz=0
-                        if ((first%fieldKind==second%fieldKind).and.(first%fieldKind==iEx)) offx=1
-                        if ((first%fieldKind==second%fieldKind).and.(first%fieldKind==iEy)) offy=1
+                        if ((first%fieldKind==second%fieldKind).and.(first%fieldKind==IEX)) offx=1
+                        if ((first%fieldKind==second%fieldKind).and.(first%fieldKind==IEY)) offy=1
                         if ((first%fieldKind==second%fieldKind).and.(first%fieldKind==IEZ)) offz=1
                         if (associated(firstprevio)) then
                            select case(first%fieldKind)
-                            case  (iEx)
+                            case  (IEX)
                               if (firstprevio%i == first%i) then
                                  success=.true.
                                  adj%i=first%i+1
@@ -4943,7 +4943,7 @@ subroutine resume_casuistics
                                  adj%j=first%j
                                  adj%k=first%k
                               end if
-                            case  (iEy)
+                            case  (IEY)
                               if (firstprevio%j == first%j) then
                                  success=.true.
                                  adj%i=first%i
@@ -4980,7 +4980,7 @@ subroutine resume_casuistics
                            end select
                         else if (associated(secondprevio)) then
                            select case(second%fieldKind)
-                            case  (iEx)
+                            case  (IEX)
                               if (secondprevio%i == second%i) then
                                  success=.true.
                                  adj%i=second%i+1
@@ -4997,7 +4997,7 @@ subroutine resume_casuistics
                                  adj%j=second%j
                                  adj%k=second%k
                               end if
-                            case  (iEy)
+                            case  (IEY)
                               if (secondprevio%j == second%j) then
                                  success=.true.
                                  adj%i=second%i
@@ -5888,8 +5888,8 @@ subroutine resume_casuistics
       type(openToAirNodes_t), allocatable, dimension(:) :: openToAirNodes
 
 
-      dir(iEx)=' X '
-      dir(iEy)=' Y '
+      dir(IEX)=' X '
+      dir(IEY)=' Y '
       dir(IEZ)=' Z '
 
 

@@ -80,10 +80,10 @@ contains
             write(19+fieldIndex, '(A)') 'J______________________________________________________________________'
             do j = sgg%sweep(fieldIndex)%YE, sgg%sweep(fieldIndex)%YI, - 1
                select case (fieldIndex)
-                case (iEx)
+                case (IEX)
                   write(19+fieldIndex, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiEx(i, j, k)), i=sgg%sweep(fieldIndex)%XI, &
                   & sgg%sweep(fieldIndex)%XE)
-                case (iEy)
+                case (IEY)
                   write(19+fieldIndex, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiEy(i, j, k)), i=sgg%sweep(fieldIndex)%XI, &
                   & sgg%sweep(fieldIndex)%XE)
                 case (IEZ)

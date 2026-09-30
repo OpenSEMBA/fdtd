@@ -29,19 +29,19 @@ contains
    subroutine InitWires_mtln(sgg,Ex,Ey,Ez, sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz, eps00, mu00, mtln_parsed,thereAreMTLNbundles, dtcritico)
       type(SGGFDTDINFO_t), intent(in), target    :: sgg 
       real(kind=RKIND), intent(inout), target :: &
-         Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,  &
-            sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,  &
-            sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE), &
-         Ey(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,  &
-            sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,  &
-            sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE), &
+         Ex(sgg%Alloc(IEX)%XI : sgg%Alloc(IEX)%XE,  &
+            sgg%Alloc(IEX)%YI : sgg%Alloc(IEX)%YE,  &
+            sgg%Alloc(IEX)%ZI : sgg%Alloc(IEX)%ZE), &
+         Ey(sgg%Alloc(IEY)%XI : sgg%Alloc(IEY)%XE,  &
+            sgg%Alloc(IEY)%YI : sgg%Alloc(IEY)%YE,  &
+            sgg%Alloc(IEY)%ZI : sgg%Alloc(IEY)%ZE), &
          Ez(sgg%Alloc(IEZ)%XI : sgg%Alloc(IEZ)%XE,  &
             sgg%Alloc(IEZ)%YI : sgg%Alloc(IEZ)%YE,  &
             sgg%Alloc(IEZ)%ZI : sgg%Alloc(IEZ)%ZE)
 
       integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: &
-         sggMiEx(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE), &
-         sggMiEy(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE), &
+         sggMiEx(sgg%Alloc(IEX)%XI : sgg%Alloc(IEX)%XE,sgg%Alloc(IEX)%YI : sgg%Alloc(IEX)%YE,sgg%Alloc(IEX)%ZI : sgg%Alloc(IEX)%ZE), &
+         sggMiEy(sgg%Alloc(IEY)%XI : sgg%Alloc(IEY)%XE,sgg%Alloc(IEY)%YI : sgg%Alloc(IEY)%YE,sgg%Alloc(IEY)%ZI : sgg%Alloc(IEY)%ZE), &
          sggMiEz(sgg%Alloc(IEZ)%XI : sgg%Alloc(IEZ)%XE,sgg%Alloc(IEZ)%YI : sgg%Alloc(IEZ)%YE,sgg%Alloc(IEZ)%ZI : sgg%Alloc(IEZ)%ZE), &
          sggMiHx(sgg%Alloc(IHX)%XI : sgg%Alloc(IHX)%XE,sgg%Alloc(IHX)%YI : sgg%Alloc(IHX)%YE,sgg%Alloc(IHX)%ZI : sgg%Alloc(IHX)%ZE), &
          sggMiHy(sgg%Alloc(IHY)%XI : sgg%Alloc(IHY)%XE,sgg%Alloc(IHY)%YI : sgg%Alloc(IHY)%YE,sgg%Alloc(IHY)%ZI : sgg%Alloc(IHY)%ZE), &
@@ -127,8 +127,8 @@ contains
    subroutine AdvanceWiresE_mtln(sgg,Idxh, Idyh, Idzh, eps00,mu00)  
       type(SGGFDTDINFO_t), intent(in), target    :: sgg      
       real(kind=RKIND), dimension(:), intent(in) :: &
-         Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE),&
-         Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE),&
+         Idxh(sgg%ALLOC(IEX)%XI : sgg%ALLOC(IEX)%XE),&
+         Idyh(sgg%ALLOC(IEY)%YI : sgg%ALLOC(IEY)%YE),&
          Idzh(sgg%ALLOC(IEZ)%ZI : sgg%ALLOC(IEZ)%ZE)  
       real(kind=RKIND) :: cte,eps00,mu00, f
       integer(kind=4) :: m, n

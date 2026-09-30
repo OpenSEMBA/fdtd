@@ -48,7 +48,7 @@ contains
       type(observation_domain_t) :: domain
 
       allocate (P(1))
-      P(1) = create_observable(x, y, z, x, y, z, iEx)
+      P(1) = create_observable(x, y, z, x, y, z, IEX)
       call initialize_observation_time_domain(domain, 0.0_RKIND, 10.0_RKIND, 0.1_RKIND)
 
       call set_observation(obs, P, 'pointProbe', domain, 'DummyFileNormalize')

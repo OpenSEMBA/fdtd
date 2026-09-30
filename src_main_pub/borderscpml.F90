@@ -73,15 +73,15 @@ contains
       temp_dxe(sgg%ALLOC(IHX)%XI : sgg%ALLOC(IHX)%XE), &
       temp_dye(sgg%ALLOC(IHY)%YI : sgg%ALLOC(IHY)%YE), &
       temp_dze(sgg%ALLOC(IHZ)%ZI : sgg%ALLOC(IHZ)%ZE), &
-      temp_dxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
-      temp_dyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
+      temp_dxh(sgg%ALLOC(IEX)%XI : sgg%ALLOC(IEX)%XE), &
+      temp_dyh(sgg%ALLOC(IEY)%YI : sgg%ALLOC(IEY)%YE), &
       temp_dzh(sgg%ALLOC(IEZ)%ZI : sgg%ALLOC(IEZ)%ZE)
       real(kind=RKIND) , dimension(:)   , intent(inout) :: &
       Idxe(sgg%ALLOC(IHX)%XI : sgg%ALLOC(IHX)%XE), &
       Idye(sgg%ALLOC(IHY)%YI : sgg%ALLOC(IHY)%YE), &
       Idze(sgg%ALLOC(IHZ)%ZI : sgg%ALLOC(IHZ)%ZE), &
-      Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
-      Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
+      Idxh(sgg%ALLOC(IEX)%XI : sgg%ALLOC(IEX)%XE), &
+      Idyh(sgg%ALLOC(IEY)%YI : sgg%ALLOC(IEY)%YE), &
       Idzh(sgg%ALLOC(IEZ)%ZI : sgg%ALLOC(IEZ)%ZE)
        type(limit_t), dimension(1:6),  intent(in) :: temp_SINPML_fullsize
       !!!
@@ -99,8 +99,8 @@ contains
       allocate (dxe(sgg%ALLOC(IHX)%XI : sgg%ALLOC(IHX)%XE))
       allocate (dye(sgg%ALLOC(IHY)%YI : sgg%ALLOC(IHY)%YE))
       allocate (dze(sgg%ALLOC(IHZ)%ZI : sgg%ALLOC(IHZ)%ZE))
-      allocate (dxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE))
-      allocate (dyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE))
+      allocate (dxh(sgg%ALLOC(IEX)%XI : sgg%ALLOC(IEX)%XE))
+      allocate (dyh(sgg%ALLOC(IEY)%YI : sgg%ALLOC(IEY)%YE))
       allocate (dzh(sgg%ALLOC(IEZ)%ZI : sgg%ALLOC(IEZ)%ZE))
       dxe = temp_dxe
       dye = temp_dye
@@ -123,7 +123,7 @@ contains
       !Find the limits of each of the 6 padding PML regions for each field component
 
 
-      do field=iEx,IHZ
+      do field=IEX,IHZ
          !
          PMLc(field)%XI(DOWN)  =                                sgg%Sweep(field)%XI
          PMLc(field)%XE(DOWN)  =                                sgg%Sweep(field)%XE
@@ -296,9 +296,9 @@ contains
 
       !PML Field component matrix allocation
       do REGION=LEFT,RIGHT
-         allocate (regLR(region)%Psi_Exy(PMLc(iEx)%XI(region) : PMLc(iEx)%XE(region), &
-         PMLc(iEx)%YI(region) : PMLc(iEx)%YE(region), &
-         PMLc(iEx)%ZI(region) : PMLc(iEx)%ZE(region)),&
+         allocate (regLR(region)%Psi_Exy(PMLc(IEX)%XI(region) : PMLc(IEX)%XE(region), &
+         PMLc(IEX)%YI(region) : PMLc(IEX)%YE(region), &
+         PMLc(IEX)%ZI(region) : PMLc(IEX)%ZE(region)),&
          regLR(region)%Psi_Ezy(PMLc(IEZ)%XI(region) : PMLc(IEZ)%XE(region), &
          PMLc(IEZ)%YI(region) : PMLc(IEZ)%YE(region), &
          PMLc(IEZ)%ZI(region) : PMLc(IEZ)%ZE(region)),&
@@ -312,9 +312,9 @@ contains
          if (.not.control%resume) then
             regLR(REGION)%Psi_Exy=0.0_RKIND  ;  regLR(REGION)%Psi_Ezy=0.0_RKIND ;  regLR(REGION)%Psi_Hxy=0.0_RKIND ; regLR(REGION)%Psi_Hzy=0.0_RKIND ;
          else
-            do k=PMLc(iEx)%ZI(region),PMLc(iEx)%ZE(region)
-               do j=PMLc(iEx)%YI(region),PMLc(iEx)%YE(region)
-                  read (14) (regLR(region)%Psi_Exy(i,j,k),i=PMLc(iEx)%XI(region),PMLc(iEx)%XE(region))
+            do k=PMLc(IEX)%ZI(region),PMLc(IEX)%ZE(region)
+               do j=PMLc(IEX)%YI(region),PMLc(IEX)%YE(region)
+                  read (14) (regLR(region)%Psi_Exy(i,j,k),i=PMLc(IEX)%XI(region),PMLc(IEX)%XE(region))
                end do
             end do
             do k=PMLc(IEZ)%ZI(region),PMLc(IEZ)%ZE(region)
@@ -335,12 +335,12 @@ contains
          end if
       end do
       do REGION=DOWN,UP
-         allocate (regDU(region)%Psi_Eyz(PMLc(iEy)%XI(region) : PMLc(iEy)%XE(region), &
-         PMLc(iEy)%YI(region) : PMLc(iEy)%YE(region), &
-         PMLc(iEy)%ZI(region) : PMLc(iEy)%ZE(region)),&
-         regDU(region)%Psi_Exz(PMLc(iEx)%XI(region) : PMLc(iEx)%XE(region), &
-         PMLc(iEx)%YI(region) : PMLc(iEx)%YE(region), &
-         PMLc(iEx)%ZI(region) : PMLc(iEx)%ZE(region)),&
+         allocate (regDU(region)%Psi_Eyz(PMLc(IEY)%XI(region) : PMLc(IEY)%XE(region), &
+         PMLc(IEY)%YI(region) : PMLc(IEY)%YE(region), &
+         PMLc(IEY)%ZI(region) : PMLc(IEY)%ZE(region)),&
+         regDU(region)%Psi_Exz(PMLc(IEX)%XI(region) : PMLc(IEX)%XE(region), &
+         PMLc(IEX)%YI(region) : PMLc(IEX)%YE(region), &
+         PMLc(IEX)%ZI(region) : PMLc(IEX)%ZE(region)),&
          regDU(region)%Psi_Hyz(PMLc(IHY)%XI(region) : PMLc(IHY)%XE(region), &
          PMLc(IHY)%YI(region) : PMLc(IHY)%YE(region), &
          PMLc(IHY)%ZI(region) : PMLc(IHY)%ZE(region)),&
@@ -350,14 +350,14 @@ contains
          if (.not.control%resume) then
             regDU(REGION)%Psi_Eyz=0.0_RKIND  ;  regDU(REGION)%Psi_Exz=0.0_RKIND ;  regDU(REGION)%Psi_Hyz=0.0_RKIND ; regDU(REGION)%Psi_Hxz=0.0_RKIND ;
          else
-            do k=PMLc(iEy)%ZI(region),PMLc(iEy)%ZE(region)
-               do j=PMLc(iEy)%YI(region),PMLc(iEy)%YE(region)
-                  read (14) (regDU(region)%Psi_Eyz(i,j,k),i=PMLc(iEy)%XI(region),PMLc(iEy)%XE(region))
+            do k=PMLc(IEY)%ZI(region),PMLc(IEY)%ZE(region)
+               do j=PMLc(IEY)%YI(region),PMLc(IEY)%YE(region)
+                  read (14) (regDU(region)%Psi_Eyz(i,j,k),i=PMLc(IEY)%XI(region),PMLc(IEY)%XE(region))
                end do
             end do
-            do k=PMLc(iEx)%ZI(region),PMLc(iEx)%ZE(region)
-               do j=PMLc(iEx)%YI(region),PMLc(iEx)%YE(region)
-                  read (14) (regDU(region)%Psi_Exz(i,j,k),i=PMLc(iEx)%XI(region),PMLc(iEx)%XE(region))
+            do k=PMLc(IEX)%ZI(region),PMLc(IEX)%ZE(region)
+               do j=PMLc(IEX)%YI(region),PMLc(IEX)%YE(region)
+                  read (14) (regDU(region)%Psi_Exz(i,j,k),i=PMLc(IEX)%XI(region),PMLc(IEX)%XE(region))
                end do
             end do
             do k=PMLc(IHY)%ZI(region),PMLc(IHY)%ZE(region)
@@ -376,9 +376,9 @@ contains
          allocate (regBF(region)%Psi_Ezx(PMLc(IEZ)%XI(region) : PMLc(IEZ)%XE(region), &
          PMLc(IEZ)%YI(region) : PMLc(IEZ)%YE(region), &
          PMLc(IEZ)%ZI(region) : PMLc(IEZ)%ZE(region)),&
-         regBF(region)%Psi_Eyx(PMLc(iEy)%XI(region) : PMLc(iEy)%XE(region), &
-         PMLc(iEy)%YI(region) : PMLc(iEy)%YE(region), &
-         PMLc(iEy)%ZI(region) : PMLc(iEy)%ZE(region)),&
+         regBF(region)%Psi_Eyx(PMLc(IEY)%XI(region) : PMLc(IEY)%XE(region), &
+         PMLc(IEY)%YI(region) : PMLc(IEY)%YE(region), &
+         PMLc(IEY)%ZI(region) : PMLc(IEY)%ZE(region)),&
          regBF(region)%Psi_Hzx(PMLc(IHZ)%XI(region) : PMLc(IHZ)%XE(region), &
          PMLc(IHZ)%YI(region) : PMLc(IHZ)%YE(region), &
          PMLc(IHZ)%ZI(region) : PMLc(IHZ)%ZE(region)),&
@@ -393,9 +393,9 @@ contains
                   read (14) (regBF(region)%Psi_Ezx(i,j,k),i=PMLc(IEZ)%XI(region),PMLc(IEZ)%XE(region))
                end do
             end do
-            do k=PMLc(iEy)%ZI(region),PMLc(iEy)%ZE(region)
-               do j=PMLc(iEy)%YI(region),PMLc(iEy)%YE(region)
-                  read (14) (regBF(region)%Psi_Eyx(i,j,k),i=PMLc(iEy)%XI(region),PMLc(iEy)%XE(region))
+            do k=PMLc(IEY)%ZI(region),PMLc(IEY)%ZE(region)
+               do j=PMLc(IEY)%YI(region),PMLc(IEY)%YE(region)
+                  read (14) (regBF(region)%Psi_Eyx(i,j,k),i=PMLc(IEY)%XI(region),PMLc(IEY)%XE(region))
                end do
             end do
             do k=PMLc(IHZ)%ZI(region),PMLc(IHZ)%ZE(region)
@@ -426,9 +426,9 @@ contains
 
 
       do REGION=LEFT,RIGHT
-         do k=PMLc(iEx)%ZI(region),PMLc(iEx)%ZE(region)
-            do j=PMLc(iEx)%YI(region),PMLc(iEx)%YE(region)
-               write(14,err=634) (regLR(region)%Psi_Exy(i,j,k),i=PMLc(iEx)%XI(region),PMLc(iEx)%XE(region))
+         do k=PMLc(IEX)%ZI(region),PMLc(IEX)%ZE(region)
+            do j=PMLc(IEX)%YI(region),PMLc(IEX)%YE(region)
+               write(14,err=634) (regLR(region)%Psi_Exy(i,j,k),i=PMLc(IEX)%XI(region),PMLc(IEX)%XE(region))
             end do
          end do
          do k=PMLc(IEZ)%ZI(region),PMLc(IEZ)%ZE(region)
@@ -448,14 +448,14 @@ contains
          end do
       end do
       do REGION=DOWN,UP
-         do k=PMLc(iEy)%ZI(region),PMLc(iEy)%ZE(region)
-            do j=PMLc(iEy)%YI(region),PMLc(iEy)%YE(region)
-               write(14,err=634) (regDU(region)%Psi_Eyz(i,j,k),i=PMLc(iEy)%XI(region),PMLc(iEy)%XE(region))
+         do k=PMLc(IEY)%ZI(region),PMLc(IEY)%ZE(region)
+            do j=PMLc(IEY)%YI(region),PMLc(IEY)%YE(region)
+               write(14,err=634) (regDU(region)%Psi_Eyz(i,j,k),i=PMLc(IEY)%XI(region),PMLc(IEY)%XE(region))
             end do
          end do
-         do k=PMLc(iEx)%ZI(region),PMLc(iEx)%ZE(region)
-            do j=PMLc(iEx)%YI(region),PMLc(iEx)%YE(region)
-               write(14,err=634) (regDU(region)%Psi_Exz(i,j,k),i=PMLc(iEx)%XI(region),PMLc(iEx)%XE(region))
+         do k=PMLc(IEX)%ZI(region),PMLc(IEX)%ZE(region)
+            do j=PMLc(IEX)%YI(region),PMLc(IEX)%YE(region)
+               write(14,err=634) (regDU(region)%Psi_Exz(i,j,k),i=PMLc(IEX)%XI(region),PMLc(IEX)%XE(region))
             end do
          end do
          do k=PMLc(IHY)%ZI(region),PMLc(IHY)%ZE(region)
@@ -475,9 +475,9 @@ contains
                write(14,err=634) (regBF(region)%Psi_Ezx(i,j,k),i=PMLc(IEZ)%XI(region),PMLc(IEZ)%XE(region))
             end do
          end do
-         do k=PMLc(iEy)%ZI(region),PMLc(iEy)%ZE(region)
-            do j=PMLc(iEy)%YI(region),PMLc(iEy)%YE(region)
-               write(14,err=634) (regBF(region)%Psi_Eyx(i,j,k),i=PMLc(iEy)%XI(region),PMLc(iEy)%XE(region))
+         do k=PMLc(IEY)%ZI(region),PMLc(IEY)%ZE(region)
+            do j=PMLc(IEY)%YI(region),PMLc(IEY)%YE(region)
+               write(14,err=634) (regBF(region)%Psi_Eyx(i,j,k),i=PMLc(IEY)%XI(region),PMLc(IEY)%XE(region))
             end do
          end do
          do k=PMLc(IHZ)%ZI(region),PMLc(IHZ)%ZE(region)
@@ -552,11 +552,11 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
-      do k = PMLc(iEx)%ZI(REGION), PMLc(iEx)%ZE(REGION)
+      do k = PMLc(IEX)%ZI(REGION), PMLc(IEX)%ZE(REGION)
          k_m = k - b%Ex%ZI
-         do j = PMLc(iEx)%YI(REGION), PMLc(iEx)%YE(REGION)
+         do j = PMLc(IEX)%YI(REGION), PMLc(IEX)%YE(REGION)
             j_m = j - b%Ex%YI
-            do i = PMLc(iEx)%XI(REGION), PMLc(iEx)%XE(REGION)
+            do i = PMLc(IEX)%XI(REGION), PMLc(IEX)%XE(REGION)
                i_m = i - b%Ex%XI
                !--->
                medium = sggMiEx(i_m , j_m , k_m)
@@ -596,11 +596,11 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
-      do k = PMLc(iEx)%ZI(REGION), PMLc(iEx)%ZE(REGION)
+      do k = PMLc(IEX)%ZI(REGION), PMLc(IEX)%ZE(REGION)
          k_m = k - b%Ex%ZI
-         do j = PMLc(iEx)%YI(REGION), PMLc(iEx)%YE(REGION)
+         do j = PMLc(IEX)%YI(REGION), PMLc(IEX)%YE(REGION)
             j_m = j - b%Ex%YI
-            do i = PMLc(iEx)%XI(REGION), PMLc(iEx)%XE(REGION)
+            do i = PMLc(IEX)%XI(REGION), PMLc(IEX)%XE(REGION)
                i_m = i - b%Ex%XI
                !--->
                medium = sggMiEx(i_m , j_m , k_m)
@@ -642,11 +642,11 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
-      do k = PMLc(iEy)%ZI(REGION), PMLc(iEy)%ZE(REGION)
+      do k = PMLc(IEY)%ZI(REGION), PMLc(IEY)%ZE(REGION)
          k_m = k - b%Ey%ZI
-         do j = PMLc(iEy)%YI(REGION), PMLc(iEy)%YE(REGION)
+         do j = PMLc(IEY)%YI(REGION), PMLc(IEY)%YE(REGION)
             j_m = j - b%Ey%YI
-            do i = PMLc(iEy)%XI(REGION),PMLc(iEy)%XE(REGION)
+            do i = PMLc(IEY)%XI(REGION),PMLc(IEY)%XE(REGION)
                i_m = i - b%Ey%XI
                medium = sggMiEy(i_m , j_m , k_m)
                regDU(REGION)%Psi_Eyz(i, j, k) = P_be_z(k) * regDU(REGION)%Psi_Eyz(i, j, k) +  &
@@ -661,11 +661,11 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
-      do k = PMLc(iEx)%ZI(REGION), PMLc(iEx)%ZE(REGION)
+      do k = PMLc(IEX)%ZI(REGION), PMLc(IEX)%ZE(REGION)
          k_m = k - b%Ex%ZI
-         do j = PMLc(iEx)%YI(REGION), PMLc(iEx)%YE(REGION)
+         do j = PMLc(IEX)%YI(REGION), PMLc(IEX)%YE(REGION)
             j_m = j - b%Ex%YI
-            do i = PMLc(iEx)%XI(REGION), PMLc(iEx)%XE(REGION)
+            do i = PMLc(IEX)%XI(REGION), PMLc(IEX)%XE(REGION)
                i_m = i - b%Ex%XI
                medium = sggMiEx(i_m , j_m , k_m)
                regDU(REGION)%Psi_Exz(i, j, k) = P_be_z(k) * regDU(REGION)%Psi_Exz(i, j, k) +  &
@@ -686,11 +686,11 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
-      do k = PMLc(iEy)%ZI(REGION), PMLc(iEy)%ZE(REGION)
+      do k = PMLc(IEY)%ZI(REGION), PMLc(IEY)%ZE(REGION)
          k_m = k - b%Ey%ZI
-         do j = PMLc(iEy)%YI(REGION), PMLc(iEy)%YE(REGION)
+         do j = PMLc(IEY)%YI(REGION), PMLc(IEY)%YE(REGION)
             j_m = j - b%Ey%YI
-            do i = PMLc(iEy)%XI(REGION),PMLc(iEy)%XE(REGION)
+            do i = PMLc(IEY)%XI(REGION),PMLc(IEY)%XE(REGION)
                i_m = i - b%Ey%XI
                medium = sggMiEy(i_m , j_m , k_m)
                regDU(REGION)%Psi_Eyz(i, j, k) = P_be_z(k) * regDU(REGION)%Psi_Eyz(i, j, k) +  &
@@ -705,11 +705,11 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
-      do k = PMLc(iEx)%ZI(REGION), PMLc(iEx)%ZE(REGION)
+      do k = PMLc(IEX)%ZI(REGION), PMLc(IEX)%ZE(REGION)
          k_m = k - b%Ex%ZI
-         do j = PMLc(iEx)%YI(REGION), PMLc(iEx)%YE(REGION)
+         do j = PMLc(IEX)%YI(REGION), PMLc(IEX)%YE(REGION)
             j_m = j - b%Ex%YI
-            do i = PMLc(iEx)%XI(REGION), PMLc(iEx)%XE(REGION)
+            do i = PMLc(IEX)%XI(REGION), PMLc(IEX)%XE(REGION)
                i_m = i - b%Ex%XI
                medium = sggMiEx(i_m , j_m , k_m)
                regDU(REGION)%Psi_Exz(i, j, k) = P_be_z(k) * regDU(REGION)%Psi_Exz(i, j, k) +  &
@@ -751,11 +751,11 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
-      do k = PMLc(iEy)%ZI(REGION), PMLc(iEy)%ZE(REGION)
+      do k = PMLc(IEY)%ZI(REGION), PMLc(IEY)%ZE(REGION)
          k_m = k - b%Ey%ZI
-         do j = PMLc(iEy)%YI(REGION) ,PMLc(iEy)%YE(REGION)
+         do j = PMLc(IEY)%YI(REGION) ,PMLc(IEY)%YE(REGION)
             j_m = j - b%Ey%YI
-            do i = PMLc(iEy)%XI(REGION), PMLc(iEy)%XE(REGION)
+            do i = PMLc(IEY)%XI(REGION), PMLc(IEY)%XE(REGION)
                i_m = i - b%Ey%XI
                medium = sggMiEy(i_m , j_m , k_m)
                regBF(REGION)%Psi_Eyx(i, j, k) = P_be_x(i) * regBF(REGION)%Psi_Eyx(i, j, k) +  &
@@ -795,11 +795,11 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
-      do k = PMLc(iEy)%ZI(REGION), PMLc(iEy)%ZE(REGION)
+      do k = PMLc(IEY)%ZI(REGION), PMLc(IEY)%ZE(REGION)
          k_m = k - b%Ey%ZI
-         do j = PMLc(iEy)%YI(REGION) ,PMLc(iEy)%YE(REGION)
+         do j = PMLc(IEY)%YI(REGION) ,PMLc(IEY)%YE(REGION)
             j_m = j - b%Ey%YI
-            do i = PMLc(iEy)%XI(REGION), PMLc(iEy)%XE(REGION)
+            do i = PMLc(IEY)%XI(REGION), PMLc(IEY)%XE(REGION)
                i_m = i - b%Ey%XI
                medium = sggMiEy(i_m , j_m , k_m)
                regBF(REGION)%Psi_Eyx(i, j, k) = P_be_x(i) * regBF(REGION)%Psi_Eyx(i, j, k) +  &
@@ -1411,8 +1411,8 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
       Idxe(sgg%ALLOC(IHX)%XI : sgg%ALLOC(IHX)%XE), &
       Idye(sgg%ALLOC(IHY)%YI : sgg%ALLOC(IHY)%YE), &
       Idze(sgg%ALLOC(IHZ)%ZI : sgg%ALLOC(IHZ)%ZE), &
-      Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
-      Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
+      Idxh(sgg%ALLOC(IEX)%XI : sgg%ALLOC(IEX)%XE), &
+      Idyh(sgg%ALLOC(IEY)%YI : sgg%ALLOC(IEY)%YE), &
       Idzh(sgg%ALLOC(IEZ)%ZI : sgg%ALLOC(IEZ)%ZE)
       integer :: i,j,k,o,p
       real(kind=RKIND) :: del,sigmae,kpare,apare,sigmam,kparm,aparm
@@ -1426,10 +1426,10 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
       sig_max=0.0_RKIND; aPar_max=0.0_RKIND; kPar_max=0.0_RKIND;
       do o=1,3
          do p=1,2
-            if ((o == 1).and.(p == 1)) del=dxe(sgg%ALLOC(iEx)%XI)
-            if ((o == 1).and.(p == 2)) del=dxe(sgg%ALLOC(iEx)%XE)
-            if ((o == 2).and.(p == 1)) del=dye(sgg%ALLOC(iEy)%YI)
-            if ((o == 2).and.(p == 2)) del=dye(sgg%ALLOC(iEy)%YE)
+            if ((o == 1).and.(p == 1)) del=dxe(sgg%ALLOC(IEX)%XI)
+            if ((o == 1).and.(p == 2)) del=dxe(sgg%ALLOC(IEX)%XE)
+            if ((o == 2).and.(p == 1)) del=dye(sgg%ALLOC(IEY)%YI)
+            if ((o == 2).and.(p == 2)) del=dye(sgg%ALLOC(IEY)%YE)
             if ((o == 3).and.(p == 1)) del=dze(sgg%ALLOC(IEZ)%ZI)
             if ((o == 3).and.(p == 2)) del=dze(sgg%ALLOC(IEZ)%ZE)
             if (sgg%PML%NumLayers(o,p) /= 0) then
@@ -1453,10 +1453,10 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
       !readjust relatively the alphamaxpar to the maximum conductivity
       do o=1,3
          do p=1,2
-            if ((o == 1).and.(p == 1)) del=dxe(sgg%ALLOC(iEx)%XI)
-            if ((o == 1).and.(p == 2)) del=dxe(sgg%ALLOC(iEx)%XE)
-            if ((o == 2).and.(p == 1)) del=dye(sgg%ALLOC(iEy)%YI)
-            if ((o == 2).and.(p == 2)) del=dye(sgg%ALLOC(iEy)%YE)
+            if ((o == 1).and.(p == 1)) del=dxe(sgg%ALLOC(IEX)%XI)
+            if ((o == 1).and.(p == 2)) del=dxe(sgg%ALLOC(IEX)%XE)
+            if ((o == 2).and.(p == 1)) del=dye(sgg%ALLOC(IEY)%YI)
+            if ((o == 2).and.(p == 2)) del=dye(sgg%ALLOC(IEY)%YE)
             if ((o == 3).and.(p == 1)) del=dze(sgg%ALLOC(IEZ)%ZI)
             if ((o == 3).and.(p == 2)) del=dze(sgg%ALLOC(IEZ)%ZE)
             if (sgg%PML%NumLayers(o,p) /= 0) then
@@ -1483,7 +1483,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
       !Idye        ( : )=    1.0_RKIND / dye( : )
       !Idze        ( : )=    1.0_RKIND / dze( : )
       ! Calculate
-      do i=sgg%ALLOC(iEx)%XI,sgg%ALLOC(iEx)%XE
+      do i=sgg%ALLOC(IEX)%XI,sgg%ALLOC(IEX)%XE
          if (i <= SINPML_Fullsize(IHX)%XI-1) then !Back
             if ((sgg%PML%orden(1,1) == 0)) then
                Sigmae=    Sig_max(1,1)
@@ -1510,7 +1510,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             Idxh(i)=1.0_RKIND / (kPare*dxh(i))
          end if
       end do
-      do j=sgg%ALLOC(iEy)%YI,sgg%ALLOC(iEy)%YE
+      do j=sgg%ALLOC(IEY)%YI,sgg%ALLOC(IEY)%YE
          if (j <= SINPML_Fullsize(IHY)%YI-1) then !Left
             if ((sgg%PML%orden(2,1) == 0)) then
                Sigmae=    Sig_max(2,1)
@@ -1707,11 +1707,11 @@ end subroutine calc_cpmlconstants
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
-      do k = PMLc(iEx)%ZI(REGION), PMLc(iEx)%ZE(REGION)
+      do k = PMLc(IEX)%ZI(REGION), PMLc(IEX)%ZE(REGION)
          k_m = k - b%Ex%ZI
-         do j = PMLc(iEx)%YI(REGION), PMLc(iEx)%YE(REGION)
+         do j = PMLc(IEX)%YI(REGION), PMLc(IEX)%YE(REGION)
             j_m = j - b%Ex%YI
-            do i = PMLc(iEx)%XI(REGION), PMLc(iEx)%XE(REGION)
+            do i = PMLc(IEX)%XI(REGION), PMLc(IEX)%XE(REGION)
                i_m = i - b%Ex%XI
                !--->
                medium = 1
@@ -1751,11 +1751,11 @@ end subroutine calc_cpmlconstants
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
-      do k = PMLc(iEx)%ZI(REGION), PMLc(iEx)%ZE(REGION)
+      do k = PMLc(IEX)%ZI(REGION), PMLc(IEX)%ZE(REGION)
          k_m = k - b%Ex%ZI
-         do j = PMLc(iEx)%YI(REGION), PMLc(iEx)%YE(REGION)
+         do j = PMLc(IEX)%YI(REGION), PMLc(IEX)%YE(REGION)
             j_m = j - b%Ex%YI
-            do i = PMLc(iEx)%XI(REGION), PMLc(iEx)%XE(REGION)
+            do i = PMLc(IEX)%XI(REGION), PMLc(IEX)%XE(REGION)
                i_m = i - b%Ex%XI
                !--->
                medium = 1
@@ -1797,11 +1797,11 @@ end subroutine calc_cpmlconstants
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
-      do k = PMLc(iEy)%ZI(REGION), PMLc(iEy)%ZE(REGION)
+      do k = PMLc(IEY)%ZI(REGION), PMLc(IEY)%ZE(REGION)
          k_m = k - b%Ey%ZI
-         do j = PMLc(iEy)%YI(REGION), PMLc(iEy)%YE(REGION)
+         do j = PMLc(IEY)%YI(REGION), PMLc(IEY)%YE(REGION)
             j_m = j - b%Ey%YI
-            do i = PMLc(iEy)%XI(REGION),PMLc(iEy)%XE(REGION)
+            do i = PMLc(IEY)%XI(REGION),PMLc(IEY)%XE(REGION)
                i_m = i - b%Ey%XI
                medium = 1
                regDU(REGION)%Psi_Eyzvac(i, j, k) = P_be_z(k) * regDU(REGION)%Psi_Eyzvac(i, j, k) +  &
@@ -1816,11 +1816,11 @@ end subroutine calc_cpmlconstants
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
-      do k = PMLc(iEx)%ZI(REGION), PMLc(iEx)%ZE(REGION)
+      do k = PMLc(IEX)%ZI(REGION), PMLc(IEX)%ZE(REGION)
          k_m = k - b%Ex%ZI
-         do j = PMLc(iEx)%YI(REGION), PMLc(iEx)%YE(REGION)
+         do j = PMLc(IEX)%YI(REGION), PMLc(IEX)%YE(REGION)
             j_m = j - b%Ex%YI
-            do i = PMLc(iEx)%XI(REGION), PMLc(iEx)%XE(REGION)
+            do i = PMLc(IEX)%XI(REGION), PMLc(IEX)%XE(REGION)
                i_m = i - b%Ex%XI
                medium = 1
                regDU(REGION)%Psi_Exzvac(i, j, k) = P_be_z(k) * regDU(REGION)%Psi_Exzvac(i, j, k) +  &
@@ -1841,11 +1841,11 @@ end subroutine calc_cpmlconstants
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
-      do k = PMLc(iEy)%ZI(REGION), PMLc(iEy)%ZE(REGION)
+      do k = PMLc(IEY)%ZI(REGION), PMLc(IEY)%ZE(REGION)
          k_m = k - b%Ey%ZI
-         do j = PMLc(iEy)%YI(REGION), PMLc(iEy)%YE(REGION)
+         do j = PMLc(IEY)%YI(REGION), PMLc(IEY)%YE(REGION)
             j_m = j - b%Ey%YI
-            do i = PMLc(iEy)%XI(REGION),PMLc(iEy)%XE(REGION)
+            do i = PMLc(IEY)%XI(REGION),PMLc(IEY)%XE(REGION)
                i_m = i - b%Ey%XI
                medium = 1
                regDU(REGION)%Psi_Eyzvac(i, j, k) = P_be_z(k) * regDU(REGION)%Psi_Eyzvac(i, j, k) +  &
@@ -1860,11 +1860,11 @@ end subroutine calc_cpmlconstants
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
-      do k = PMLc(iEx)%ZI(REGION), PMLc(iEx)%ZE(REGION)
+      do k = PMLc(IEX)%ZI(REGION), PMLc(IEX)%ZE(REGION)
          k_m = k - b%Ex%ZI
-         do j = PMLc(iEx)%YI(REGION), PMLc(iEx)%YE(REGION)
+         do j = PMLc(IEX)%YI(REGION), PMLc(IEX)%YE(REGION)
             j_m = j - b%Ex%YI
-            do i = PMLc(iEx)%XI(REGION), PMLc(iEx)%XE(REGION)
+            do i = PMLc(IEX)%XI(REGION), PMLc(IEX)%XE(REGION)
                i_m = i - b%Ex%XI
                medium = 1
                regDU(REGION)%Psi_Exzvac(i, j, k) = P_be_z(k) * regDU(REGION)%Psi_Exzvac(i, j, k) +  &
@@ -1906,11 +1906,11 @@ end subroutine calc_cpmlconstants
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
-      do k = PMLc(iEy)%ZI(REGION), PMLc(iEy)%ZE(REGION)
+      do k = PMLc(IEY)%ZI(REGION), PMLc(IEY)%ZE(REGION)
          k_m = k - b%Ey%ZI
-         do j = PMLc(iEy)%YI(REGION) ,PMLc(iEy)%YE(REGION)
+         do j = PMLc(IEY)%YI(REGION) ,PMLc(IEY)%YE(REGION)
             j_m = j - b%Ey%YI
-            do i = PMLc(iEy)%XI(REGION), PMLc(iEy)%XE(REGION)
+            do i = PMLc(IEY)%XI(REGION), PMLc(IEY)%XE(REGION)
                i_m = i - b%Ey%XI
                medium = 1
                regBF(REGION)%Psi_Eyxvac(i, j, k) = P_be_x(i) * regBF(REGION)%Psi_Eyxvac(i, j, k) +  &
@@ -1950,11 +1950,11 @@ end subroutine calc_cpmlconstants
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m,medium)
 #endif
-      do k = PMLc(iEy)%ZI(REGION), PMLc(iEy)%ZE(REGION)
+      do k = PMLc(IEY)%ZI(REGION), PMLc(IEY)%ZE(REGION)
          k_m = k - b%Ey%ZI
-         do j = PMLc(iEy)%YI(REGION) ,PMLc(iEy)%YE(REGION)
+         do j = PMLc(IEY)%YI(REGION) ,PMLc(IEY)%YE(REGION)
             j_m = j - b%Ey%YI
-            do i = PMLc(iEy)%XI(REGION), PMLc(iEy)%XE(REGION)
+            do i = PMLc(IEY)%XI(REGION), PMLc(IEY)%XE(REGION)
                i_m = i - b%Ey%XI
                medium = 1
                regBF(REGION)%Psi_Eyxvac(i, j, k) = P_be_x(i) * regBF(REGION)%Psi_Eyxvac(i, j, k) +  &

@@ -180,10 +180,10 @@ module  FDETYPES_m
    integer(kind=4),  parameter  :: FARFIELD=67
    integer(kind=4),  parameter  :: LINEINTEGRAL=68
    ! do not change
-   integer(kind=4),  parameter  :: IJX=10*iEx,IJY=10*iEy,IJZ=10*IEZ
-   integer(kind=4),  parameter  :: IQX=10000*iEx,IQY=10000*iEy,IQZ=10000*IEZ
-   integer(kind=4),  parameter  :: IVX=1000*iEx,IVY=1000*iEy,IVZ=1000*IEZ
-   integer(kind=4),  parameter  :: IBLOQUEJX=100*iEx,IBLOQUEJY=100*iEy,IBLOQUEJZ=100*IEZ
+   integer(kind=4),  parameter  :: IJX=10*IEX,IJY=10*IEY,IJZ=10*IEZ
+   integer(kind=4),  parameter  :: IQX=10000*IEX,IQY=10000*IEY,IQZ=10000*IEZ
+   integer(kind=4),  parameter  :: IVX=1000*IEX,IVY=1000*IEY,IVZ=1000*IEZ
+   integer(kind=4),  parameter  :: IBLOQUEJX=100*IEX,IBLOQUEJY=100*IEY,IBLOQUEJZ=100*IEZ
    integer(kind=4),  parameter  :: IBLOQUEMX=100*IHX,IBLOQUEMY=100*IHY,IBLOQUEMZ=100*IHZ
    !
    integer(kind=4), parameter :: VOLUMIC_M_MEASURE(3) = [ICUR, IMEC, IMHC]
@@ -191,7 +191,7 @@ module  FDETYPES_m
    integer(kind=4), parameter :: VOLUMIC_Y_MEASURE(3) = [ICURY, IEYC, IHYC]
    integer(kind=4), parameter :: VOLUMIC_Z_MEASURE(3) = [ICURZ, IEZC, IHZC]
 
-   integer(kind=4), parameter :: ELECTRIC_FIELD_DIRECTION(3) = [iEx, iEy, IEZ]
+   integer(kind=4), parameter :: ELECTRIC_FIELD_DIRECTION(3) = [IEX, IEY, IEZ]
    integer(kind=4), parameter :: MAGNETIC_FIELD_DIRECTION(3) = [IHX, IHY, IHZ]
    integer(kind=4), parameter :: CURRENT_MEASURE(4) = [ICUR, ICURX, ICURY, ICURZ]
    integer(kind=4), parameter :: ELECTRIC_FIELD_MEASURE(4) = [IMEC, IEXC, IEYC, IEZC]
@@ -862,9 +862,9 @@ contains
       integer(kind=IKINDMTAG) :: res 
       integer(kind = 4) :: field, i, j, k
       select case(field)
-      case(iEx)
+      case(IEX)
          res = this%edge%x(i, j, k)
-      case(iEy)
+      case(IEY)
          res = this%edge%y(i, j, k)
       case(IEZ)
          res = this%edge%z(i, j, k)
