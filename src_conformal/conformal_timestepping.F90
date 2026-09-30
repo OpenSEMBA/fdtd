@@ -115,18 +115,22 @@ contains
 
         if (j==1) then 
         if (face%normal(dir) > 0) then 
+            allocate(face%region_I_fields%E1)
             face%region_I_fields%E1 = 0.0
             face%region_II_fields%E1 => E(c(1),c(2),c(3))
         else if (face%normal(dir) < 0) then 
             face%region_I_fields%E1 => E(c(1),c(2),c(3))
+            allocate(face%region_II_fields%E1)
             face%region_II_fields%E1 = 0.0
         end if
         else if (j == 2) then 
         c(dir) = cell(dir) + 1
         if (face%normal(dir) > 0) then 
             face%region_I_fields%E2=> E(c(1),c(2),c(3))
+            allocate(face%region_II_fields%E2)
             face%region_II_fields%E2 = 0.0
         else if (face%normal(dir) < 0) then 
+            allocate(face%region_I_fields%E2)
             face%region_I_fields%E2 = 0.0
             face%region_II_fields%E2 => E(c(1),c(2),c(3))
         end if
@@ -134,17 +138,21 @@ contains
         c(dir) = cell(dir) + 1
         if (face%normal(dir) > 0) then 
             face%region_I_fields%E3 => E(c(1),c(2),c(3))
+            allocate(face%region_II_fields%E3)
             face%region_II_fields%E3 = 0.0
         else if (face%normal(dir) < 0) then 
+            allocate(face%region_I_fields%E3)
             face%region_I_fields%E3 = 0.0
             face%region_II_fields%E3 => E(c(1),c(2),c(3))
         end if
         else if (j == 4) then 
         if (face%normal(dir) > 0) then 
+            allocate(face%region_I_fields%E4)
             face%region_I_fields%E4 = 0.0
             face%region_II_fields%E4 => E(c(1),c(2),c(3))
         else if (face%normal(dir) < 0) then 
             face%region_I_fields%E4 => E(c(1),c(2),c(3))
+            allocate(face%region_II_fields%E4)
             face%region_II_fields%E4 = 0.0
         end if
         end if
@@ -207,9 +215,11 @@ contains
         if (k==1) then 
             if (edge%ratio == 0.0) then 
                 edge%region_II_fields%H1 => H(c(1),c(2),c(3))
+                allocate(edge%region_I_fields%H1)
                 edge%region_I_fields%H1 = 0.0
             else if (edge%ratio == 1.0) then 
                 edge%region_I_fields%H1  => H(c(1),c(2),c(3))
+                allocate(edge%region_II_fields%H1)
                 edge%region_II_fields%H1 = 0.0
             else
                 edge%region_I_fields%H1  => H(c(1),c(2),c(3))
@@ -219,9 +229,11 @@ contains
             c(dir) = cell(dir) - 1
             if (edge%ratio == 0.0) then 
                 edge%region_II_fields%H2 => H(c(1),c(2),c(3)-1)
+                allocate(edge%region_I_fields%H2)
                 edge%region_I_fields%H2 = 0.0
             else if (edge%ratio == 1.0) then 
                 edge%region_I_fields%H2  => H(c(1),c(2),c(3)-1)
+                allocate(edge%region_II_fields%H2)
                 edge%region_II_fields%H2 = 0.0
             else
                 edge%region_I_fields%H2  => H(c(1),c(2),c(3)-1)
@@ -231,9 +243,11 @@ contains
             c(dir) = cell(dir) - 1
             if (edge%ratio == 0.0) then 
                 edge%region_II_fields%H3 => H(c(1),c(2)-1,c(3))
+                allocate(edge%region_I_fields%H3)
                 edge%region_I_fields%H3 = 0.0
             else if (edge%ratio == 1.0) then 
                 edge%region_I_fields%H3 => H(c(1),c(2)-1,c(3))
+                allocate(edge%region_II_fields%H3)
                 edge%region_II_fields%H3 = 0.0
             else
                 edge%region_I_fields%H3  => H(c(1),c(2)-1,c(3))
@@ -242,9 +256,11 @@ contains
         else if (k==4) then 
             if (edge%ratio == 0.0) then 
                 edge%region_II_fields%H4 => H(c(1),c(2),c(3))
+                allocate(edge%region_I_fields%H4)
                 edge%region_I_fields%H4 = 0.0
             else if (edge%ratio == 1.0) then 
                 edge%region_I_fields%H4  => H(c(1),c(2),c(3))
+                allocate(edge%region_II_fields%H4)
                 edge%region_II_fields%H4 = 0.0
             else
                 edge%region_I_fields%H4   => H(c(1),c(2),c(3))
@@ -261,10 +277,12 @@ contains
         integer(kind=4), intent(in) :: j
         if (j==1) then 
             if (edge%ratio == 0.0) then 
+                allocate(edge%region_I_fields%H1)
                 edge%region_I_fields%H1  = 0.0
                 edge%region_II_fields%H1 => face%region_II_fields%H
             else if (edge%ratio == 1.0) then 
                 edge%region_I_fields%H1  => face%region_I_fields%H
+                allocate(edge%region_II_fields%H1)
                 edge%region_II_fields%H1 = 0.0
             else 
                 edge%region_I_fields%H1  => face%region_I_fields%H
@@ -272,10 +290,12 @@ contains
             end if
         else if (j==2) then 
             if (edge%ratio == 0.0) then 
+                allocate(edge%region_I_fields%H2)
                 edge%region_I_fields%H2  = 0.0
                 edge%region_II_fields%H2 => face%region_II_fields%H
             else if (edge%ratio == 1.0) then 
                 edge%region_I_fields%H2  => face%region_I_fields%H
+                allocate(edge%region_II_fields%H2)
                 edge%region_II_fields%H2 = 0.0
             else
                 edge%region_I_fields%H2  => face%region_I_fields%H
@@ -283,10 +303,12 @@ contains
             end if
         else if (j==3) then 
             if (edge%ratio == 0.0) then 
+                allocate(edge%region_I_fields%H3)
                 edge%region_I_fields%H3 = 0.0
                 edge%region_II_fields%H3 => face%region_II_fields%H
             else if (edge%ratio == 1.0) then 
                 edge%region_I_fields%H3  => face%region_I_fields%H
+                allocate(edge%region_II_fields%H3)
                 edge%region_II_fields%H3 = 0.0
             else 
                 edge%region_I_fields%H3  => face%region_I_fields%H
@@ -294,10 +316,12 @@ contains
             end if
         else if (j==4) then 
             if (edge%ratio == 0.0) then 
+                allocate(edge%region_I_fields%H4)
                 edge%region_I_fields%H4 = 0.0
                 edge%region_II_fields%H4 => face%region_II_fields%H
             else if (edge%ratio == 1.0) then 
                 edge%region_I_fields%H4  => face%region_I_fields%H
+                allocate(edge%region_II_fields%H4)
                 edge%region_II_fields%H4 = 0.0
             else
                 edge%region_I_fields%H4  => face%region_I_fields%H
