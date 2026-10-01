@@ -1,3 +1,4 @@
+import copy
 from pathlib import Path
 
 from test.utils.utils import *
@@ -213,3 +214,110 @@ def test_towelHanger_mpi(tmp_path):
                     solved_probe["current_0"].to_numpy(),
                 )
                 assert np.corrcoef(solved, expected_probe["current_0"])[0, 1] > 0.999
+
+
+_POINT_PROBE_BASE_CASE = CASES_FOLDER + "output_e2e/common_geometry.fdtd.json"
+_POINT_PROBE_CASE_NAME = "point_probe_interface.fdtd"
+_POINT_PROBE_COMPONENTS = (
+    ("electric", "x"),
+    ("electric", "y"),
+    ("electric", "z"),
+    ("magnetic", "x"),
+    ("magnetic", "y"),
+    ("magnetic", "z"),
+)
+
+
+def _stage_point_probe_case(tmp_path: Path, planes) -> Path:
+    """Copy the shared output case and add point probes at the given z planes."""
+    case = copy.deepcopy(json.loads(Path(_POINT_PROBE_BASE_CASE).read_text()))
+    for z in planes:
+        coordinate_id = 100 + z
+        element_id = 200 + z
+        case["mesh"]["coordinates"].append(
+            {"id": coordinate_id, "relativePosition": [5, 4, z]}
+        )
+        case["mesh"]["elements"].append(
+            {"id": element_id, "type": "node", "coordinateIds": [coordinate_id]}
+        )
+        for field, direction in _POINT_PROBE_COMPONENTS:
+            case["probes"].append(
+                {
+                    "name": f"p{z}{field[0]}{direction}",
+                    "type": "point",
+                    "field": field,
+                    "elementIds": [element_id],
+                    "directions": [direction],
+                    "domain": {"type": "time"},
+                }
+            )
+
+    case_dir = tmp_path / "case"
+    case_dir.mkdir()
+    shutil.copy(EXCITATIONS_FOLDER + "gauss.exc", case_dir)
+    input_path = case_dir / (_POINT_PROBE_CASE_NAME + ".json")
+    input_path.write_text(json.dumps(case, indent=2))
+    return input_path
+
+
+def _run_point_probe_case(input_path, run_dir, mpi_command=None, flags=None):
+    run_dir.mkdir()
+    solver = FDTD(
+        input_path,
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=run_dir,
+        mpi_command=mpi_command,
+        flags=flags or [],
+    )
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+    return solver
+
+
+def _read_point_probe_outputs(run_dir: Path):
+    outputs = {}
+    for path in sorted(run_dir.glob(f"{_POINT_PROBE_CASE_NAME}_*_tm.dat")):
+        outputs[path.name] = np.atleast_2d(np.loadtxt(path, skiprows=1))
+    return outputs
+
+
+def _assert_point_outputs_match_serial(serial, parallel):
+    assert set(parallel) == set(serial), sorted(set(parallel) ^ set(serial))
+    for name, expected in serial.items():
+        got = parallel[name]
+        assert got.shape == expected.shape, f"{name}: {got.shape} != {expected.shape}"
+        times = got[:, 0]
+        assert np.all(np.diff(times) > 0), f"{name}: duplicated or unordered samples"
+        assert np.allclose(got[:, 1], expected[:, 1], rtol=1e-6, atol=1e-12), name
+
+
+@no_mpi_skip
+@pytest.mark.mpi
+@pytest.mark.probes
+@pytest.mark.parametrize(
+    "ranks, flags, planes",
+    [
+        # -force pins the cut at z=5, so planes 4-6 lie in the Alloc overlap.
+        (2, ["-force", "5"], [2, 4, 5, 6]),
+        # Auto cuts; probe every interior plane to cross both interfaces.
+        (3, [], [2, 3, 4, 5, 6, 7]),
+    ],
+)
+def test_point_probe_at_mpi_interface_is_written_once(tmp_path, ranks, flags, planes):
+    input_path = _stage_point_probe_case(tmp_path, planes)
+
+    serial_dir = tmp_path / "serial"
+    _run_point_probe_case(input_path, serial_dir)
+    serial = _read_point_probe_outputs(serial_dir)
+    assert serial, "serial run produced no point probe outputs"
+
+    parallel_dir = tmp_path / f"mpi_{ranks}"
+    _run_point_probe_case(
+        input_path,
+        parallel_dir,
+        mpi_command=f"mpirun -np {ranks}",
+        flags=flags,
+    )
+    parallel = _read_point_probe_outputs(parallel_dir)
+
+    _assert_point_outputs_match_serial(serial, parallel)
