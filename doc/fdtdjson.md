@@ -356,6 +356,8 @@ Its `elementIds` must reference `cell` elements. All `intervals` modeling entiti
 
 A `thinSlot` represents a gap between two conductive surfaces. Therefore it must be located at a surface and be defined using line cell elements only. Its `<width>` is a real number which defines the distance between the surfaces in meters.
 
+The sheet containing the gap may be a `pec` material, an `isotropic` material applied as a surface with non-zero `electricConductivity`, or a `multilayeredSurface` (surface impedance) material.
+
 ```json
 {
     "name": "3mm-gap",
