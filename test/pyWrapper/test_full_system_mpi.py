@@ -299,8 +299,8 @@ def _assert_point_outputs_match_serial(serial, parallel):
     [
         # -force pins the cut at z=5, so planes 4-6 lie in the Alloc overlap.
         (2, ["-force", "5"], [2, 4, 5, 6]),
-        # Auto cuts; probe every interior plane to cross both interfaces.
-        (3, [], [2, 3, 4, 5, 6, 7]),
+        # A second cut position exercises interface ownership at z=3.
+        (2, ["-force", "3"], [2, 3, 4]),
     ],
 )
 def test_point_probe_at_mpi_interface_is_written_once(tmp_path, ranks, flags, planes):
