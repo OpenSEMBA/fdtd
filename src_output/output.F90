@@ -768,19 +768,13 @@ contains
       integer, intent(in) :: writer_rank
       integer :: i, ios
 
-      if (associated(outputs)) then
-         do i = 1, size(outputs)
-            if (outputs(i)%outputID /= MAPVTK_ID) cycle
-            if (outputs(i)%mapvtkOutput%localParticipates) then
-               call remove_folder(outputs(i)%mapvtkOutput%path, ios)
-            end if
-            if (writer_rank == 0) call delete_file(outputs(i)%mapvtkOutput%masterPath, ios)
-         end do
-      end if
       if (writer_rank /= 0) return
       if (associated(outputs)) then
          do i = 1, size(outputs)
             select case (outputs(i)%outputID)
+            case (MAPVTK_ID)
+               call remove_folder(outputs(i)%mapvtkOutput%path, ios)
+               call delete_file(outputs(i)%mapvtkOutput%masterPath, ios)
             case (POINT_PROBE_ID)
                call delete_artifacts(outputs(i)%pointProbe%artifacts)
             case (WIRE_CURRENT_PROBE_ID)

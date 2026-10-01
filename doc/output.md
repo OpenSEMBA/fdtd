@@ -49,9 +49,11 @@ The `.xdmf` files describe the corresponding data and geometry stored in HDF5.
 
 The `-mapvtk` option creates a geometry map rather than a JSON
 probe.
-Without MPI, it writes one `.vtu` file.
-With MPI, it writes one `.vtu` piece for every participating rank and a
-root-level `.pvtu` descriptor that references all pieces.
+All `.vtu` pieces are collected in a single directory whose basename is
+`R__MAP`.
+Without MPI, that directory contains one `.vtu` piece.
+With MPI, it contains one `.vtu` piece for every participating rank, and a
+root-level `.pvtu` descriptor beside the input references all pieces.
 Geometry maps do not publish text sidecars.
 
 Probe outputs do not create JSON descriptors or a run output manifest.
