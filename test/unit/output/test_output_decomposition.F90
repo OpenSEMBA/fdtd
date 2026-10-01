@@ -236,3 +236,42 @@ integer function test_output_partition_all_components_cover_volume() bind(c) res
       end do
    end do
 end function test_output_partition_all_components_cover_volume
+
+integer function test_output_point_interface_owner() bind(c) result(err)
+   ! Verifies that a point on a shared MPI interface is owned by exactly one rank.
+   use FDETYPES_m, only: iEx, iEy, iEz, iHx, iHy, iHz, limit_t
+   use outputTypes_m, only: cell_coordinate_t
+   use outputDecomposition_m
+   use assertionTools_m, only: assert_integer_equal, assert_true
+   implicit none
+
+   type(limit_t) :: local_sweep
+   integer :: components(6), component, rank, owners, z
+
+   err = 0
+   components = [iEx, iEy, iEz, iHx, iHy, iHz]
+
+   do component = 1, size(components)
+      do z = 4, 6
+         owners = 0
+         do rank = 0, 1
+            if (rank == 0) then
+               if (any(components(component) == [iEx, iEy, iHz])) then
+                  local_sweep = limit_t(0, 0, 0, 0, 0, 5, 1, 1, 6)
+               else
+                  local_sweep = limit_t(0, 0, 0, 0, 0, 4, 1, 1, 5)
+               end if
+            else
+               local_sweep = limit_t(0, 0, 0, 0, 5, 10, 1, 1, 6)
+            end if
+            if (point_is_owned_by_rank(cell_coordinate_t(0, 0, z), components(component), rank, 2, &
+                                       local_sweep)) owners = owners + 1
+         end do
+         err = err + assert_integer_equal(owners, 1, 'Interface point does not have exactly one owner')
+      end do
+
+      err = err + assert_true(point_is_owned_by_rank(cell_coordinate_t(0, 0, 5), components(component), &
+                                                     0, 1, limit_t(0, 0, 0, 0, 0, 10, 1, 1, 11)), &
+                              'Serial rank does not own an interface point')
+   end do
+end function test_output_point_interface_owner

@@ -24,6 +24,7 @@ integer function test_init_point_probe() bind(c) result(err)
    type(bounds_t)                 :: bounds
    type(media_matrices_t)         :: media
    type(limit_t), allocatable     :: sinpml(:)
+   type(XYZlimit_t)               :: sweep(6)
    type(Obses_t)                  :: probe
    type(solver_output_t), pointer :: outputs(:)
    type(MediaData_t), allocatable, target :: materials(:)
@@ -37,7 +38,7 @@ integer function test_init_point_probe() bind(c) result(err)
    logical :: outputRequested
    logical :: hasWires = .false.
    integer(kind=SINGLE) :: test_err = 0
-   integer :: ios
+   integer :: i, ios
 
    ! Setup
    testPath = join_path(get_temp_folder(), test_folder)
@@ -51,6 +52,9 @@ integer function test_init_point_probe() bind(c) result(err)
    call init_simulation_material_list(materials)
    materialsPtr => materials
    call sgg_set_Med(sgg, materialsPtr)
+
+   sweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Sweep(sgg, sweep)
 
    probe = create_point_probe_observation(4, 4, 4)
    call sgg_add_observation(sgg, probe)
@@ -138,6 +142,7 @@ integer function test_scalar_probe_has_no_manifest() bind(c) result(err)
    type(bounds_t) :: bounds
    type(media_matrices_t) :: media
    type(limit_t), allocatable :: sinpml(:)
+   type(XYZlimit_t) :: sweep(6)
    type(Obses_t) :: probe
    type(MediaData_t), allocatable, target :: materials(:)
    type(MediaData_t), pointer :: materials_ptr(:)
@@ -157,6 +162,10 @@ integer function test_scalar_probe_has_no_manifest() bind(c) result(err)
    call init_simulation_material_list(materials)
    materials_ptr => materials
    call sgg_set_Med(sgg, materials_ptr)
+
+   sweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Sweep(sgg, sweep)
+
    probe = create_point_probe_observation(4, 4, 4)
    call sgg_add_observation(sgg, probe)
    control = create_control_flags(nEntradaRoot=path, mpidir=3, size=1)
@@ -630,6 +639,7 @@ integer function test_update_point_probe() bind(c) result(err)
    type(bounds_t)                 :: bounds
    type(media_matrices_t)         :: media
    type(limit_t), allocatable     :: sinpml(:)
+   type(XYZlimit_t)               :: sweep(6)
    type(Obses_t)                  :: probe
    type(solver_output_t), pointer :: outputs(:)
    type(MediaData_t), allocatable, target :: materials(:)
@@ -671,6 +681,9 @@ integer function test_update_point_probe() bind(c) result(err)
    call init_simulation_material_list(materials)
    materialsPtr => materials
    call sgg_set_Med(sgg, materialsPtr)
+
+   sweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Sweep(sgg, sweep)
 
    control = create_control_flags(mpidir=3, finaltimestep=nSteps - 2, nEntradaRoot=nEntrada, &
                                   wiresflavor='holland')
