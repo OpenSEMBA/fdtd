@@ -2350,7 +2350,7 @@ contains
 
          node = this%mesh%getNode(elemIds(1))
          probe_coord = this%mesh%getCoordinate(node%coordIds(1))
-         fieldLabel = this%getStrAt(p, J_FIELD, default=J_FIELD_VOLTAGE)
+         fieldLabel = this%getStrAt(p, J_FIELD, default=J_FIELD_CURRENT)
 
          allocate(res%cordinates(1))
          res%cordinates(1)%tag = outputName
@@ -3973,14 +3973,13 @@ contains
       logical function isProbeDefinedOnMultiwire(p)
          type(json_value), pointer :: p
          character (len=:), allocatable :: fieldLabel
-         logical :: found
          type(materialAssociation_t), dimension(:), allocatable :: mAs
          integer :: i, j
          integer :: cId
          type(polyline_t) :: polyline
          
-         fieldLabel = this%getStrAt(p, J_FIELD, found=found)
-         if (.not. found .or. (fieldLabel /= J_FIELD_CURRENT .and. fieldLabel /= J_FIELD_VOLTAGE)) then
+         fieldLabel = this%getStrAt(p, J_FIELD, default=J_FIELD_CURRENT)
+         if (fieldLabel /= J_FIELD_CURRENT .and. fieldLabel /= J_FIELD_VOLTAGE) then
             isProbeDefinedOnMultiwire = .false.
             return
          end if
@@ -4097,7 +4096,7 @@ contains
          integer :: res
          character(len=BUFSIZE) :: errorMsg
 
-         probe_type = this%getStrAt(probe, J_FIELD)
+         probe_type = this%getStrAt(probe, J_FIELD, default=J_FIELD_CURRENT)
          if (probe_type == J_FIELD_VOLTAGE) then
             res = PROBE_TYPE_VOLTAGE
          else if (probe_type == J_FIELD_CURRENT) then

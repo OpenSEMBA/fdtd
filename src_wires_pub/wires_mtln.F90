@@ -327,6 +327,7 @@ contains
       type(mtln_t) :: mtln_parsed
       character(len=*), intent(in) :: nEntradaRoot
       mtln_solver = mtlnCtor(mtln_parsed)
+      mtln_solver%full_wave = .false.
       call mtln_solver%updatePULTerms()
       call mtln_solver%initObservation(nEntradaRoot)
    end subroutine

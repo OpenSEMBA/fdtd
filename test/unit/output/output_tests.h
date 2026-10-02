@@ -12,6 +12,7 @@ extern "C" int test_output_partition_disjoint_intervals();
 extern "C" int test_output_partition_clipping_and_large_shape();
 extern "C" int test_output_point_partition_eligibility();
 extern "C" int test_output_partition_all_components_cover_volume();
+extern "C" int test_output_point_interface_owner();
 
 // Distributed publication coordination.
 extern "C" int test_output_collective_contract();
@@ -75,6 +76,8 @@ TEST(output, test_partition_clipping_and_large_shape) { EXPECT_EQ(0, test_output
 TEST(output, test_point_partition_eligibility) { EXPECT_EQ(0, test_output_point_partition_eligibility()); }
 // Covers the requested volume exactly once for every field component.
 TEST(output, test_partition_all_components_cover_volume) { EXPECT_EQ(0, test_output_partition_all_components_cover_volume()); }
+// Assigns an interface point to exactly one rank for every field component.
+TEST(output, test_point_interface_owner) { EXPECT_EQ(0, test_output_point_interface_owner()); }
 // Selects participants and publication modes for serial and distributed output.
 TEST(output, test_collective_contract) { EXPECT_EQ(0, test_output_collective_contract()); }
 // Validates artifact identities and complete probe metadata.

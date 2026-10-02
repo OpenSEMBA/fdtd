@@ -1,0 +1,29 @@
+{
+  "_format": "FDTD Input file",
+  "__comments": "Slot ending on the perimeter of a surface-impedance (multilayeredSurface) sheet. The terminal must add its transverse E edge.",
+  "general": { "timeStep": 1e-11, "numberOfSteps": 1 },
+  "boundary": { "all": { "type": "pml", "layers": 4 } },
+  "materials": [
+    { "name": "SurfaceImpedance", "id": 1, "type": "multilayeredSurface",
+      "layers": [ { "thickness": 1e-3, "relativePermittivity": 1.0, "relativePermeability": 1.0, "electricConductivity": 5e3 } ] },
+    { "name": "slot", "id": 2, "type": "thinSlot", "width": 1e-4 }
+  ],
+  "materialAssociations": [
+    { "materialId": 1, "elementIds": [1] },
+    { "materialId": 2, "type": "thinSlot", "elementIds": [2] }
+  ],
+  "probes": [],
+  "mesh": {
+    "grid": {
+      "numberOfCells": [40, 20, 40],
+      "steps": { "x": [0.01], "y": [0.01], "z": [0.01] },
+      "origin": [0.0, 0.0, 0.0]
+    },
+    "elements": [
+      { "id": 1, "name": "surface-impedance-face", "type": "cell",
+        "intervals": [ [[10, 10, 10], [30, 10, 30]] ] },
+      { "id": 2, "name": "slot-reaching-perimeter", "type": "cell",
+        "intervals": [ [[14, 10, 20], [30, 10, 20]] ] }
+    ]
+  }
+}

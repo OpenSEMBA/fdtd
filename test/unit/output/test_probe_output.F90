@@ -24,6 +24,7 @@ integer function test_init_point_probe() bind(c) result(err)
    type(bounds_t)                 :: bounds
    type(media_matrices_t)         :: media
    type(limit_t), allocatable     :: sinpml(:)
+   type(XYZlimit_t)               :: sweep(6)
    type(Obses_t)                  :: probe
    type(solver_output_t), pointer :: outputs(:)
    type(MediaData_t), allocatable, target :: materials(:)
@@ -37,7 +38,7 @@ integer function test_init_point_probe() bind(c) result(err)
    logical :: outputRequested
    logical :: hasWires = .false.
    integer(kind=SINGLE) :: test_err = 0
-   integer :: ios
+   integer :: i, ios
 
    ! Setup
    testPath = join_path(get_temp_folder(), test_folder)
@@ -51,6 +52,9 @@ integer function test_init_point_probe() bind(c) result(err)
    call init_simulation_material_list(materials)
    materialsPtr => materials
    call sgg_set_Med(sgg, materialsPtr)
+
+   sweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Sweep(sgg, sweep)
 
    probe = create_point_probe_observation(4, 4, 4)
    call sgg_add_observation(sgg, probe)
@@ -138,6 +142,7 @@ integer function test_scalar_probe_has_no_manifest() bind(c) result(err)
    type(bounds_t) :: bounds
    type(media_matrices_t) :: media
    type(limit_t), allocatable :: sinpml(:)
+   type(XYZlimit_t) :: sweep(6)
    type(Obses_t) :: probe
    type(MediaData_t), allocatable, target :: materials(:)
    type(MediaData_t), pointer :: materials_ptr(:)
@@ -157,6 +162,10 @@ integer function test_scalar_probe_has_no_manifest() bind(c) result(err)
    call init_simulation_material_list(materials)
    materials_ptr => materials
    call sgg_set_Med(sgg, materials_ptr)
+
+   sweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Sweep(sgg, sweep)
+
    probe = create_point_probe_observation(4, 4, 4)
    call sgg_add_observation(sgg, probe)
    control = create_control_flags(nEntradaRoot=path, mpidir=3, size=1)
@@ -630,6 +639,7 @@ integer function test_update_point_probe() bind(c) result(err)
    type(bounds_t)                 :: bounds
    type(media_matrices_t)         :: media
    type(limit_t), allocatable     :: sinpml(:)
+   type(XYZlimit_t)               :: sweep(6)
    type(Obses_t)                  :: probe
    type(solver_output_t), pointer :: outputs(:)
    type(MediaData_t), allocatable, target :: materials(:)
@@ -671,6 +681,9 @@ integer function test_update_point_probe() bind(c) result(err)
    call init_simulation_material_list(materials)
    materialsPtr => materials
    call sgg_set_Med(sgg, materialsPtr)
+
+   sweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Sweep(sgg, sweep)
 
    control = create_control_flags(mpidir=3, finaltimestep=nSteps - 2, nEntradaRoot=nEntrada, &
                                   wiresflavor='holland')
@@ -1464,7 +1477,12 @@ integer function test_update_movie_probe() bind(c) result(err)
    fields%H%deltaY => dummyFields%dyh
    fields%H%deltaZ => dummyFields%dzh
 
-   dummyFields%Hx(3, 3, 3) = 2.0_RKIND
+   ! Hx is distributed over both sides of the surface edge. Only its jump
+   ! (5 - 3 = 2) enters the surface current, so the stored value is the same as
+   ! for the one-sided distribution (2, 0): the per-face currents cannot be
+   ! discriminated from the single stored value.
+   dummyFields%Hx(3, 3, 3) = 5.0_RKIND
+   dummyFields%Hx(3, 3, 2) = 3.0_RKIND
    dummyFields%Hy(3, 3, 3) = 5.0_RKIND
    dummyFields%Hz(3, 3, 3) = 4.0_RKIND
 
@@ -1483,6 +1501,14 @@ integer function test_update_movie_probe() bind(c) result(err)
 
    test_err = test_err + assert_real_equal(outputs(1)%movieProbe%yValueForTime(1, 4), &
                                            0.0_RKIND, 1e-5_RKIND, 'Value error')
+
+   ! Only the Y edge is part of the surface at the selected points. The X and Z
+   ! components must stay zero: otherwise total current densities computed on
+   ! non-surface edges would leak into the surface current output.
+   test_err = test_err + assert_array_value(outputs(1)%movieProbe%xValueForTime, 0.0_RKIND, &
+                                            errormessage='Stored a non-surface X current component')
+   test_err = test_err + assert_array_value(outputs(1)%movieProbe%zValueForTime, 0.0_RKIND, &
+                                            errormessage='Stored a non-surface Z current component')
 
    test_err = test_err + assert_integer_equal( &
               size(outputs(1)%movieProbe%timeStep), OUTPUT_TIME_BUFFER_SIZE, 'Unexpected timestep buffer size')
@@ -2058,11 +2084,10 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    test_err = test_err + assert_real_equal(outputs(1)%frequencySliceProbe%frequencySlice(6), &
                                            100.0_RKIND, 1e-5_RKIND, 'Unexpected final frequency')
 
-   !This test generates X Gradient for H. It is expected to detect none Current accros X axis and Opposite values for Y and Z
-
+   ! This test generates an X gradient for H. Only the Y edge is part of the
+   ! surface, so no current must be stored on X or Z; the Y current must remain.
    test_err = test_err + assert_array_value(outputs(1)%frequencySliceProbe%xValueForFreq, (0.0_CKIND , 0.0_CKIND), errormessage='Detected Current on X Axis for Hx gradient')
-   test_err = test_err + assert_arrays_equal(outputs(1)%frequencySliceProbe%yValueForFreq, &
-                                 -1.0_RKIND*outputs(1)%frequencySliceProbe%zValueForFreq, errormessage='Unequal values for Y and -Z')
+   test_err = test_err + assert_array_value(outputs(1)%frequencySliceProbe%zValueForFreq, (0.0_CKIND , 0.0_CKIND), errormessage='Detected non-surface current on Z Axis')
    test_err = test_err + assert_true(any(abs(firstFrequencyUpdate) > 1e-6_RKIND), &
                                          'First frequency update produced no measurable value')
    test_err = test_err + assert_arrays_equal(outputs(1)%frequencySliceProbe%yValueForFreq(1, :), &

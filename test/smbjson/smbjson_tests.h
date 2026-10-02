@@ -42,6 +42,7 @@ extern "C" int test_slanted_segments_aligned();
 extern "C" int test_slanted_segments_diagonal();
 extern "C" int test_slanted_segments_find_node();
 extern "C" int test_slanted_segments_graded();
+extern "C" int test_read_wire_probe_defaults();
 extern "C" int test_read_nodal_source_resistance_per_meter();
 extern "C" int test_read_nodal_source_total_resistance();
 extern "C" int test_read_nodal_source_zero_length();
@@ -78,6 +79,7 @@ TEST(smbjson, slanted_segments_aligned) { EXPECT_EQ(0, test_slanted_segments_ali
 TEST(smbjson, slanted_segments_diagonal) { EXPECT_EQ(0, test_slanted_segments_diagonal()); }
 TEST(smbjson, slanted_segments_find_node) { EXPECT_EQ(0, test_slanted_segments_find_node()); }
 TEST(smbjson, slanted_segments_graded) { EXPECT_EQ(0, test_slanted_segments_graded()); }
+TEST(smbjson, read_wire_probe_defaults) { EXPECT_EQ(0, test_read_wire_probe_defaults()); }
 TEST(smbjson, read_nodal_source_resistance_per_meter) {
                                            EXPECT_EQ(0, test_read_nodal_source_resistance_per_meter()); }
 TEST(smbjson, read_nodal_source_total_resistance) {

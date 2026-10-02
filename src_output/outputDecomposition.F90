@@ -23,6 +23,7 @@ module outputDecomposition_m
 
    public :: build_output_partition
    public :: point_is_in_partition
+   public :: point_is_owned_by_rank
 
 contains
 
@@ -64,11 +65,7 @@ contains
 
       partition%global_shape = shape_of(partition%global_lower, partition%global_upper)
 
-      owned_upper_z = local_sweep%ZE
-      ! Ex, Ey, and Hz sweeps overlap at MPI interfaces; the higher rank owns the plane.
-      if (rank < rank_count - 1 .and. has_shared_upper_plane(field_component)) then
-         owned_upper_z = owned_upper_z - 1_SINGLE
-      end if
+      owned_upper_z = partition_upper_z(field_component, rank, rank_count, local_sweep%ZE)
 
       partition%local_lower = cell_coordinate_t( &
                               max(partition%global_lower%x, local_sweep%XI), &
@@ -98,6 +95,30 @@ contains
                               point%y >= partition%local_lower%y .and. point%y <= partition%local_upper%y .and. &
                               point%z >= partition%local_lower%z .and. point%z <= partition%local_upper%z
    end function point_is_in_partition
+
+   pure logical function point_is_owned_by_rank(point, field_component, rank, rank_count, local_sweep)
+      ! A point output is owned by the single rank whose sweep contains it.
+      type(cell_coordinate_t), intent(in) :: point
+      integer, intent(in) :: field_component, rank, rank_count
+      type(limit_t), intent(in) :: local_sweep
+
+      point_is_owned_by_rank = &
+         point%x >= local_sweep%XI .and. point%x <= local_sweep%XE .and. &
+         point%y >= local_sweep%YI .and. point%y <= local_sweep%YE .and. &
+         point%z >= local_sweep%ZI .and. &
+         point%z <= partition_upper_z(field_component, rank, rank_count, local_sweep%ZE)
+   end function point_is_owned_by_rank
+
+   pure integer(kind=SINGLE) function partition_upper_z(field_component, rank, rank_count, sweep_upper_z)
+      ! Ex, Ey, and Hz sweeps overlap at MPI interfaces; the higher rank owns the plane.
+      integer, intent(in) :: field_component, rank, rank_count
+      integer(kind=SINGLE), intent(in) :: sweep_upper_z
+
+      partition_upper_z = sweep_upper_z
+      if (rank < rank_count - 1 .and. has_shared_upper_plane(field_component)) then
+         partition_upper_z = partition_upper_z - 1_SINGLE
+      end if
+   end function partition_upper_z
 
    pure logical function is_supported_component(field_component)
       integer, intent(in) :: field_component

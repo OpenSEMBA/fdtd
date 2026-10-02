@@ -28,6 +28,10 @@ module mtl_bundle_m
         type(probe_t), allocatable, dimension(:) :: probes
         type(transfer_impedance_t) :: transfer_impedance
         integer(kind=4), dimension(:), allocatable :: conductors_in_level
+        ! Conductors acting as the shield of a shieldedMultiwire contained
+        ! within another cable. In full-wave problems these have no
+        ! surrounding shield and their voltage is not reported.
+        logical, allocatable, dimension(:) :: conductor_is_shield
         
         real(kind=rkind), dimension(:,:,:), allocatable :: v_term, i_term
         real(kind=rkind), dimension(:,:,:), allocatable :: v_diff, i_diff
@@ -138,6 +142,8 @@ contains
 
         allocate(this%v_term(this%number_of_divisions + 1,this%number_of_conductors,this%number_of_conductors), source = 0.0_rkind)
         allocate(this%i_diff(this%number_of_divisions + 1,this%number_of_conductors,this%number_of_conductors), source = 0.0_rkind)
+
+        allocate(this%conductor_is_shield(this%number_of_conductors), source = .false.)
 
     end subroutine
 
