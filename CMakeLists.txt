@@ -251,7 +251,7 @@ add_library(semba-components
 	"src_main_pub/nodalsources.F90"
 	"src_main_pub/planewaves.F90"
 	"src_main_pub/pml_bodies.F90"
-	"src_main_pub/maloney_nostoch.F90"
+	"src_main_pub/sgbc.F90"
 	"src_main_pub/lumped.F90"
 	"src_main_pub/dmma_thin_slot.F90"
 	"src_main_pub/farfield.F90"

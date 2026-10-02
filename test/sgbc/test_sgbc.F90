@@ -1,4 +1,4 @@
-! Unit tests for src_main_pub/maloney_nostoch.F90
+! Unit tests for src_main_pub/sgbc.F90
 ! Tests the Thomas-algorithm tridiagonal solver solve_tridiag_iguales.
 
 ! Solve the 1D Poisson tridiagonal system of size 3:
@@ -7,7 +7,7 @@
 !   [0 -1  2] [x3]   [1]
 ! Exact solution: x1=x2=x3=1
 integer function test_solve_tridiag_3x3_poisson() bind(C, name="test_solve_tridiag_3x3_poisson") result(status)
-    use SGBC_nostoch_m, only: solve_tridiag_iguales
+    use SGBC_m, only: solve_tridiag_iguales
     use FDETYPES_m, only: RKIND
     implicit none
     integer, parameter :: n = 3
@@ -38,7 +38,7 @@ end function test_solve_tridiag_3x3_poisson
 ! Solve the 1D Poisson tridiagonal system of size 5:
 !   Same stencil, d=[1,0,0,0,1]; exact solution is all ones.
 integer function test_solve_tridiag_5x5_poisson() bind(C, name="test_solve_tridiag_5x5_poisson") result(status)
-    use SGBC_nostoch_m, only: solve_tridiag_iguales
+    use SGBC_m, only: solve_tridiag_iguales
     use FDETYPES_m, only: RKIND
     implicit none
     integer, parameter :: n = 5
@@ -68,7 +68,7 @@ end function test_solve_tridiag_5x5_poisson
 ! Solve a diagonal system of size 4:
 !   All off-diagonals zero, main diagonal = 3.0; d=[6,9,-3,12] => x=[2,3,-1,4]
 integer function test_solve_tridiag_diagonal_system() bind(C, name="test_solve_tridiag_diagonal_system") result(status)
-    use SGBC_nostoch_m, only: solve_tridiag_iguales
+    use SGBC_m, only: solve_tridiag_iguales
     use FDETYPES_m, only: RKIND
     implicit none
     integer, parameter :: n = 4

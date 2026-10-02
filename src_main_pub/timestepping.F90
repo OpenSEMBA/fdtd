@@ -45,7 +45,7 @@ module Solver_m
 #ifdef CompileWithStochastic
    use sgbc_stoch
 #else
-   use SGBC_nostoch_m
+   use SGBC_m
 #endif  
    use EDispersives_m
    use Mdispersives_m

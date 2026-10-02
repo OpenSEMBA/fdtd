@@ -12,7 +12,7 @@ module resuming_m
 #ifdef CompileWithStochastic
    use SGBC_stoch
 #else
-   use SGBC_nostoch_m
+   use SGBC_m
 #endif  
    use PMLbodies_m
    use Lumped_m
