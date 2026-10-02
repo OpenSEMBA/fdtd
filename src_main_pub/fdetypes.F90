@@ -262,6 +262,7 @@ module  FDETYPES_m
       MultiportS  , &
       AnisMultiportS  , &
       SGBCs , &
+      MaloneySheets , &
       Lumpeds , &
       EDispersives  , &
       MDispersives  , &
@@ -586,6 +587,7 @@ module  FDETYPES_m
       PMLbody , &
       SGBC , &
       SGBCDispersive , &
+      MaloneySheet , &
       Lumped , &
       Lossy, &
       AnisMultiport , &
@@ -774,6 +776,7 @@ contains
       this%MultiportS = .false.
       this%AnisMultiportS = .false.
       this%SGBCs= .false.
+      this%MaloneySheets = .false.
       this%Lumpeds= .false.
       this%EDispersives = .false.
       this%MDispersives = .false.

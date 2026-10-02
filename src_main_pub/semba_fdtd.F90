@@ -425,7 +425,8 @@ contains
             continue
          end if
          !
-         if ((this%sgg%Med(i)%Is%AnisMultiport) .OR. (this%sgg%Med(i)%Is%multiport).OR. (this%sgg%Med(i)%Is%SGBC)) then
+         if ((this%sgg%Med(i)%Is%AnisMultiport) .OR. (this%sgg%Med(i)%Is%multiport).OR. (this%sgg%Med(i)%Is%SGBC) &
+             .OR. (this%sgg%Med(i)%Is%MaloneySheet)) then
 #ifndef CompileWithNIBC
             if (this%l%mibc) call stoponerror (this%l%layoutnumber, this%l%num_procs, 'this%l%mibc Multiports without support. Recompile!')
 #endif
@@ -433,7 +434,7 @@ contains
          end if
    !altair no conformal sgbc 201119
 #ifdef NoConformalSGBC
-         if (this%sgg%Med(i)%Is%sgbc .and. this%l%input_conformal_flag) then
+         if ((this%sgg%Med(i)%Is%sgbc .or. this%sgg%Med(i)%Is%MaloneySheet) .and. this%l%input_conformal_flag) then
             call stoponerror (this%l%layoutnumber, this%l%num_procs, 'Conformal sgbc not allowed. ')
          end if
 #endif

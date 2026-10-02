@@ -2353,6 +2353,7 @@ end function openfile_mpi
          write(buff,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
          call WarnErrReport(Trim(buff))
          write(buff,*) 'Is SGBC ', sgg%Med(j)%Is%SGBC
+         write(buff,*) 'Is MaloneySheet ', sgg%Med(j)%Is%MaloneySheet
          call WarnErrReport(Trim(buff))
          write(buff,*) 'Is Lossy ', sgg%Med(j)%Is%Lossy
          call WarnErrReport(Trim(buff))

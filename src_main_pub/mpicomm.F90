@@ -1198,7 +1198,7 @@ contains
                end do
             end do
          end if
-         if(Med( jmed)%Is%SGBC .or. Med( jmed)%Is%Multiport .or. Med( jmed)%Is%AnisMultiport ) then
+         if(Med( jmed)%Is%SGBC .or. Med( jmed)%Is%MaloneySheet .or. Med( jmed)%Is%Multiport .or. Med( jmed)%Is%AnisMultiport ) then
             !!!Hz
             Do j1=sggsweep(iHz)%YI,sggsweep(iHz)%YE
                Do i1=sggsweep(iHz)%XI,sggsweep(iHz)%XE
@@ -1665,7 +1665,7 @@ contains
                end do
             end do
          end if
-         if(Med( jmed)%Is%SGBC .or. Med( jmed)%Is%Multiport .or. Med( jmed)%Is%AnisMultiport) then
+         if(Med( jmed)%Is%SGBC .or. Med( jmed)%Is%MaloneySheet .or. Med( jmed)%Is%Multiport .or. Med( jmed)%Is%AnisMultiport) then
             !!!Hz
             do j1=sggsweep(iHz)%YI,sggsweep(iHz)%YE
                do i1=sggsweep(iHz)%XI,sggsweep(iHz)%XE

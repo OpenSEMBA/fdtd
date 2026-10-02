@@ -195,6 +195,12 @@ contains
       !Multiports
       !worst case 6 orientations per surface plus the the lossy padding
       contamedia = contamedia + this%LossyThinSurfs%length * 7
+      !Maloney thin sheets: one medium per assigned surface interval
+      if (associated(this%MaloneySheets)) then
+         do j = 1, this%MaloneySheets%length
+            contamedia = contamedia + this%MaloneySheets%cs(j)%nc + 1
+         end do
+      end if
       !wires
       !nueva formulacion que almacena also the lenghts
       contamedia = contamedia + this%twires%n_tw
@@ -476,6 +482,7 @@ contains
       sgg%Med%Is%Lumped = .FALSE.
       sgg%Med%Is%SGBC = .FALSE.
       sgg%Med%Is%SGBCDispersive = .FALSE.
+      sgg%Med%Is%MaloneySheet = .FALSE.
       sgg%Med%Is%Lossy = .FALSE.
       sgg%Med%Is%multiport = .FALSE.
       sgg%Med%Is%multiportpadding = .FALSE.
@@ -1457,6 +1464,91 @@ contains
       contamedia = maxcontamedia
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !end ISOTROPIC multiports
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !
+      !
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !Maloney thin sheets
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      if (associated(this%MaloneySheets)) then
+         tama = this%MaloneySheets%length
+      else
+         tama = 0
+      end if
+      do j = 1, tama
+         if (this%MaloneySheets%cs(j)%nc <= 0) cycle
+         if (this%MaloneySheets%cs(j)%thk <= 0.0_RKIND) then
+            write(buff,'(a)') 'ERROR: maloneySheet thickness must be positive.'
+            call StopOnError(layoutnumber,num_procs,buff)
+         end if
+         if (abs(this%MaloneySheets%cs(j)%mu - MU0) > 1.0e-8_RKIND*MU0) then
+            write(buff,'(a)') 'ERROR: maloneySheet does not support magnetic materials (relativePermeability must be 1).'
+            call StopOnError(layoutnumber,num_procs,buff)
+         end if
+         if (abs(this%MaloneySheets%cs(j)%sigmam) > 0.0_RKIND) then
+            write(buff,'(a)') 'ERROR: maloneySheet does not support magneticConductivity.'
+            call StopOnError(layoutnumber,num_procs,buff)
+         end if
+         tama2 = this%MaloneySheets%cs(j)%nc
+         do i = 1, tama2
+            orientacion = this%MaloneySheets%cs(j)%C(i)%or
+            maxcontamedia = maxcontamedia + 1
+            contamedia = maxcontamedia
+            allocate(sgg%Med(contamedia)%multiport(1))
+            allocate(sgg%Med(contamedia)%Multiport(1)%epr(1), &
+                     sgg%Med(contamedia)%Multiport(1)%mur(1), &
+                     sgg%Med(contamedia)%Multiport(1)%sigma(1), &
+                     sgg%Med(contamedia)%Multiport(1)%sigmam(1), &
+                     sgg%Med(contamedia)%Multiport(1)%width(1))
+            punto%XI = this%MaloneySheets%cs(j)%C(i)%XI
+            punto%XE = this%MaloneySheets%cs(j)%C(i)%XE
+            punto%YI = this%MaloneySheets%cs(j)%C(i)%YI
+            punto%YE = this%MaloneySheets%cs(j)%C(i)%YE
+            punto%ZI = this%MaloneySheets%cs(j)%C(i)%ZI
+            punto%ZE = this%MaloneySheets%cs(j)%C(i)%ZE
+            select case (abs(orientacion))
+             case (iEx)
+               delta = (sgg%DX(punto%XI)+sgg%DX(punto%XI-1))/2.0_RKIND
+             case (iEy)
+               delta = (sgg%DY(punto%YI)+sgg%Dy(punto%YI-1))/2.0_RKIND
+             case (iEz)
+               delta = (sgg%DZ(punto%ZI)+sgg%Dz(punto%ZI-1))/2.0_RKIND
+             case default
+               write(buff,'(a)') 'Buggy error in maloneySheet orientation.'
+               call StopOnError(layoutnumber,num_procs,buff)
+            end select
+            sgg%Med(contamedia)%Multiport(1)%Multiportdir = orientacion
+            sgg%Med(contamedia)%Multiport(1)%epr(1)   = this%MaloneySheets%cs(j)%eps/Eps0
+            sgg%Med(contamedia)%Multiport(1)%mur(1)   = this%MaloneySheets%cs(j)%mu/Mu0
+            sgg%Med(contamedia)%Multiport(1)%sigma(1) = this%MaloneySheets%cs(j)%sigma
+            sgg%Med(contamedia)%Multiport(1)%sigmam(1)= this%MaloneySheets%cs(j)%sigmam
+            sgg%Med(contamedia)%Multiport(1)%width(1) = this%MaloneySheets%cs(j)%thk
+            sgg%Med(contamedia)%Multiport(1)%multiportFileZ11 = trim(adjustl(this%MaloneySheets%cs(j)%files))
+            sgg%Med(contamedia)%Priority = prior_CS
+            ! Effective medium seen by the tangential electric fields (arithmetic
+            ! average over the cell in the normal direction).
+            sgg%Med(contamedia)%Epr = (1.0_RKIND - this%MaloneySheets%cs(j)%thk/delta) + &
+                 (this%MaloneySheets%cs(j)%thk/delta) * (this%MaloneySheets%cs(j)%eps/Eps0)
+            sgg%Med(contamedia)%Sigma = (this%MaloneySheets%cs(j)%thk/delta) * this%MaloneySheets%cs(j)%sigma
+            sgg%Med(contamedia)%Mur = 1.0_RKIND
+            sgg%Med(contamedia)%SigmaM = 0.0_RKIND
+            sgg%Med(contamedia)%Is%MaloneySheet = .TRUE.
+            sgg%Med(contamedia)%Is%Lossy = .TRUE.
+            sgg%Med(contamedia)%Is%Dielectric = .FALSE.
+            numertag = searchtag(tagtype,this%MaloneySheets%cs(j)%C(i)%tag)
+            call CreateSurfaceMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
+            & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
+            & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
+            & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
+            & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientacion, &
+            & contamedia)
+         end do
+      end do
+      contamedia = maxcontamedia
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !end Maloney thin sheets
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !
       !

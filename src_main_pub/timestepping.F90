@@ -47,6 +47,7 @@ module Solver_m
 #else
    use SGBC_m
 #endif  
+   use maloney_thin_sheet_m
    use EDispersives_m
    use Mdispersives_m
    use Anisotropic_m
@@ -145,6 +146,8 @@ module Solver_m
       procedure :: advanceMagneticCPML => solver_advanceMagneticCPML
       procedure :: advanceSGBCE => solver_advanceSGBCE
       procedure :: advanceSGBCH => solver_advanceSGBCH
+      procedure :: advanceMaloneySheetE => solver_advanceMaloneySheetE
+      procedure :: advanceMaloneySheetH => solver_advanceMaloneySheetH
       procedure :: advanceEDispersiveE => solver_advanceEDispersiveE
       procedure :: advanceMDispersiveH => solver_advanceMDispersiveH
       procedure :: MinusCloneMagneticPMC => solver_MinusCloneMagneticPMC
@@ -605,6 +608,7 @@ module Solver_m
 #endif
       call initializeAnisotropic()
       call initializeSGBC()
+      call initializeMaloneySheets()
       call initializeMultiports()
       
       call initializeEDispersives()
@@ -1341,6 +1345,30 @@ contains
             end if
          end if
       end subroutine initializeSGBC
+
+      subroutine initializeMaloneySheets()
+         character(len=BUFSIZE) :: dubuf
+         logical :: l_auxinput, l_auxoutput
+#ifdef CompileWithMPI
+         integer(kind=4) :: ierr
+#endif
+
+         call InitMaloneySheets(this%sgg,this%media,this%Ex,this%Ey,this%Ez,this%Hx,this%Hy,this%Hz, &
+                                this%Idxe,this%Idye,this%Idze,this%Idxh,this%Idyh,this%Idzh, &
+                                this%g,this%eps0,this%thereAre%MaloneySheets,this%control%resume)
+
+         l_auxinput= this%thereAre%MaloneySheets
+         l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif
+         if (l_auxoutput) then
+            write (dubuf,*) '----> there are Structured maloneySheet elements';  call print11(this%control%layoutnumber,dubuf)
+         else
+            write(dubuf,*) '----> no Structured maloneySheet elements found';  call print11(this%control%layoutnumber,dubuf)
+         end if
+      end subroutine initializeMaloneySheets
       
       subroutine initializeMultiports()
          character(len=BUFSIZE) :: dubuf
@@ -1971,6 +1999,7 @@ contains
       if (this%thereAre%Multiports.and.(this%control%mibc)) call AdvanceMultiportE(this%sgg%alloc, this%Ex, this%Ey, this%Ez)
 #endif
       call this%AdvancesgbcE()
+      call this%advanceMaloneySheetE()
       call this%advanceLumpedE()
       call this%advanceEDispersiveE()
       call this%advancePlaneWaveE()
@@ -1990,6 +2019,7 @@ contains
       call this%MinusCloneMagneticPMC()
       call this%CloneMagneticPeriodic()
       call this%AdvancesgbcH()
+      call this%advanceMaloneySheetH()
       call this%AdvanceMDispersiveH()
 #ifdef CompileWithNIBC
       if (this%thereAre%Multiports .and.(this%control%mibc))  &
@@ -2518,6 +2548,16 @@ contains
       if (this%thereAre%sgbcs.and.(this%control%sgbc)) call AdvancesgbcH()
    end subroutine
 
+   subroutine solver_advanceMaloneySheetE(this)
+      class(solver_t) :: this
+      if (this%thereAre%MaloneySheets) call AdvanceMaloneySheetE()
+   end subroutine
+
+   subroutine solver_advanceMaloneySheetH(this)
+      class(solver_t) :: this
+      if (this%thereAre%MaloneySheets) call AdvanceMaloneySheetH()
+   end subroutine
+
    subroutine solver_advanceWiresE(this)
       class(solver_t) :: this
       character(len=bufsize) :: buff
@@ -2711,6 +2751,7 @@ contains
 #endif
 
       call destroysgbcs(sgg) !!todos deben destruir pq alocatean en funcion de sgg no de si contienen estos materiales que lo controla therearesgbcs. Lo que habia era if ((this%thereAre%sgbcs).and.(sgbc))
+      call DestroyMaloneySheets(sgg)
       call destroyLumped(sgg)
       call DestroyEDispersives(sgg)
       call DestroyMDispersives(sgg)
@@ -2750,6 +2791,7 @@ contains
 #endif
 
       call destroysgbcs(this%sgg) !!todos deben destruir pq alocatean en funcion de this%sgg no de si contienen estos materiales que lo controla therearesgbcs. Lo que habia era if ((this%thereAre%sgbcs).and.(sgbc))
+      call DestroyMaloneySheets(this%sgg)
       call destroyLumped(this%sgg)
       call DestroyEDispersives(this%sgg)
       call DestroyMDispersives(this%sgg)

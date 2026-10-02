@@ -88,6 +88,7 @@ integer(kind=4), save:: SGBCdepth
 public SGBC_t,SGBCSurface_t !el tipo es publico
 public AdvanceSGBCE,AdvanceSGBCH,InitSGBCs,DestroySGBCs,StoreFieldsSGBCs,calc_SGBCconstants,GetSGBCs
 public solve_tridiag_iguales
+public g1g2
 
 contains
 

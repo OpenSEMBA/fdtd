@@ -50,6 +50,7 @@ contains
             write(q,*) 'Is MDispersive ', sgg%Med(j)%Is%MDispersive
             write(q,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
             write(q,*) 'Is SGBC ', sgg%Med(j)%Is%SGBC
+            write(q,*) 'Is MaloneySheet ', sgg%Med(j)%Is%MaloneySheet
             write(q,*) 'Is Lossy ', sgg%Med(j)%Is%Lossy
             write(q,*) 'Is Multiport ', sgg%Med(j)%Is%multiport
             write(q,*) 'Is AnisMultiport ', sgg%Med(j)%Is%anismultiport
