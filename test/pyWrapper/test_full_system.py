@@ -890,6 +890,89 @@ def test_sgbc_shielding_effectiveness(tmp_path):
 
 
 @pytest.mark.sgbc
+@pytest.mark.maloneySheet
+@pytest.mark.probes
+def test_maloneySheet_shielding_effectiveness(tmp_path):
+    """Compare the maloneySheet subcell model with SGBC on a thin panel.
+
+    Both models must agree while the sheet is thin compared with the skin
+    depth. As the skin depth becomes comparable to the sheet thickness the
+    Maloney subcell model, which assumes a uniform field across the sheet,
+    departs from the resolved SGBC result.
+    """
+    def s21(solver):
+        back = Probe(_get_solved_probe_folder(solver, "back"))
+        t = back.data["time"]
+        dt = t[1] - t[0]
+        fq = fftfreq(len(t)) / dt
+        return fq, fft(back.data["field"]) / fft(back.data["incident"])
+
+    def generate_debug_data():
+        plt.figure()
+        plt.plot(f[low], 20 * np.log10(np.abs(s21_maloney[low])), ".-", label="maloneySheet")
+        plt.plot(f[low], 20 * np.log10(np.abs(s21_sgbc[low])), ".-", label="SGBC")
+        plt.plot(f[low], anal_low, ".-", label="Analytical")
+        plt.grid(which="both")
+        plt.xscale("log")
+        plt.legend()
+        plt.savefig(tmp_path / "maloneySheet_s21_comparison.png")
+        plt.close()
+
+    fn = CASES_FOLDER + "sgbcShieldingEffectiveness/shieldingEffectiveness.fdtd.json"
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    solver.run()
+    f, s21_sgbc = s21(solver)
+
+    # Same geometry, sheet modeled with the Maloney subcell method.
+    solver["materials"][0] = {
+        "name": "aluminum",
+        "id": 1,
+        "type": "maloneySheet",
+        "thickness": 10e-3,
+        "electricConductivity": 100,
+    }
+    solver.cleanUp()
+    solver.run()
+    _, s21_maloney = s21(solver)
+
+    # Analytical slab response (same reference as the SGBC test above).
+    from skrf.media import Freespace
+    from skrf.frequency import Frequency
+    import scipy.constants
+
+    low = (np.abs(f) >= 8e6) & (np.abs(f) <= 20e6)
+    freq = Frequency.from_f(f[low], unit="Hz")
+    air = Freespace(freq)
+    sigma = 100
+    width = 10e-3
+    mat_ep_r = 1 + sigma / (1j * freq.w * scipy.constants.epsilon_0)
+    slab = air.thru() ** Freespace(freq, ep_r=mat_ep_r).line(width, unit="m") ** air.thru()
+    anal_low = 20 * np.log10(np.abs(slab.s[:, 0, 1]))
+
+    maloney_low = 20 * np.log10(np.abs(s21_maloney[low]))
+    sgbc_low = 20 * np.log10(np.abs(s21_sgbc[low]))
+
+    if is_debugging():
+        generate_debug_data()
+
+    # Thin sheet regime: delta/d ~ 1.1-1.8, all models agree.
+    assert np.allclose(maloney_low, sgbc_low, atol=0.5)
+    assert np.allclose(maloney_low, anal_low, atol=0.5)
+
+    # Skin depth below the sheet thickness: the subcell model departs from the
+    # resolved SGBC result.
+    high = (np.abs(f) >= 1e8) & (np.abs(f) <= 1e9)
+    divergence = np.max(
+        np.abs(
+            20 * np.log10(np.abs(s21_maloney[high]))
+            - 20 * np.log10(np.abs(s21_sgbc[high]))
+        )
+    )
+    assert divergence > 5.0
+
+
+@pytest.mark.sgbc
 @pytest.mark.probes
 def test_current_orientation(tmp_path):
     """Verify bulk-current sign follows source rather than mesh orientation."""
