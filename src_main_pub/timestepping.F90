@@ -2534,11 +2534,12 @@ contains
             H4 => this%conformal_fields%edges(n)%region_I_fields%H4
             E = this%g%g1(med)*E + this%g%g2(med)*((H2 - H4)*id2 - (H3-H1)*id1)
 
-            if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_CONFORMAL) then 
-               E_eff = E*this%conformal_fields%edges(n)%ratio
-            else
-               E_eff = E
-            end if
+            E_eff = E
+            ! if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_CONFORMAL) then 
+            !    E_eff = E*this%conformal_fields%edges(n)%ratio
+            ! else
+            !    E_eff = E
+            ! end if
 
          end if
          !region 2
@@ -2556,11 +2557,12 @@ contains
             end if
             E = this%g%g1(med)*E + this%g%g2(med)*corr*((H1 - H3)*id2 - (H4-H2)*id1)
 
-            if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_CONFORMAL) then 
-               E_eff = E_eff + E*(1.0-this%conformal_fields%edges(n)%ratio)
-            else
-               E_eff = E
-            end if
+            E_eff = E_eff + E
+            ! if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_CONFORMAL) then 
+            !    E_eff = E_eff + E*(1.0-this%conformal_fields%edges(n)%ratio)
+            ! else
+            !    E_eff = E
+            ! end if
 
          end if
 
@@ -2731,7 +2733,7 @@ contains
          allocate(this%conformal_fields%edges(0))
          return 
       end if
-      
+
       do i = 1, this%sgg%NumMedia
          if (.not. (isConformalSurface(this%sgg%Med(i)))) cycle
          call addConformalFaces(this%conformal_fields%faces, this%sgg%Med(i)%ConformalFace)
