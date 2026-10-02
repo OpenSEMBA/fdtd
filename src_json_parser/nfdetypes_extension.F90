@@ -24,6 +24,8 @@ module NFDETypes_extension_m
       module procedure anisotropicelements_eq
       module procedure LossyThinSurface_eq
       module procedure LossyThinSurfaces_eq
+      module procedure MaloneySheet_eq
+      module procedure MaloneySheets_eq
 
       module procedure frontera_eq
       module procedure fronteraPML_eq
@@ -115,6 +117,9 @@ contains
       allocate(pD%LossyThinSurfs)
       allocate(pD%LossyThinSurfs%cs(0))
 
+      allocate(pD%MaloneySheets)
+      allocate(pD%MaloneySheets%cs(0))
+
       allocate(pD%frqDepMats)
       allocate(pD%aniMats)
       !
@@ -178,6 +183,7 @@ contains
       if (.not. (a%pmcRegs        == b%pmcRegs)) return
       if (.not. (a%DielRegs       == b%DielRegs)) return
       if (.not. (a%LossyThinSurfs == b%LossyThinSurfs)) return
+      if (.not. (a%MaloneySheets  == b%MaloneySheets)) return
       if (.not. (a%frqDepMats     == b%frqDepMats)) return
       if (.not. (a%aniMats        == b%aniMats)) return
       if (.not. (a%boxSrc         == b%boxSrc)) return
@@ -491,6 +497,30 @@ contains
       if (a%nC_max     /= b%nC_max)     return
       res = .true.
    end function LossyThinSurfaces_eq
+
+   elemental logical function MaloneySheet_eq(a, b) result(res)
+      type(MaloneySheet_t), intent(in) :: a, b
+      res = .false.
+      if (a%nc     /= b%nc)     return
+      if (a%files  /= b%files)  return
+      if (a%thk    /= b%thk)    return
+      if (a%sigma  /= b%sigma)  return
+      if (a%eps    /= b%eps)    return
+      if (a%mu     /= b%mu)     return
+      if (a%sigmam /= b%sigmam) return
+      if (.not. all(a%c == b%c)) return
+      res = .true.
+   end function MaloneySheet_eq
+
+   elemental logical function MaloneySheets_eq(a, b) result(res)
+      type(MaloneySheets_t), intent(in) :: a, b
+      res = .false.
+      if (.not. all(a%cs == b%cs)) return
+      if (a%length     /= b%length)     return
+      if (a%length_max /= b%length_max) return
+      if (a%nC_max     /= b%nC_max)     return
+      res = .true.
+   end function MaloneySheets_eq
 
    elemental logical function ThinWireComp_eq(a, b) result(res)
       type(ThinWireComp_t), intent(in) :: a, b

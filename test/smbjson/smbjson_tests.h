@@ -16,6 +16,7 @@ extern "C" int test_parser_read_conformal_volume();
 extern "C" int test_read_planewave();
 extern "C" int test_read_planewave_empty_elementids();
 extern "C" int test_read_sgbc();
+extern "C" int test_read_maloneysheet();
 extern "C" int test_read_dielectricslab();
 extern "C" int test_read_thinslot();
 extern "C" int test_read_thinslot_ez();
@@ -61,6 +62,7 @@ TEST(smbjson, read_dielectricslab)       { EXPECT_EQ(0, test_read_dielectricslab
 TEST(smbjson, read_thinslot)             { EXPECT_EQ(0, test_read_thinslot()); }
 TEST(smbjson, read_thinslot_ez)          { EXPECT_EQ(0, test_read_thinslot_ez()); }
 TEST(smbjson, read_sgbc)                 { EXPECT_EQ(0, test_read_sgbc()); }
+TEST(smbjson, read_maloneySheet)          { EXPECT_EQ(0, test_read_maloneysheet()); }
 TEST(smbjson, read_sphere)               { EXPECT_EQ(0, test_read_sphere()); }
 TEST(smbjson, read_airplane)             { EXPECT_EQ(0, test_read_airplane()); }
 TEST(smbjson, read_lumped_fixture)       { EXPECT_EQ(0, test_read_lumped_fixture()); }

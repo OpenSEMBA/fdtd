@@ -37,6 +37,7 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_TYPE_ISOTROPIC = "isotropic"
    character(len=*), parameter :: J_MAT_TYPE_LUMPED = "lumped"
    character(len=*), parameter :: J_MAT_TYPE_MULTILAYERED_SURFACE = "multilayeredSurface"
+   character(len=*), parameter :: J_MAT_TYPE_MALONEY_SHEET = "maloneySheet"
    character(len=*), parameter :: J_MAT_TYPE_SLOT = "thinSlot"
    character(len=*), parameter :: J_MAT_TYPE_WIRE = "wire"
    character(len=*), parameter :: J_MAT_TYPE_SHIELDED_MULTIWIRE = "shieldedMultiwire"

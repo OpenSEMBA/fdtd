@@ -25,6 +25,7 @@ contains
       call  rotate_generateSlantedWires              (this, mpidir)
       call  rotate_generateThinSlots                 (this, mpidir)
       call  rotate_generateLossyThinSurface          (this, mpidir)
+      call  rotate_generateMaloneySheets             (this, mpidir)
       call  rotate_generateFDMs                      (this, mpidir)
       call  rotate_generateSONDAs                     (this, mpidir)
       call  rotate_generateMasSondas                  (this, mpidir)
@@ -743,6 +744,22 @@ contains
 
       return
    end subroutine rotate_generateLossyThinSurface
+
+   subroutine rotate_generateMaloneySheets (this,mpidir)
+      type(Parseador_t), intent(inout) :: this
+      integer(kind=4) :: mpidir
+      integer(kind=4) :: tama2,tama,i,ii
+
+      tama = this%MaloneySheets%length
+      do i = 1, tama
+         tama2 = this%MaloneySheets%cs(i)%nc
+         do ii = 1, tama2
+            call ROTATEMPI(mpidir,this%MaloneySheets%cs(i)%C(ii))
+         end do
+      end do
+
+      return
+   end subroutine rotate_generateMaloneySheets
 
    subroutine rotate_generateFDMs (this,mpidir) 
       
