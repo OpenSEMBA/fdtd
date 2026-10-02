@@ -575,12 +575,20 @@ contains
       do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForCurrent(iCur, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
-            call save_current(this%xValueForFreq, iEx, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
-                              this%quadratureDt, this%nFreq, step)
-            call save_current(this%yValueForFreq, iEy, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
-                              this%quadratureDt, this%nFreq, step)
-            call save_current(this%zValueForFreq, iEz, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
-                              this%quadratureDt, this%nFreq, step)
+            ! Only store the components whose edge lies on a surface. Otherwise the
+            ! non-surface components would leak total current densities into the output.
+            if (isValidPointForCurrent(iEx, i, j, k, problemInfo)) then
+               call save_current(this%xValueForFreq, iEx, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
+                                 this%quadratureDt, this%nFreq, step)
+            end if
+            if (isValidPointForCurrent(iEy, i, j, k, problemInfo)) then
+               call save_current(this%yValueForFreq, iEy, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
+                                 this%quadratureDt, this%nFreq, step)
+            end if
+            if (isValidPointForCurrent(iEz, i, j, k, problemInfo)) then
+               call save_current(this%zValueForFreq, iEz, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
+                                 this%quadratureDt, this%nFreq, step)
+            end if
          end if
       end do
       end do

@@ -1,4 +1,33 @@
+import re
+
+import h5py
+import numpy as np
+
 from conftest import assert_static_point_attributes, read_xdmf_point_data_names
+
+
+def _movie_xdmf(output_root, case_root, probe_name):
+    directory = next(output_root.glob(f"{case_root}_{probe_name}_*"))
+    return next(
+        path for path in directory.glob("*.xdmf") if not path.stem.endswith("_geometry")
+    )
+
+
+def _read_movie_attribute(xdmf_path, name):
+    """Read one movie attribute by name from its XDMF/HDF5 payload."""
+    contents = xdmf_path.read_text()
+    match = re.search(
+        rf'<Attribute Name="{name}".*?Format="HDF">\s*([^<\s]+)\s*</DataItem>',
+        contents,
+        re.DOTALL,
+    )
+    assert match is not None, f"Missing attribute {name} in {xdmf_path}"
+    hdf_path = xdmf_path.with_suffix(".h5")
+    resource = match.group(1)
+    assert resource.startswith(hdf_path.name + ":"), resource
+    dataset = resource.split(":", maxsplit=1)[1]
+    with h5py.File(hdf_path, "r") as hdf_file:
+        return hdf_file[dataset][()]
 
 
 def test_movie_probe_publishes_payloads_without_metadata(run_output_case):
@@ -94,3 +123,47 @@ def test_vector_movie_probe_publishes_component_classification(run_output_case):
             "mediatype_z",
         ),
     )
+
+
+def test_movie_current_density_magnitude_reports_only_surface_components(run_output_case):
+    """Magnitude movies must not leak non-surface current components.
+
+    On a z-normal PEC surface only the in-plane (x, y) edges are part of the
+    sheet. The z component is evaluated on an edge that is not a surface edge,
+    so it must stay zero and match the per-component probe.
+    """
+    sampling = {"type": "time", "samplingPeriod": 1e-10}
+    probes = [
+        {
+            "name": f"j_{component}",
+            "type": "movie",
+            "field": "currentDensity",
+            "component": component,
+            "elementIds": [12],
+            "domain": sampling,
+        }
+        for component in ("magnitude", "x", "y", "z")
+    ]
+
+    process, output_root = run_output_case("pec_surface", probes)
+
+    assert process.returncode == 0, process.stdout + process.stderr
+
+    def attribute(probe_name, attribute_name):
+        xdmf_path = _movie_xdmf(output_root, "pec_surface.fdtd", probe_name)
+        return _read_movie_attribute(xdmf_path, attribute_name)
+
+    magnitude_x = attribute("j_magnitude", "CurrenDensityX")
+    magnitude_y = attribute("j_magnitude", "CurrenDensityY")
+    magnitude_z = attribute("j_magnitude", "CurrenDensityZ")
+
+    np.testing.assert_array_equal(magnitude_x, attribute("j_x", "CurrenDensityX"))
+    np.testing.assert_array_equal(magnitude_y, attribute("j_y", "CurrenDensityY"))
+    np.testing.assert_array_equal(attribute("j_z", "CurrenDensityZ"), 0.0)
+    np.testing.assert_array_equal(magnitude_z, 0.0)
+
+    # The magnitude movie must carry actual surface current, and the
+    # classification must confirm that only the in-plane edges belong to the sheet.
+    assert np.any(magnitude_x != 0.0)
+    assert np.any(np.isclose(attribute("j_magnitude", "mediatype_x"), 0.5))
+    assert not np.any(np.isclose(attribute("j_magnitude", "mediatype_z"), 0.5))

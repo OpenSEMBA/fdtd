@@ -752,6 +752,8 @@ Probes of type `movie` record a vector field in a volume region indicated by `el
 For movies in time domain, the `initialTime`, `finalTime`, and `samplingPeriod` must be specified by the user; there is no default value.  
 The stored values can be selected using the `[component]` entry, which stores one of the following labels `x`, `y`, `z`, or `magnitude`; if no component is specified, defaults to `magnitude`.
 
+For `currentDensity`, only the components whose edge lies on a `pec` or `thinWire` surface are stored. When `component` is `magnitude` (the default), the remaining components are set to zero, and the `mediatype_x`, `mediatype_y`, and `mediatype_z` attributes indicate which component corresponds to a surface edge. Each stored value is the current across the dual edge loop computed from the surrounding magnetic field. On a zero-thickness `pec` surface this is the **net** current across the sheet, i.e. the sum of the currents on its two faces. Currents on each individual face cannot be distinguished from this single value.
+
 An example follows:
 ```json
 {
