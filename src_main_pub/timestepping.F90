@@ -2722,6 +2722,16 @@ contains
       integer(kind=4), dimension(3) :: cell
       integer :: i,j,k,n
 
+      n = 0
+      do i = 1, this%sgg%NumMedia
+         if (isConformalSurface(this%sgg%Med(i))) n = n + 1
+      end do
+      if (n == 0) then 
+         allocate(this%conformal_fields%faces(0))
+         allocate(this%conformal_fields%edges(0))
+         return 
+      end if
+      
       do i = 1, this%sgg%NumMedia
          if (.not. (isConformalSurface(this%sgg%Med(i)))) cycle
          call addConformalFaces(this%conformal_fields%faces, this%sgg%Med(i)%ConformalFace)
