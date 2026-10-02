@@ -327,7 +327,7 @@ contains
       do i = 1, size(pl%coordIds)-1
          iC = this%getCoordinate(pl%coordIds(i))
          eC = this%getCoordinate(pl%coordIds(i+1))
-         interval%ini%cell = int(iC%position)
+         interval%startNode%cell = int(iC%position)
          interval%endNode%cell = int(eC%position)
          res = res + interval%getSize()
       end do
@@ -386,10 +386,10 @@ contains
       do i = 1, size(pl%coordIds)-1
          iC = this%getCoordinate(pl%coordIds(i))
          eC = this%getCoordinate(pl%coordIds(i+1))
-         interval%ini%cell = int(iC%position)
+         interval%startNode%cell = int(iC%position)
          interval%endNode%cell = int(eC%position)
          if (any(iC%position /= eC%position)) then
-            segment = (interval%endNode%cell - interval%ini%cell) / interval%getSize()
+            segment = (interval%endNode%cell - interval%startNode%cell) / interval%getSize()
             
             res(lastSegment)%tag = pl%coordIds(i)
             do j = 1, interval%getSize()

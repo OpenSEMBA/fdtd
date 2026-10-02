@@ -27,7 +27,7 @@ integer function test_parser_tools_interval_to_coords() result(err)
 
    ! +Y oriented linel interval.
    interval = cell_interval_t( &
-      ini=cell_t([10, 0, 10]), endNode=cell_t([10, 5, 10]))
+      startNode=cell_t([10, 0, 10]), endNode=cell_t([10, 5, 10]))
    cs = cellIntervalsToCoords([interval])
 
    call expect_eq_int(err,  1, size(cs))
@@ -41,7 +41,7 @@ integer function test_parser_tools_interval_to_coords() result(err)
 
    ! -Z oriented linel interval.
    interval = cell_interval_t( &
-      ini=cell_t([10, 10, 5]), endNode=cell_t([10, 10, -1]))
+      startNode=cell_t([10, 10, 5]), endNode=cell_t([10, 10, -1]))
    cs = cellIntervalsToCoords([interval])
 
    call expect_eq_int(err,  1, size(cs))
@@ -55,7 +55,7 @@ integer function test_parser_tools_interval_to_coords() result(err)
 
    ! +Y oriented surfel interval.
    interval = cell_interval_t( &
-      ini=cell_t([ 9,  2,  9]), endNode=cell_t([11,  2, 11]) )
+      startNode=cell_t([ 9,  2,  9]), endNode=cell_t([11,  2, 11]) )
    cs = cellIntervalsToCoords([interval])
    call expect_eq_int(err,  1, size(cs))
    call expect_eq_int(err,  9, cs(1)%Xi)

@@ -27,7 +27,7 @@ module conformal_types_m
     end type
 
     type, public :: side_t
-        type(coord_t) :: init, endNode
+        type(coord_t) :: startNode, endNode
         real, dimension(3) :: normal = [0.0,0.0,0.0]
     contains 
         procedure :: getEdge => side_getEdge
@@ -63,7 +63,7 @@ module conformal_types_m
     end type
 
     type :: interval_t
-        type(point_t) :: ini, endNode
+        type(point_t) :: startNode, endNode
     end type
 
 
@@ -130,7 +130,7 @@ contains
         class(side_t) :: this
         real, dimension(3) :: c
         integer(kind=4), dimension(3) :: res
-        c = 0.5*(this%init%position + this%endNode%position)
+        c = 0.5*(this%startNode%position + this%endNode%position)
         res = floor(c)
     end function
 
@@ -145,7 +145,7 @@ contains
         class(side_t) :: this
         integer :: edge
         type(coord_t) :: c
-        c = coord_t(position=0.5*(this%endNode%position + this%init%position))
+        c = coord_t(position=0.5*(this%endNode%position + this%startNode%position))
         side_isOnEdge = c%isOnEdge(edge)
     end function
 
@@ -173,7 +173,7 @@ contains
         class(side_t) :: this
         integer :: face
         type(coord_t) :: mean
-        mean%position = 0.5*(this%init%position+this%endNode%position)
+        mean%position = 0.5*(this%startNode%position+this%endNode%position)
         side_isOnFace = mean%getEdge() == NOT_ON_EDGE .and. &
                         mean%isOnFace(face)
     end function
@@ -192,7 +192,7 @@ contains
     function length(this) result(res)
         class(side_t) :: this
         real :: res
-        res = norm2(this%init%position - this%endNode%position)
+        res = norm2(this%startNode%position - this%endNode%position)
     end function
 
 
@@ -205,11 +205,11 @@ contains
         eq_inv = .true.
         do i = 1, 3
             eq = eq .and. & 
-                (abs(this%init%position(i) - side%init%position(i)) < 0.01) .and. &
+                (abs(this%startNode%position(i) - side%startNode%position(i)) < 0.01) .and. &
                 (abs(this%endNode%position(i) - side%endNode%position(i)) < 0.01)
             eq_inv = eq_inv .and. & 
-                (abs(this%init%position(i) - side%endNode%position(i)) < 0.01) .and. &
-                (abs(this%endNode%position(i) - side%init%position(i)) < 0.01)
+                (abs(this%startNode%position(i) - side%endNode%position(i)) < 0.01) .and. &
+                (abs(this%endNode%position(i) - side%startNode%position(i)) < 0.01)
         end do
         isEquiv = eq .or. eq_inv
     end function
@@ -231,9 +231,9 @@ contains
         type(side_t), dimension(3) :: res
         integer :: i
         do i = 1, 3
-            res(i)%init%position = this%vertices(i)%position
+            res(i)%startNode%position = this%vertices(i)%position
             res(i)%endNode%position = this%vertices(mod(i,3)+1)%position
-            res(i)%init%id = this%vertices(i)%id
+            res(i)%startNode%id = this%vertices(i)%id
             res(i)%endNode%id = this%vertices(mod(i,3)+1)%id
             res(i)%normal = this%getNormal()
         end do
@@ -263,8 +263,8 @@ contains
     function getNormal(contour) result(res)
         type(side_t), dimension(:), allocatable :: contour
         real, dimension(3) :: v1, v2, res
-        v1 = contour(1)%endNode%position - contour(1)%init%position
-        v2 = contour(2)%endNode%position - contour(2)%init%position
+        v1 = contour(1)%endNode%position - contour(1)%startNode%position
+        v2 = contour(2)%endNode%position - contour(2)%startNode%position
         res = [ v1(2)*v2(3)-v1(3)*v2(2), &
                 -(v1(1)*v2(3)-v1(3)*v2(1)), &
                 v1(1)*v2(2)-v1(2)*v2(1)]

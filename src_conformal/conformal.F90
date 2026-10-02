@@ -213,7 +213,7 @@ contains
       type(side_t), dimension(4) :: res
       type(side_t) :: aux
       type(coord_t), dimension(4) :: cs
-      aux%init%position = interval%ini%cell
+      aux%startNode%position = interval%startNode%cell
       aux%endNode%position = interval%endNode%cell
       face = aux%getFace()
       cs(1)%position = aux%getCell()
@@ -231,13 +231,13 @@ contains
          cs(3)%position = cs(1)%position + [1,1,0]
          cs(4)%position = cs(1)%position + [0,1,0]
       end select
-      res(1)%init = cs(1)
+      res(1)%startNode = cs(1)
       res(1)%endNode  = cs(2)
-      res(2)%init = cs(2)
+      res(2)%startNode = cs(2)
       res(2)%endNode =  cs(3)
-      res(3)%init = cs(3)
+      res(3)%startNode = cs(3)
       res(3)%endNode  = cs(4)
-      res(4)%init = cs(4)
+      res(4)%startNode = cs(4)
       res(4)%endNode  = cs(1)
    end function
 
@@ -347,7 +347,7 @@ contains
       type(side_t) :: aux
       real(kind=rkind) :: ratio
       ratio = 0.0
-      aux%init%position = interval%ini%cell
+      aux%startNode%position = interval%startNode%cell
       aux%endNode%position = interval%endNode%cell
       call addFace(faces, aux%getCell(), aux%getFace(), ratio)
    end subroutine
@@ -428,8 +428,8 @@ contains
       do i = 1, size(edges)
          if (all(edges(i)%cell == cell) .and. &
              edges(i)%direction == edge) then 
-               if (edges(i)%material_coords(1) /= min(side%init%position(edge), side%endNode%position(edge)) .and. &
-                   edges(i)%material_coords(2) /= max(side%init%position(edge), side%endNode%position(edge)) .and. &
+               if (edges(i)%material_coords(1) /= min(side%startNode%position(edge), side%endNode%position(edge)) .and. &
+                   edges(i)%material_coords(2) /= max(side%startNode%position(edge), side%endNode%position(edge)) .and. &
                    edges(i)%ratio /= 0) then 
                    edges(i)%ratio = edges(i)%ratio - side%length()
                end if
@@ -470,8 +470,8 @@ contains
       ratio = 1.0 - side%length()
       allocate(aux(size(edges) + 1))
       aux(1:size(edges)) = edges
-      coords(1) = min(side%init%position(edge), side%endNode%position(edge))
-      coords(2) = max(side%init%position(edge), side%endNode%position(edge))
+      coords(1) = min(side%startNode%position(edge), side%endNode%position(edge))
+      coords(2) = max(side%startNode%position(edge), side%endNode%position(edge))
       new_edge = edge_t(cell=cell, ratio=ratio, direction=edge, material_coords = coords)
       aux(size(edges) + 1) = new_edge
 

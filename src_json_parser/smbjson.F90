@@ -311,7 +311,7 @@ contains
 
          type(json_value), pointer :: intervalsPlace, interval
          integer :: i, nIntervals
-         real, dimension(:), allocatable :: cellIni, cellEnd
+         real, dimension(:), allocatable :: cellStart, cellEnd
          logical :: containsInterval
 
          call this%core%get(place, path, intervalsPlace, found=containsInterval)
@@ -323,9 +323,9 @@ contains
          allocate(res(nIntervals))
          do i = 1, nIntervals
             call this%core%get_child(intervalsPlace, i, interval)
-            cellIni = this%getRealsAt(interval, '(1)')
+            cellStart = this%getRealsAt(interval, '(1)')
             cellEnd = this%getRealsAt(interval, '(2)')
-            res(i)%ini%cell = cellIni(1:3)
+            res(i)%startNode%cell = cellStart(1:3)
             res(i)%endNode%cell = cellEnd(1:3)
          end do
       end function
@@ -338,7 +338,7 @@ contains
          type(json_value), pointer :: triangles, triangle_ptr
          real, dimension(:), allocatable :: triangle
          integer :: i, j, nTriangles
-         real, dimension(:), allocatable :: cellIni, cellEnd
+         real, dimension(:), allocatable :: cellStart, cellEnd
 
          logical :: containsTriangles
          call this%core%get(place, path, triangles, found=containsTriangles)
@@ -688,7 +688,7 @@ contains
          integer :: i
          allocate(res(size(intervals)))
          do i = 1, size(res)
-            res(i)%ini%cell(:) = intervals(i)%ini%cell(:)
+            res(i)%startNode%cell(:) = intervals(i)%startNode%cell(:)
             res(i)%endNode%cell(:) = intervals(i)%endNode%cell(:)
          end do
       end function
@@ -1322,18 +1322,18 @@ contains
          end block
       end function
 
-      subroutine readDirection(p, label, initial, finalValue, step)
+      subroutine readDirection(p, label, initialValue, finalValue, step)
          type(json_value), pointer :: p
          type(json_value), pointer :: dir
          character(len=*), intent(in) :: label
          logical :: found
-         real(kind=rkind), intent(inout) :: initial, finalValue, step
+         real(kind=rkind), intent(inout) :: initialValue, finalValue, step
 
          call this%core%get(p, label, dir, found=found)
          if (.not. found) then
             call WarnErrReport("Error reading far field probe. Direction label not found.", .true.)
          end if
-         initial = this%getRealAt(dir, J_PR_FAR_FIELD_DIR_INITIAL)
+         initialValue = this%getRealAt(dir, J_PR_FAR_FIELD_DIR_INITIAL)
          finalValue   = this%getRealAt(dir, J_PR_FAR_FIELD_DIR_FINAL)
          step    = this%getRealAt(dir, J_PR_FAR_FIELD_DIR_STEP)
       end subroutine
@@ -3487,12 +3487,12 @@ contains
          integer, intent(in) :: ix, iy, iz
          integer :: ax, bx, ay, by, az, bz
 
-         ax = min(interval%ini%cell(1), interval%endNode%cell(1))
-         bx = max(interval%ini%cell(1), interval%endNode%cell(1))
-         ay = min(interval%ini%cell(2), interval%endNode%cell(2))
-         by = max(interval%ini%cell(2), interval%endNode%cell(2))
-         az = min(interval%ini%cell(3), interval%endNode%cell(3))
-         bz = max(interval%ini%cell(3), interval%endNode%cell(3))
+         ax = min(interval%startNode%cell(1), interval%endNode%cell(1))
+         bx = max(interval%startNode%cell(1), interval%endNode%cell(1))
+         ay = min(interval%startNode%cell(2), interval%endNode%cell(2))
+         by = max(interval%startNode%cell(2), interval%endNode%cell(2))
+         az = min(interval%startNode%cell(3), interval%endNode%cell(3))
+         bz = max(interval%startNode%cell(3), interval%endNode%cell(3))
 
          intervalContainsNode = (ix >= ax .and. ix <= bx .and. &
                                  iy >= ay .and. iy <= by .and. &

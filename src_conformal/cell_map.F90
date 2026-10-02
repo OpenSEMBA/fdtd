@@ -352,7 +352,7 @@ contains
         integer(kind=4), dimension(3) :: cell
         type(cell_t), dimension(:), allocatable :: aux_keys
         type(side_t) :: aux
-        aux%init%position = interval%ini%cell
+        aux%startNode%position = interval%startNode%cell
         aux%endNode%position = interval%endNode%cell
         cell = aux%getCell()
         if (this%hasKey(cell)) then 

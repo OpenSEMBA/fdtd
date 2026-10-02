@@ -36,7 +36,7 @@ module cells_m
    end type
 
    type :: cell_interval_t
-      type(cell_t) :: ini, endNode
+      type(cell_t) :: startNode, endNode
    contains
       procedure :: getType => cell_interval_getType
       procedure :: getOrientation => cell_interval_getOrientation
@@ -45,7 +45,7 @@ module cells_m
    end type
 
    type :: cell_region_t
-      ! Cell regions are defined by semi-open intervals [ini, end).
+      ! Cell regions are defined by semi-open intervals [startNode, endNode).
       ! For linels and surfels, varying directions define orientation.
       type(cell_interval_t), dimension(:), allocatable :: intervals
    contains
@@ -67,7 +67,7 @@ contains
       pixelIntervals = this%getIntervalsOfType(CELL_TYPE_PIXEL)
       allocate(res(size(pixelIntervals)))
       do i = 1, size(res)
-         res(i)%cell = pixelIntervals(i)%ini%cell
+         res(i)%cell = pixelIntervals(i)%startNode%cell
       end do
    end function
 
@@ -101,7 +101,7 @@ contains
          block
             integer :: diff
             do i = DIR_X, DIR_Z
-               diff = this%endNode%cell(i) - this%ini%cell(i)
+               diff = this%endNode%cell(i) - this%startNode%cell(i)
                if (diff > 0) then
                   res = i
                   return
@@ -114,7 +114,7 @@ contains
        case (CELL_TYPE_SURFEL)
          block
             integer, dimension(3) :: diff
-            diff = this%endNode%cell - this%ini%cell
+            diff = this%endNode%cell - this%startNode%cell
             do i = DIR_X, DIR_Z
                if (diff(i) == 0) res = i
             end do
@@ -132,7 +132,7 @@ contains
       integer :: i
       integer, dimension(3) :: diff
       res = 1
-      diff = abs(this%endNode%cell - this%ini%cell)
+      diff = abs(this%endNode%cell - this%startNode%cell)
       do i = DIR_X, DIR_Z
          if (diff(i) /= 0) res = res * diff(i)
       end do
@@ -145,7 +145,7 @@ contains
       integer :: i
       res = 0
       do i = DIR_X, DIR_Z
-         if ((this%endNode%cell(i) - this%ini%cell(i)) /= 0) res = res + 1
+         if ((this%endNode%cell(i) - this%startNode%cell(i)) /= 0) res = res + 1
       end do
    end function
 

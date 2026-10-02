@@ -61,7 +61,7 @@ module SEMBA_FDTD_m
    contains
       procedure :: init => semba_init
       procedure :: launch => semba_launch
-      procedure :: endNode => semba_end
+      procedure :: finalize => semba_end
       procedure :: create_solver => semba_create_solver
       procedure :: update_after_simulation => semba_update_after_simulation
    end type semba_fdtd_t 

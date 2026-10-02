@@ -156,7 +156,7 @@ contains
          type(cell_interval_t), intent(in) :: interval
          integer, intent(in) :: dir
          integer :: a, b
-         a = interval%ini%cell(dir)
+         a = interval%startNode%cell(dir)
          b = interval%endNode%cell(dir)
          if (a < b) then
             xi = a
