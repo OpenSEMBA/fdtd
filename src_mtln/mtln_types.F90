@@ -196,6 +196,11 @@ module mtln_types_m
    ! the cell. Together with the division length they reproduce the standard
    ! axis-aligned coupling as the degenerate case chord = step_size,
    ! weight = +-1.
+   ! Maximum number of E edges a division can couple to: three components
+   ! times four bilinear offsets. A fixed-size array avoids ifx 2025.1
+   ! internal compiler errors on assignment of types with nested allocatables.
+   integer(kind=4), parameter :: MAX_SEGMENT_COUPLINGS = 12
+
    type, public :: segment_coupling_t
       integer(kind=4) :: i = 0, j = 0, k = 0
       integer(kind=4) :: component = 0
@@ -213,7 +218,8 @@ module mtln_types_m
       real(kind=rkind), dimension(1:3) :: direction_cosines = 0.0_rkind
       real(kind=rkind), dimension(1:3) :: position_begin = 0.0_rkind
       real(kind=rkind), dimension(1:3) :: position_end = 0.0_rkind
-      type(segment_coupling_t), dimension(:), allocatable :: couplings
+      integer(kind=4) :: n_couplings = 0
+      type(segment_coupling_t), dimension(1:MAX_SEGMENT_COUPLINGS) :: couplings
    end type
 
 

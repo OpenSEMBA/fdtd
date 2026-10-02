@@ -8,7 +8,7 @@ module mtl_bundle_m
 #ifdef CompileWithMPI
     use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
 #endif
-    use mtln_types_m, only: SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
+    use mtln_types_m, only: SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE, MAX_SEGMENT_COUPLINGS
     use FDETYPES_m, only: RKIND, RKIND_TIEMPO
     implicit none
 
@@ -83,9 +83,10 @@ module mtl_bundle_m
         integer(kind=4) :: direction = 0
         real(kind=rkind) , pointer  :: field => null()
         ! Slanted divisions couple to several E edges. Axis-aligned ones keep
-        ! using position/direction/field and leave couplings unallocated.
+        ! using position/direction/field and leave n_couplings at zero.
         logical :: is_slanted = .false.
-        type(external_coupling_t), dimension(:), allocatable :: couplings
+        integer(kind=4) :: n_couplings = 0
+        type(external_coupling_t), dimension(1:MAX_SEGMENT_COUPLINGS) :: couplings
     end type
 
 contains
@@ -239,17 +240,15 @@ contains
             res(i)%position(3) = segments(i)%z
             res(i)%direction   = segments(i)%orientation
             res(i)%is_slanted  = segments(i)%is_slanted
-            if (segments(i)%is_slanted) then
-                allocate(res(i)%couplings(size(segments(i)%couplings)))
-                do k = 1, size(segments(i)%couplings)
-                    res(i)%couplings(k)%component = segments(i)%couplings(k)%component
-                    res(i)%couplings(k)%position(1) = segments(i)%couplings(k)%i
-                    res(i)%couplings(k)%position(2) = segments(i)%couplings(k)%j
-                    res(i)%couplings(k)%position(3) = segments(i)%couplings(k)%k
-                    res(i)%couplings(k)%weight = segments(i)%couplings(k)%weight
-                    res(i)%couplings(k)%chord = segments(i)%couplings(k)%chord
-                end do
-            end if
+            res(i)%n_couplings = segments(i)%n_couplings
+            do k = 1, segments(i)%n_couplings
+                res(i)%couplings(k)%component = segments(i)%couplings(k)%component
+                res(i)%couplings(k)%position(1) = segments(i)%couplings(k)%i
+                res(i)%couplings(k)%position(2) = segments(i)%couplings(k)%j
+                res(i)%couplings(k)%position(3) = segments(i)%couplings(k)%k
+                res(i)%couplings(k)%weight = segments(i)%couplings(k)%weight
+                res(i)%couplings(k)%chord = segments(i)%couplings(k)%chord
+            end do
         end do
     end function
 
@@ -481,7 +480,7 @@ contains
             do i = 1, size(this%e_L,2)
                 if (this%external_field_segments(i)%is_slanted) then
                     this%e_L(j,i) = 0.0_rkind
-                    do k = 1, size(this%external_field_segments(i)%couplings)
+                    do k = 1, this%external_field_segments(i)%n_couplings
                         if (associated(this%external_field_segments(i)%couplings(k)%field)) then
                             this%e_L(j,i) = this%e_L(j,i) + &
                                 this%external_field_segments(i)%couplings(k)%weight * &

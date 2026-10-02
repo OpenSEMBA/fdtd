@@ -150,7 +150,7 @@ contains
          integer(kind=4) :: c, i, j, k
 
          associate (couplings => mtln_solver%bundles(m)%external_field_segments(n)%couplings)
-            do c = 1, size(couplings)
+            do c = 1, mtln_solver%bundles(m)%external_field_segments(n)%n_couplings
                i = couplings(c)%position(1)
                j = couplings(c)%position(2)
                k = couplings(c)%position(3)
@@ -239,7 +239,7 @@ contains
          factor = sgg%dt/eps0*current
 
          associate (couplings => mtln_solver%bundles(m)%external_field_segments(n)%couplings)
-            do c = 1, size(couplings)
+            do c = 1, mtln_solver%bundles(m)%external_field_segments(n)%n_couplings
                if (.not. associated(couplings(c)%field)) cycle
                i = couplings(c)%position(1)
                j = couplings(c)%position(2)

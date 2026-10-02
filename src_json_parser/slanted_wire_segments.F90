@@ -13,7 +13,7 @@ module slanted_wire_segments_m
 
    use FDETYPES_m, only: rkind
    use NFDETypes_m, only: Desplazamiento_t
-   use mtln_types_m, only: segment_t, segment_coupling_t, &
+   use mtln_types_m, only: segment_t, segment_coupling_t, MAX_SEGMENT_COUPLINGS, &
                            DIRECTION_X_POS, DIRECTION_Y_POS, DIRECTION_Z_POS
    use Report_m, only: WarnErrReport
 
@@ -177,19 +177,20 @@ contains
       seg%d1 = transverse(1)
       seg%d2 = transverse(2)
       chord = norm2(p1 - p0)
-      call buildCouplings(g, cell, p0, p1, tdir, chord, seg%couplings)
+      call buildCouplings(g, cell, p0, p1, tdir, chord, seg%couplings, seg%n_couplings)
    end subroutine fillSegment
 
    ! Bilinear interpolation weights of the four E edges surrounding the wire
    ! inside one cell. The component with the largest projection over its cell
    ! step uses the average of the entry and exit positions (a trapezoidal
    ! approximation of the line integral), as in the reference implementation.
-   subroutine buildCouplings(g, cell, p0, p1, tdir, chord, couplings)
+   subroutine buildCouplings(g, cell, p0, p1, tdir, chord, couplings, n_couplings)
       type(cell_grid_t), intent(in) :: g
       integer, dimension(3), intent(in) :: cell
       real(kind=rkind), dimension(3), intent(in) :: p0, p1, tdir
       real(kind=rkind), intent(in) :: chord
-      type(segment_coupling_t), dimension(:), allocatable, intent(out) :: couplings
+      type(segment_coupling_t), dimension(MAX_SEGMENT_COUPLINGS), intent(inout) :: couplings
+      integer, intent(out) :: n_couplings
 
       real(kind=rkind) :: u0(3), u1(3), um(3), pond(3, 4), w, delta1, delta2
       integer :: d, d1, d2, offset, o1, o2, n, edge(3), axis
@@ -225,13 +226,6 @@ contains
 
       n = 0
       do d = 1, 3
-         do offset = 1, 4
-            if (abs(pond(d, offset)*tdir(d)) >= MIN_COUPLING_WEIGHT) n = n + 1
-         end do
-      end do
-      allocate (couplings(n))
-      n = 0
-      do d = 1, 3
          d1 = mod(d, 3) + 1
          d2 = mod(d + 1, 3) + 1
          do offset = 1, 4
@@ -256,6 +250,7 @@ contains
             couplings(n)%chord = chord
          end do
       end do
+      n_couplings = n
    end subroutine buildCouplings
 
    ! Walks a straight segment in physical space, splitting it at cell faces.

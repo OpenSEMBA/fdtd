@@ -30,21 +30,21 @@ integer function test_slanted_segments_aligned() bind(C) result(error_cnt)
       do i = 1, 3
          if (.not. segments(i)%is_slanted) error_cnt = error_cnt + 1
          if (segments(i)%orientation /= DIRECTION_X_POS) error_cnt = error_cnt + 1
-         if (.not. expect_near(segments(i)%direction_cosines(1), 1.0_rkind, 1e-6_rkind)) error_cnt = error_cnt + 1
-         if (size(segments(i)%couplings) /= 1) then
+         if (.not. expect_near_rk(segments(i)%direction_cosines(1), 1.0_rkind, 1e-6_rkind)) error_cnt = error_cnt + 1
+         if (segments(i)%n_couplings /= 1) then
             error_cnt = error_cnt + 1
             cycle
          end if
          if (segments(i)%couplings(1)%component /= DIRECTION_X_POS) error_cnt = error_cnt + 1
-         if (.not. expect_near(segments(i)%couplings(1)%weight, 1.0_rkind, 1e-6_rkind)) error_cnt = error_cnt + 1
+         if (.not. expect_near_rk(segments(i)%couplings(1)%weight, 1.0_rkind, 1e-6_rkind)) error_cnt = error_cnt + 1
          if (segments(i)%couplings(1)%i /= i) error_cnt = error_cnt + 1
          if (segments(i)%couplings(1)%j /= 2) error_cnt = error_cnt + 1
          if (segments(i)%couplings(1)%k /= 3) error_cnt = error_cnt + 1
-         if (.not. expect_near(segments(i)%couplings(1)%chord, 0.1_rkind, 1e-6_rkind)) error_cnt = error_cnt + 1
+         if (.not. expect_near_rk(segments(i)%couplings(1)%chord, 0.1_rkind, 1e-6_rkind)) error_cnt = error_cnt + 1
       end do
-      if (.not. expect_near(norm2(segments(1)%position_begin - [0.1_rkind, 0.2_rkind, 0.3_rkind]), &
+      if (.not. expect_near_rk(norm2(segments(1)%position_begin - [0.1_rkind, 0.2_rkind, 0.3_rkind]), &
                             0.0_rkind, 1e-6_rkind)) error_cnt = error_cnt + 1
-      if (.not. expect_near(norm2(segments(3)%position_end - [0.4_rkind, 0.2_rkind, 0.3_rkind]), &
+      if (.not. expect_near_rk(norm2(segments(3)%position_end - [0.4_rkind, 0.2_rkind, 0.3_rkind]), &
                             0.0_rkind, 1e-6_rkind)) error_cnt = error_cnt + 1
    end if
 
@@ -56,11 +56,11 @@ integer function test_slanted_segments_aligned() bind(C) result(error_cnt)
    if (size(segments) == 3) then
       do i = 1, 3
          if (segments(i)%orientation /= -DIRECTION_X_POS) error_cnt = error_cnt + 1
-         if (size(segments(i)%couplings) /= 1) then
+         if (segments(i)%n_couplings /= 1) then
             error_cnt = error_cnt + 1
             cycle
          end if
-         if (.not. expect_near(segments(i)%couplings(1)%weight, -1.0_rkind, 1e-6_rkind)) error_cnt = error_cnt + 1
+         if (.not. expect_near_rk(segments(i)%couplings(1)%weight, -1.0_rkind, 1e-6_rkind)) error_cnt = error_cnt + 1
          if (segments(i)%couplings(1)%i /= 4 - i) error_cnt = error_cnt + 1
       end do
    end if
@@ -73,16 +73,16 @@ integer function test_slanted_segments_aligned() bind(C) result(error_cnt)
    if (size(segments) == 4) then
       total_length = 0.0_rkind
       do i = 1, 4
-         if (size(segments(i)%couplings) /= 1) then
+         if (segments(i)%n_couplings /= 1) then
             error_cnt = error_cnt + 1
             cycle
          end if
          total_length = total_length + segments(i)%couplings(1)%chord
-         if (.not. expect_near(segments(i)%couplings(1)%weight, 1.0_rkind, 1e-6_rkind)) error_cnt = error_cnt + 1
+         if (.not. expect_near_rk(segments(i)%couplings(1)%weight, 1.0_rkind, 1e-6_rkind)) error_cnt = error_cnt + 1
          if (segments(i)%couplings(1)%i /= i) error_cnt = error_cnt + 1
       end do
-      if (.not. expect_near(total_length, 0.3_rkind, 1e-6_rkind)) error_cnt = error_cnt + 1
-      if (.not. expect_near(norm2(segments(1)%position_begin - [0.15_rkind, 0.2_rkind, 0.3_rkind]), &
+      if (.not. expect_near_rk(total_length, 0.3_rkind, 1e-6_rkind)) error_cnt = error_cnt + 1
+      if (.not. expect_near_rk(norm2(segments(1)%position_begin - [0.15_rkind, 0.2_rkind, 0.3_rkind]), &
                             0.0_rkind, 1e-6_rkind)) error_cnt = error_cnt + 1
    end if
 
@@ -121,13 +121,13 @@ integer function test_slanted_segments_diagonal() bind(C) result(error_cnt)
       if (.not. segments(i)%is_slanted) error_cnt = error_cnt + 1
       ! The weights project the wire direction: sum(w * t) = |t|^2 = 1.
       projection = 0.0_rkind
-      do k = 1, size(segments(i)%couplings)
+      do k = 1, segments(i)%n_couplings
          projection = projection + segments(i)%couplings(k)%weight* &
                       segments(i)%direction_cosines(segments(i)%couplings(k)%component)
       end do
-      if (.not. expect_near(projection, 1.0_rkind, 1e-5_rkind)) error_cnt = error_cnt + 1
+      if (.not. expect_near_rk(projection, 1.0_rkind, 1e-5_rkind)) error_cnt = error_cnt + 1
    end do
-   if (.not. expect_near(total_length, 0.3_rkind*sqrt(2.0_rkind), 1e-6_rkind)) error_cnt = error_cnt + 1
+   if (.not. expect_near_rk(total_length, 0.3_rkind*sqrt(2.0_rkind), 1e-6_rkind)) error_cnt = error_cnt + 1
 
    ! Fully three-dimensional diagonal.
    points(:, 1) = [0.2_rkind, 0.3_rkind, 0.4_rkind]
@@ -137,7 +137,7 @@ integer function test_slanted_segments_diagonal() bind(C) result(error_cnt)
    do i = 1, size(segments)
       total_length = total_length + norm2(segments(i)%position_end - segments(i)%position_begin)
       projection = 0.0_rkind
-      do k = 1, size(segments(i)%couplings)
+      do k = 1, segments(i)%n_couplings
          if (segments(i)%couplings(k)%component < 1 .or. segments(i)%couplings(k)%component > 3) then
             error_cnt = error_cnt + 1
          end if
@@ -149,9 +149,9 @@ integer function test_slanted_segments_diagonal() bind(C) result(error_cnt)
          projection = projection + segments(i)%couplings(k)%weight* &
                       segments(i)%direction_cosines(segments(i)%couplings(k)%component)
       end do
-      if (.not. expect_near(projection, 1.0_rkind, 1e-5_rkind)) error_cnt = error_cnt + 1
+      if (.not. expect_near_rk(projection, 1.0_rkind, 1e-5_rkind)) error_cnt = error_cnt + 1
    end do
-   if (.not. expect_near(total_length, 0.1_rkind*sqrt(34.76_rkind), 1e-5_rkind)) error_cnt = error_cnt + 1
+   if (.not. expect_near_rk(total_length, 0.1_rkind*sqrt(34.76_rkind), 1e-5_rkind)) error_cnt = error_cnt + 1
 
    call destroyGrid(grid)
 end function
@@ -230,11 +230,11 @@ integer function test_slanted_segments_graded() bind(C) result(error_cnt)
    if (size(segments) /= 4) error_cnt = error_cnt + 1
    if (size(segments) == 4) then
       do i = 1, 4
-         if (.not. expect_near(segments(i)%couplings(1)%chord, steps(i), 1e-6_rkind)) error_cnt = error_cnt + 1
+         if (.not. expect_near_rk(segments(i)%couplings(1)%chord, steps(i), 1e-6_rkind)) error_cnt = error_cnt + 1
          if (segments(i)%couplings(1)%i /= i - 1) error_cnt = error_cnt + 1
       end do
-      if (.not. expect_near(norm2(segments(1)%position_begin), 0.0_rkind, 1e-6_rkind)) error_cnt = error_cnt + 1
-      if (.not. expect_near(norm2(segments(4)%position_end - [1.0_rkind, 0.0_rkind, 0.0_rkind]), &
+      if (.not. expect_near_rk(norm2(segments(1)%position_begin), 0.0_rkind, 1e-6_rkind)) error_cnt = error_cnt + 1
+      if (.not. expect_near_rk(norm2(segments(4)%position_end - [1.0_rkind, 0.0_rkind, 0.0_rkind]), &
                             0.0_rkind, 1e-6_rkind)) error_cnt = error_cnt + 1
    end if
 
