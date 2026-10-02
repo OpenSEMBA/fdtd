@@ -27,6 +27,13 @@ Point probes configured for both domains produce one `_tm.dat` file and one
 Far-field probes are always frequency-domain results, despite not using the
 `_fq` suffix.
 
+For MTLN voltage probes, each column corresponds to a bundle conductor referred
+to its surrounding shield. In full-wave problems the conductor acting as the
+shield of a `shieldedMultiwire` contained within another cable is omitted,
+since it has no reference of its own. In standalone MTLN problems
+(`mtlnProblem`), every conductor is reported, with the outermost ones referred
+to the reference/ground conductor.
+
 ## Volumetric Output
 
 `movie` probes write their files in a directory whose basename is

@@ -143,27 +143,20 @@ def test_shieldedPair(tmp_path):
         )
 
     for i in [0, 3]:
-        solved = np.interp(
-            p_expected[i]["time"].to_numpy(),
-            p_solved[i]["time"].to_numpy(),
-            p_solved[i]["voltage_0"].to_numpy(),
-        )
-        check_values_are_comparable(solved)
-        assert np.corrcoef(solved, p_expected[i]["voltage_0"])[0, 1] > 0.999
-        solved = np.interp(
-            p_expected[i]["time"].to_numpy(),
-            p_solved[i]["time"].to_numpy(),
-            p_solved[i]["voltage_1"].to_numpy(),
-        )
-        check_values_are_comparable(solved)
-        assert np.corrcoef(solved, p_expected[i]["voltage_1"])[0, 1] > 0.999
-        solved = np.interp(
-            p_expected[i]["time"].to_numpy(),
-            p_solved[i]["time"].to_numpy(),
-            p_solved[i]["voltage_2"].to_numpy(),
-        )
-        check_values_are_comparable(solved)
-        assert np.corrcoef(solved, p_expected[i]["voltage_2"])[0, 1] > 0.999
+        # In full-wave problems the shield of the inner cable has no
+        # surrounding shield, so only the two inner conductors are reported.
+        voltage_components = [
+            column for column in p_solved[i].data.columns if column.startswith("voltage_")
+        ]
+        assert voltage_components == ["voltage_0", "voltage_1"]
+        for component in range(2):
+            solved = np.interp(
+                p_expected[i]["time"].to_numpy(),
+                p_solved[i]["time"].to_numpy(),
+                p_solved[i][f"voltage_{component}"].to_numpy(),
+            )
+            check_values_are_comparable(solved)
+            assert np.corrcoef(solved, p_expected[i][f"voltage_{component}"])[0, 1] > 0.999
     for i in [1, 2]:
         solved = np.interp(
             p_expected[i]["time"].to_numpy(),
@@ -2188,13 +2181,19 @@ def test_voltage_generators(tmp_path):
 
     assert np.allclose(Iend["current_0"][-100:-1], 0.0, rtol=0.005)
     assert np.allclose(Istart["current_0"][-100:-1], 0.0, rtol=0.005)
-    assert np.allclose(Vend["voltage_0"][-100:-1], 0.0, rtol=0.005)
-    assert np.allclose(Vstart["voltage_0"][-100:-1], 0.0, rtol=0.005)
+    # The outer conductor is the shield of the inner cable, so no voltage
+    # is reported for it in full-wave problems.
+    assert [
+        column for column in Vend.data.columns if column.startswith("voltage_")
+    ] == ["voltage_0"]
+    assert [
+        column for column in Vstart.data.columns if column.startswith("voltage_")
+    ] == ["voltage_0"]
+    assert np.allclose(Vend["voltage_0"][-100:-1], -16.666, rtol=0.005)
+    assert np.allclose(Vstart["voltage_0"][-100:-1], -16.666, rtol=0.005)
 
     assert np.allclose(Iend["current_1"][-100:-1], 1.0 / 3.0, rtol=0.005)
     assert np.allclose(Istart["current_1"][-100:-1], 1.0 / 3.0, rtol=0.005)
-    assert np.allclose(Vend["voltage_1"][-100:-1], -16.666, rtol=0.005)
-    assert np.allclose(Vstart["voltage_1"][-100:-1], -16.666, rtol=0.005)
 
 
 @pytest.mark.probes

@@ -9,19 +9,38 @@ This document assumes that you are familiar with the basic JSON notation, a brie
 
 - [Examples](#examples)
 - [FDTD-JSON objects description](#fdtd-json-objects-description)
-  - [`general`, `background`, and `boundary`](#general)
+  - [`general`](#general)
+  - [`background`](#background)
+  - [`boundary`](#boundary)
   - [`mesh`](#mesh)
   - [`materials`](#materials)
   - [`materialAssociations`](#materialassociations)
   - [`probes`](#probes)
   - [`sources`](#sources)
-- [Material types](#bulk-materials)
+- [Material types](#materials)
+  - [Bulk materials](#bulk-materials)
+  - [`pec` and `pmc`](#pec-and-pmc)
+  - [`isotropic`](#isotropic)
   - [`lumped` models](#lumped)
+  - [`multilayeredSurface`](#multilayeredsurface)
+  - [`thinSlot`](#thinslot)
   - [Wire and multiwire materials](#wire)
+  - [`shieldedMultiwire`](#shieldedmultiwire)
+  - [`unshieldedMultiwire`](#unshieldedmultiwire)
   - [Terminals and connectors](#terminal)
+  - [`connector`](#connector)
 - [Probe types](#probe-types)
+  - [`point`](#point)
+  - [`wire`](#wire-1)
+  - [`bulkCurrent`](#bulkcurrent)
+  - [`line`](#line)
+  - [`farField`](#farfield)
+  - [`movie`](#movie)
 - [Probe domains](#domain)
-- [Source types](#planewave)
+- [Source types](#sources)
+  - [`planewave`](#planewave)
+  - [`nodalSource`](#nodalsource)
+  - [`generator`](#generator)
 
 ## Examples
 
@@ -550,7 +569,7 @@ In this case, the three wires of a e-conductor cable are connected to the nodes 
 The `connector` represents the physical connection of a bundle to a structure. `connector` assigns properties to the initial or last segment of a `wire`, a `shieldedMultiwire` or an `unshieldedMultiwire`. The `connector` can have the following properties:
 
 + `[resistances]`, an array of real numbers which will be converted to resistances per unit length and will replace the resistancePerMeter of that segment.
-+ `[transferImpedancesPerMeter]`, an array of [transferImpedancePerMeter], as described in the [shieldedMultiwire](#shieldedMultiwire) section. 
++ `[transferImpedancesPerMeter]`, an array of [transferImpedancePerMeter], as described in the [shieldedMultiwire](#shieldedmultiwire) section. 
 
 The most common situation will be having the connector of a shielded bundle. In that case, the arrays have a single component. However, the `connector` can describe the connections of a (unshielded) bundle of $N$ shielded conductors. In that case, the `connector` has to describe the connections, if any, of the $N$ shielded conductors.
 
@@ -593,7 +612,7 @@ Associations with cables can contain the following inputs:
 
 + `<initialTerminalId>` and `<endTerminalId>` which must be present within the `materials` list of type. These entries indicate the lumped circuits connected at the ends of the cable.
 + `[initialConnectorId]` and `[endConnectorId]` entries which must point to materials of type `connector` and are assigned to the last segments of the corresponding ends of the cable.
-+ Its `materialId` must point to a [`wire`](#wire), a [`shieldedMultiwire`](#shieldedMultiwire) or an [`unshieldedMultiwire`](#unshieldedMultiwire) material. If it points to a `shieldedMultiwire`, it must also contain an entry named `<containedWithinElementId>` which indicates the `polyline` in which this `shieldedMultiwire` is embedded.
++ Its `materialId` must point to a [`wire`](#wire), a [`shieldedMultiwire`](#shieldedmultiwire) or an [`unshieldedMultiwire`](#unshieldedmultiwire) material. If it points to a `shieldedMultiwire`, it must also contain an entry named `<containedWithinElementId>` which indicates the `polyline` in which this `shieldedMultiwire` is embedded.
 + For the case of `shieldedMultiwire` and `unshieldedMultiwire`, the size of `elementIds` must match the number of conductors in the multiwire. The element pointed by these ids must be of type `polyline`. These polylines must use coordinates which are in the same places and in the same order but have different ids; this is necessary to specify the different joints.
 + `[totalResistance]` as a real number (for `wire`) or an array of size $N$ (for `shieldedMultiwire` / `unshieldedMultiwire`), in Ohm. When specified, the resistance per unit length is computed as `totalResistance` divided by the discretized wire length after meshing, overriding any `resistancePerMeter` defined in the material. This eliminates the extra error introduced by staircasing when the wire is not aligned with the grid.
 
@@ -644,7 +663,7 @@ Records a vector field a single position referenced by `elementIds` which must c
 
 Records a scalar field at a single position referenced by `elementIds`. `elementIds` must contain a single `id` referencing an element of type `node`. Additionally, this `node` must point to a `coordinateId` belonging to at least one `polyline`. 
 If the node's `coordinateId` is shared by more than one `polyline` a probe will be defined for each one of them
-The `[field]` can be `voltage`, `current` or `charge`  (defaults to `current`). Voltage probes are properly defined only when used placed on `shieldedMultiwires`. The voltage on a conductor will be referred to the shield surrounding that conductor. In an unshielded wire, there is not a well defined reference, and thus the probe is not reliable. Charge probes are implemented only for wires not treated with the MTL module.
+The `[field]` can be `current` or `voltage` (defaults to `current`). Voltage probes are only allowed on probes attached to wires handled by the MTLN solver, i.e. `wire`, `shieldedMultiwire` or `unshieldedMultiwire` material associations. A voltage probe returns one value per conductor of the bundle, each referred to its surrounding shield. In a full-wave problem, the shield of a `shieldedMultiwire` contained within another cable has no surrounding shield, so no voltage is reported for it. For an `unshieldedMultiwire` or a plain `wire`, there is no well-defined reference, so the recorded voltage must be interpreted with care. In a standalone MTLN problem (`mtlnProblem` set to `true`), every conductor is reported, with the outermost ones referred to the reference/ground conductor.
 
 When `current` is selected, the orientation of the `polyline` on which the probe is located indicates the direction of the current. Voltages are well defined at polyline points. However, currents are defined over segments so:
 

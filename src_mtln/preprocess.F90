@@ -185,6 +185,9 @@ contains
             do j = 1, size(line%levels(i)%lines)
                 conductor_out = findOuterConductorNumber(line%levels(i)%lines(j), line%levels(i-1), sum(conductors_in_level(1:i-2)))
                 range_in = findInnerConductorRange(line%levels(i)%lines(j), line%levels(i), sum(conductors_in_level(1:i-1)))
+                ! The conductor acting as shield of this nested cable has no
+                ! surrounding shield of its own.
+                bundle%conductor_is_shield(conductor_out) = .true.
                 call bundle%addTransferImpedance(conductor_out, range_in, line%levels(i)%lines(j)%transfer_impedance)
             end do
         end do  
