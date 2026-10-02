@@ -1531,6 +1531,7 @@ contains
       call print11(l%layoutnumber, 'SUPPORTED:   Thin Slots ')
       call print11(l%layoutnumber, 'SUPPORTED:   Electric and Magnetic Dispersive materials ')
       call print11(l%layoutnumber, 'SUPPORTED:   Isotropic Multilayer Skin-depth Materials (sgbc)')
+      call print11(l%layoutnumber, 'SUPPORTED:   Thin material sheets (maloneySheet)')
 #ifdef CompileWithNIBC
       call print11(l%layoutnumber, 'SUPPORTED:   Isotropic Multilayer Skin-depth Materials (l%mibc)')
 #endif
