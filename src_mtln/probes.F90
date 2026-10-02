@@ -22,6 +22,8 @@ module probes_m
         real(kind=RKIND), allocatable, dimension(:,:) :: val
         real(kind=RKIND_TIME) :: dt
         integer :: elementIndex, current_frame, unit = 0
+        ! Bundle conductor indices reported by this probe, in output order.
+        integer(kind=4), allocatable, dimension(:) :: conductors
         character(len=:), allocatable :: name
         logical :: in_layer = .true.
         character(len=BUFSIZE) :: output_path = ''
@@ -103,13 +105,20 @@ contains
         end block
         end function
 
-    subroutine resizeFrames(this, num_frames, number_of_conductors)
+    subroutine resizeFrames(this, num_frames, all_conductors, voltage_conductors)
         class(probe_t) :: this
-        integer, intent(in) :: num_frames, number_of_conductors
+        integer, intent(in) :: num_frames
+        integer(kind=4), intent(in), dimension(:) :: all_conductors, voltage_conductors
         ! A single frame suffices: data is written to disk each step right after
         ! it is stored, so there is no need to buffer the full time history.
+        ! Voltage probes only report conductors with a surrounding shield.
+        if (this%typeName == PROBE_TYPE_VOLTAGE) then
+            this%conductors = voltage_conductors
+        else
+            this%conductors = all_conductors
+        end if
         allocate(this%t(1))
-        allocate(this%val(1, number_of_conductors))
+        allocate(this%val(1, size(this%conductors)))
         this%t = 0.0
         this%val = 0.0
 
@@ -122,12 +131,12 @@ contains
         real(kind=RKIND), dimension(:,:), intent(in) :: i
         
         if (this%typeName == PROBE_TYPE_VOLTAGE) then
-            call this%saveFrame(t, v(:,this%elementIndex))
+            call this%saveFrame(t, v(this%conductors, this%elementIndex))
         else if (this%typeName == PROBE_TYPE_CURRENT) then
             if (this%elementIndex == size(i,2) + 1) then
-                call this%saveFrame(t + 0.5*this%dt, i(:,this%elementIndex - 1))
+                call this%saveFrame(t + 0.5*this%dt, i(this%conductors, this%elementIndex - 1))
             else 
-                call this%saveFrame(t+ 0.5*this%dt, i(:,this%elementIndex))
+                call this%saveFrame(t + 0.5*this%dt, i(this%conductors, this%elementIndex))
             end if
         end if  
 

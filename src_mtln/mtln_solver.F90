@@ -24,6 +24,9 @@ module mtln_solver_m
         ! type(probe_t), allocatable, dimension(:) :: probes
         integer(kind=4) :: number_of_bundles
         logical :: has_active_bundles
+        ! Full-wave problems have no reference conductor for the outermost
+        ! bundle conductors; standalone MTLN problems are ground-referenced.
+        logical :: full_wave = .true.
         integer(kind=4) :: number_of_steps
         real(kind=rkind) :: null_field
     contains
@@ -274,14 +277,23 @@ contains
 
     subroutine updatePULTerms(this)
         class(mtln_t) :: this
-        integer(kind=4) :: i, j 
+        integer(kind=4) :: i, j, k
+        integer(kind=4), dimension(:), allocatable :: all_conductors, voltage_conductors
         do i = 1, this%number_of_bundles
             if (this%bundles(i)%bundle_in_layer) then
                 call this%bundles(i)%updateLRTerms()
                 call this%bundles(i)%updateCGTerms()
+                all_conductors = [(k, k = 1, this%bundles(i)%number_of_conductors)]
+                if (this%full_wave) then
+                    ! Conductors acting as shields of nested cables have no
+                    ! surrounding shield and are not reported by voltage probes.
+                    voltage_conductors = pack(all_conductors, .not. this%bundles(i)%conductor_is_shield)
+                else
+                    voltage_conductors = all_conductors
+                end if
                 do j = 1, size(this%bundles(i)%probes)
                     call this%bundles(i)%probes(j)%resizeFrames(this%getTimeRange(this%final_time), & 
-                                                                this%bundles(i)%number_of_conductors)
+                                                                all_conductors, voltage_conductors)
                 end do
             end if
         end do
@@ -374,7 +386,7 @@ contains
                 write (*, *) 'name: ', trim(this%bundles(i)%probes(j)%name)
                 buffer = "time"
                 do k = 1, size(this%bundles(i)%probes(j)%val, 2)
-                    write (temp, *) k
+                    write (temp, *) this%bundles(i)%probes(j)%conductors(k)
                     buffer = buffer//" "//"conductor_"//trim(adjustl(temp))
                 end do
                 write (unit, '(a)', iostat=ios) trim(buffer)
