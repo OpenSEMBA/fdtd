@@ -2523,7 +2523,7 @@ contains
       character(len=bufsize) :: buff
 
 #ifdef CompileWithMTLN
-      call AdvanceWiresE_mtln(this%sgg,this%Idxh,this%Idyh,this%Idzh,this%eps0,this%mu0)
+      call AdvanceWiresE_mtln(this%sgg,this%Idxe,this%Idye,this%Idze,this%Idxh,this%Idyh,this%Idzh,this%eps0,this%mu0)
 #else 
 
       if (( (trim(adjustl(this%control%wiresflavor))=='holland') .or. &

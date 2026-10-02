@@ -79,6 +79,14 @@ contains
       expect_near = abs(a - b) < tol
    end function
 
+   ! Same as expect_near but for values stored in the working precision kind.
+   logical function expect_near_rk(a, b, tol)
+      use FDETYPES_m, only: rkind
+      real(kind=rkind), intent(in) :: a, b, tol
+
+      expect_near_rk = abs(a - b) < tol
+   end function
+
 #ifdef CompileWithMTLN
    subroutine initializeCablePULParameters(cable, n)
       class(cable_t), pointer, intent(inout) :: cable

@@ -26,6 +26,9 @@ extern "C" int test_read_mtln();
 extern "C" int test_read_towelhanger();
 extern "C" int test_read_holland1981();
 extern "C" int test_read_holland1981_unshielded();
+#ifdef CompileWithMTLN
+extern "C" int test_read_slanted_wire();
+#endif
 extern "C" int test_read_connectedwires();
 extern "C" int test_read_shieldedpair();
 extern "C" int test_read_large_airplane_mtln();
@@ -35,6 +38,10 @@ extern "C" int test_read_unshielded_multiwires_multipolar_expansion();
 
 extern "C" int test_read_background_defaults();
 extern "C" int test_read_background_set();
+extern "C" int test_slanted_segments_aligned();
+extern "C" int test_slanted_segments_diagonal();
+extern "C" int test_slanted_segments_find_node();
+extern "C" int test_slanted_segments_graded();
 extern "C" int test_read_wire_probe_defaults();
 extern "C" int test_read_nodal_source_resistance_per_meter();
 extern "C" int test_read_nodal_source_total_resistance();
@@ -68,6 +75,10 @@ TEST(smbjson, read_lumped_fixture)       { EXPECT_EQ(0, test_read_lumped_fixture
 TEST(smbjson, read_lumped_multi_element) { EXPECT_EQ(0, test_read_lumped_multi_element()); }
 TEST(smbjson, read_background_defaults) { EXPECT_EQ(0, test_read_background_defaults()); }
 TEST(smbjson, read_background_set)      { EXPECT_EQ(0, test_read_background_set()); }
+TEST(smbjson, slanted_segments_aligned) { EXPECT_EQ(0, test_slanted_segments_aligned()); }
+TEST(smbjson, slanted_segments_diagonal) { EXPECT_EQ(0, test_slanted_segments_diagonal()); }
+TEST(smbjson, slanted_segments_find_node) { EXPECT_EQ(0, test_slanted_segments_find_node()); }
+TEST(smbjson, slanted_segments_graded) { EXPECT_EQ(0, test_slanted_segments_graded()); }
 TEST(smbjson, read_wire_probe_defaults) { EXPECT_EQ(0, test_read_wire_probe_defaults()); }
 TEST(smbjson, read_nodal_source_resistance_per_meter) {
                                            EXPECT_EQ(0, test_read_nodal_source_resistance_per_meter()); }
@@ -81,6 +92,7 @@ TEST(smbjson, read_nodal_source_one_cell_interval) {
                                            EXPECT_EQ(0, test_read_nodal_source_one_cell_interval()); }
 
 #ifdef CompileWithMTLN
+TEST(smbjson, read_slanted_wire)        { EXPECT_EQ(0, test_read_slanted_wire()); }
 TEST(smbjson, read_towelhanger)             { EXPECT_EQ(0, test_read_towelhanger()); }
 TEST(smbjson, read_holland1981_unshielded)  { EXPECT_EQ(0, test_read_holland1981_unshielded()); }
 TEST(smbjson, read_connectedwires)          { EXPECT_EQ(0, test_read_connectedwires()); }

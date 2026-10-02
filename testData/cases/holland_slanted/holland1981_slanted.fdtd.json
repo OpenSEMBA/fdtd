@@ -1,0 +1,87 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "1m linear antenna rotated 30 degrees about +y, illuminated by the same normally incident plane wave as testData/cases/holland/holland1981.fdtd.json. The induced current must scale with the cosine of the wire angle with respect to the electric field.",
+
+    "general": {
+        "timeStep": 30e-12,
+        "numberOfSteps": 1000
+    },
+  
+    "boundary": {
+        "all": {
+            "type": "pml",
+            "layers": 6, 
+            "order": 2.0,
+            "reflection": 0.001
+        }
+    },
+
+    "materials": [
+        {
+            "id": 1,
+            "type": "wire",
+            "radius": 0.02,
+            "resistancePerMeter": 0.0,
+            "inductancePerMeter": 0.0
+        },
+        {
+            "id": 2,
+            "type": "terminal",
+            "terminations": [{"type": "open"}]
+        }
+    ],
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [20, 20, 22],
+            "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
+        },
+        "coordinates": [
+            {"id": 1, "relativePosition": [ 8.5, 11.0,  7.669873]},
+            {"id": 2, "relativePosition": [11.0, 11.0, 12.0    ]},
+            {"id": 3, "relativePosition": [13.5, 11.0, 16.330127]}
+        ],
+        "elements": [
+            {"id": 1, "type": "node", "coordinateIds": [2]},
+            {"id": 2, "type": "polyline", "coordinateIds": [1, 2, 3] },
+            {"id": 3, "type": "cell", "intervals": [[[1, 1, 1], [19, 19, 21]]] },
+            {"id": 4, "type": "node", "coordinateIds": [3]}
+        ]
+    },
+
+    "materialAssociations": [
+        { 
+            "name" : "slanted_wire",
+            "materialId": 1,
+            "initialTerminalId": 2,
+            "endTerminalId": 2,
+            "elementIds": [2]
+        }
+    ],
+
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "holland.exc",
+            "elementIds": [3],
+            "direction": {
+                "theta": 1.5708,
+                "phi": 0.0
+            },
+            "polarization": {
+                "theta": 0.0,
+                "phi": 0.0
+            }
+        }
+    ],
+
+    "probes": [
+        {
+            "name": "mid_point",
+            "type": "wire",
+            "field": "current",
+            "elementIds": [1],
+            "domain": { "type": "time" }
+        }
+    ]
+}

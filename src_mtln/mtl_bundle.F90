@@ -8,7 +8,7 @@ module mtl_bundle_m
 #ifdef CompileWithMPI
     use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
 #endif
-    use mtln_types_m, only: SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
+    use mtln_types_m, only: SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE, MAX_SEGMENT_COUPLINGS
     use FDETYPES_m, only: RKIND, RKIND_TIEMPO
     implicit none
 
@@ -70,10 +70,23 @@ module mtl_bundle_m
         module procedure mtldCtor
     end interface
 
+    type :: external_coupling_t
+        integer(kind=4) :: component = 0
+        integer(kind=4), dimension(3) :: position = 0
+        real(kind=rkind) :: weight = 0.0_rkind
+        real(kind=rkind) :: chord = 0.0_rkind
+        real(kind=rkind), pointer :: field => null()
+    end type
+
     type :: external_field_segment_t
         integer(kind=4), dimension(3) ::position
         integer(kind=4) :: direction = 0
         real(kind=rkind) , pointer  :: field => null()
+        ! Slanted divisions couple to several E edges. Axis-aligned ones keep
+        ! using position/direction/field and leave n_couplings at zero.
+        logical :: is_slanted = .false.
+        integer(kind=4) :: n_couplings = 0
+        type(external_coupling_t), dimension(1:MAX_SEGMENT_COUPLINGS) :: couplings
     end type
 
 contains
@@ -218,7 +231,7 @@ contains
         type(transmission_line_level_t), dimension(:), intent(in) :: levels
         type(external_field_segment_t), dimension(:), allocatable :: res
         type(segment_t), dimension(:), allocatable :: segments
-        integer(kind=4) :: i
+        integer(kind=4) :: i, k
         segments = levels(1)%lines(1)%segments
         allocate(res(size(segments)))
         do i = 1, size(segments)
@@ -226,6 +239,16 @@ contains
             res(i)%position(2) = segments(i)%y
             res(i)%position(3) = segments(i)%z
             res(i)%direction   = segments(i)%orientation
+            res(i)%is_slanted  = segments(i)%is_slanted
+            res(i)%n_couplings = segments(i)%n_couplings
+            do k = 1, segments(i)%n_couplings
+                res(i)%couplings(k)%component = segments(i)%couplings(k)%component
+                res(i)%couplings(k)%position(1) = segments(i)%couplings(k)%i
+                res(i)%couplings(k)%position(2) = segments(i)%couplings(k)%j
+                res(i)%couplings(k)%position(3) = segments(i)%couplings(k)%k
+                res(i)%couplings(k)%weight = segments(i)%couplings(k)%weight
+                res(i)%couplings(k)%chord = segments(i)%couplings(k)%chord
+            end do
         end do
     end function
 
@@ -445,7 +468,7 @@ contains
 
     subroutine bundle_setExternalLongitudinalField(this)
         class(mtl_bundle_t) :: this
-        integer(kind=4) :: i, j
+        integer(kind=4) :: i, j, k
 #ifdef CompileWithMPI
         integer(kind=4) :: sizeof, ierr
 
@@ -455,10 +478,20 @@ contains
 
         do j = 1, this%conductors_in_level(1)
             do i = 1, size(this%e_L,2)
-                    if (abs(this%external_field_segments(i)%direction) <= 3) then 
-                        this%e_L(j,i) = this%external_field_segments(i)%field * &
-                                        this%external_field_segments(i)%direction/abs(this%external_field_segments(i)%direction)
-                    end if
+                if (this%external_field_segments(i)%is_slanted) then
+                    this%e_L(j,i) = 0.0_rkind
+                    do k = 1, this%external_field_segments(i)%n_couplings
+                        if (associated(this%external_field_segments(i)%couplings(k)%field)) then
+                            this%e_L(j,i) = this%e_L(j,i) + &
+                                this%external_field_segments(i)%couplings(k)%weight * &
+                                this%external_field_segments(i)%couplings(k)%chord / this%step_size(i) * &
+                                this%external_field_segments(i)%couplings(k)%field
+                        end if
+                    end do
+                else if (abs(this%external_field_segments(i)%direction) <= 3) then 
+                    this%e_L(j,i) = this%external_field_segments(i)%field * &
+                                    this%external_field_segments(i)%direction/abs(this%external_field_segments(i)%direction)
+                end if
             end do
         end do
 

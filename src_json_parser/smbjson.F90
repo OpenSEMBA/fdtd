@@ -6,6 +6,7 @@ module smbjson_m
    use NFDETypes_extension_m
    use smbjson_labels_m
    use mesh_m
+   use slanted_wire_segments_m, only: buildSlantedSegments, findIndexInSlantedSegments
    use parser_tools_m
    use idchildtable_m
 
@@ -3720,7 +3721,6 @@ contains
          type(json_value_ptr_t), dimension(:), allocatable :: gens
          logical :: found
          integer :: i, n
-         type(linel_t), dimension(:), allocatable :: linels
          type(polyline_t) :: pl
          type(coordinate_t) :: coord
          integer :: idAndPos(2), index
@@ -3762,10 +3762,9 @@ contains
                call elemIdToCable%get(key(idAndPos(1)), value=index)
                coord = GetCoordinateFromElemIdNode(gens(i)%p)
                pl = this%mesh%getPolyline(idAndPos(1))
-               linels = this%mesh%polylineToLinels(pl)
 
                res(n)%conductor = idAndPos(2)
-               res(n)%index = findIndexInLinels(coord, linels)
+               res(n)%index = findWireNodeIndex(pl, coord, index)
                res(n)%attached_to_cable => mtln_res%cables(index)%ptr
 
                n = n + 1
@@ -3832,7 +3831,6 @@ contains
          integer :: i, j, index, n
          integer, dimension(:), allocatable :: ids
          type(coordinate_t) :: probe_node_coord
-         type(linel_t), dimension(:), allocatable :: linels
          type(polyline_t) :: pl
          class(cable_t), pointer :: cable_ptr, aux_ptr
          logical :: parent_cable_found = .false., found
@@ -3862,8 +3860,7 @@ contains
                   
                   call elemIdToCable%get(key(ids(j)), value=index)
                   pl = this%mesh%getPolyline(ids(j))
-                  linels = this%mesh%polylineToLinels(pl)
-                  res(n)%index = findIndexInLinels(probe_node_coord, linels)
+                  res(n)%index = findWireNodeIndex(pl, probe_node_coord, index)
 
                   cable_ptr => mtln_res%cables(index)%ptr
                   ! Inside select type, cable_ptr is shielded_multiwire_t but parent_cable is cable_t
@@ -3951,6 +3948,26 @@ contains
          end do
          m = minloc(distance_to_linel_cell)
          res = m(1)
+      end function
+
+      ! Node index (1..n_divisions+1) of a wire coordinate. Structured
+      ! polylines use their linels, slanted ones the division boundary points.
+      function findWireNodeIndex(pl, coord, cableIndex) result(res)
+         type(polyline_t), intent(in) :: pl
+         type(coordinate_t), intent(in) :: coord
+         integer, intent(in) :: cableIndex
+         integer :: res
+
+         type(linel_t), dimension(:), allocatable :: linels
+
+         if (this%mesh%arePolylineSegmentsStructured(pl)) then
+            linels = this%mesh%polylineToLinels(pl)
+            res = findIndexInLinels(coord, linels)
+         else
+            res = findIndexInSlantedSegments(real(coord%position, kind=rkind), &
+                                             buildMTLNDespl(), &
+                                             mtln_res%cables(cableIndex)%ptr%segments)
+         end if
       end function
 
       logical function isProbeDefinedOnMultiwire(p)
@@ -4201,6 +4218,7 @@ contains
          materialType = this%getStrAt(material%p, J_TYPE)
          mtln_despl = buildMTLNDespl()
          cable_segments = buildSegments(j_cable, mtln_despl)
+         call checkSlantedCableSupported(cable_segments, material, materialType)
          cable_step_size = buildStepSize(cable_segments, mtln_despl)
          totalLength = sum(cable_step_size)
          select case (materialType)
@@ -4463,6 +4481,13 @@ contains
          type(polyline_t) :: temp
          elemIds = j_cable%elementIds
          temp = this%mesh%getPolyline(elemIds(1))
+         ! Polylines that are not axis-aligned on the mesh grid (diagonal
+         ! segments, or fractional coordinates) are discretized as slanted
+         ! wires. Structured polylines keep the staircase linels path.
+         if (.not. this%mesh%arePolylineSegmentsStructured(temp)) then
+            res = buildSlantedCableSegments(temp, despl)
+            return
+         end if
          linels = this%mesh%polylineToLinels(temp)
          prevOr = 0
          allocate(res(size(linels)))
@@ -4495,6 +4520,42 @@ contains
             prevOr = abs(res(i)%orientation)
          end do
       end function
+
+      function buildSlantedCableSegments(polyline, despl) result(res)
+         type(polyline_t), intent(in) :: polyline
+         type(Desplazamiento_t), intent(in) :: despl
+         type(segment_t), dimension(:), allocatable :: res
+
+         type(coordinate_t) :: coord
+         real(kind=rkind), dimension(:, :), allocatable :: points
+         integer :: i
+
+         allocate (points(3, size(polyline%coordIds)))
+         do i = 1, size(polyline%coordIds)
+            coord = this%mesh%getCoordinate(polyline%coordIds(i))
+            points(:, i) = real(coord%position, kind=rkind)
+         end do
+         call buildSlantedSegments(points, despl, res)
+      end function
+
+      subroutine checkSlantedCableSupported(segments, material, materialType)
+         type(segment_t), dimension(:), intent(in) :: segments
+         type(json_value_ptr_t), intent(in) :: material
+         character(len=*), intent(in) :: materialType
+
+         logical :: isSlanted
+
+         isSlanted = size(segments) > 0 .and. segments(1)%is_slanted
+         if (.not. isSlanted) return
+         if (materialType == J_MAT_TYPE_SHIELDED_MULTIWIRE) then
+            call WarnErrReport('Error reading cable: diagonal or fractional polylines are not '// &
+                               'supported for shieldedMultiwire materials yet.', .true.)
+         end if
+         if (this%existsAt(material%p, J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION)) then
+            call WarnErrReport('Error reading cable: slanted wires do not support '// &
+                               'multipolarExpansion.', .true.)
+         end if
+      end subroutine
 
       pure integer function clip(i, lo, hi)
          integer, intent(in) :: i, lo, hi
@@ -4553,6 +4614,10 @@ contains
          integer :: i, or
          allocate(res(size(segments)))
          do i = 1, size(segments)
+            if (segments(i)%is_slanted) then
+               res(i) = norm2(segments(i)%position_end - segments(i)%position_begin)
+               cycle
+            end if
             or = abs(segments(i)%orientation)
             select case(or)
             case(DIR_X)
