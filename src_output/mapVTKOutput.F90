@@ -35,25 +35,37 @@ contains
       logical, intent(in) :: localParticipates
 
       character(len=BUFSIZE) :: artifact_paths(1)
+      character(len=BUFSIZE) :: piece_name
       integer :: artifact_kinds(1)
 
       this%mainCoords = lowerBound
       this%auxCoords = upperBound
       this%component = field
       this%localParticipates = localParticipates
+      this%path = get_map_output_folder(field, outputTypeExtension, mpidir)
       this%masterPath = trim(get_map_output_path(globalLowerBound, globalUpperBound, field, &
                                                  outputTypeExtension, mpidir))//pvtuFileExtension
 
       artifact_paths = ''
       if (localParticipates) then
-         this%path = get_map_output_path(lowerBound, upperBound, field, outputTypeExtension, mpidir)
-         artifact_paths(1) = trim(join_path(this%path, get_last_component(this%path)))//vtuFileExtension
+         piece_name = get_last_component(get_map_output_path(lowerBound, upperBound, field, &
+                                                             outputTypeExtension, mpidir))
+         artifact_paths(1) = trim(join_path(this%path, piece_name))//vtuFileExtension
       end if
       artifact_kinds = [OUTPUT_ARTIFACT_GEOMETRY]
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
       if (localParticipates) call store_relevant_coordinates(this, problemInfo)
 
    end subroutine init_mapvtk_output
+
+   function get_map_output_folder(field, outputTypeExtension, mpidir) result(outputFolder)
+      integer(kind=SINGLE), intent(in) :: field, mpidir
+      character(len=BUFSIZE), intent(in) :: outputTypeExtension
+      character(len=BUFSIZE) :: outputFolder
+
+      outputFolder = trim(adjustl(outputTypeExtension))//'_'// &
+                     trim(adjustl(get_prefix_extension(field, mpidir)))
+   end function get_map_output_folder
 
    function get_map_output_path(lowerBound, upperBound, field, outputTypeExtension, mpidir) result(outputPath)
       type(cell_coordinate_t), intent(in) :: lowerBound, upperBound
