@@ -215,11 +215,15 @@ module  FDETYPES_m
    integer(kind=4), parameter :: EDGE_X = 1
    integer(kind=4), parameter :: EDGE_Y = 2
    integer(kind=4), parameter :: EDGE_Z = 3
+   
+   integer(kind=4), parameter :: EDGE_REGION_I = 1
+   integer(kind=4), parameter :: EDGE_REGION_II = 2
+   integer(kind=4), parameter :: EDGE_REGION_CONFORMAL = 3
 
    !source types
    character(len=*), parameter :: F_SOURCE_VOLTAGE = 'VOLT'
    character(len=*), parameter :: F_SOURCE_CURRENT = 'CURR'
-
+   
 
 #ifdef CompileWithReal4
    character(len=*), parameter  :: fmt='(e27.17e3,11(e19.9e3))'  !IEEE 754 single-precision 6 to 9 decimals -1.123456789E-001
@@ -622,7 +626,6 @@ module  FDETYPES_m
    type :: conformal_face_fields_t
       real(kind=rkind), pointer :: H
       real(kind=rkind), pointer :: E1 => null()
-      ! type(conformal_field_t) :: E1
       real(kind=rkind), pointer :: E2 => null()
       real(kind=rkind), pointer :: E3 => null()
       real(kind=rkind), pointer :: E4 => null()
@@ -660,7 +663,9 @@ module  FDETYPES_m
       integer(kind=4), dimension(3) :: cell
       integer(kind=4) :: direction = -1
       real(kind=rkind) :: ratio = -1
-      real(kind=rkind), dimension(2) :: material_coords
+      logical :: is_two_sided = .false.
+      real(kind=rkind), dimension(2) :: material_coords = [0.0, 1.0]
+      integer(kind=4) :: edge_region = EDGE_REGION_CONFORMAL
       type(conformal_edge_fields_t) :: region_I_fields, region_II_fields
    end type
 

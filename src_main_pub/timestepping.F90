@@ -1394,7 +1394,8 @@ contains
          integer :: ierr
          call MPI_Barrier(SUBCOMM_MPI, ierr)
 #endif
-         call initializeConformalSurfaceStates(this)
+         call initializeConformalFields(this)
+         ! call initializeConformalSurfaceStates(this)
       end subroutine initializeConformal
 
       subroutine initializeConformalElements()
@@ -2505,15 +2506,17 @@ contains
 
    subroutine solver_advanceConformalE(this)
       class(solver_t) :: this
-      real (kind = rkind), pointer :: E, H1, H2, H3, H4, E_eff
+      real (kind = rkind), pointer :: E, H1, H2, H3, H4
+      real (kind = rkind) :: E_eff
 
       real(kind=rkind) :: id1, id2, corr
       integer(kind=integersizeofmediamatrices) :: med
       integer(kind=4), dimension(3) :: c
       integer :: i, j, k, n
-
+      logical :: two_sided
       E_eff = 0.0
       do n = 1, size(this%conformal_fields%edges)
+         two_sided = this%conformal_fields%edges(n)%is_two_sided        
          c = this%conformal_fields%edges(n)%cell
          i = c(1); j = c(2); k = c(3)
          select case (this%conformal_fields%edges(n)%direction)
@@ -2522,25 +2525,45 @@ contains
          case (EDGE_Z); med = this%media%sggMiEz(i, j, k); id1 = this%Idye(j); id2 = this%Idxe(i)
          end select
          !region 1
-         E  => this%conformal_fields%edges(n)%region_I_fields%E
-         H1 => this%conformal_fields%edges(n)%region_I_fields%H1
-         H2 => this%conformal_fields%edges(n)%region_I_fields%H2
-         H3 => this%conformal_fields%edges(n)%region_I_fields%H3
-         H4 => this%conformal_fields%edges(n)%region_I_fields%H4
-         E = this%g%g1(med)*E + this%g%g2(med)*((H2 - H4)*id2 - (H3-H1)*id1)
+         if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_I .or. &
+             this%conformal_fields%edges(n)%edge_region == EDGE_REGION_CONFORMAL) then 
+            E  => this%conformal_fields%edges(n)%region_I_fields%E
+            H1 => this%conformal_fields%edges(n)%region_I_fields%H1
+            H2 => this%conformal_fields%edges(n)%region_I_fields%H2
+            H3 => this%conformal_fields%edges(n)%region_I_fields%H3
+            H4 => this%conformal_fields%edges(n)%region_I_fields%H4
+            E = this%g%g1(med)*E + this%g%g2(med)*((H2 - H4)*id2 - (H3-H1)*id1)
 
-         E_eff = E_eff + E*this%conformal_fields%edges(n)%ratio
+            if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_CONFORMAL) then 
+               E_eff = E*this%conformal_fields%edges(n)%ratio
+            else
+               E_eff = E
+            end if
 
+         end if
          !region 2
-         E  => this%conformal_fields%edges(n)%region_II_fields%E
-         H1 => this%conformal_fields%edges(n)%region_II_fields%H1
-         H2 => this%conformal_fields%edges(n)%region_II_fields%H2
-         H3 => this%conformal_fields%edges(n)%region_II_fields%H3
-         H4 => this%conformal_fields%edges(n)%region_II_fields%H4
-         corr = (1.0-this%conformal_fields%edges(n)%ratio)/this%conformal_fields%edges(n)%ratio
-         E = this%g%g1(med)*E + this%g%g2(med)*corr*((H1 - H3)*id2 - (H4-H2)*id1)
+         if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_II .or. &
+             this%conformal_fields%edges(n)%edge_region == EDGE_REGION_CONFORMAL) then 
+            E  => this%conformal_fields%edges(n)%region_II_fields%E
+            H1 => this%conformal_fields%edges(n)%region_II_fields%H1
+            H2 => this%conformal_fields%edges(n)%region_II_fields%H2
+            H3 => this%conformal_fields%edges(n)%region_II_fields%H3
+            H4 => this%conformal_fields%edges(n)%region_II_fields%H4
 
-         E_eff = E_eff + E*(1.0-this%conformal_fields%edges(n)%ratio)
+            corr = 1.0
+            if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_CONFORMAL) then 
+               corr = (1.0-this%conformal_fields%edges(n)%ratio)/this%conformal_fields%edges(n)%ratio
+            end if
+            E = this%g%g1(med)*E + this%g%g2(med)*corr*((H1 - H3)*id2 - (H4-H2)*id1)
+
+            if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_CONFORMAL) then 
+               E_eff = E_eff + E*(1.0-this%conformal_fields%edges(n)%ratio)
+            else
+               E_eff = E
+            end if
+
+         end if
+
          select case (this%conformal_fields%edges(n)%direction)
          case (EDGE_X); this%Ex(i,j,k) = E_eff
          case (EDGE_Y); this%Ey(i,j,k) = E_eff
@@ -2688,6 +2711,7 @@ contains
       end select
    end subroutine getConformalElectricPair
 
+
    subroutine initializeConformalFields(this)
       class(solver_t) :: this
       type(face_t), pointer :: face, face_of_edge
@@ -2700,27 +2724,8 @@ contains
 
       do i = 1, this%sgg%NumMedia
          if (.not. (isConformalSurface(this%sgg%Med(i)))) cycle
-         ! med_is_sgbc = this%sgg%Med(i)%Is%ConformalSGBC
-         if (.not. allocated(this%sgg%Med(i)%ConformalFace)) cycle
-
-         allocate(this%conformal_fields%faces(size(this%sgg%Med(i)%ConformalFace(:))))
-         this%conformal_fields%faces = this%sgg%Med(i)%ConformalFace(:)
-         allocate(this%conformal_fields%edges(size(this%sgg%Med(i)%ConformalEdge(:))))
-         this%conformal_fields%edges = this%sgg%Med(i)%ConformalEdge(:)
-
-         ! ! copy edges with ratio /= 0
-         ! n = 0
-         ! do j = 1, size(this%sgg%Med(i)%ConformalEdge)
-         !    if (this%sgg%Med(i)%ConformalEdge(j)%ratio /= 0) n = n + 1
-         ! end do
-         ! allocate(this%conformal_fields%edges(n))
-         ! n = 0
-         ! do j = 1, size(this%sgg%Med(i)%ConformalEdge)
-         !    n = n + 1
-         !    if (this%sgg%Med(i)%ConformalEdge(j)%ratio /= 0) then 
-         !       this%conformal_fields%edges(n) = this%sgg%Med(i)%ConformalEdge(j)
-         !    end if
-         ! end do
+         call addConformalFaces(this%conformal_fields%faces, this%sgg%Med(i)%ConformalFace)
+         call addConformalEdges(this%conformal_fields%edges, this%sgg%Med(i)%ConformalEdge)
       end do
 
       call buildConformalMaps(conformal_maps%face_map, & 
@@ -2734,7 +2739,9 @@ contains
 
       do i = 1, size(conformal_maps%face_map%keys)
          face => conformal_maps%face_map%getFace(conformal_maps%face_map%keys(i)%key)
+         allocate(face%region_I_fields%H)
          face%region_I_fields%H = 0.0
+         allocate(face%region_II_fields%H)
          face%region_II_fields%H = 0.0
          if (.not. face%is_two_sided) cycle
          edges_on_face = buildEdgesOnFace(face%cell, face%direction)
@@ -2752,10 +2759,10 @@ contains
             do k = 1, size(faces_on_edge)
                if (.not. conformal_maps%face_map%hasKey(faces_on_edge(k)%key)) then 
                   cell = faces_on_edge(k)%key(1:3)
-                  call assignFaceFieldsOnEdge(this%Hx,this%Hy,this%Hz, edge, j, cell)
+                  call assignFaceFieldsOnEdge(this%Hx,this%Hy,this%Hz, edge, k, cell)
                else
                   face_of_edge => conformal_maps%face_map%getFace(faces_on_edge(k)%key)
-                  call assignSplitFaceFieldsOnEdge(face_of_edge, edge, j)
+                  call assignSplitFaceFieldsOnEdge(face_of_edge, edge, k)
                end if
             end do
 

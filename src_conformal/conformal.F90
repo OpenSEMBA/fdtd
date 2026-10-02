@@ -1006,7 +1006,7 @@ contains
             if (size(tris_on_face) == 0 .and. size(sides_on_face) /= 0) then
                contour = findLargestContour(sides_on_face)
                call fillFaceFromContour(contour, faces, face_is_two_sided(cell_map%body_type,size(tris_on_face) ))
-               call fillEdgesFromContour(contour, edges)
+               call fillEdgesFromContour(contour,edges, face_is_two_sided(cell_map%body_type,size(tris_on_face) ))
             else if (size(tris_on_face) /= 0) then 
                call fillFacesFromTriangles(tris_on_face, faces, edges)
             end if
@@ -1122,11 +1122,14 @@ contains
 
    end subroutine fillFacesFromTriangles
 
-   subroutine fillEdgesFromContour(contour, edges)
+   subroutine fillEdgesFromContour(contour, edges, is_two_sided)
       type(side_t), dimension(:), allocatable, intent(in) :: contour
       type(edge_t), dimension(:), allocatable, intent(inout) :: edges
       integer :: i, edge
       integer, dimension(3) :: cell
+      logical, optional, intent(in) :: is_two_sided
+      logical :: split = .false.
+      if (present(is_two_sided)) split = is_two_sided
       do i = 1, size(contour)
          edge = contour(i)%getEdge()
          cell = contour(i)%getCell()
@@ -1134,7 +1137,7 @@ contains
             if (isEdgeFilled(edges, cell, edge)) then
                call fillSmallerRatio(edges, cell, edge, contour(i))
             else
-               call addEdge(edges, cell, edge, contour(i))
+               call addEdge(edges, cell, edge, contour(i), split)
             end if
          end if
       end do
@@ -1152,7 +1155,7 @@ contains
             if (isEdgeFilled(edges, cell, edge)) then
                call reduceEdgeRatio(edges, cell, edge, sides(i))
             else
-               call addEdge(edges, cell, edge, sides(i))
+               call addEdge(edges, cell, edge, sides(i), is_two_sided = .false.)
             end if
          end if
       end do
@@ -1279,6 +1282,7 @@ contains
       do i = 1, size(edges)
          if (all(edges(i)%cell == cell) .and. &
              edges(i)%direction == edge) then
+               edges(i)%is_two_sided = .false.
                if (edges(i)%material_coords(1) /= min(side%init%position(edge), side%end%position(edge)) .and. &
                    edges(i)%material_coords(2) /= max(side%init%position(edge), side%end%position(edge)) .and. &
                    edges(i)%ratio /= 0) then
@@ -1308,22 +1312,29 @@ contains
       end do
    end subroutine
 
-   subroutine addEdge(edges, cell, edge, side)
+   subroutine addEdge(edges, cell, edge, side, is_two_sided)
       type(edge_t), dimension(:), allocatable, intent(inout) :: edges
       type(edge_t), dimension(:), allocatable :: aux
       integer(kind=4), dimension(3), intent(in) :: cell
       integer(kind=4) :: edge
       type(side_t), intent(in) :: side
+      logical, optional, intent(in) :: is_two_sided
       type(edge_t) :: new_edge
       real(kind=rkind) :: ratio
       real(kind = rkind), dimension(2) :: coords
+      logical :: split = .false.
 
+      if (present(is_two_sided)) split = is_two_sided
       ratio = 1.0 - side%length()
+      ! skip edges that fill the whole edge if they are
+      ! coming from a countour in a SURFACE case
+      if (split .and. ratio == 0) return
       allocate(aux(size(edges) + 1))
       aux(1:size(edges)) = edges
       coords(1) = min(side%init%position(edge), side%end%position(edge))
       coords(2) = max(side%init%position(edge), side%end%position(edge))
-      new_edge = edge_t(cell=cell, ratio=ratio, direction=edge, material_coords = coords)
+      
+      new_edge = edge_t(cell=cell, ratio=ratio, direction=edge, material_coords = coords, is_two_sided = split)
       aux(size(edges) + 1) = new_edge
 
       deallocate(edges)

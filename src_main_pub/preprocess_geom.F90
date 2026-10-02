@@ -5156,6 +5156,7 @@ contains
 
          do j = 1, conformal_media%n_edges_media
             if (conformal_media%edge_media(j)%ratio /= 0) then
+            ! if (conformal_media%edge_media(j)%ratio /= 0 .or. conformal_media%edge_media(j)%is_two_sided) then
                edge_media = num_media + findloc(edge_ratios, conformal_media%edge_media(j)%ratio,1)
                sgg%Med(edge_media)%Is%ConformalPEC = .not. is_sgbc
                sgg%Med(edge_media)%Is%ConformalSGBC = is_sgbc
