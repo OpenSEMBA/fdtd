@@ -359,6 +359,28 @@ module NFDETypes_m
       integer(kind=4) :: nC_max = 0 !cota de todos los nc de LossyThinSurface
    end type LossyThinSurfaces_t
    !------------------------------------------------------------------------------
+   ! Defines a thin sheet to be modeled with the Maloney-Smith subcell method.
+   !------------------------------------------------------------------------------
+   type, public :: MaloneySheet_t
+      type(coords_t), dimension(:), pointer :: c => NULL ()
+      real(kind=RK) :: sigma = 0.0_RK
+      real(kind=RK) :: eps = 0.0_RK
+      real(kind=RK) :: mu = 0.0_RK
+      real(kind=RK) :: sigmam = 0.0_RK
+      real(kind=RK) :: thk = 0.0_RK
+      integer(kind=4) :: nc = 0
+      character(len=BUFSIZE) :: files = ' '
+   end type MaloneySheet_t
+   !------------------------------------------------------------------------------
+   ! Locates all the different MaloneySheet media found
+   !------------------------------------------------------------------------------
+   type, public :: MaloneySheets_t
+      type(MaloneySheet_t), dimension(:), pointer :: cs => NULL ()
+      integer(kind=4) :: length = 0
+      integer(kind=4) :: length_max = 0
+      integer(kind=4) :: nC_max = 0
+   end type MaloneySheets_t
+   !------------------------------------------------------------------------------
    ! Component for Thin Wires there is a list of this inside the component
    ! that defines the whole Thin Wire Reference
    !------------------------------------------------------------------------------
@@ -800,6 +822,7 @@ module NFDETypes_m
       type(PECRegions_t), pointer :: pmcRegs => NULL ()
       type(DielectricRegions_t), pointer :: DielRegs => NULL ()
       type(LossyThinSurfaces_t), pointer :: LossyThinSurfs => NULL ()
+      type(MaloneySheets_t), pointer :: MaloneySheets => NULL ()
       type(FreqDepenMaterials_t), pointer :: frqDepMats => NULL ()
       type(ANISOTROPICelements_t), pointer :: aniMats => NULL ()
       ! Sources

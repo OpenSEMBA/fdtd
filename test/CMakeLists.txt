@@ -43,6 +43,9 @@ set(HEALER_TESTS_LIBRARY healer_tests)
 add_subdirectory(sgbc)
 set(SGBC_TESTS_LIBRARY sgbc_tests)
 
+add_subdirectory(maloneySheet)
+set(MALONEYSHEET_TESTS_LIBRARY maloneySheet_tests)
+
 add_executable(fdtd_tests 
     "fdtd_tests.cpp"
 )
@@ -60,6 +63,7 @@ target_link_libraries(fdtd_tests
     ${OBSERVATION_TESTS_LIBRARY}
     ${HEALER_TESTS_LIBRARY}
     ${SGBC_TESTS_LIBRARY}
+    ${MALONEYSHEET_TESTS_LIBRARY}
     GTest::gtest_main
 )
 

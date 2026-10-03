@@ -371,6 +371,39 @@ Its `elementIds` must reference `cell` elements. All `intervals` modeling entiti
 }
 ```
 
+### `maloneySheet`
+
+A `maloneySheet` represents a thin, homogeneous, electrically conductive or dielectric sheet whose thickness is much smaller than the surrounding cell size. It is modeled with the subcell method described in:
+
+```
+J. G. Maloney and G. S. Smith,
+"The efficient modeling of thin material sheets in the finite-difference time-domain (FDTD) method,"
+IEEE Transactions on Antennas and Propagation, vol. 40, no. 3, pp. 323-330, Mar. 1992,
+doi: 10.1109/8.135475
+```
+
+The sheet is centered on the assigned surface and split between the two adjacent cells. The method adds one auxiliary electric field unknown per special cell, so it is cheaper than `multilayeredSurface`, but it is only accurate while the sheet is thin compared with the skin depth (conductors) or with the wavelength inside the sheet (dielectrics). Use `multilayeredSurface` when the layer thickness must be resolved.
+
+The material must contain:
+
++ `<thickness>`, a positive real number.
++ `[relativePermittivity]` or `[absolutePermittivity]`. If both exist, `absolutePermittivity` is used. Defaults to $1.0$.
++ `[electricConductivity]`, a real which defaults to $0.0$.
+
+Magnetic materials are not supported: `[relativePermeability]` must be $1.0$ and `[magneticConductivity]` must be $0.0$.
+
+Its `elementIds` must reference `cell` elements, as in `multilayeredSurface`. Only oriented surface intervals are considered.
+
+```json
+{
+    "name": "aluminum-sheet",
+    "type": "maloneySheet",
+    "id": 2,
+    "thickness": 10e-3,
+    "electricConductivity": 100
+}
+```
+
 ### `thinSlot`
 
 A `thinSlot` represents a gap between two conductive surfaces. Therefore it must be located at a surface and be defined using line cell elements only. Its `<width>` is a real number which defines the distance between the surfaces in meters.

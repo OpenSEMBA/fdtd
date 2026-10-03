@@ -14,7 +14,7 @@
 !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module SGBC_nostoch_m
+module SGBC_m
 
 use Report_m
 
@@ -63,31 +63,32 @@ type  :: SGBCSurface_t
 end type SGBCSurface_t
 
 
-type :: MalDisp_t
+type :: SGBCMediumPoles_t
     integer(kind=4) :: numpolres
     complex(kind=ckind), allocatable, dimension(:) :: a11, c11
 end type
 
-type  :: Malon_t
+type  :: SGBC_t
     logical :: SGBCdispersive
    integer(kind=4) :: NumNodes
    type(SGBCSurface_t), allocatable, dimension(:) :: nodes
-   type(MalDisp_t), allocatable, dimension(:) :: mediosDis
-end type Malon_t
+   type(SGBCMediumPoles_t), allocatable, dimension(:) :: mediosDis
+end type SGBC_t
 
 
 
 !!!variables globales del modulo  
-type(Malon_t), save, target   :: malon
+type(SGBC_t), save, target   :: sgbc
 !
 real(kind=RKIND), save           :: eps0,mu0,zvac,cluz
 logical, save  :: SGBCcrank,SGBCDispersive
 real(kind=RKIND), save  :: SGBCFreq,SGBCresol
 integer(kind=4), save:: SGBCdepth
 !!!
-public Malon_t,SGBCSurface_t !el tipo es publico
+public SGBC_t,SGBCSurface_t !el tipo es publico
 public AdvanceSGBCE,AdvanceSGBCH,InitSGBCs,DestroySGBCs,StoreFieldsSGBCs,calc_SGBCconstants,GetSGBCs
 public solve_tridiag_iguales
+public g1g2
 
 contains
 
@@ -148,7 +149,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
 !
 
 !   
-   malon%SGBCDispersive=SGBCDispersive
+   sgbc%SGBCDispersive=SGBCDispersive
    ThereAreSGBCs=.FALSE.
    do jmed=1,sgg%NumMedia
       if (SGG%Med(jmed)%Is%SGBC) then
@@ -188,11 +189,11 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    if (.not.thereareSGBCs) then
       return
    end if
-   malon%NumNodes=conta
-   allocate (malon%Nodes(1 : malon%NumNodes))
+   sgbc%NumNodes=conta
+   allocate (sgbc%Nodes(1 : sgbc%NumNodes))
    !!!!DISPERSIVOS
-   allocate (malon%mediosDis(1:sgg%NumMedia))
-   malon%mediosDis(:)%numpolres=0
+   allocate (sgbc%mediosDis(1:sgg%NumMedia))
+   sgbc%mediosDis(:)%numpolres=0
    !
    !!!!!!!! dispersivos SGBC sgg 12/05/15   
 !070717
@@ -252,13 +253,13 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
               SGG%Med(jmed)%sigmam=rrd;
               !
               READ (7345,*) numpolres, IDUMMY, IDUMMY, IDUMMY
-              malon%mediosDis(jmed)%numpolres = numpolres
-              allocate (malon%mediosDis(jmed)%a11(1:numpolres)) 
-              allocate (malon%mediosDis(jmed)%c11(1:numpolres)) 
+              sgbc%mediosDis(jmed)%numpolres = numpolres
+              allocate (sgbc%mediosDis(jmed)%a11(1:numpolres)) 
+              allocate (sgbc%mediosDis(jmed)%c11(1:numpolres)) 
               do i = 1, numpolres
                 read(7345,*) value1, value2
-                malon%mediosDis(jmed)%c11 (i) = (value1) 
-                malon%mediosDis(jmed)%a11 (i) = - (value2) !el polo de EM esta cambiado de signo !ver tambien preprocess
+                sgbc%mediosDis(jmed)%c11 (i) = (value1) 
+                sgbc%mediosDis(jmed)%a11 (i) = - (value2) !el polo de EM esta cambiado de signo !ver tambien preprocess
               end do          
               close (7345)
 !!!movido 071118 al calculo de constantes para permit scaling
@@ -303,7 +304,7 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                end if
 !!!!!
                conta=conta+1
-               compo => malon%Nodes(conta)
+               compo => sgbc%Nodes(conta)
                compo%es_unfilo_placa = es_unfilo_placa
                SGBCdir=abs(SGG%Med(jmed)%Multiport(1)%Multiportdir)
                select case (SGBCdir)
@@ -354,19 +355,19 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                     allocate(compo%d     (-compo%depth:compo%depth  )) 
                end if
 
-               compo%numpolres=malon%MediosDis(compo%jmed)%numpolres !duplico esta info
+               compo%numpolres=sgbc%MediosDis(compo%jmed)%numpolres !duplico esta info
                if (SGBCDispersive) then 
                  allocate (compo%a11(1:compo%numpolres)) 
                  allocate (compo%c11(1:compo%numpolres)) 
-                 compo%a11 = malon%MediosDis(compo%jmed)%a11
-                 compo%c11 = malon%MediosDis(compo%jmed)%c11
+                 compo%a11 = sgbc%MediosDis(compo%jmed)%a11
+                 compo%c11 = sgbc%MediosDis(compo%jmed)%c11
                  allocate (compo%beta%val(1:compo%numpolres))
                  allocate (compo%kappa%val(1:compo%numpolres))
                  allocate (compo%G3%val(1:compo%numpolres))
              !!  call calc_g1g2(sgg,GM2,compo)   ! permit scal 071118 
                  allocate (compo%EDis   (-compo%depth:compo%depth  ))
                  do ient=-compo%depth , compo%depth
-                     allocate (compo%EDis(ient)%Current(1 : malon%MediosDis(jmed)%numpolres))
+                     allocate (compo%EDis(ient)%Current(1 : sgbc%MediosDis(jmed)%numpolres))
                      compo%EDis(ient)%FieldPresent => compo%E(ient)
                  end do
                end if
@@ -392,7 +393,7 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                end if
 !!!!!
                conta=conta+1
-               compo => malon%Nodes(conta)
+               compo => sgbc%Nodes(conta)
                compo%es_unfilo_placa = es_unfilo_placa
                SGBCdir=abs(SGG%Med(jmed)%Multiport(1)%Multiportdir)
                select case (SGBCdir)
@@ -443,19 +444,19 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                     allocate(compo%d     (-compo%depth:compo%depth  )) 
                end if
 
-               compo%numpolres=malon%MediosDis(compo%jmed)%numpolres !duplico esta info
+               compo%numpolres=sgbc%MediosDis(compo%jmed)%numpolres !duplico esta info
                if (SGBCDispersive) then 
                  allocate (compo%a11(1:compo%numpolres)) 
                  allocate (compo%c11(1:compo%numpolres)) 
-                 compo%a11 = malon%MediosDis(compo%jmed)%a11
-                 compo%c11 = malon%MediosDis(compo%jmed)%c11
+                 compo%a11 = sgbc%MediosDis(compo%jmed)%a11
+                 compo%c11 = sgbc%MediosDis(compo%jmed)%c11
                  allocate (compo%beta%val(1:compo%numpolres))
                  allocate (compo%kappa%val(1:compo%numpolres))
                  allocate (compo%G3%val(1:compo%numpolres))
                  !! call calc_g1g2(sgg,GM2,compo)     ! permit scal 071118
                  allocate (compo%EDis   (-compo%depth:compo%depth  ))
                  do ient=-compo%depth , compo%depth
-                     allocate (compo%EDis(ient)%Current(1 : malon%MediosDis(jmed)%numpolres))
+                     allocate (compo%EDis(ient)%Current(1 : sgbc%MediosDis(jmed)%numpolres))
                      compo%EDis(ient)%FieldPresent => compo%E(ient)
                  end do
                end if
@@ -481,7 +482,7 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                end if
 !!!!!
                conta=conta+1
-               compo => malon%Nodes(conta)
+               compo => sgbc%Nodes(conta)
                compo%es_unfilo_placa = es_unfilo_placa
                SGBCdir=abs(SGG%Med(jmed)%Multiport(1)%Multiportdir)
                select case (SGBCdir)
@@ -532,19 +533,19 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                     allocate(compo%d     (-compo%depth:compo%depth  )) 
                end if
 
-               compo%numpolres=malon%MediosDis(compo%jmed)%numpolres
+               compo%numpolres=sgbc%MediosDis(compo%jmed)%numpolres
                if (SGBCDispersive) then  !duplico esta info
                  allocate (compo%a11(1:compo%numpolres)) 
                  allocate (compo%c11(1:compo%numpolres)) 
-                 compo%a11 = malon%MediosDis(compo%jmed)%a11
-                 compo%c11 = malon%MediosDis(compo%jmed)%c11
+                 compo%a11 = sgbc%MediosDis(compo%jmed)%a11
+                 compo%c11 = sgbc%MediosDis(compo%jmed)%c11
                  allocate (compo%beta%val(1:compo%numpolres))
                  allocate (compo%kappa%val(1:compo%numpolres))
                  allocate (compo%G3%val(1:compo%numpolres))
                  !! call calc_g1g2(sgg,GM2,compo)     ! permit scal 071118
                  allocate (compo%EDis   (-compo%depth:compo%depth  ))
                  do ient=-compo%depth , compo%depth
-                     allocate (compo%EDis(ient)%Current(1 : malon%MediosDis(jmed)%numpolres))
+                     allocate (compo%EDis(ient)%Current(1 : sgbc%MediosDis(jmed)%numpolres))
                      compo%EDis(ient)%FieldPresent => compo%E(ient)
                  end do
                end if
@@ -557,8 +558,8 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
 
 !!!reporting de depth
     i=-100
-    do conta=1,malon%numnodes
-      compo => malon%Nodes(conta)
+    do conta=1,sgbc%numnodes
+      compo => sgbc%Nodes(conta)
       if (compo%depth>i) then
          i=compo%depth
          jmed=compo%jmed
@@ -575,8 +576,8 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
 
    !!!!!!!!!resuming
    if (.not.resume) then  
-      do conta=1,malon%numnodes
-         compo => malon%Nodes(conta)
+      do conta=1,sgbc%numnodes
+         compo => sgbc%Nodes(conta)
          compo%E     =0.0_RKIND
          if (compo%SGBCcrank)  then 
              compo%E_past=0.0_RKIND
@@ -585,7 +586,7 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
          compo%Hyee_right=0.0_RKIND
          compo%H     =0.0_RKIND
          !
-         if (malon%SGBCDispersive) then 
+         if (sgbc%SGBCDispersive) then 
              Do i=-compo%depth,compo%depth
                 compo%EDis(i)%fieldPresent=0.0_rkind
                 compo%EDis(i)%fieldPrevious=0.0_rkind
@@ -594,15 +595,15 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
          end if
       end do
    else  
-      do conta=1,malon%numnodes
-         compo => malon%Nodes(conta)
+      do conta=1,sgbc%numnodes
+         compo => sgbc%Nodes(conta)
          READ (14) (compo%E     (i),i=-compo%depth,compo%depth)
          READ (14) (compo%E_past(i),i=-compo%depth,compo%depth)
          READ (14) compo%Hyee__left
          READ (14) compo%Hyee_right
          READ (14) (compo%H     (i),i=-compo%depth,compo%depth-1)
          !
-         if (malon%SGBCDispersive) then 
+         if (sgbc%SGBCDispersive) then 
              read(14) (compo%EDis(i)%fieldPrevious, i=-compo%depth,compo%depth)
              Do k1=1,compo%NumPolRes
                 read(14) (compo%EDis(i)%current(k1), i=-compo%depth,compo%depth)
@@ -630,8 +631,8 @@ subroutine calc_SGBCconstants(sgg,g,eps00,mu00,stochastic)
    zvac=sqrt(mu0/eps0)
    cluz=1.0_RKIND/sqrt(mu0*eps0)
 !!!allocateo todas las matrices de constantes
- do conta=1,malon%numnodes
-     compo => malon%Nodes(conta)  
+ do conta=1,sgbc%numnodes
+     compo => sgbc%Nodes(conta)  
      !!!rellamo a depth para que recalcule bien el deltaentreEinterno !110523 necesario para stochastic
      jmed=compo%jmed
      call depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
@@ -692,10 +693,10 @@ subroutine calc_SGBCconstants(sgg,g,eps00,mu00,stochastic)
    end if    
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL do  DEFAULT(none) private (compo,buff) shared(malon,sgg,eps00,mu00,GM2,SGBCDispersive)
+!$OMP  PARALLEL do  DEFAULT(none) private (compo,buff) shared(sgbc,sgg,eps00,mu00,GM2,SGBCDispersive)
 #endif
- do conta=1,malon%numnodes
-     compo => malon%Nodes(conta)
+ do conta=1,sgbc%numnodes
+     compo => sgbc%Nodes(conta)
      call calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
 !cte de actualizacion de los H externos a la multicapa!!! 0121
      compo%Gm2_externo=Gm2(compo%jmed) / compo%transversalDeltaE !ojo habia compo%transversalDeltaE antes sgg 130516 ! pero yo creo que es  compo%transversalDeltaH! 0121 No. es deltaE pq se usa para actualizar H externo
@@ -708,10 +709,10 @@ subroutine calc_SGBCconstants(sgg,g,eps00,mu00,stochastic)
 !
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL do  DEFAULT(none) private (compo,signo,g1eff_0,g1eff_1,g2eff_0,g2eff_1) shared(malon,gm1,gm2)
+!$OMP  PARALLEL do  DEFAULT(none) private (compo,signo,g1eff_0,g1eff_1,g2eff_0,g2eff_1) shared(sgbc,gm1,gm2)
 #endif
-    do conta=1,malon%numnodes
-      compo => malon%Nodes(conta) 
+    do conta=1,sgbc%numnodes
+      compo => sgbc%Nodes(conta) 
       if (compo%depth>0) then !uno de los del rotacional
           if (compo%Correct_Ha) then
              signo=+1.0_RKIND
@@ -845,8 +846,8 @@ subroutine AdvanceSGBCE(dt,SGBCDispersive,simu_devia,stochastic)
 #ifdef CompileWithOpenMP
 !$OMP  PARALLEL do DEFAULT(SHARED) private (conta) schedule(guided) 
 #endif
-do conta=1,malon%numnodes
-   !call AdvanceSGBCE_single_node(malon%Nodes(conta), dt,SGBCDispersive)
+do conta=1,sgbc%numnodes
+   !call AdvanceSGBCE_single_node(sgbc%Nodes(conta), dt,SGBCDispersive)
    call AdvanceSGBCE_single_node(conta, dt,SGBCDispersive)
 end do
 #ifdef CompileWithOpenMP
@@ -869,8 +870,8 @@ contains
       
 
       
-      !do conta=1,malon%numnodes
-      compo => malon%Nodes(conta)
+      !do conta=1,sgbc%numnodes
+      compo => sgbc%Nodes(conta)
 
 !!!los extremos de los E internos
          if (compo%depth>0) then
@@ -1003,8 +1004,8 @@ subroutine AdvanceSGBCH
    !NOTE: Esto no se puede optimizar 
    !      porque los dos o mas compo%H{a,b} pueden apuntar
    !      al mismo campo se puede produce un conflicto de acceso
-   do conta=1,malon%numnodes
-      compo => malon%Nodes(conta)
+   do conta=1,sgbc%numnodes
+      compo => sgbc%Nodes(conta)
 !!!!ojo: es una correccion a lo que hace el principal utilizando el campo electrico correcto
       if (compo%Correct_Ha) then
          compo%Ha_Plus = compo%Ha_Plus +  compo%gm2_externo* (compo%Efield - compo%E( compo%depth)) !insisto: es una correccion: el principal ha aniadido/quitado Efield y debe quitar/aniadir E del extremo correspondiente
@@ -1298,8 +1299,8 @@ subroutine StoreFieldsSGBCs(stochastic)
       integer(kind=4) :: conta,i,k1
       logical :: SGBCDispersive,stochastic
       type(SGBCSurface_t), pointer :: compo
-      do conta=1,malon%numnodes
-         compo => malon%Nodes(conta)
+      do conta=1,sgbc%numnodes
+         compo => sgbc%Nodes(conta)
          write(14,err=634) (compo%E     (i),i=-compo%depth,compo%depth)
 
          if (compo%SGBCcrank)  then 
@@ -1309,7 +1310,7 @@ subroutine StoreFieldsSGBCs(stochastic)
          write(14,err=634) compo%Hyee_right
          write(14,err=634) (compo%H     (i),i=-compo%depth,compo%depth-1)
          !
-         if (malon%SGBCDispersive) then 
+         if (sgbc%SGBCDispersive) then 
              write(14,err=634) (compo%EDis(i)%fieldPrevious, i=-compo%depth,compo%depth)
              Do k1=1,compo%NumPolRes
                 write(14,err=634) (compo%EDis(i)%current(k1), i=-compo%depth,compo%depth)
@@ -1333,34 +1334,34 @@ subroutine DestroySGBCs(sgg)
 
    !free up memory
    do i=1,sgg%NumMedia
-      if (allocated(malon%mediosDis)) then
-          if (allocated(malon%mediosDis(i)%a11)) deallocate(malon%mediosDis(i)%a11)
-          if (allocated(malon%mediosDis(i)%c11)) deallocate(malon%mediosDis(i)%c11)
+      if (allocated(sgbc%mediosDis)) then
+          if (allocated(sgbc%mediosDis(i)%a11)) deallocate(sgbc%mediosDis(i)%a11)
+          if (allocated(sgbc%mediosDis(i)%c11)) deallocate(sgbc%mediosDis(i)%c11)
       end if
       if ((sgg%Med(i)%Is%SGBC).and.(.not.sgg%Med(i)%Is%PML))  deallocate(sgg%Med(i)%Multiport)      
    end do
-   if (allocated(malon%mediosDis)) deallocate(malon%mediosDis)
+   if (allocated(sgbc%mediosDis)) deallocate(sgbc%mediosDis)
    !
-   do conta=1,malon%numnodes
-      if (allocated(malon%Nodes(conta)%d))  deallocate(malon%Nodes(conta)%d) !AUXILIAR DE CRANK-NICOLSON
-      if (allocated(malon%Nodes(conta)%beta%val))  deallocate(malon%Nodes(conta)%beta%val) !AUXILIAR DE CRANK-NICOLSON dispersivo
-      if (allocated(malon%Nodes(conta)%kappa%val))  deallocate(malon%Nodes(conta)%kappa%val) !AUXILIAR DE CRANK-NICOLSON dispersivo
-      if (allocated(malon%Nodes(conta)%G3%val))  deallocate(malon%Nodes(conta)%G3%val) !AUXILIAR DE CRANK-NICOLSON dispersivo
-      if (allocated(malon%Nodes(conta)%Edis))  deallocate(malon%Nodes(conta)%Edis) !AUXILIAR DE CRANK-NICOLSON dispersivo
-     deallocate(malon%Nodes(conta)%GM1_interno ,&           
-                malon%Nodes(conta)%GM2_interno ,&
-                malon%Nodes(conta)%G1_interno  ,&
-                malon%Nodes(conta)%G2_interno  ,&            
-                malon%Nodes(conta)%a           ,&
-                malon%Nodes(conta)%b           ,&
-                malon%Nodes(conta)%c           ,&
-                malon%Nodes(conta)%rb          ,&
-                malon%Nodes(conta)%rh          ,&
-                malon%Nodes(conta)%rhm1       )
+   do conta=1,sgbc%numnodes
+      if (allocated(sgbc%Nodes(conta)%d))  deallocate(sgbc%Nodes(conta)%d) !AUXILIAR DE CRANK-NICOLSON
+      if (allocated(sgbc%Nodes(conta)%beta%val))  deallocate(sgbc%Nodes(conta)%beta%val) !AUXILIAR DE CRANK-NICOLSON dispersivo
+      if (allocated(sgbc%Nodes(conta)%kappa%val))  deallocate(sgbc%Nodes(conta)%kappa%val) !AUXILIAR DE CRANK-NICOLSON dispersivo
+      if (allocated(sgbc%Nodes(conta)%G3%val))  deallocate(sgbc%Nodes(conta)%G3%val) !AUXILIAR DE CRANK-NICOLSON dispersivo
+      if (allocated(sgbc%Nodes(conta)%Edis))  deallocate(sgbc%Nodes(conta)%Edis) !AUXILIAR DE CRANK-NICOLSON dispersivo
+     deallocate(sgbc%Nodes(conta)%GM1_interno ,&           
+                sgbc%Nodes(conta)%GM2_interno ,&
+                sgbc%Nodes(conta)%G1_interno  ,&
+                sgbc%Nodes(conta)%G2_interno  ,&            
+                sgbc%Nodes(conta)%a           ,&
+                sgbc%Nodes(conta)%b           ,&
+                sgbc%Nodes(conta)%c           ,&
+                sgbc%Nodes(conta)%rb          ,&
+                sgbc%Nodes(conta)%rh          ,&
+                sgbc%Nodes(conta)%rhm1       )
       
    end do
 
-   if(allocated(malon%nodes)) deallocate(malon%nodes)
+   if(allocated(sgbc%nodes)) deallocate(sgbc%nodes)
 end subroutine
 
 
@@ -1374,8 +1375,8 @@ subroutine test_stab(G2,GM2)
 
    heur=1.0_RKIND/sqrt(3.0_RKIND)
    unstable = .false.
-   do conta=1,malon%numnodes
-      compo => malon%Nodes(conta)
+   do conta=1,sgbc%numnodes
+      compo => sgbc%Nodes(conta)
 !!!los extremos de los E internos
       unstable= unstable.or. &
              (G2(compo%jmed) * Gm2(compo%jmed)  > heur) .or. &
@@ -1490,8 +1491,8 @@ subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
 end subroutine depth
 
 function GetSGBCs() result(r)
-   type(Malon_t), pointer  :: r
-   r=>malon
+   type(SGBC_t), pointer  :: r
+   r=>sgbc
    return
 end function
 
@@ -1593,5 +1594,5 @@ end subroutine solve_tridiag_distintos
    end subroutine solve_tridiag_iguales           
 
 
-end module SGBC_nostoch_m
+end module SGBC_m
 

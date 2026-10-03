@@ -3042,6 +3042,7 @@ module CreateMatrices_m
          Med(i)%Is%PMLbody= .FALSE.
          Med(i)%Is%SGBC= .FALSE.
          Med(i)%Is%SGBCDispersive= .FALSE.
+         Med(i)%Is%MaloneySheet= .FALSE.
          Med(i)%Is%Lumped= .FALSE.
          Med(i)%Is%Lossy= .FALSE.
          med(i)%Is%AnisMultiport = .FALSE.

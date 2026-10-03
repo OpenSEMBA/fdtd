@@ -19,6 +19,7 @@
 #include "unit/preprocess/preprocess_tests.h"
 #include "healer/healer_tests.h"
 #include "sgbc/sgbc_tests.h"
+#include "maloneySheet/maloneySheet_tests.h"
 
 int main(int argc, char **argv) {
 #ifdef CompileWithMPI

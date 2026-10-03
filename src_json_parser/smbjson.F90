@@ -52,6 +52,7 @@ module smbjson_m
       procedure, private :: readPMCRegions
       procedure, private :: readDielectricRegions
       procedure, private :: readLossyThinSurfaces
+      procedure, private :: readMaloneySheets
       procedure, private :: readBoundary
       procedure, private :: readPlanewaves
       procedure, private :: readNodalSources
@@ -179,6 +180,7 @@ contains
       res%pmcRegs = this%readPMCRegions()
       res%dielRegs = this%readDielectricRegions()
       res%lossyThinSurfs = this%readLossyThinSurfaces()
+      res%maloneySheets = this%readMaloneySheets()
       
       ! Sources
       res%plnSrc = this%readPlanewaves()
@@ -1024,6 +1026,87 @@ contains
 
       function emptyLossyThinSurfaces() result (res)
          type(LossyThinSurfaces_t) :: res
+         allocate(res%cs(0))
+         res%length = 0
+         res%length_max = 0
+         res%nC_max = 0
+      end function
+   end function
+
+   function readMaloneySheets(this) result (res)
+      class(parser_t), intent(in) :: this
+      type(MaloneySheets_t) :: res
+      type(materialAssociation_t), dimension(:), allocatable :: mAs
+      integer :: nSheets
+      integer :: i, k
+      type(coords_t), dimension(:), pointer :: cs
+
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_MALONEY_SHEET])
+
+      ! Precounts
+      nSheets = 0
+      do i = 1, size(mAs)
+         call this%matAssToCoords(cs, mAs(i), CELL_TYPE_SURFEL)
+         if (size(cs) > 0) nSheets = nSheets + 1
+      end do
+
+      ! Fills
+      if (nSheets == 0) then
+         res = emptyMaloneySheets()
+         return
+      end if
+
+      allocate(res%cs(nSheets))
+      res%length = nSheets
+      res%length_max = nSheets
+
+      k = 1
+      do i = 1, size(mAs)
+         call this%matAssToCoords(cs, mAs(i), CELL_TYPE_SURFEL)
+         if (size(cs) == 0) cycle
+         res%cs(k) = readMaloneySheet(mAs(i))
+         k = k + 1
+      end do
+
+      do i = 1, nSheets
+         if (res%nC_max < size(res%cs(i)%c)) then
+            res%nC_max = size(res%cs(i)%c)
+         end if
+      end do
+
+   contains
+      function readMaloneySheet(mA) result(res)
+         type(materialAssociation_t), intent(in) :: mA
+         type(MaloneySheet_t) :: res
+         logical :: found, hasAbsPermittivity, hasAbsPermeability
+         character(len=*), parameter :: errorMsgInit = "ERROR reading maloneySheet: "
+         type(json_value_ptr_t) :: mat
+
+         call this%matAssToCoords(res%c, mA, CELL_TYPE_SURFEL)
+         res%nc = size(res%c)
+
+         mat = this%matTable%getId(mA%materialId)
+         res%files = trim(adjustl(this%getStrAt(mat%p, J_NAME, default=' ')))
+
+         res%thk = this%getRealAt(mat%p, J_MAT_MULTILAYERED_SURF_THICKNESS, found)
+         if (.not. found) then
+            call WarnErrReport(errorMsgInit // J_MAT_MULTILAYERED_SURF_THICKNESS // " not found.", .true.)
+         end if
+
+         res%eps = this%getRealAt(mat%p, J_MAT_ABS_PERMITTIVITY, hasAbsPermittivity)
+         if (.not. hasAbsPermittivity) then
+            res%eps = this%getRealAt(mat%p, J_MAT_REL_PERMITTIVITY, default=1.0_RKIND) * EPSILON_VACUUM
+         end if
+         res%mu = this%getRealAt(mat%p, J_MAT_ABS_PERMEABILITY, hasAbsPermeability)
+         if (.not. hasAbsPermeability) then
+            res%mu = this%getRealAt(mat%p, J_MAT_REL_PERMEABILITY, default=1.0_RKIND) * MU_VACUUM
+         end if
+         res%sigma = this%getRealAt(mat%p, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0_RKIND)
+         res%sigmam = this%getRealAt(mat%p, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0_RKIND)
+      end function
+
+      function emptyMaloneySheets() result (res)
+         type(MaloneySheets_t) :: res
          allocate(res%cs(0))
          res%length = 0
          res%length_max = 0

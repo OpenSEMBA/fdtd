@@ -12,8 +12,9 @@ module resuming_m
 #ifdef CompileWithStochastic
    use SGBC_stoch
 #else
-   use SGBC_nostoch_m
+   use SGBC_m
 #endif  
+   use maloney_thin_sheet_m
    use PMLbodies_m
    use Lumped_m
 #ifdef CompileWithNIBC
@@ -306,6 +307,9 @@ contains
 #endif    
       if( Thereare%SGBCs)       then
           call StoreFieldsSGBCs(stochastic)
+      end if      
+      if( Thereare%MaloneySheets)       then
+          call StoreFieldsMaloneySheets()
       end if      
 #ifdef CompileWithNIBC
       if( Thereare%Multiports)       call StoreFieldsMultiports
