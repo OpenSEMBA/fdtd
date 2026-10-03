@@ -97,17 +97,17 @@ contains
       res(:)%zc = 0.0
       do i = 1, size(cs)
          select case (cs(i)%Or)
-          case (iEx)
+          case (IEX)
             res(i)%xc = 1.0
-          case (-iEx)
+          case (-IEX)
             res(i)%xc = -1.0
-          case (iEy)
+          case (IEY)
             res(i)%yc = 1.0
-          case (-iEy)
+          case (-IEY)
             res(i)%yc = -1.0
-          case (iEz)
+          case (IEZ)
             res(i)%zc = 1.0
-          case (-iEz)
+          case (-IEZ)
             res(i)%zc = -1.0
          end select
       end do
@@ -156,8 +156,8 @@ contains
          type(cell_interval_t), intent(in) :: interval
          integer, intent(in) :: dir
          integer :: a, b
-         a = interval%ini%cell(dir)
-         b = interval%end%cell(dir)
+         a = interval%startNode%cell(dir)
+         b = interval%endNode%cell(dir)
          if (a < b) then
             xi = a
             xe = b - 1

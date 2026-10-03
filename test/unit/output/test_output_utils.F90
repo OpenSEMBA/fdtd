@@ -1,6 +1,6 @@
 module testOutputUtils_m
    use FDETYPES_m
-   use FDETYPES_TOOLS
+   use fdetypes_tools_m
    use outputTypes_m
    implicit none
    private
@@ -48,7 +48,7 @@ contains
       type(observation_domain_t) :: domain
 
       allocate (P(1))
-      P(1) = create_observable(x, y, z, x, y, z, iEx)
+      P(1) = create_observable(x, y, z, x, y, z, IEX)
       call initialize_observation_time_domain(domain, 0.0_RKIND, 10.0_RKIND, 0.1_RKIND)
 
       call set_observation(obs, P, 'pointProbe', domain, 'DummyFileNormalize')
@@ -62,7 +62,7 @@ contains
       type(observation_domain_t) :: domain
 
       allocate (P(1))
-      P(1) = create_observable(xi, yi, zi, xi+1, yi+1, zi+1, iCurX)
+      P(1) = create_observable(xi, yi, zi, xi+1, yi+1, zi+1, ICURX)
 
       call initialize_observation_time_domain(domain, 0.0_RKIND, 10.0_RKIND, 0.1_RKIND)
       call initialize_observation_frequency_domain(domain, 0.0_RKIND, 1000.0_RKIND, 50.0_RKIND)
@@ -78,7 +78,7 @@ contains
       type(observation_domain_t) :: domain
 
       allocate (P(1))
-      P(1) = create_observable(xi, yi, zi, xe, ye, ze, iCurX)
+      P(1) = create_observable(xi, yi, zi, xe, ye, ze, ICURX)
 
       call initialize_observation_time_domain(domain, 0.0_RKIND, 10.0_RKIND, 0.1_RKIND)
       call initialize_observation_frequency_domain(domain, 0.0_RKIND, 1000.0_RKIND, 50.0_RKIND)
@@ -150,7 +150,7 @@ contains
       this%dze = delta
    end subroutine create_dummy_fields
 
-   subroutine fillGradient(dummyFields, direction, minVal, maxVal)
+   subroutine fillGradient(dummyFields, direction, minValue, maxValue)
       !--------------------------------------------
       ! Fills dummyFields%Hx, Hy, Hz with a linear gradient
       ! along the specified direction (1=x, 2=y, 3=z)
@@ -158,7 +158,7 @@ contains
       implicit none
       type(dummyFields_t), intent(inout) :: dummyFields
       integer, intent(in) :: direction       ! 1=x, 2=y, 3=z
-      real(RKIND), intent(in) :: minVal, maxVal
+      real(RKIND), intent(in) :: minValue, maxValue
 
       integer :: i, j, k
       integer :: nx, ny, nz
@@ -173,23 +173,23 @@ contains
       case (1)  ! x-direction
          do i = 1, nx
             factor = real(i - 1, RKIND)/real(nx - 1, RKIND)
-            dummyFields%Hx(i, :, :) = minVal + factor*(maxVal - minVal)
-            dummyFields%Hy(i, :, :) = minVal + factor*(maxVal - minVal)
-            dummyFields%Hz(i, :, :) = minVal + factor*(maxVal - minVal)
+            dummyFields%Hx(i, :, :) = minValue + factor*(maxValue - minValue)
+            dummyFields%Hy(i, :, :) = minValue + factor*(maxValue - minValue)
+            dummyFields%Hz(i, :, :) = minValue + factor*(maxValue - minValue)
          end do
       case (2)  ! y-direction
          do j = 1, ny
             factor = real(j - 1, RKIND)/real(ny - 1, RKIND)
-            dummyFields%Hx(:, j, :) = minVal + factor*(maxVal - minVal)
-            dummyFields%Hy(:, j, :) = minVal + factor*(maxVal - minVal)
-            dummyFields%Hz(:, j, :) = minVal + factor*(maxVal - minVal)
+            dummyFields%Hx(:, j, :) = minValue + factor*(maxValue - minValue)
+            dummyFields%Hy(:, j, :) = minValue + factor*(maxValue - minValue)
+            dummyFields%Hz(:, j, :) = minValue + factor*(maxValue - minValue)
          end do
       case (3)  ! z-direction
          do k = 1, nz
             factor = real(k - 1, RKIND)/real(nz - 1, RKIND)
-            dummyFields%Hx(:, :, k) = minVal + factor*(maxVal - minVal)
-            dummyFields%Hy(:, :, k) = minVal + factor*(maxVal - minVal)
-            dummyFields%Hz(:, :, k) = minVal + factor*(maxVal - minVal)
+            dummyFields%Hx(:, :, k) = minValue + factor*(maxValue - minValue)
+            dummyFields%Hy(:, :, k) = minValue + factor*(maxValue - minValue)
+            dummyFields%Hz(:, :, k) = minValue + factor*(maxValue - minValue)
          end do
       case default
          print *, "Error: direction must be 1, 2, or 3."
@@ -240,12 +240,12 @@ contains
        character(len=*), intent(in) :: path
        integer, intent(out) :: error
 
-       character(len=8) :: value
+       character(len=8) :: scalarValue
        integer :: status
 
-       call get_environment_variable('SEMBA_FDTD_KEEP_ARTIFACTS', value, status=status)
-       if (status == 0 .and. any([trim(value) == '1', trim(value) == 'true', trim(value) == 'TRUE', &
-                                  trim(value) == 'on', trim(value) == 'ON'])) then
+       call get_environment_variable('SEMBA_FDTD_KEEP_ARTIFACTS', scalarValue, status=status)
+       if (status == 0 .and. any([trim(scalarValue) == '1', trim(scalarValue) == 'true', trim(scalarValue) == 'TRUE', &
+                                  trim(scalarValue) == 'on', trim(scalarValue) == 'ON'])) then
           error = 0
           write(*, '(A)') 'Retained test artifacts: '//trim(path)
           return
@@ -257,19 +257,19 @@ contains
     function get_temp_folder() result(path)
        character(len=:), allocatable :: path
 
-       character(len=4096) :: value
+       character(len=4096) :: scalarValue
        integer :: length, status
 
-       call get_environment_variable('TMPDIR', value, length, status)
+       call get_environment_variable('TMPDIR', scalarValue, length, status)
        if (status /= 0 .or. length == 0) then
-          call get_environment_variable('TEMP', value, length, status)
+          call get_environment_variable('TEMP', scalarValue, length, status)
        end if
        if (status /= 0 .or. length == 0) then
-          call get_environment_variable('TMP', value, length, status)
+          call get_environment_variable('TMP', scalarValue, length, status)
        end if
 
        if (status == 0 .and. length > 0) then
-          path = value(:length)
+          path = scalarValue(:length)
        else
           path = '/tmp'
        end if

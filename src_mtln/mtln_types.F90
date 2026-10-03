@@ -1,5 +1,5 @@
 module mtln_types_m
-   use FDETYPES_m, ONLY: direction_t, BUFSIZE, RKIND, RKIND_TIEMPO
+   use FDETYPES_m, only: direction_t, BUFSIZE, RKIND, RKIND_TIME
    implicit none
 
    integer(kind=4), parameter :: TERMINATION_UNDEFINED  = -1
@@ -7,12 +7,12 @@ module mtln_types_m
    integer(kind=4), parameter :: TERMINATION_OPEN       =  2
    integer(kind=4), parameter :: TERMINATION_SERIES     =  3
    integer(kind=4), parameter :: TERMINATION_PARALLEL   =  4
-   integer(kind=4), parameter :: TERMINATION_RsLCp      =  5
-   integer(kind=4), parameter :: TERMINATION_RLsCp      =  6
-   integer(kind=4), parameter :: TERMINATION_LsRCp      =  7
-   integer(kind=4), parameter :: TERMINATION_CsLRp      =  8
-   integer(kind=4), parameter :: TERMINATION_RCsLp      =  9
-   integer(kind=4), parameter :: TERMINATION_LCsRp      =  10
+   integer(kind=4), parameter :: TERMINATION_RSLCP      =  5
+   integer(kind=4), parameter :: TERMINATION_RLSCP      =  6
+   integer(kind=4), parameter :: TERMINATION_LSRCP      =  7
+   integer(kind=4), parameter :: TERMINATION_CSLRP      =  8
+   integer(kind=4), parameter :: TERMINATION_RCSLP      =  9
+   integer(kind=4), parameter :: TERMINATION_LCSRP      =  10
    integer(kind=4), parameter :: TERMINATION_CIRCUIT    =  11
    integer(kind=4), parameter :: TERMINATION_NETWORK    =  12
 
@@ -46,7 +46,7 @@ module mtln_types_m
       integer(kind=4) :: generator_type = SOURCE_TYPE_UNDEFINED
       type(cable_t), pointer :: attached_to_cable => null()
       real(kind=rkind) :: resistance = 0.0
-      integer(kind=4) :: index = -1, conductor = -1
+      integer(kind=4) :: elementIndex = -1, conductor = -1
    contains
       private
       procedure :: wire_source_eq
@@ -169,7 +169,7 @@ module mtln_types_m
    end type
 
    type, public :: box_2d_t
-      real(kind=rkind), dimension(2) :: min, max
+      real(kind=rkind), dimension(2) :: minBound, maxBound
    contains
       private
       procedure :: box_2d_eq
@@ -233,7 +233,7 @@ module mtln_types_m
 
    type :: probe_t
       class(cable_t), pointer :: attached_to_cable => null()
-      integer(kind=4) :: index
+      integer(kind=4) :: elementIndex
       integer(kind=4) :: probe_type = PROBE_TYPE_UNDEFINED
       character(len=:), allocatable :: probe_name
       real(kind=rkind), dimension(3) :: probe_position
@@ -253,7 +253,7 @@ module mtln_types_m
       type(probe_t), dimension(:), allocatable :: probes
       type(parsed_generator_t), dimension(:), allocatable :: wireGenerators
       type(connector_t), dimension(:), pointer :: connectors
-      real(kind=RKIND_TIEMPO) :: time_step = 0.0
+      real(kind=RKIND_TIME) :: time_step = 0.0
       integer(kind=4) :: number_of_steps = 0
       integer(kind=4) :: n_sh = 0, n_unsh = 0
    contains
@@ -350,7 +350,7 @@ contains
 
    elemental logical function box_2d_eq(a, b) result(res)
       class(box_2d_t), intent(in) :: a, b
-      res = all(a%min == b%min) .and. all(a%max == b%max)
+      res = all(a%minBound == b%minBound) .and. all(a%maxBound == b%maxBound)
    end function
 
    elemental function multipolar_expansion_eq(a, b) result(res)
@@ -442,7 +442,7 @@ contains
          (a%path_to_excitation == b%path_to_excitation) .and. &
          (a%generator_type == b%generator_type) .and. &
          (a%resistance == b%resistance) .and. &
-         (a%index == b%index)
+         (a%elementIndex == b%elementIndex)
       if (.not. associated(a%attached_to_cable) .or. .not. associated(b%attached_to_cable)) then 
          wire_source_eq = wire_source_eq .and. .false.
       else 
@@ -466,7 +466,7 @@ contains
    logical function probe_eq(a,b)
       class(probe_t), intent(in) :: a,b
       probe_eq = &
-         (a%index == b%index) .and. &
+         (a%elementIndex == b%elementIndex) .and. &
          (a%probe_type == b%probe_type) .and. &
          (a%probe_name == b%probe_name) .and. &
          all(a%probe_position == b%probe_position)
@@ -542,7 +542,7 @@ contains
 
       if (.not. allocated(this%nodes))  allocate(this%nodes(0))
 
-      allocate(newNodes( size(this%nodes) + 1 ) )
+      allocate(newNodes(size(this%nodes) + 1))
       newNodesSize = size(newNodes)
       newNodes(1:newNodesSize-1) = this%nodes
       newNodes(newNodesSize) = node
@@ -565,7 +565,7 @@ contains
 
       if (.not. allocated(this%connections))  allocate(this%connections(0))
 
-      allocate(newConnections( size(this%connections) + 1 ) )
+      allocate(newConnections(size(this%connections) + 1))
       newConnectionsSize = size(newConnections)
       newConnections(1:newConnectionsSize-1) = this%connections
       newConnections(newConnectionsSize) = connection

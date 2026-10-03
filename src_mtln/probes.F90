@@ -6,7 +6,7 @@ module probes_m
 #else
     use FDETYPES_m, only: RKIND, BUFSIZE
 #endif
-    use FDETYPES_m, only: RKIND, RKIND_TIEMPO
+    use FDETYPES_m, only: RKIND, RKIND_TIME
 
     implicit none
 
@@ -17,11 +17,11 @@ module probes_m
     integer, parameter, public :: MTLN_PROBE_OUTPUT_FAILED = 3
 
     type, public :: probe_t
-        integer :: type
+        integer :: typeName
         real(kind=RKIND), allocatable, dimension(:) :: t
         real(kind=RKIND), allocatable, dimension(:,:) :: val
-        real(kind=RKIND_TIEMPO) :: dt
-        integer :: index, current_frame, unit = 0
+        real(kind=RKIND_TIME) :: dt
+        integer :: elementIndex, current_frame, unit = 0
         ! Bundle conductor indices reported by this probe, in output order.
         integer(kind=4), allocatable, dimension(:) :: conductors
         character(len=:), allocatable :: name
@@ -47,11 +47,11 @@ module probes_m
 
 contains
 
-    function probeCtor(index, probe_type, dt, name, position, layer_indices) result(res)
+    function probeCtor(elementIndex, probe_type, dt, name, position, layer_indices) result(res)
         type(probe_t) :: res
-        integer, intent(in) :: index
+        integer, intent(in) :: elementIndex
         integer, intent(in) :: probe_type
-        real(kind=RKIND_TIEMPO), intent(in) :: dt
+        real(kind=RKIND_TIME), intent(in) :: dt
         real(kind=RKIND), dimension(3) :: position
         character(len=:), allocatable :: name
         integer(kind=4), dimension(:,:), intent(in), optional :: layer_indices
@@ -60,8 +60,8 @@ contains
         integer :: layer_index, ierr, sizeof
 #endif
 
-        res%type = probe_type
-        res%index = index
+        res%typeName = probe_type
+        res%elementIndex = elementIndex
         res%dt = dt
         res%current_frame = 1
         
@@ -71,7 +71,7 @@ contains
             if (sizeof > 1) then
                 res%in_layer = .false.
                 do i = 1, size(layer_indices,1) 
-                    if (index >= layer_indices(i, 1) .and. index <= layer_indices(i,2)+1) then 
+                    if (elementIndex >= layer_indices(i, 1) .and. elementIndex <= layer_indices(i,2)+1) then 
                         res%in_layer = .true.
                         slice = i
                     end if
@@ -82,9 +82,9 @@ contains
                     do i = 1, slice - 1
                         layer_index = layer_index + layer_indices(i,2) + 1 - (layer_indices(i,1) - 1)
                     end do
-                    layer_index = layer_index + res%index - layer_indices(slice,1) + 1
+                    layer_index = layer_index + res%elementIndex - layer_indices(slice,1) + 1
                 end if
-                res%index = layer_index
+                res%elementIndex = layer_index
             end if
         end if
 #endif
@@ -112,7 +112,7 @@ contains
         ! A single frame suffices: data is written to disk each step right after
         ! it is stored, so there is no need to buffer the full time history.
         ! Voltage probes only report conductors with a surrounding shield.
-        if (this%type == PROBE_TYPE_VOLTAGE) then
+        if (this%typeName == PROBE_TYPE_VOLTAGE) then
             this%conductors = voltage_conductors
         else
             this%conductors = all_conductors
@@ -126,17 +126,17 @@ contains
 
     subroutine update(this, t, v, i)
         class(probe_t) :: this
-        real(kind=RKIND_TIEMPO), intent(in) :: t
+        real(kind=RKIND_TIME), intent(in) :: t
         real(kind=RKIND), dimension(:,:), intent(in) :: v
         real(kind=RKIND), dimension(:,:), intent(in) :: i
         
-        if (this%type == PROBE_TYPE_VOLTAGE) then
-            call this%saveFrame(t, v(this%conductors, this%index))
-        else if (this%type == PROBE_TYPE_CURRENT) then
-            if (this%index == size(i,2) + 1) then
-                call this%saveFrame(t + 0.5*this%dt, i(this%conductors, this%index - 1))
+        if (this%typeName == PROBE_TYPE_VOLTAGE) then
+            call this%saveFrame(t, v(this%conductors, this%elementIndex))
+        else if (this%typeName == PROBE_TYPE_CURRENT) then
+            if (this%elementIndex == size(i,2) + 1) then
+                call this%saveFrame(t + 0.5*this%dt, i(this%conductors, this%elementIndex - 1))
             else 
-                call this%saveFrame( t+ 0.5*this%dt, i(this%conductors, this%index))
+                call this%saveFrame(t + 0.5*this%dt, i(this%conductors, this%elementIndex))
             end if
         end if  
 
@@ -144,7 +144,7 @@ contains
 
     subroutine saveFrame(this, time, values)
         class(probe_t) :: this
-        real(kind=RKIND_TIEMPO), intent(in) :: time
+        real(kind=RKIND_TIME), intent(in) :: time
         real(kind=RKIND), intent(in), dimension(:) :: values
         ! Always overwrite slot 1; the caller flushes to disk each step.
         this%t(1) = time

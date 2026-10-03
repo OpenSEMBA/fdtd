@@ -1,10 +1,10 @@
 integer function test_read_planewave() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
-   character(len=*), parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'planewave.fdtd.json'
+   character(len=*), parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'planewave.fdtd.json'
    type(Parseador_t) :: pr, ex
    type(parser_t) :: parser
    logical :: areSame
@@ -49,11 +49,11 @@ contains
       expected%despl%mz2 = 10
 
       ! Expected boundaries.
-      expected%front%tipoFrontera(:) = F_MUR
+      expected%front%boundaryType(:) = F_MUR
 
       ! Expected sources.
       allocate(expected%plnSrc%collection(1))
-      expected%plnSrc%collection(1)%nombre_fichero = "gauss.exc"
+      expected%plnSrc%collection(1)%sourceFileName = "gauss.exc"
       expected%plnSrc%collection(1)%atributo = "LOCKED"
       expected%plnSrc%collection(1)%coor1 = [1, 1, 1]
       expected%plnSrc%collection(1)%coor2 = [8, 8, 8]
@@ -117,12 +117,12 @@ end function
 
 integer function test_read_planewave_empty_elementids() bind(C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
    use Report_m, only: isFatalError, resetFatalError
 
    implicit none
 
-   character(len=*), parameter :: filename = &
+   character(len=*), parameter :: FILENAME = &
       PATH_TO_TEST_DATA//INPUT_EXAMPLES//'planewave_empty_elementids.fdtd.json'
    type(Parseador_t) :: pr
    type(parser_t) :: parser

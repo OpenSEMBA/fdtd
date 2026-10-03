@@ -24,7 +24,7 @@ contains
       character(len=*), intent(in) :: outputTypeExtension
       type(domain_t), intent(in) :: domain
 
-      real(kind=RKIND_tiempo), intent(in) :: timeInterval
+      real(kind=RKIND_TIME), intent(in) :: timeInterval
       logical, intent(in), optional :: hasIncident
 
       integer(kind=SINGLE) :: i
@@ -40,7 +40,7 @@ contains
       if (present(hasIncident)) this%hasIncident = hasIncident
 
       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
-         call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
+         call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIME)
          call alloc_and_init(this%valueForTime, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND)
          if (this%hasIncident) call alloc_and_init(this%incidentForTime, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND)
       end if
@@ -56,37 +56,37 @@ contains
          allocate (this%auxExp_E(this%nFreq))
          allocate (this%auxExp_H(this%nFreq))
          do i = 1, this%nFreq
-            this%auxExp_E(i) = mcpi2*this%frequencySlice(i)
+            this%auxExp_E(i) = MCPI2*this%frequencySlice(i)
             this%auxExp_H(i) = this%auxExp_E(i)
          end do
-         if (this%domain%transfer) call initialise_normalization_spectrum(this)
+         if (this%domain%transferFlag) call initialise_normalization_spectrum(this)
       end if
 
       if (this%domain%domainType == BOTH_DOMAIN) then
          allocate (this%artifacts(2))
-         artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
-         artifact_paths(2) = trim(this%path)//'_'//frequencyExtension//datFileExtension
+         artifact_paths(1) = trim(this%path)//'_'//TIMEEXTENSION//DATFILEEXTENSION
+         artifact_paths(2) = trim(this%path)//'_'//FREQUENCYEXTENSION//DATFILEEXTENSION
          artifact_kinds(:2) = OUTPUT_ARTIFACT_TEXT
          call declare_probe_artifacts(this%artifacts, artifact_paths(:2), artifact_kinds(:2))
          this%filePathTime = this%artifacts(1)%relative_path
          this%filePathFreq = this%artifacts(2)%relative_path
-         call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, time_header())
-         call create_data_file(this%filePathFreq, this%path, frequencyExtension, datFileExtension, &
+         call create_data_file(this%filePathTime, this%path, TIMEEXTENSION, DATFILEEXTENSION, time_header())
+         call create_data_file(this%filePathFreq, this%path, FREQUENCYEXTENSION, DATFILEEXTENSION, &
                                frequency_header(this))
       else if (this%domain%domainType == TIME_DOMAIN) then
          allocate (this%artifacts(1))
-         artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
+         artifact_paths(1) = trim(this%path)//'_'//TIMEEXTENSION//DATFILEEXTENSION
          artifact_kinds(1) = OUTPUT_ARTIFACT_TEXT
          call declare_probe_artifacts(this%artifacts, artifact_paths(:1), artifact_kinds(:1))
          this%filePathTime = this%artifacts(1)%relative_path
-         call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, time_header())
+         call create_data_file(this%filePathTime, this%path, TIMEEXTENSION, DATFILEEXTENSION, time_header())
       else if (this%domain%domainType == FREQUENCY_DOMAIN) then
          allocate (this%artifacts(1))
-         artifact_paths(1) = trim(this%path)//'_'//frequencyExtension//datFileExtension
+         artifact_paths(1) = trim(this%path)//'_'//FREQUENCYEXTENSION//DATFILEEXTENSION
          artifact_kinds(1) = OUTPUT_ARTIFACT_TEXT
          call declare_probe_artifacts(this%artifacts, artifact_paths(:1), artifact_kinds(:1))
          this%filePathFreq = this%artifacts(1)%relative_path
-         call create_data_file(this%filePathFreq, this%path, frequencyExtension, datFileExtension, &
+         call create_data_file(this%filePathFreq, this%path, FREQUENCYEXTENSION, DATFILEEXTENSION, &
                                frequency_header(this))
       end if
 
@@ -126,24 +126,24 @@ contains
    subroutine initialise_normalization_spectrum(this)
       type(point_probe_output_t), intent(inout) :: this
       integer :: unit, ioStatus, i
-      real(kind=RKIND_tiempo) :: t0, t1, t, dt
-      real(kind=RKIND) :: value
+      real(kind=RKIND_TIME) :: t0, t1, t, dt
+      real(kind=RKIND) :: scalarValue
 
       open(newunit=unit, file=trim(this%domain%normalizationFile), status='old', action='read', iostat=ioStatus)
       if (ioStatus /= 0) call StopOnError(0, 0, 'Unable to read point-probe normalization file')
-      read(unit, *, iostat=ioStatus) t0, value
-      read(unit, *, iostat=ioStatus) t1, value
+      read(unit, *, iostat=ioStatus) t0, scalarValue
+      read(unit, *, iostat=ioStatus) t1, scalarValue
       if (ioStatus /= 0) call StopOnError(0, 0, 'Normalization file needs at least two samples')
       dt = abs(t1 - t0)
-      if (dt <= tiny(1.0_RKIND_tiempo)) call StopOnError(0, 0, 'Normalization file has a zero sampling interval')
+      if (dt <= tiny(1.0_RKIND_TIME)) call StopOnError(0, 0, 'Normalization file has a zero sampling interval')
       rewind(unit)
       call alloc_and_init(this%normalizationForFreq, this%nFreq, (0.0_CKIND, 0.0_CKIND))
       do
-         read(unit, *, iostat=ioStatus) t, value
+         read(unit, *, iostat=ioStatus) t, scalarValue
          if (ioStatus < 0) exit
          if (ioStatus /= 0) call StopOnError(0, 0, 'Invalid normalization sample')
          do i = 1, this%nFreq
-            this%normalizationForFreq(i) = this%normalizationForFreq(i) + dt*value*exp(mcpi2*this%frequencySlice(i)*t)
+            this%normalizationForFreq(i) = this%normalizationForFreq(i) + dt*scalarValue*exp(MCPI2*this%frequencySlice(i)*t)
          end do
       end do
       close(unit)
@@ -153,7 +153,7 @@ contains
    subroutine update_point_probe_output(this, step, field, sgg, saveTimeSample)
       type(point_probe_output_t), intent(inout) :: this
       real(kind=RKIND), pointer, dimension(:, :, :), intent(in) :: field
-      real(kind=RKIND_tiempo), intent(in) :: step
+      real(kind=RKIND_TIME), intent(in) :: step
       type(SGGFDTDINFO_t), intent(in), optional :: sgg
       logical, intent(in), optional :: saveTimeSample
 
@@ -184,7 +184,7 @@ contains
                                   this%mainCoords%x, this%mainCoords%y, this%mainCoords%z, still_planewave_time, .true.)
          end if
          select case (this%component)
-         case (iEx, iEy, iEz)
+         case (IEX, IEY, IEZ)
             do iter = 1, this%nFreq
                this%valueForFreq(iter) = &
                   this%valueForFreq(iter) + field(this%mainCoords%x, this%mainCoords%y, this%mainCoords%z)* &
@@ -192,13 +192,13 @@ contains
                if (this%hasIncident .and. present(sgg)) this%incidentForFreq(iter) = this%incidentForFreq(iter) + &
                   incidentValue*this%quadratureDt*exp(this%auxExp_E(iter)*step)
             end do
-         case (iHx, iHy, iHz)
+         case (IHX, IHY, IHZ)
             do iter = 1, this%nFreq
                this%valueForFreq(iter) = &
                   this%valueForFreq(iter) + field(this%mainCoords%x, this%mainCoords%y, this%mainCoords%z)* &
-                  this%quadratureDt*exp(this%auxExp_H(iter)*(step + 0.5_RKIND_tiempo*this%quadratureDt))
+                  this%quadratureDt*exp(this%auxExp_H(iter)*(step + 0.5_RKIND_TIME*this%quadratureDt))
                if (this%hasIncident .and. present(sgg)) this%incidentForFreq(iter) = this%incidentForFreq(iter) + &
-                  incidentValue*this%quadratureDt*exp(this%auxExp_H(iter)*(step + 0.5_RKIND_tiempo*this%quadratureDt))
+                  incidentValue*this%quadratureDt*exp(this%auxExp_H(iter)*(step + 0.5_RKIND_TIME*this%quadratureDt))
             end do
          end select
 
@@ -231,9 +231,9 @@ contains
 
          do i = 1, this%nTime
             if (this%hasIncident) then
-               write (unit, fmt) this%timeStep(i), this%valueForTime(i), this%incidentForTime(i)
+               write (unit, FMT) this%timeStep(i), this%valueForTime(i), this%incidentForTime(i)
             else
-               write (unit, fmt) this%timeStep(i), this%valueForTime(i)
+               write (unit, FMT) this%timeStep(i), this%valueForTime(i)
             end if
          end do
 
@@ -262,12 +262,12 @@ contains
 
          do i = 1, this%nFreq
             spectrum = this%valueForFreq(i)
-            if (this%domain%transfer) spectrum = spectrum/this%normalizationForFreq(i)
+            if (this%domain%transferFlag) spectrum = spectrum/this%normalizationForFreq(i)
             if (this%hasIncident) then
-               write (unit, fmt) this%frequencySlice(i), abs(spectrum), atan2(aimag(spectrum), real(spectrum)), &
+               write (unit, FMT) this%frequencySlice(i), abs(spectrum), atan2(aimag(spectrum), real(spectrum)), &
                                   abs(this%incidentForFreq(i)), atan2(aimag(this%incidentForFreq(i)), real(this%incidentForFreq(i)))
             else
-               write (unit, fmt) this%frequencySlice(i), abs(spectrum), atan2(aimag(spectrum), real(spectrum))
+               write (unit, FMT) this%frequencySlice(i), abs(spectrum), atan2(aimag(spectrum), real(spectrum))
             end if
          end do
 
@@ -275,7 +275,7 @@ contains
       end subroutine flush_frequency_domain
 
       subroutine clear_time_data()
-         this%timeStep = 0.0_RKIND_tiempo
+         this%timeStep = 0.0_RKIND_TIME
          this%valueForTime = 0.0_RKIND
          if (this%hasIncident) this%incidentForTime = 0.0_RKIND
 

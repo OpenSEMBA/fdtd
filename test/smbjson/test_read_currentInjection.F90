@@ -1,10 +1,10 @@
 integer function test_read_currentinjection() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'currentInjection.fdtd.json'
+   character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'currentInjection.fdtd.json'
    type(Parseador_t) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
@@ -51,7 +51,7 @@ contains
       expected%despl%mz2 = 20
 
       ! Expected boundaries.
-      expected%front%tipoFrontera(:) = F_MUR
+      expected%front%boundaryType(:) = F_MUR
 
       ! Expected material regions.
       expected%pecRegs%nVols = 0
@@ -65,7 +65,7 @@ contains
       allocate(expected%pecRegs%Lins(1))
       
       ! Body
-      expected%pecRegs%Surfs(1)%Or = +iEz
+      expected%pecRegs%Surfs(1)%Or = +IEZ
       expected%pecRegs%Surfs(1)%Xi = 5
       expected%pecRegs%Surfs(1)%Xe = 14
       expected%pecRegs%Surfs(1)%Yi = 5
@@ -75,7 +75,7 @@ contains
       expected%pecRegs%Surfs(1)%tag = 'aluminum@body'
 
       ! Exit line
-      expected%pecRegs%Lins(1)%Or = +iEy
+      expected%pecRegs%Lins(1)%Or = +IEY
       expected%pecRegs%Lins(1)%Xi = 10
       expected%pecRegs%Lins(1)%Xe = 10
       expected%pecRegs%Lins(1)%Yi = 15
@@ -96,7 +96,7 @@ contains
       expected%nodSrc%NodalSource(1)%isInitialValue = .false.
       allocate(expected%nodSrc%NodalSource(1)%c2P(1))
       expected%nodSrc%NodalSource(1)%n_C2P = 1
-      expected%nodSrc%NodalSource(1)%c2P(1)%Or = iEy
+      expected%nodSrc%NodalSource(1)%c2P(1)%Or = IEY
       expected%nodSrc%NodalSource(1)%c2P(1)%Xi = 10
       expected%nodSrc%NodalSource(1)%c2P(1)%Xe = 10
       expected%nodSrc%NodalSource(1)%c2P(1)%Yi =  0
@@ -129,8 +129,8 @@ contains
       expected%BloquePrb%bp(1)%k1 = 9
       expected%BloquePrb%bp(1)%k2 = 10
       expected%BloquePrb%bp(1)%skip = 1
-      expected%BloquePrb%bp(1)%nml = iEy
-      expected%BloquePrb%bp(1)%t = BcELECT
+      expected%BloquePrb%bp(1)%nml = IEY
+      expected%BloquePrb%bp(1)%t = BCELECT
       expected%BloquePrb%bp(1)%tag = "bulk_current_at_entry"
 
       expected%BloquePrb%bp(2)%outputrequest = "bulk_current_at_exit"
@@ -149,8 +149,8 @@ contains
       expected%BloquePrb%bp(2)%k1 = 9
       expected%BloquePrb%bp(2)%k2 = 10
       expected%BloquePrb%bp(2)%skip = 1
-      expected%BloquePrb%bp(2)%nml = iEy
-      expected%BloquePrb%bp(2)%t = BcELECT
+      expected%BloquePrb%bp(2)%nml = IEY
+      expected%BloquePrb%bp(2)%t = BCELECT
       expected%BloquePrb%bp(2)%tag = "bulk_current_at_exit"
    end function
 end function

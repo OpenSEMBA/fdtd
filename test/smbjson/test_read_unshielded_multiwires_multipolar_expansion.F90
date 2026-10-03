@@ -1,10 +1,10 @@
 integer function test_read_unshielded_multiwires_multipolar_expansion() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
-   character(len=*),parameter :: filename = &
+   character(len=*),parameter :: FILENAME = &
       PATH_TO_TEST_DATA//INPUT_EXAMPLES//'unshielded_multiwires_multipolar_expansion.fdtd.json'
    type(Parseador_t) :: pr, ex
    type(parser_t) :: parser
@@ -55,8 +55,8 @@ contains
       ex%despl%mz2 = 30
 
       ! Expected boundaries.
-      ex%front%tipoFrontera(:) = F_PML
-      ex%front%propiedadesPML(:)%numCapas = 8
+      ex%front%boundaryType(:) = F_PML
+      ex%front%propiedadesPML(:)%numLayers = 8
       ex%front%propiedadesPML(:)%orden = 2
       ex%front%propiedadesPML(:)%refl = 0.001_RKIND
 
@@ -68,7 +68,7 @@ contains
 
       ! ex sources.
       allocate(ex%plnSrc%collection(1))
-      ex%plnSrc%collection(1)%nombre_fichero = "unshielded_50ns.exc"
+      ex%plnSrc%collection(1)%sourceFileName = "unshielded_50ns.exc"
       ex%plnSrc%collection(1)%atributo = "LOCKED"
       ex%plnSrc%collection(1)%coor1 = [1, 1, 1]
       ex%plnSrc%collection(1)%coor2 = [28, 28, 28]
@@ -99,9 +99,9 @@ contains
 
          deallocate(ptr%multipolar_expansion)
          allocate(ptr%multipolar_expansion(1))
-         ptr%multipolar_expansion(1)%inner_region%min = &
+         ptr%multipolar_expansion(1)%inner_region%minBound = &
             [-0.0265000002_RKIND, -0.0310000002_RKIND] 
-         ptr%multipolar_expansion(1)%inner_region%max =  &
+         ptr%multipolar_expansion(1)%inner_region%maxBound =  &
             [ 0.03550000020000001_RKIND, 0.0310000002_RKIND] 
          allocate(ptr%multipolar_expansion(1)%electric(2))
          ! First conductor.
@@ -144,7 +144,7 @@ contains
       deallocate(ex%mtln%probes)
       allocate(ex%mtln%probes(1))
       ex%mtln%probes(1)%attached_to_cable => ex%mtln%cables(1)%ptr
-      ex%mtln%probes(1)%index = 8
+      ex%mtln%probes(1)%elementIndex = 8
       ex%mtln%probes(1)%probe_type = PROBE_TYPE_CURRENT
       ex%mtln%probes(1)%probe_name = "test"
       ex%mtln%probes(1)%probe_position = [2,11,14]

@@ -23,14 +23,14 @@ module outputTypes_m
    integer, parameter :: BOTH_DOMAIN = 2
    integer, parameter :: OUTPUT_TIME_BUFFER_SIZE = 128
 
-   character(len=4), parameter :: binaryExtension = '.bin'
-   character(len=4), parameter :: datFileExtension = '.dat'
-   character(len=4), parameter :: vtkFileExtension = '.vtk'
-   character(len=4), parameter :: vtuFileExtension = '.vtu'
-   character(len=5), parameter :: pvtuFileExtension = '.pvtu'
-   character(len=2), parameter :: timeExtension = 'tm'
-   character(len=2), parameter :: frequencyExtension = 'fq'
-   character(len=1), parameter :: wordseparation = '_'
+   character(len=4), parameter :: BINARYEXTENSION = '.bin'
+   character(len=4), parameter :: DATFILEEXTENSION = '.dat'
+   character(len=4), parameter :: VTKFILEEXTENSION = '.vtk'
+   character(len=4), parameter :: VTUFILEEXTENSION = '.vtu'
+   character(len=5), parameter :: PVTUFILEEXTENSION = '.pvtu'
+   character(len=2), parameter :: TIMEEXTENSION = 'tm'
+   character(len=2), parameter :: FREQUENCYEXTENSION = 'fq'
+   character(len=1), parameter :: WORDSEPARATION = '_'
 
    integer, parameter :: OUTPUT_ARTIFACT_UNDEFINED = 0
    integer, parameter :: OUTPUT_ARTIFACT_TEXT = 1
@@ -95,7 +95,7 @@ module outputTypes_m
    end type output_fragment_descriptor_t
 
    type :: output_artifact_t
-      integer :: kind = OUTPUT_ARTIFACT_UNDEFINED
+      integer :: kindTag = OUTPUT_ARTIFACT_UNDEFINED
       integer :: role = OUTPUT_ARTIFACT_ROLE_CANONICAL
       character(len=BUFSIZE) :: relative_path = ''
       logical :: required = .true.
@@ -151,9 +151,9 @@ module outputTypes_m
    end type probe_metadata_t
 
    type :: domain_t
-      real(kind=RKIND_tiempo) :: tstart = 0.0_RKIND_tiempo
-      real(kind=RKIND_tiempo) :: tstop = 0.0_RKIND_tiempo
-      real(kind=RKIND_tiempo) :: tstep = 0.0_RKIND_tiempo
+      real(kind=RKIND_TIME) :: tstart = 0.0_RKIND_TIME
+      real(kind=RKIND_TIME) :: tstop = 0.0_RKIND_TIME
+      real(kind=RKIND_TIME) :: tstep = 0.0_RKIND_TIME
       integer(kind=SINGLE)    :: tstride = 1_SINGLE
       real(kind=RKIND)        :: fstart = 0.0_RKIND
       real(kind=RKIND)        :: fstop = 0.0_RKIND
@@ -161,7 +161,7 @@ module outputTypes_m
       integer(kind=SINGLE)    :: fnum = 0
       integer(kind=SINGLE)    :: domainType = UNDEFINED_DOMAIN
       logical                 :: logarithmicSpacing = .false.
-      logical                 :: transfer = .false.
+      logical                 :: transferFlag = .false.
       character(len=BUFSIZE)  :: normalizationFile = ''
    end type domain_t
 
@@ -212,13 +212,13 @@ module outputTypes_m
       character(len=BUFSIZE) :: filePathTime
       integer(kind=SINGLE) :: nTime = 0_SINGLE
       integer(kind=SINGLE) :: nTimesFlushed = 0_SINGLE !times alredy writen in disk
-      real(kind=RKIND_tiempo), allocatable :: timeStep(:)
+      real(kind=RKIND_TIME), allocatable :: timeStep(:)
    end type abstract_time_probe_t
 
    type, extends(abstract_probe_t) :: abstract_frequency_probe_t
       character(len=BUFSIZE) :: filePathFreq
       integer(kind=SINGLE) :: nFreq = 0_SINGLE
-      real(kind=RKIND_tiempo) :: quadratureDt = 0.0_RKIND_tiempo
+      real(kind=RKIND_TIME) :: quadratureDt = 0.0_RKIND_TIME
       real(kind=RKIND), allocatable    :: frequencySlice(:)
       complex(kind=CKIND), allocatable :: auxExp_E(:), auxExp_H(:)
    end type abstract_frequency_probe_t
@@ -226,8 +226,8 @@ module outputTypes_m
    type, extends(abstract_probe_t) :: abstract_time_frequency_probe_t
       character(len=BUFSIZE) :: filePathTime, filePathFreq
       integer(kind=SINGLE) :: nTime = 0_SINGLE, nFreq = 0_SINGLE
-      real(kind=RKIND_tiempo) :: quadratureDt = 0.0_RKIND_tiempo
-      real(kind=RKIND_tiempo), allocatable :: timeStep(:)
+      real(kind=RKIND_TIME) :: quadratureDt = 0.0_RKIND_TIME
+      real(kind=RKIND_TIME), allocatable :: timeStep(:)
       real(kind=RKIND), allocatable        :: frequencySlice(:)
       complex(kind=CKIND), allocatable     :: auxExp_E(:), auxExp_H(:)
    end type abstract_time_frequency_probe_t
@@ -257,14 +257,14 @@ module outputTypes_m
    end type point_probe_output_t
 
    type, extends(abstract_time_probe_t) :: wire_charge_probe_output_t
-      integer(kind=SINGLE) :: sign = +1
+      integer(kind=SINGLE) :: signValue = +1
       real(kind=RKIND), allocatable :: chargeValue(:)
       type(CurrentSegments_t), pointer :: segment
       type(output_artifact_t) :: artifacts(1)
    end type wire_charge_probe_output_t
 
    type, extends(abstract_time_probe_t) :: wire_current_probe_output_t
-      integer(kind=SINGLE) :: sign = +1
+      integer(kind=SINGLE) :: signValue = +1
       type(current_values_t) :: currentValues(OUTPUT_TIME_BUFFER_SIZE)
       type(CurrentSegments_t), pointer :: segment
       type(output_artifact_t) :: artifacts(1)
@@ -400,7 +400,7 @@ contains
       if (allocated(metadata%artifacts)) deallocate (metadata%artifacts)
       allocate (metadata%artifacts(size(paths)))
       do i = 1, size(paths)
-         metadata%artifacts(i)%kind = kinds(i)
+         metadata%artifacts(i)%kindTag = kinds(i)
          metadata%artifacts(i)%relative_path = paths(i)
       end do
       metadata%lifecycle%state = OUTPUT_LIFECYCLE_DECLARED
@@ -413,7 +413,7 @@ contains
       integer :: i
 
       do i = 1, size(artifacts)
-         artifacts(i)%kind = OUTPUT_ARTIFACT_UNDEFINED
+         artifacts(i)%kindTag = OUTPUT_ARTIFACT_UNDEFINED
          artifacts(i)%role = OUTPUT_ARTIFACT_ROLE_CANONICAL
          artifacts(i)%relative_path = ''
          artifacts(i)%required = .true.
@@ -426,7 +426,7 @@ contains
          artifacts(i)%fragment%contributor_rank = -1
       end do
       do i = 1, size(paths)
-         artifacts(i)%kind = kinds(i)
+         artifacts(i)%kindTag = kinds(i)
          artifacts(i)%relative_path = paths(i)
       end do
    end subroutine declare_probe_artifacts
@@ -455,15 +455,15 @@ contains
 
    pure logical function output_artifact_path_is_relative(path)
       character(len=*), intent(in) :: path
-      character(len=:), allocatable :: value
+      character(len=:), allocatable :: scalarValue
 
-      value = trim(path)
-      output_artifact_path_is_relative = len(value) > 0
+      scalarValue = trim(path)
+      output_artifact_path_is_relative = len(scalarValue) > 0
       if (.not. output_artifact_path_is_relative) return
 
-      output_artifact_path_is_relative = value(1:1) /= '/' .and. value(1:1) /= '\'
-      if (len(value) > 1) output_artifact_path_is_relative = &
-         output_artifact_path_is_relative .and. value(2:2) /= ':'
+      output_artifact_path_is_relative = scalarValue(1:1) /= '/' .and. scalarValue(1:1) /= '\'
+      if (len(scalarValue) > 1) output_artifact_path_is_relative = &
+         output_artifact_path_is_relative .and. scalarValue(2:2) /= ':'
    end function output_artifact_path_is_relative
 
    pure logical function output_fragment_descriptor_is_valid(descriptor, parent_probe_id)
@@ -521,7 +521,7 @@ contains
 
       if (.not. allocated(metadata%artifacts)) return
       do i = 1, size(metadata%artifacts)
-         if (metadata%artifacts(i)%required .and. metadata%artifacts(i)%kind == OUTPUT_ARTIFACT_UNDEFINED) then
+         if (metadata%artifacts(i)%required .and. metadata%artifacts(i)%kindTag == OUTPUT_ARTIFACT_UNDEFINED) then
             probe_metadata_is_complete = .false.
             return
          end if

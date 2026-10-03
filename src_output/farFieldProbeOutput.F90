@@ -46,7 +46,7 @@ contains
       this%auxCoords = upperBound
       this%path = get_output_path()
       allocate (this%artifacts(1))
-      artifact_paths(1) = trim(this%path)//datFileExtension
+      artifact_paths(1) = trim(this%path)//DATFILEEXTENSION
       artifact_kinds = OUTPUT_ARTIFACT_TEXT
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
       this%filePathFreq = this%artifacts(1)%relative_path
@@ -95,12 +95,12 @@ contains
    subroutine flush_farField_probe_output(this, simlulationTimeArray, timeIndex, control, fieldsReference, bounds)
       type(far_field_probe_output_t), intent(inout) :: this
       integer, intent(in) :: timeIndex
-      real(KIND=RKIND_tiempo), pointer, dimension(:), intent(in) :: simlulationTimeArray
+      real(kind=RKIND_TIME), pointer, dimension(:), intent(in) :: simlulationTimeArray
       type(sim_control_t), intent(in) :: control
       type(fields_reference_t), pointer, intent(in) :: fieldsReference
       type(bounds_t), intent(in) :: bounds
 
-      real(kind=RKIND_tiempo) :: flushTime
+      real(kind=RKIND_TIME) :: flushTime
 
       flushTime = simlulationTimeArray(timeIndex)
       call FlushFarfield(control%layoutnumber, control%num_procs, bounds, &

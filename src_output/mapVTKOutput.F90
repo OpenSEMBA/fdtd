@@ -44,13 +44,13 @@ contains
       this%localParticipates = localParticipates
       this%path = get_map_output_folder(field, outputTypeExtension, mpidir)
       this%masterPath = trim(get_map_output_path(globalLowerBound, globalUpperBound, field, &
-                                                 outputTypeExtension, mpidir))//pvtuFileExtension
+                                                 outputTypeExtension, mpidir))//PVTUFILEEXTENSION
 
       artifact_paths = ''
       if (localParticipates) then
          piece_name = get_last_component(get_map_output_path(lowerBound, upperBound, field, &
                                                              outputTypeExtension, mpidir))
-         artifact_paths(1) = trim(join_path(this%path, piece_name))//vtuFileExtension
+         artifact_paths(1) = trim(join_path(this%path, piece_name))//VTUFILEEXTENSION
       end if
       artifact_kinds = [OUTPUT_ARTIFACT_GEOMETRY]
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
@@ -90,12 +90,12 @@ contains
       do k = this%mainCoords%Z, this%auxCoords%Z
       do j = this%mainCoords%Y, this%auxCoords%Y
       do i = this%mainCoords%X, this%auxCoords%X
-         do field = iEx, iEz
+         do field = IEX, IEZ
             if (isEdge(field, i, j, k, problemInfo)) then
                counter = counter + 1
             end if
          end do
-         do field = iHx, iHz
+         do field = IHX, IHZ
             if (isWithinBounds(field, i, j, k, problemInfo)) then
                if (isMaterialExceptPML(field, i, j, k, problemInfo)) then
                   counter = counter + 1
@@ -125,13 +125,13 @@ contains
       do k = this%mainCoords%Z, this%auxCoords%Z
       do j = this%mainCoords%Y, this%auxCoords%Y
       do i = this%mainCoords%X, this%auxCoords%X
-         do field = iEx, iEz
+         do field = IEX, IEZ
             if (isEdge(field, i, j, k, problemInfo)) then
                counter = counter + 1
                call writeFaceTagInfo(this, counter, i, j, k, field, problemInfo%materialTag%getEdgeTag(field, i, j, k))
             end if
          end do
-         do field = iHx, iHz
+         do field = IHX, IHZ
             if (isWithinBounds(field, i, j, k, problemInfo)) then
                if (isMaterialExceptPML(field, i, j, k, problemInfo)) then
                   counter = counter + 1
@@ -190,7 +190,7 @@ contains
              wires%CurrentSegment(segment_index)%k < this%mainCoords%z .or. &
              wires%CurrentSegment(segment_index)%k > this%auxCoords%z) cycle
 
-         field = wires%CurrentSegment(segment_index)%tipofield
+         field = wires%CurrentSegment(segment_index)%fieldKind
          counter = counter + 1
          this%coords(:, counter) = [wires%CurrentSegment(segment_index)%i, &
                                     wires%CurrentSegment(segment_index)%j, &
@@ -287,11 +287,11 @@ contains
 
       type(mapvtk_output_t), intent(in) :: this
       type(sim_control_t), intent(in) :: control
-      real(KIND=RKIND), pointer, dimension(:), intent(in) :: realXGrid, realYGrid, realZGrid
+      real(kind=RKIND), pointer, dimension(:), intent(in) :: realXGrid, realYGrid, realZGrid
       type(problem_info_t), target, intent(in) :: problemInfo
 
       !type(vtk_file) :: vtkOutput
-      type(vtk_unstructured_grid), target :: ugrid
+      type(vtk_unstructured_grid_t), target :: ugrid
 
       integer :: ierr, i
       character(len=BUFSIZE) :: vtuPath
@@ -337,9 +337,9 @@ contains
    subroutine create_parallel_geometry_vtu(this, piecePaths)
       type(mapvtk_output_t), intent(in) :: this
       character(len=*), intent(in) :: piecePaths(:)
-      character(len=10), parameter :: cellScalarNames(2) = ['tagnumber ', 'mediatype ']
+      character(len=10), parameter :: CELLSCALARNAMES(2) = ['tagnumber ', 'mediatype ']
 
-      call write_pvtu_file(this%masterPath, piecePaths, cellScalarNames)
+      call write_pvtu_file(this%masterPath, piecePaths, CELLSCALARNAMES)
    end subroutine create_parallel_geometry_vtu
 
     subroutine write_geometry_companion(base_path, lower_bound, upper_bound, problemInfo, communicator, status, diagnostic)
@@ -545,27 +545,27 @@ contains
       type(problem_info_t), intent(in) :: problemInfo
       integer, intent(in) :: numEdges, numQuads
       real, allocatable, intent(out) :: tags(:), media_types(:)
-      integer :: edge_index, quad_index, index, field
+      integer :: edge_index, quad_index, elementIndex, field
 
       allocate (tags(numEdges + numQuads), media_types(numEdges + numQuads))
       edge_index = 0
       quad_index = numEdges
-      do index = 1, this%nPoints
-         select case (this%currentType(index))
-         case (iJx, iJy, iJz)
+      do elementIndex = 1, this%nPoints
+         select case (this%currentType(elementIndex))
+         case (IJX, IJY, IJZ)
             edge_index = edge_index + 1
-            field = electric_field(this%currentType(index))
-            tags(edge_index) = real(this%materialTag(index))
-            if (this%mediaType(index) >= 0.0_RKIND) then
-               media_types(edge_index) = this%mediaType(index)
+            field = electric_field(this%currentType(elementIndex))
+            tags(edge_index) = real(this%materialTag(elementIndex))
+            if (this%mediaType(elementIndex) >= 0.0_RKIND) then
+               media_types(edge_index) = this%mediaType(elementIndex)
             else
-               media_types(edge_index) = get_output_media_type(field, this%coords(:, index), problemInfo)
+               media_types(edge_index) = get_output_media_type(field, this%coords(:, elementIndex), problemInfo)
             end if
-         case (iBloqueJx, iBloqueJy, iBloqueJz)
+         case (IBLOQUEJX, IBLOQUEJY, IBLOQUEJZ)
             quad_index = quad_index + 1
-            field = magnetic_field(this%currentType(index))
-            tags(quad_index) = real(this%materialTag(index))
-            media_types(quad_index) = get_output_media_type(field, this%coords(:, index), problemInfo)
+            field = magnetic_field(this%currentType(elementIndex))
+            tags(quad_index) = real(this%materialTag(elementIndex))
+            media_types(quad_index) = get_output_media_type(field, this%coords(:, elementIndex), problemInfo)
          end select
       end do
    contains
@@ -573,9 +573,9 @@ contains
          integer(kind=SINGLE), intent(in) :: current_type
 
          select case (current_type)
-         case (iJx); electric_field = iEx
-         case (iJy); electric_field = iEy
-         case (iJz); electric_field = iEz
+         case (IJX); electric_field = IEX
+         case (IJY); electric_field = IEY
+         case (IJZ); electric_field = IEZ
          end select
       end function electric_field
 
@@ -583,15 +583,15 @@ contains
          integer(kind=SINGLE), intent(in) :: current_type
 
          select case (current_type)
-         case (iBloqueJx); magnetic_field = iHx
-         case (iBloqueJy); magnetic_field = iHy
-         case (iBloqueJz); magnetic_field = iHz
+         case (IBLOQUEJX); magnetic_field = IHX
+         case (IBLOQUEJY); magnetic_field = IHY
+         case (IBLOQUEJZ); magnetic_field = IHZ
          end select
       end function magnetic_field
    end subroutine build_cell_properties
 
-   logical function isEdge(campo, iii, jjj, kkk, problemInfo)
-      integer(4), intent(in) :: campo, iii, jjj, kkk
+   logical function isEdge(fieldIndex, iii, jjj, kkk, problemInfo)
+      integer(4), intent(in) :: fieldIndex, iii, jjj, kkk
       type(problem_info_t), pointer, intent(in) :: problemInfo
 
       type(MediaData_t), pointer, dimension(:) :: mData
@@ -604,7 +604,7 @@ contains
       isEdge = .false.
       contaborde = 0
 
-      call get_media_from_coord_and_h_neighbours(campo, iii, jjj, kkk,  problemInfo%geometryToMaterialData, imed, imed1, imed2, imed3, imed4)
+      call get_media_from_coord_and_h_neighbours(fieldIndex, iii, jjj, kkk,  problemInfo%geometryToMaterialData, imed, imed1, imed2, imed3, imed4)
 
       if (imed /= 1) then
 
@@ -613,88 +613,88 @@ contains
             if (mData(imed1)%is%SGBC) then
                if (trim(adjustl(mData(imed)%Multiport(1)%MultiportFileZ11)) /= &
                    trim(adjustl(mData(imed1)%Multiport(1)%MultiportFileZ11))) contaborde = contaborde + 1
-            elseif (imed1 /= 1) then
+            else if (imed1 /= 1) then
                contaborde = contaborde + 1
             end if
 
             if (mData(imed2)%is%SGBC) then
                if (trim(adjustl(mData(imed)%Multiport(1)%MultiportFileZ11)) /= &
                    trim(adjustl(mData(imed2)%Multiport(1)%MultiportFileZ11))) contaborde = contaborde + 1
-            elseif (imed2 /= 1) then
+            else if (imed2 /= 1) then
                contaborde = contaborde + 1
             end if
 
             if (mData(imed3)%is%SGBC) then
                if (trim(adjustl(mData(imed)%Multiport(1)%MultiportFileZ11)) /= &
                    trim(adjustl(mData(imed3)%Multiport(1)%MultiportFileZ11))) contaborde = contaborde + 1
-            elseif (imed3 /= 1) then
+            else if (imed3 /= 1) then
                contaborde = contaborde + 1
             end if
 
             if (mData(imed4)%is%SGBC) then
                if (trim(adjustl(mData(imed)%Multiport(1)%MultiportFileZ11)) /= &
                    trim(adjustl(mData(imed4)%Multiport(1)%MultiportFileZ11))) contaborde = contaborde + 1
-            elseif (imed4 /= 1) then
+            else if (imed4 /= 1) then
                contaborde = contaborde + 1
             end if
 
-         elseif (mData(imed)%is%Multiport) then
+         else if (mData(imed)%is%Multiport) then
 
             if (mData(imed1)%is%Multiport) then
                if (trim(adjustl(mData(imed)%Multiport(1)%MultiportFileZ11)) /= &
                    trim(adjustl(mData(imed1)%Multiport(1)%MultiportFileZ11))) contaborde = contaborde + 1
-            elseif (imed1 /= 1) then
+            else if (imed1 /= 1) then
                contaborde = contaborde + 1
             end if
 
             if (mData(imed2)%is%Multiport) then
                if (trim(adjustl(mData(imed)%Multiport(1)%MultiportFileZ11)) /= &
                    trim(adjustl(mData(imed2)%Multiport(1)%MultiportFileZ11))) contaborde = contaborde + 1
-            elseif (imed2 /= 1) then
+            else if (imed2 /= 1) then
                contaborde = contaborde + 1
             end if
 
             if (mData(imed3)%is%Multiport) then
                if (trim(adjustl(mData(imed)%Multiport(1)%MultiportFileZ11)) /= &
                    trim(adjustl(mData(imed3)%Multiport(1)%MultiportFileZ11))) contaborde = contaborde + 1
-            elseif (imed3 /= 1) then
+            else if (imed3 /= 1) then
                contaborde = contaborde + 1
             end if
 
             if (mData(imed4)%is%Multiport) then
                if (trim(adjustl(mData(imed)%Multiport(1)%MultiportFileZ11)) /= &
                    trim(adjustl(mData(imed4)%Multiport(1)%MultiportFileZ11))) contaborde = contaborde + 1
-            elseif (imed4 /= 1) then
+            else if (imed4 /= 1) then
                contaborde = contaborde + 1
             end if
 
-         elseif (mData(imed)%is%AnisMultiport) then
+         else if (mData(imed)%is%AnisMultiport) then
 
             if (mData(imed1)%is%AnisMultiport) then
                if (trim(adjustl(mData(imed)%AnisMultiport(1)%MultiportFileZ11)) /= &
                    trim(adjustl(mData(imed1)%AnisMultiport(1)%MultiportFileZ11))) contaborde = contaborde + 1
-            elseif (imed1 /= 1) then
+            else if (imed1 /= 1) then
                contaborde = contaborde + 1
             end if
 
             if (mData(imed2)%is%AnisMultiport) then
                if (trim(adjustl(mData(imed)%AnisMultiport(1)%MultiportFileZ11)) /= &
                    trim(adjustl(mData(imed2)%AnisMultiport(1)%MultiportFileZ11))) contaborde = contaborde + 1
-            elseif (imed2 /= 1) then
+            else if (imed2 /= 1) then
                contaborde = contaborde + 1
             end if
 
             if (mData(imed3)%is%AnisMultiport) then
                if (trim(adjustl(mData(imed)%AnisMultiport(1)%MultiportFileZ11)) /= &
                    trim(adjustl(mData(imed3)%AnisMultiport(1)%MultiportFileZ11))) contaborde = contaborde + 1
-            elseif (imed3 /= 1) then
+            else if (imed3 /= 1) then
                contaborde = contaborde + 1
             end if
 
             if (mData(imed4)%is%AnisMultiport) then
                if (trim(adjustl(mData(imed)%AnisMultiport(1)%MultiportFileZ11)) /= &
                    trim(adjustl(mData(imed4)%AnisMultiport(1)%MultiportFileZ11))) contaborde = contaborde + 1
-            elseif (imed4 /= 1) then
+            else if (imed4 /= 1) then
                contaborde = contaborde + 1
             end if
 
@@ -714,11 +714,11 @@ contains
 
          if (mData(imed)%is%ThinSlot) isEdge = .true.
 
-         if ((iii > problemDimension(campo)%XE) .or. (jjj > problemDimension(campo)%YE) .or. &
-             (kkk > problemDimension(campo)%ZE)) isEdge = .false.
+         if ((iii > problemDimension(fieldIndex)%XE) .or. (jjj > problemDimension(fieldIndex)%YE) .or. &
+             (kkk > problemDimension(fieldIndex)%ZE)) isEdge = .false.
 
-         if ((iii < problemDimension(campo)%XI) .or. (jjj < problemDimension(campo)%YI) .or. &
-             (kkk < problemDimension(campo)%ZI)) isEdge = .false.
+         if ((iii < problemDimension(fieldIndex)%XI) .or. (jjj < problemDimension(fieldIndex)%YI) .or. &
+             (kkk < problemDimension(fieldIndex)%ZI)) isEdge = .false.
 
       else
          isEdge = .false.

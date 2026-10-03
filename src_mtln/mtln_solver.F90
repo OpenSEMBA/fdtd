@@ -5,7 +5,7 @@ module mtln_solver_m
     use mtln_preprocess_m
     use probes_m, only: MTLN_PROBE_OUTPUT_ACTIVE, MTLN_PROBE_OUTPUT_COMPLETE, &
                         MTLN_PROBE_OUTPUT_DECLARED, MTLN_PROBE_OUTPUT_FAILED
-    use FDETYPES_m, only: XYZlimit_t, RKIND_TIEMPO
+    use FDETYPES_m, only: XYZlimit_t, RKIND_TIME
     use directoryUtils_m, only: create_file_with_path
 #ifdef CompileWithMPI
     use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
@@ -18,7 +18,7 @@ module mtln_solver_m
 
 
     type, public :: mtln_t
-        real(kind=RKIND_TIEMPO) :: time, dt, final_time
+        real(kind=RKIND_TIME) :: time, dt, final_time
         type(mtl_bundle_t), allocatable, dimension(:) :: bundles
         type(network_manager_t) :: network_manager
         ! type(probe_t), allocatable, dimension(:) :: probes
@@ -214,7 +214,7 @@ contains
             b = this%network_manager%open_nodes(i)%bundle_number
             if (this%bundles(b)%bundle_in_layer) then
                 c = this%network_manager%open_nodes(i)%conductor_number
-                if (this%network_manager%open_nodes(i)%open) then
+                if (this%network_manager%open_nodes(i)%isOpen) then
                     if (this%network_manager%open_nodes(i)%side == TERMINAL_NODE_SIDE_INI) then
                         this%bundles(b)%v(c,1) = this%bundles(b)%v(c,1) - 2*dot_product(this%bundles(b)%i_diff(1,c,:), this%bundles(b)%i(:,1))
                     else if (this%network_manager%open_nodes(i)%side == TERMINAL_NODE_SIDE_END) then
@@ -257,7 +257,7 @@ contains
 
     function getTimeRange(this, time) result(res)
         class(mtln_t) :: this
-        real(kind=RKIND_TIEMPO), intent(in), optional :: time
+        real(kind=RKIND_TIME), intent(in), optional :: time
         integer(kind=4) :: res
         if (present(time)) then 
             res =  floor(time / this%dt)
@@ -268,7 +268,7 @@ contains
 
     subroutine updateBundlesTimeStep(this, dt)
         class(mtln_t) :: this
-        real(kind=RKIND_TIEMPO) :: dt
+        real(kind=RKIND_TIME) :: dt
         integer(kind=4) :: i
         do i = 1, this%number_of_bundles
             this%bundles(i)%dt = dt
@@ -303,8 +303,8 @@ contains
 
     subroutine runUntil(this, final_time)
         class(mtln_t) :: this
-        real(kind=RKIND_TIEMPO), intent(in):: final_time
-        real(kind=RKIND_TIEMPO) :: time
+        real(kind=RKIND_TIME), intent(in):: final_time
+        real(kind=RKIND_TIME) :: time
         integer(kind=4) :: i
 
         do i = 0, this%getTimeRange(final_time)
@@ -320,7 +320,7 @@ contains
 
     subroutine mtln_run(this)
         class(mtln_t) :: this
-        real(kind=RKIND_TIEMPO) :: time
+        real(kind=RKIND_TIME) :: time
         integer(kind=4) :: i
 
         do i = 0, this%getTimeRange(this%final_time)
@@ -334,9 +334,9 @@ contains
 
     end subroutine
 
-    subroutine mtln_initObservation(this, nEntradaRoot)
+    subroutine mtln_initObservation(this, nInputRoot)
         class(mtln_t) :: this
-        character(len=*), intent(in) :: nEntradaRoot
+        character(len=*), intent(in) :: nInputRoot
         integer(kind=4) :: close_ios, i, ios, j, k, unit
         character(len=bufsize) :: path
         character(len=bufsize) :: temp
@@ -352,7 +352,7 @@ contains
 #endif
         do i = 1, size(this%bundles)
             do j = 1, size(this%bundles(i)%probes)
-                path = mtln_probe_data_path(nEntradaRoot, this%bundles(i)%probes(j)%name)
+                path = mtln_probe_data_path(nInputRoot, this%bundles(i)%probes(j)%name)
                 this%bundles(i)%probes(j)%output_path = trim(path)
                 this%bundles(i)%probes(j)%output_state = MTLN_PROBE_OUTPUT_DECLARED
                 this%bundles(i)%probes(j)%output_diagnostic = ''

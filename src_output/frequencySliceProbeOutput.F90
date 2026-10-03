@@ -60,7 +60,7 @@ contains
                                                 outputTypeExtension, control, problemInfo)
       type(frequency_slice_probe_output_t), intent(out) :: this
       type(volumetric_publication_t), intent(in) :: publication
-      real(kind=RKIND_tiempo), intent(in) :: timeInterval
+      real(kind=RKIND_TIME), intent(in) :: timeInterval
       integer(kind=SINGLE), intent(in) :: field
       type(domain_t), intent(in) :: domain
       character(len=BUFSIZE), intent(in) :: outputTypeExtension
@@ -105,7 +105,7 @@ contains
       call alloc_and_init(this%auxExp_H, this%nFreq, (0.0_CKIND, 0.0_CKIND))
 
       do i = 1, this%nFreq
-         this%auxExp_E(i) = mcpi2*this%frequencySlice(i)
+         this%auxExp_E(i) = MCPI2*this%frequencySlice(i)
          this%auxExp_H(i) = this%auxExp_E(i)
       end do
 
@@ -227,7 +227,7 @@ contains
       attribute_names(1:6) = [character(len=BUFSIZE) :: &
                               'xMagnitude', 'yMagnitude', 'zMagnitude', 'xPhase', 'yPhase', 'zPhase']
       attribute_enabled(1:6) = .true.
-      if (any([iCur, iMEC, iMHC] == this%component)) then
+      if (any([ICUR, IMEC, IMHC] == this%component)) then
          attribute_names(VISUALISATION_ATTRIBUTE_TAG_X) = 'tagnumber_x'
          attribute_names(VISUALISATION_ATTRIBUTE_TAG_Y) = 'tagnumber_y'
          attribute_names(VISUALISATION_ATTRIBUTE_TAG_Z) = 'tagnumber_z'
@@ -289,13 +289,13 @@ contains
       this%metadata%ownership%scalar_writer_rank = this%publication%owner_rank
       if (allocated(this%metadata%artifacts)) deallocate (this%metadata%artifacts)
       allocate (this%metadata%artifacts(4))
-      this%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_VISUALISATION_METADATA
+      this%metadata%artifacts(1)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_METADATA
       this%metadata%artifacts(1)%relative_path = trim(base_name)//'.xdmf'
-      this%metadata%artifacts(2)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
+      this%metadata%artifacts(2)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_DATA
       this%metadata%artifacts(2)%relative_path = trim(base_name)//'.h5'
-      this%metadata%artifacts(3)%kind = OUTPUT_ARTIFACT_GEOMETRY
+      this%metadata%artifacts(3)%kindTag = OUTPUT_ARTIFACT_GEOMETRY
       this%metadata%artifacts(3)%relative_path = trim(base_name)//'_geometry.xdmf'
-      this%metadata%artifacts(4)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
+      this%metadata%artifacts(4)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_DATA
       this%metadata%artifacts(4)%relative_path = trim(base_name)//'_geometry.h5'
 
       error = 0
@@ -373,18 +373,18 @@ contains
    subroutine write_classification_attributes(this, transport)
       type(frequency_slice_probe_output_t), intent(inout) :: this
       type(output_transport_t), intent(in) :: transport
-      integer, parameter :: tag_attributes(3) = [VISUALISATION_ATTRIBUTE_TAG_X, &
+      integer, parameter :: TAG_ATTRIBUTES(3) = [VISUALISATION_ATTRIBUTE_TAG_X, &
                                                  VISUALISATION_ATTRIBUTE_TAG_Y, &
                                                  VISUALISATION_ATTRIBUTE_TAG_Z]
-      integer, parameter :: media_attributes(3) = [VISUALISATION_ATTRIBUTE_MEDIA_X, &
+      integer, parameter :: MEDIA_ATTRIBUTES(3) = [VISUALISATION_ATTRIBUTE_MEDIA_X, &
                                                    VISUALISATION_ATTRIBUTE_MEDIA_Y, &
                                                    VISUALISATION_ATTRIBUTE_MEDIA_Z]
       integer :: axis
 
-      if (any([iCur, iMEC, iMHC] == this%component)) then
+      if (any([ICUR, IMEC, IMHC] == this%component)) then
          do axis = 1, 3
-            call write_classification_attribute(this, transport, tag_attributes(axis), axis, .true.)
-            call write_classification_attribute(this, transport, media_attributes(axis), axis, .false.)
+            call write_classification_attribute(this, transport, TAG_ATTRIBUTES(axis), axis, .true.)
+            call write_classification_attribute(this, transport, MEDIA_ATTRIBUTES(axis), axis, .false.)
          end do
       else
          do axis = 1, 3
@@ -482,10 +482,10 @@ contains
       integer(kind=SINGLE), intent(in) :: component
       integer, intent(in) :: axis
 
-      classification_axis_enabled = any([iCur, iMEC, iMHC] == component) .or. &
-                                    (axis == 1 .and. any([iCurX, iExC, iHxC] == component)) .or. &
-                                    (axis == 2 .and. any([iCurY, iEyC, iHyC] == component)) .or. &
-                                    (axis == 3 .and. any([iCurZ, iEzC, iHzC] == component))
+      classification_axis_enabled = any([ICUR, IMEC, IMHC] == component) .or. &
+                                    (axis == 1 .and. any([ICURX, IEXC, IHXC] == component)) .or. &
+                                    (axis == 2 .and. any([ICURY, IEYC, IHYC] == component)) .or. &
+                                    (axis == 3 .and. any([ICURZ, IEZC, IHZC] == component))
    end function classification_axis_enabled
 
    logical function classification_point_is_valid(component, field, position, problemInfo)
@@ -493,7 +493,7 @@ contains
       integer, intent(in) :: field, position(3)
       type(problem_info_t), intent(in) :: problemInfo
 
-      if (any([iCur, iCurX, iCurY, iCurZ] == component)) then
+      if (any([ICUR, ICURX, ICURY, ICURZ] == component)) then
          classification_point_is_valid = isValidPointForCurrent(field, position(1), position(2), position(3), problemInfo)
       else
          classification_point_is_valid = isValidPointForField(field, position(1), position(2), position(3), problemInfo)
@@ -516,7 +516,7 @@ contains
 
    subroutine update_frequency_slice_probe_output(this, step, fieldsReference, control, problemInfo)
       type(frequency_slice_probe_output_t), intent(inout) :: this
-      real(kind=RKIND_tiempo), intent(in) :: step
+      real(kind=RKIND_TIME), intent(in) :: step
       type(sim_control_t), intent(in) :: control
       type(problem_info_t), intent(in) :: problemInfo
       type(fields_reference_t), intent(in) :: fieldsReference
@@ -529,33 +529,33 @@ contains
 
       if (any(VOLUMIC_M_MEASURE == request)) then
          select case (request)
-         case (iCur); call save_current_module(this, fieldsReference, step, problemInfo)
-         case (iMEC); call save_field_module(this, fieldsReference%E, step, request, problemInfo)
-         case (iMHC); call save_field_module(this, fieldsReference%H, step, request, problemInfo)
+         case (ICUR); call save_current_module(this, fieldsReference, step, problemInfo)
+         case (IMEC); call save_field_module(this, fieldsReference%E, step, request, problemInfo)
+         case (IMHC); call save_field_module(this, fieldsReference%H, step, request, problemInfo)
          case default; call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
          end select
 
       else if (any(VOLUMIC_X_MEASURE == request)) then
          select case (request)
-         case (iCurX); call save_current_component(this, this%xValueForFreq, fieldsReference, problemInfo, iEx, this%auxExp_E, this%nFreq, step)
-         case (iExC); call save_field_component(this, this%xValueForFreq, fieldsReference%E%x, step, problemInfo, iEx)
-         case (iHxC); call save_field_component(this, this%xValueForFreq, fieldsReference%H%x, step, problemInfo, iHx)
+         case (ICURX); call save_current_component(this, this%xValueForFreq, fieldsReference, problemInfo, IEX, this%auxExp_E, this%nFreq, step)
+         case (IEXC); call save_field_component(this, this%xValueForFreq, fieldsReference%E%x, step, problemInfo, IEX)
+         case (IHXC); call save_field_component(this, this%xValueForFreq, fieldsReference%H%x, step, problemInfo, IHX)
          case default; call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
          end select
 
       else if (any(VOLUMIC_Y_MEASURE == request)) then
          select case (request)
-         case (iCurY); call save_current_component(this, this%yValueForFreq, fieldsReference, problemInfo, iEy, this%auxExp_E, this%nFreq, step)
-         case (iEyC); call save_field_component(this, this%yValueForFreq, fieldsReference%E%y, step, problemInfo, iEy)
-         case (iHyC); call save_field_component(this, this%yValueForFreq, fieldsReference%H%y, step, problemInfo, iHy)
+         case (ICURY); call save_current_component(this, this%yValueForFreq, fieldsReference, problemInfo, IEY, this%auxExp_E, this%nFreq, step)
+         case (IEYC); call save_field_component(this, this%yValueForFreq, fieldsReference%E%y, step, problemInfo, IEY)
+         case (IHYC); call save_field_component(this, this%yValueForFreq, fieldsReference%H%y, step, problemInfo, IHY)
          case default; call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
          end select
 
       else if (any(VOLUMIC_Z_MEASURE == request)) then
          select case (request)
-         case (iCurZ); call save_current_component(this, this%zValueForFreq, fieldsReference, problemInfo, iEz, this%auxExp_E, this%nFreq, step)
-         case (iEzC); call save_field_component(this, this%zValueForFreq, fieldsReference%E%z, step, problemInfo, iEz)
-         case (iHzC); call save_field_component(this, this%zValueForFreq, fieldsReference%H%z, step, problemInfo, iHz)
+         case (ICURZ); call save_current_component(this, this%zValueForFreq, fieldsReference, problemInfo, IEZ, this%auxExp_E, this%nFreq, step)
+         case (IEZC); call save_field_component(this, this%zValueForFreq, fieldsReference%E%z, step, problemInfo, IEZ)
+         case (IHZC); call save_field_component(this, this%zValueForFreq, fieldsReference%H%z, step, problemInfo, IHZ)
          case default; call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
          end select
       end if
@@ -565,7 +565,7 @@ contains
       type(frequency_slice_probe_output_t), intent(inout) :: this
       type(fields_reference_t), intent(in) :: fieldsReference
       type(problem_info_t), intent(in) :: problemInfo
-      real(kind=RKIND_tiempo), intent(in) :: step
+      real(kind=RKIND_TIME), intent(in) :: step
 
       integer :: i, j, k, coordIdx
 
@@ -573,20 +573,20 @@ contains
       do k = this%mainCoords%z, this%auxCoords%z
       do j = this%mainCoords%y, this%auxCoords%y
       do i = this%mainCoords%x, this%auxCoords%x
-         if (isValidPointForCurrent(iCur, i, j, k, problemInfo)) then
+         if (isValidPointForCurrent(ICUR, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
             ! Only store the components whose edge lies on a surface. Otherwise the
             ! non-surface components would leak total current densities into the output.
-            if (isValidPointForCurrent(iEx, i, j, k, problemInfo)) then
-               call save_current(this%xValueForFreq, iEx, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
+            if (isValidPointForCurrent(IEX, i, j, k, problemInfo)) then
+               call save_current(this%xValueForFreq, IEX, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
                                  this%quadratureDt, this%nFreq, step)
             end if
-            if (isValidPointForCurrent(iEy, i, j, k, problemInfo)) then
-               call save_current(this%yValueForFreq, iEy, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
+            if (isValidPointForCurrent(IEY, i, j, k, problemInfo)) then
+               call save_current(this%yValueForFreq, IEY, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
                                  this%quadratureDt, this%nFreq, step)
             end if
-            if (isValidPointForCurrent(iEz, i, j, k, problemInfo)) then
-               call save_current(this%zValueForFreq, iEz, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
+            if (isValidPointForCurrent(IEZ, i, j, k, problemInfo)) then
+               call save_current(this%zValueForFreq, IEZ, coordIdx, i, j, k, fieldsReference, this%auxExp_E, &
                                  this%quadratureDt, this%nFreq, step)
             end if
          end if
@@ -602,7 +602,7 @@ contains
       type(problem_info_t), intent(in) :: problemInfo
       integer, intent(in) :: fieldDir, nFreq
       complex(kind=ckind), intent(in), dimension(:) :: auxExp
-      real(kind=RKIND_tiempo), intent(in) :: step
+      real(kind=RKIND_TIME), intent(in) :: step
 
       integer :: i, j, k, coordIdx
 
@@ -627,8 +627,8 @@ contains
       complex(kind=CKIND), intent(in) :: auxExponential(:)
       integer, intent(in) :: i, j, k, coordIdx, nFreq
       type(fields_reference_t), intent(in) :: fieldsReference
-      real(kind=RKIND_tiempo), intent(in) :: quadratureDt
-      real(kind=RKIND_tiempo), intent(in) :: step
+      real(kind=RKIND_TIME), intent(in) :: quadratureDt
+      real(kind=RKIND_TIME), intent(in) :: step
 
       integer :: iter
       complex(kind=CKIND) :: z_cplx = (0.0_RKIND, 0.0_RKIND)
@@ -645,15 +645,15 @@ contains
    subroutine save_field_module(this, fieldInfo, simTime, request, problemInfo)
       type(frequency_slice_probe_output_t), intent(inout) :: this
       type(field_data_t), intent(in) :: fieldInfo
-      real(kind=RKIND_tiempo), intent(in) :: simTime
+      real(kind=RKIND_TIME), intent(in) :: simTime
       type(problem_info_t), intent(in) :: problemInfo
       integer, intent(in) :: request
 
       complex(kind=CKIND), dimension(this%nFreq) :: auxExponential
       integer :: i, j, k, coordIdx
 
-      if (iMHC == request) auxExponential = this%quadratureDt*exp(this%auxExp_H*(simTime + 0.5_RKIND_tiempo*this%quadratureDt))
-      if (iMEC == request) auxExponential = this%quadratureDt*exp(this%auxExp_E*simTime)
+      if (IMHC == request) auxExponential = this%quadratureDt*exp(this%auxExp_H*(simTime + 0.5_RKIND_TIME*this%quadratureDt))
+      if (IMEC == request) auxExponential = this%quadratureDt*exp(this%auxExp_E*simTime)
 
       coordIdx = 0
       do k = this%mainCoords%z, this%auxCoords%z
@@ -675,7 +675,7 @@ contains
       type(frequency_slice_probe_output_t), intent(inout) :: this
       complex(kind=CKIND), intent(inout) :: fieldData(:, :)
       real(kind=RKIND), pointer, intent(in) :: fieldComponent(:, :, :)
-      real(kind=RKIND_tiempo), intent(in) :: simTime
+      real(kind=RKIND_TIME), intent(in) :: simTime
       type(problem_info_t), intent(in) :: problemInfo
       integer, intent(in) :: fieldDir
 
@@ -683,7 +683,7 @@ contains
       integer :: i, j, k, coordIdx
 
       if (any(MAGNETIC_FIELD_DIRECTION == fieldDir)) then
-         auxExponential = this%quadratureDt*exp(this%auxExp_H*(simTime + 0.5_RKIND_tiempo*this%quadratureDt))
+         auxExponential = this%quadratureDt*exp(this%auxExp_H*(simTime + 0.5_RKIND_TIME*this%quadratureDt))
       end if
       if (any(ELECTRIC_FIELD_DIRECTION == fieldDir)) auxExponential = this%quadratureDt*exp(this%auxExp_E*simTime)
 
@@ -703,8 +703,8 @@ contains
    subroutine save_field(valorComplex, auxExp, fieldValue, nFreq, coordIdx)
       complex(kind=CKIND), intent(inout) :: valorComplex(:, :)
       complex(kind=CKIND), intent(in) :: auxExp(:)
-      real(KIND=RKIND), intent(in) :: fieldValue
-      integer(KIND=SINGLE), intent(in) :: nFreq, coordIdx
+      real(kind=RKIND), intent(in) :: fieldValue
+      integer(kind=SINGLE), intent(in) :: nFreq, coordIdx
 
       integer :: freq
 
