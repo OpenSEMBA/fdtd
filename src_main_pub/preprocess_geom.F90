@@ -3366,34 +3366,6 @@ contains
                   write(buff,'(a,i9)') 'Current probe not found in WIRE segment ',this%Sonda%collection(i)%cordinates(j)%XI
                   call StopOnError(layoutnumber,num_procs,buff)
                end if
-            else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_DDP) then
-               if (run_with_dmma) then
-                  trappedNode=.false.
-                  do_loop_busquedatg1: do j1 = 1, this%tSlots%n_tg
-                     do i1 = 1, this%tSlots%Tg(j1)%N_tgc
-                        !node caught
-                        if (this%tSlots%Tg(j1)%TgC(i1)%node == this%Sonda%collection(i)%cordinates(j)%XI) then
-                           gridPoint%XI = this%tSlots%Tg(j1)%TgC(i1)%i
-                           gridPoint%YI = this%tSlots%Tg(j1)%TgC(i1)%j
-                           gridPoint%ZI = this%tSlots%Tg(j1)%TgC(i1)%k
-                           trappedNode=.true.
-                           if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE) .AND. (gridPoint%YI >= BoundingBox%YI) .AND. &
-                           & (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
-                              sgg%observation(i)%nP = sgg%observation(i)%nP + 1
-                              exit do_loop_busquedatg1
-                           end if
-                        end if
-                     end do
-                  end do do_loop_busquedatg1
-                  !if it has not been caught
-                  if (.not.trappedNode) then
-                     write(buff,'(a,i9)') 'Voltage probe not found ',this%Sonda%collection(i)%cordinates(j)%XI
-                     call StopOnError(layoutnumber,num_procs,buff)
-                  end if
-               else
-                  write(buff,'(a,i9)') 'ERROR: Voltage probe in gaps only available under -dmma flag '
-                  call StopOnError(layoutnumber,num_procs,buff)
-               end if !of run_with_dmma
             else if (abs(tempType) == NP_COR_LINE) then
                sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
             end if
@@ -3799,51 +3771,6 @@ contains
                         end do
                      end do do_loop_busqueda3
                   end if
-               else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_DDP) then
-                  do_loop_busquedatg: do j1 = 1, this%tSlots%n_tg
-                     do i1 = 1, this%tSlots%Tg(j1)%N_tgc
-                        !node caught
-                        if (this%tSlots%Tg(j1)%TgC(i1)%node == this%Sonda%collection(i)%cordinates(j)%XI) then
-                           gridPoint%XI = this%tSlots%Tg(j1)%TgC(i1)%i
-                           gridPoint%YI = this%tSlots%Tg(j1)%TgC(i1)%j
-                           gridPoint%ZI = this%tSlots%Tg(j1)%TgC(i1)%k
-                           if ((gridPoint%XI >= BoundingBox%XI) .AND. (gridPoint%XI <= BoundingBox%XE) .AND.   &
-                           &     (gridPoint%YI >= BoundingBox%YI) .AND. &
-                           & (gridPoint%YI <= BoundingBox%YE) .AND. (gridPoint%ZI >= BoundingBox%ZI) .AND. (gridPoint%ZI <= BoundingBox%ZE)) then
-                              sgg%observation(i)%nP = sgg%observation(i)%nP + 1
-                              sgg%observation(i)%P(sgg%observation(i)%nP)%node = this%tSlots%Tg(j1)%TgC(i1)%node
-                              sgg%observation(i)%P(sgg%observation(i)%nP)%XI = gridPoint%XI
-                              sgg%observation(i)%P(sgg%observation(i)%nP)%YI = gridPoint%YI
-                              sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = gridPoint%ZI
-                              direccion = this%tSlots%Tg(j1)%TgC(i1)%dir
-                              select case (thinSlotData(j1)%normal(i1))
-                               case (IEX)
-                                 select case (direccion)
-                                  case (IEZ)
-                                    sgg%observation(i)%P(sgg%observation(i)%nP)%What = IVY
-                                  case (IEY)
-                                    sgg%observation(i)%P(sgg%observation(i)%nP)%What = IVZ
-                                 end select
-                               case (IEY)
-                                 select case (direccion)
-                                  case (IEX)
-                                    sgg%observation(i)%P(sgg%observation(i)%nP)%What = IVZ
-                                  case (IEZ)
-                                    sgg%observation(i)%P(sgg%observation(i)%nP)%What = IVX
-                                 end select
-                               case (IEZ)
-                                 select case (direccion)
-                                  case (IEY)
-                                    sgg%observation(i)%P(sgg%observation(i)%nP)%What = IVX
-                                  case (IEX)
-                                    sgg%observation(i)%P(sgg%observation(i)%nP)%What = IVY
-                                 end select
-                              end select
-                              exit do_loop_busquedatg
-                           end if
-                        end if
-                     end do
-                  end do do_loop_busquedatg
                else if (abs(this%Sonda%collection(i)%cordinates(j)%or) == NP_COR_LINE) then 
                   block
                      integer(kind=4) :: line_size, obs_size, idx

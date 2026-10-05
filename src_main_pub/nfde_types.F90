@@ -471,7 +471,6 @@ module NFDETypes_m
       integer(kind=4) :: i = 0
       integer(kind=4) :: j = 0
       integer(kind=4) :: K = 0
-      integer(kind=4) :: node = 0
       ! dir is the unsigned axis used by the Yee-material routines, while Or
       ! keeps the signed traversal of the source linel (Or = dir or -dir).
       ! The PEC plane normal that contains the slot is derived later, during
