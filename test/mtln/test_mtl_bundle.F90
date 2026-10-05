@@ -7,10 +7,10 @@ integer function test_mtl_bundle_init() bind(C) result(error_cnt)
     type(mtl_bundle_t) :: bundle
     type(transmission_line_level_t), dimension(2) :: levels
 
-    real(kind=rkind),dimension(1,1) :: l1 = reshape( source = [ 4.4712610E-07_rkind ], shape = [ 1,1 ] )
-    real(kind=rkind),dimension(1,1) :: c1 = reshape( source = [ 2.242e-10_rkind ], shape = [ 1,1 ] )
-    real(kind=rkind),dimension(1,1) :: r1 = reshape( source = [ 0.0_rkind ], shape = [ 1,1 ] )
-    real(kind=rkind),dimension(1,1) :: g1 = reshape( source = [ 0.0_rkind ], shape = [ 1,1 ] )
+    real(kind=rkind),dimension(1,1) :: l1 = reshape(source = [ 4.4712610E-07_rkind ], shape = [ 1,1 ])
+    real(kind=rkind),dimension(1,1) :: c1 = reshape(source = [ 2.242e-10_rkind ], shape = [ 1,1 ])
+    real(kind=rkind),dimension(1,1) :: r1 = reshape(source = [ 0.0_rkind ], shape = [ 1,1 ])
+    real(kind=rkind),dimension(1,1) :: g1 = reshape(source = [ 0.0_rkind ], shape = [ 1,1 ])
 
     integer :: i
     real(kind=rkind), dimension(5) :: step_size = [20.0_rkind, 20.0_rkind, 20.0_rkind, 20.0_rkind, 20.0_rkind]
@@ -37,7 +37,7 @@ integer function test_mtl_bundle_init() bind(C) result(error_cnt)
                     step_size, &
                     name = "line_in", &
                     segments = segments, &
-                    dt = 1e-11_RKIND_TIEMPO, & 
+                    dt = 1e-11_RKIND_TIME, & 
                     parent_name = "line_out", &
                     conductor_in_parent = 1, &
                     transfer_impedance = Zt)
@@ -46,7 +46,7 @@ integer function test_mtl_bundle_init() bind(C) result(error_cnt)
                     step_size, &
                     name = "line_out", &
                     segments = segments, &
-                    dt = 1e-11_RKIND_TIEMPO, &
+                    dt = 1e-11_RKIND_TIME, &
                     multipolar_expansion = mE, &
                     radius = 0.0_rkind )
 

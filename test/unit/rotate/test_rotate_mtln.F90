@@ -2,7 +2,7 @@ module test_rotate_mtln_m
     use mtln_types_m
     use smbjson_m
     use nfde_rotate_m
-    use rotate_testingTools
+    use rotate_testingTools_m
     implicit none
 
 contains

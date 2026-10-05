@@ -95,7 +95,7 @@ contains
       this%tagNumber = 0_IKINDMTAG
       this%mediaType = -1.0_RKIND
       call store_classification(this, problemInfo)
-      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
+      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIME)
       call alloc_and_init(this%xValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
       call alloc_and_init(this%yValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
       call alloc_and_init(this%zValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
@@ -134,7 +134,7 @@ contains
    subroutine create_bin_file(filePath, error)
       character(len=*), intent(in) :: filePath
       integer, intent(out) :: error
-      call create_file_with_path(add_extension(filePath, binaryExtension), error)
+      call create_file_with_path(add_extension(filePath, BINARYEXTENSION), error)
    end subroutine
 
    subroutine synchronise_movie_participants(this, control)
@@ -167,19 +167,19 @@ contains
       this%metadata%ownership%scalar_writer_rank = this%publication%owner_rank
       if (allocated(this%metadata%artifacts)) deallocate (this%metadata%artifacts)
       allocate (this%metadata%artifacts(5))
-      this%metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_BINARY
-      this%metadata%artifacts(1)%relative_path = trim(base_name)//binaryExtension
+      this%metadata%artifacts(1)%kindTag = OUTPUT_ARTIFACT_BINARY
+      this%metadata%artifacts(1)%relative_path = trim(base_name)//BINARYEXTENSION
       this%metadata%artifacts(1)%byte_order = BINARY_ENDIAN_LITTLE
       this%metadata%artifacts(1)%numeric_representation = BINARY_NUMERIC_REAL64
       this%metadata%artifacts(1)%record_bytes = 56
       this%metadata%artifacts(1)%component_order = 'time,x,y,z,Ex,Ey,Ez'
-      this%metadata%artifacts(2)%kind = OUTPUT_ARTIFACT_VISUALISATION_METADATA
+      this%metadata%artifacts(2)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_METADATA
       this%metadata%artifacts(2)%relative_path = trim(base_name)//'.xdmf'
-      this%metadata%artifacts(3)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
+      this%metadata%artifacts(3)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_DATA
       this%metadata%artifacts(3)%relative_path = trim(base_name)//'.h5'
-      this%metadata%artifacts(4)%kind = OUTPUT_ARTIFACT_GEOMETRY
+      this%metadata%artifacts(4)%kindTag = OUTPUT_ARTIFACT_GEOMETRY
       this%metadata%artifacts(4)%relative_path = trim(base_name)//'_geometry.xdmf'
-      this%metadata%artifacts(5)%kind = OUTPUT_ARTIFACT_VISUALISATION_DATA
+      this%metadata%artifacts(5)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_DATA
       this%metadata%artifacts(5)%relative_path = trim(base_name)//'_geometry.h5'
 
       call validate_binary_layout(this%metadata%artifacts(1), error)
@@ -201,10 +201,10 @@ contains
       attribute_names = ''
       attribute_enabled = .false.
       select case (this%component)
-      case (iCur, iMEC, iMHC)
+      case (ICUR, IMEC, IMHC)
          attributeBaseName = 'CurrenDensity'
-         if (this%component == iMEC) attributeBaseName = 'ElectricField'
-         if (this%component == iMHC) attributeBaseName = 'MagneticField'
+         if (this%component == IMEC) attributeBaseName = 'ElectricField'
+         if (this%component == IMHC) attributeBaseName = 'MagneticField'
          attribute_names(VISUALISATION_ATTRIBUTE_X) = trim(attributeBaseName)//'X'
          attribute_names(VISUALISATION_ATTRIBUTE_Y) = trim(attributeBaseName)//'Y'
          attribute_names(VISUALISATION_ATTRIBUTE_Z) = trim(attributeBaseName)//'Z'
@@ -216,26 +216,26 @@ contains
          attribute_names(VISUALISATION_ATTRIBUTE_MEDIA_Y) = 'mediatype_y'
          attribute_names(VISUALISATION_ATTRIBUTE_MEDIA_Z) = 'mediatype_z'
          attribute_enabled(VISUALISATION_ATTRIBUTE_TAG_X:VISUALISATION_ATTRIBUTE_MEDIA_Z) = .true.
-      case (iCurX, iEXC, iHXC)
+      case (ICURX, IEXC, IHXC)
          attributeBaseName = 'CurrenDensity'
-         if (this%component == iEXC) attributeBaseName = 'ElectricField'
-         if (this%component == iHXC) attributeBaseName = 'MagneticField'
+         if (this%component == IEXC) attributeBaseName = 'ElectricField'
+         if (this%component == IHXC) attributeBaseName = 'MagneticField'
          attribute_names(VISUALISATION_ATTRIBUTE_X) = trim(attributeBaseName)//'X'
          attribute_enabled(VISUALISATION_ATTRIBUTE_X) = .true.
-      case (iCurY, iEyC, iHyC)
+      case (ICURY, IEYC, IHYC)
          attributeBaseName = 'CurrenDensity'
-         if (this%component == iEyC) attributeBaseName = 'ElectricField'
-         if (this%component == iHyC) attributeBaseName = 'MagneticField'
+         if (this%component == IEYC) attributeBaseName = 'ElectricField'
+         if (this%component == IHYC) attributeBaseName = 'MagneticField'
          attribute_names(VISUALISATION_ATTRIBUTE_Y) = trim(attributeBaseName)//'Y'
          attribute_enabled(VISUALISATION_ATTRIBUTE_Y) = .true.
-      case (iCurZ, iEZC, iHzC)
+      case (ICURZ, IEZC, IHZC)
          attributeBaseName = 'CurrenDensity'
-         if (this%component == iEZC) attributeBaseName = 'ElectricField'
-         if (this%component == iHzC) attributeBaseName = 'MagneticField'
+         if (this%component == IEZC) attributeBaseName = 'ElectricField'
+         if (this%component == IHZC) attributeBaseName = 'MagneticField'
          attribute_names(VISUALISATION_ATTRIBUTE_Z) = trim(attributeBaseName)//'Z'
          attribute_enabled(VISUALISATION_ATTRIBUTE_Z) = .true.
       end select
-      if (.not. any([iCur, iMEC, iMHC] == this%component)) then
+      if (.not. any([ICUR, IMEC, IMHC] == this%component)) then
          attribute_names(VISUALISATION_ATTRIBUTE_TAG) = 'tagnumber'
          attribute_names(VISUALISATION_ATTRIBUTE_MEDIA) = 'mediatype'
          attribute_enabled(VISUALISATION_ATTRIBUTE_TAG) = .true.
@@ -255,7 +255,7 @@ contains
 
    subroutine update_movie_probe_output(this, step, fieldsReference, control, problemInfo)
       type(movie_probe_output_t), intent(inout) :: this
-      real(kind=RKIND_tiempo), intent(in)       :: step
+      real(kind=RKIND_TIME), intent(in)       :: step
       type(fields_reference_t), intent(in)      :: fieldsReference
       type(sim_control_t), intent(in)           :: control
       type(problem_info_t), intent(in)          :: problemInfo
@@ -271,45 +271,45 @@ contains
       ! Determine which save routine to call
       if (any(VOLUMIC_M_MEASURE == request)) then
          select case (request)
-         case (iCur)
+         case (ICUR)
             call save_current_module(this, fieldsReference, step, problemInfo)
-         case (iMEC)
+         case (IMEC)
             call save_field_module(this, fieldsReference%E, request, step, problemInfo)
-         case (iMHC)
+         case (IMHC)
             call save_field_module(this, fieldsReference%H, request, step, problemInfo)
          case default
             call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
          end select
       else if (any(VOLUMIC_X_MEASURE == request)) then
          select case (request)
-         case (iCurX)
-            call save_current_component(this, this%xValueForTime, fieldsReference, step, problemInfo, iEx)
-         case (iExC)
-            call save_field_component(this, this%xValueForTime, fieldsReference%E%x, step, problemInfo, iEx)
-         case (iHxC)
-            call save_field_component(this, this%xValueForTime, fieldsReference%H%x, step, problemInfo, iHx)
+         case (ICURX)
+            call save_current_component(this, this%xValueForTime, fieldsReference, step, problemInfo, IEX)
+         case (IEXC)
+            call save_field_component(this, this%xValueForTime, fieldsReference%E%x, step, problemInfo, IEX)
+         case (IHXC)
+            call save_field_component(this, this%xValueForTime, fieldsReference%H%x, step, problemInfo, IHX)
          case default
             call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
          end select
       else if (any(VOLUMIC_Y_MEASURE == request)) then
          select case (request)
-         case (iCurY)
-            call save_current_component(this, this%yValueForTime, fieldsReference, step, problemInfo, iEy)
-         case (iEyC)
-            call save_field_component(this, this%yValueForTime, fieldsReference%E%y, step, problemInfo, iEy)
-         case (iHyC)
-            call save_field_component(this, this%yValueForTime, fieldsReference%H%y, step, problemInfo, iHy)
+         case (ICURY)
+            call save_current_component(this, this%yValueForTime, fieldsReference, step, problemInfo, IEY)
+         case (IEYC)
+            call save_field_component(this, this%yValueForTime, fieldsReference%E%y, step, problemInfo, IEY)
+         case (IHYC)
+            call save_field_component(this, this%yValueForTime, fieldsReference%H%y, step, problemInfo, IHY)
          case default
             call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
          end select
       else if (any(VOLUMIC_Z_MEASURE == request)) then
          select case (request)
-         case (iCurZ)
-            call save_current_component(this, this%zValueForTime, fieldsReference, step, problemInfo, iEz)
-         case (iEzC)
-            call save_field_component(this, this%zValueForTime, fieldsReference%E%z, step, problemInfo, iEz)
-         case (iHzC)
-            call save_field_component(this, this%zValueForTime, fieldsReference%H%z, step, problemInfo, iHz)
+         case (ICURZ)
+            call save_current_component(this, this%zValueForTime, fieldsReference, step, problemInfo, IEZ)
+         case (IEZC)
+            call save_field_component(this, this%zValueForTime, fieldsReference%E%z, step, problemInfo, IEZ)
+         case (IHZC)
+            call save_field_component(this, this%zValueForTime, fieldsReference%H%z, step, problemInfo, IHZ)
          case default
             call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
          end select
@@ -371,7 +371,7 @@ contains
       end if
 
       call verify_volumetric_visualisation(this%filesPath, error)
-      if (file_exists(add_extension(this%filesPath, binaryExtension)) .and. &
+      if (file_exists(add_extension(this%filesPath, BINARYEXTENSION)) .and. &
           file_exists(trim(this%filesPath)//'_geometry.xdmf') .and. &
           file_exists(trim(this%filesPath)//'_geometry.h5') .and. &
           error == VISUALISATION_SUCCESS) then
@@ -413,7 +413,7 @@ contains
             call StopOnError(0, 0, 'Unable to gather movie binary records')
          end if
          if (this%publication%local_is_owner) then
-            call append_binary_real64(add_extension(this%filesPath, binaryExtension), &
+            call append_binary_real64(add_extension(this%filesPath, BINARYEXTENSION), &
                                       this%metadata%artifacts(1), gathered_records, status)
             if (status /= BINARY_WRITER_SUCCESS) then
                call StopOnError(0, 0, 'Unable to append movie binary records')
@@ -436,15 +436,15 @@ contains
                                           status, diagnostic)
             call require_visualisation_success(status, diagnostic, 'Movie HDF5 write failed: ')
          end if
-         if (any([iCur, iMEC, iMHC, iCurX, iExC, iHxC] == this%component)) then
+         if (any([ICUR, IMEC, IMHC, ICURX, IEXC, IHXC] == this%component)) then
             call write_external_attribute(this, VISUALISATION_ATTRIBUTE_X, this%xValueForTime, &
                                           time_index, transport)
          end if
-         if (any([iCur, iMEC, iMHC, iCurY, iEyC, iHyC] == this%component)) then
+         if (any([ICUR, IMEC, IMHC, ICURY, IEYC, IHYC] == this%component)) then
             call write_external_attribute(this, VISUALISATION_ATTRIBUTE_Y, this%yValueForTime, &
                                           time_index, transport)
          end if
-         if (any([iCur, iMEC, iMHC, iCurZ, iEzC, iHzC] == this%component)) then
+         if (any([ICUR, IMEC, IMHC, ICURZ, IEZC, IHZC] == this%component)) then
             call write_external_attribute(this, VISUALISATION_ATTRIBUTE_Z, this%zValueForTime, &
                                           time_index, transport)
          end if
@@ -481,19 +481,19 @@ contains
    subroutine write_classification_attributes(this, transport)
       type(movie_probe_output_t), intent(inout) :: this
       type(output_transport_t), intent(in) :: transport
-      integer, parameter :: tag_attributes(3) = [VISUALISATION_ATTRIBUTE_TAG_X, &
+      integer, parameter :: TAG_ATTRIBUTES(3) = [VISUALISATION_ATTRIBUTE_TAG_X, &
                                                  VISUALISATION_ATTRIBUTE_TAG_Y, &
                                                  VISUALISATION_ATTRIBUTE_TAG_Z]
-      integer, parameter :: media_attributes(3) = [VISUALISATION_ATTRIBUTE_MEDIA_X, &
+      integer, parameter :: MEDIA_ATTRIBUTES(3) = [VISUALISATION_ATTRIBUTE_MEDIA_X, &
                                                    VISUALISATION_ATTRIBUTE_MEDIA_Y, &
                                                    VISUALISATION_ATTRIBUTE_MEDIA_Z]
       integer :: axis
 
       if (this%classificationWritten) return
-      if (any([iCur, iMEC, iMHC] == this%component)) then
+      if (any([ICUR, IMEC, IMHC] == this%component)) then
          do axis = 1, 3
-            call write_external_classification_attribute(this, tag_attributes(axis), axis, .true., transport)
-            call write_external_classification_attribute(this, media_attributes(axis), axis, .false., transport)
+            call write_external_classification_attribute(this, TAG_ATTRIBUTES(axis), axis, .true., transport)
+            call write_external_classification_attribute(this, MEDIA_ATTRIBUTES(axis), axis, .false., transport)
          end do
       else
          do axis = 1, 3
@@ -577,7 +577,7 @@ contains
 
       integer, allocatable :: counts(:), displacements(:)
       real(real64), allocatable :: gathered_values(:), local_batch(:)
-      integer(int64) :: global_shape(3), offset(3), shape(3)
+      integer(int64) :: global_shape(3), offset(3), shapeValue(3)
       integer :: global_index, i, j, k, local_index, rank_index, value_start
 
       allocate (local_batch(6 + size(local_values)))
@@ -605,18 +605,18 @@ contains
          end if
          value_start = displacements(rank_index)
          offset = nint(gathered_values(value_start + 1:value_start + 3), kind=int64)
-         shape = nint(gathered_values(value_start + 4:value_start + 6), kind=int64)
-         if (any(shape <= 0_int64) .or. any(offset < 0_int64) .or. &
-             any(offset + shape > global_shape) .or. &
-             int(counts(rank_index) - 6, int64) /= product(shape)) then
+         shapeValue = nint(gathered_values(value_start + 4:value_start + 6), kind=int64)
+         if (any(shapeValue <= 0_int64) .or. any(offset < 0_int64) .or. &
+             any(offset + shapeValue > global_shape) .or. &
+             int(counts(rank_index) - 6, int64) /= product(shapeValue)) then
             status = OUTPUT_TRANSPORT_INVALID_CONTEXT
             return
          end if
-         do k = 1, int(shape(3))
-         do j = 1, int(shape(2))
-         do i = 1, int(shape(1))
-            local_index = i + (j - 1)*int(shape(1)) + &
-                          (k - 1)*int(shape(1)*shape(2))
+         do k = 1, int(shapeValue(3))
+         do j = 1, int(shapeValue(2))
+         do i = 1, int(shapeValue(1))
+            local_index = i + (j - 1)*int(shapeValue(1)) + &
+                          (k - 1)*int(shapeValue(1)*shapeValue(2))
             global_index = int(offset(1)) + i + &
                            (int(offset(2)) + j - 1)*int(global_shape(1)) + &
                            (int(offset(3)) + k - 1)*int(global_shape(1)*global_shape(2))
@@ -648,10 +648,10 @@ contains
       integer(kind=SINGLE), intent(in) :: component
       integer, intent(in) :: axis
 
-      classification_axis_enabled = any([iCur, iMEC, iMHC] == component) .or. &
-                                    (axis == 1 .and. any([iCurX, iExC, iHxC] == component)) .or. &
-                                    (axis == 2 .and. any([iCurY, iEyC, iHyC] == component)) .or. &
-                                    (axis == 3 .and. any([iCurZ, iEzC, iHzC] == component))
+      classification_axis_enabled = any([ICUR, IMEC, IMHC] == component) .or. &
+                                    (axis == 1 .and. any([ICURX, IEXC, IHXC] == component)) .or. &
+                                    (axis == 2 .and. any([ICURY, IEYC, IHYC] == component)) .or. &
+                                    (axis == 3 .and. any([ICURZ, IEZC, IHZC] == component))
    end function classification_axis_enabled
 
    logical function classification_point_is_valid(component, field, position, problemInfo)
@@ -659,7 +659,7 @@ contains
       integer, intent(in) :: field, position(3)
       type(problem_info_t), intent(in) :: problemInfo
 
-      if (any([iCur, iCurX, iCurY, iCurZ] == component)) then
+      if (any([ICUR, ICURX, ICURY, ICURZ] == component)) then
          classification_point_is_valid = isValidPointForCurrent(field, position(1), position(2), position(3), problemInfo)
       else
          classification_point_is_valid = isValidPointForField(field, position(1), position(2), position(3), problemInfo)
@@ -680,7 +680,7 @@ contains
    subroutine save_current_module(this, fieldsReference, simTime, problemInfo)
       type(movie_probe_output_t), intent(inout) :: this
       type(fields_reference_t), intent(in)      :: fieldsReference
-      real(kind=RKIND_tiempo), intent(in)       :: simTime
+      real(kind=RKIND_TIME), intent(in)       :: simTime
       type(problem_info_t), intent(in)          :: problemInfo
 
       integer :: i, j, k, coordIdx
@@ -689,11 +689,19 @@ contains
       do k = this%mainCoords%z, this%auxCoords%z
       do j = this%mainCoords%y, this%auxCoords%y
       do i = this%mainCoords%x, this%auxCoords%x
-         if (isValidPointForCurrent(iCur, i, j, k, problemInfo)) then
+         if (isValidPointForCurrent(ICUR, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
-            call save_current(this%xValueForTime, this%nTime, coordIdx, iEx, i, j, k, fieldsReference)
-            call save_current(this%yValueForTime, this%nTime, coordIdx, iEy, i, j, k, fieldsReference)
-            call save_current(this%zValueForTime, this%nTime, coordIdx, iEz, i, j, k, fieldsReference)
+            ! Only store the components whose edge lies on a surface. Otherwise the
+            ! non-surface components would leak total current densities into the output.
+            if (isValidPointForCurrent(IEX, i, j, k, problemInfo)) then
+               call save_current(this%xValueForTime, this%nTime, coordIdx, IEX, i, j, k, fieldsReference)
+            end if
+            if (isValidPointForCurrent(IEY, i, j, k, problemInfo)) then
+               call save_current(this%yValueForTime, this%nTime, coordIdx, IEY, i, j, k, fieldsReference)
+            end if
+            if (isValidPointForCurrent(IEZ, i, j, k, problemInfo)) then
+               call save_current(this%zValueForTime, this%nTime, coordIdx, IEZ, i, j, k, fieldsReference)
+            end if
          end if
       end do
       end do
@@ -704,7 +712,7 @@ contains
       type(movie_probe_output_t), intent(inout) :: this
       real(kind=RKIND), intent(inout)           :: currentData(:, :)
       type(fields_reference_t), intent(in)      :: fieldsReference
-      real(kind=RKIND_tiempo), intent(in)       :: simTime
+      real(kind=RKIND_TIME), intent(in)       :: simTime
       type(problem_info_t), intent(in)          :: problemInfo
       integer, intent(in)                       :: fieldDir
 
@@ -734,7 +742,7 @@ contains
    subroutine save_field_module(this, field, request, simTime, problemInfo)
       type(movie_probe_output_t), intent(inout) :: this
       type(field_data_t), intent(in)            :: field
-      real(kind=RKIND_tiempo), intent(in)       :: simTime
+      real(kind=RKIND_TIME), intent(in)       :: simTime
       type(problem_info_t), intent(in)          :: problemInfo
       integer, intent(in)                       :: request
 
@@ -759,7 +767,7 @@ contains
       type(movie_probe_output_t), intent(inout) :: this
       real(kind=RKIND), intent(inout)           :: fieldData(:, :)
       real(kind=RKIND), intent(in)              :: fieldComponent(:, :, :)
-      real(kind=RKIND_tiempo), intent(in)       :: simTime
+      real(kind=RKIND_TIME), intent(in)       :: simTime
       type(problem_info_t), intent(in)          :: problemInfo
       integer, intent(in)                       :: fieldDir
 

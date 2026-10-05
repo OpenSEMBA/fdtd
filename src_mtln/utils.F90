@@ -36,13 +36,13 @@ contains
       end do
   end function
 
-   function eye(dim) result(res)
-      integer, intent(in) :: dim
-      real(kind=rkind), dimension(dim, dim) :: res
+   function eye(dimValue) result(res)
+      integer, intent(in) :: dimValue
+      real(kind=rkind), dimension(dimValue, dimValue) :: res
       integer :: i
 
       res = 0
-      do i = 1, dim
+      do i = 1, dimValue
          res(i,i) = 1.0_rkind
       end do
    end function eye
@@ -65,7 +65,7 @@ contains
       call dgeev('n','n', n, m1, n, eigvals_real, eigvals_imag, dummy,1,dummy,1,dummy, lwork, info)
       
       lwork = max((nb+2)*n, nint(dummy(1,1)))
-      Allocate (work(lwork))
+      allocate (work(lwork))
       
       call dgeev('n','n', n, m2, n, eigvals_real, eigvals_imag, vl,n,vr,n,work, lwork, info)
       eigvals = [eigvals_real, eigvals_imag]

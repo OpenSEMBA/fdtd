@@ -88,7 +88,14 @@ def test_shieldedPair_mpi(tmp_path):
     ]
 
     for index in [0, 3]:
-        for component in range(3):
+        # Full-wave voltage probes omit the inner cable shield.
+        voltage_components = [
+            column
+            for column in p_solved[index].data.columns
+            if column.startswith("voltage_")
+        ]
+        assert voltage_components == ["voltage_0", "voltage_1"]
+        for component in range(2):
             solved = np.interp(
                 p_expected[index]["time"].to_numpy(),
                 p_solved[index]["time"].to_numpy(),

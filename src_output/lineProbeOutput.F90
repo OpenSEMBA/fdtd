@@ -1,7 +1,7 @@
 module lineProbeOutput_m
-   use FDETYPES_m, only: RKIND, RKIND_tiempo, SINGLE, BUFSIZE, direction_t, xyzlimit_t, iEx, iEy, iEz
+   use FDETYPES_m, only: RKIND, RKIND_TIME, SINGLE, BUFSIZE, direction_t, xyzlimit_t, IEX, IEY, IEZ
    use outputTypes_m, only: field_data_t, line_probe_output_t, domain_t, TIME_DOMAIN, OUTPUT_TIME_BUFFER_SIZE, &
-                            OUTPUT_ARTIFACT_TEXT, datFileExtension, timeExtension, declare_probe_artifacts
+                            OUTPUT_ARTIFACT_TEXT, DATFILEEXTENSION, TIMEEXTENSION, declare_probe_artifacts
    use allocationUtils_m, only: alloc_and_init
    use directoryUtils_m, only: create_file_with_path
 #ifdef CompileWithMPI
@@ -16,26 +16,26 @@ module lineProbeOutput_m
 
 contains
 
-   function calculate_line_integral(segments, electric_field) result(value)
+   function calculate_line_integral(segments, electric_field) result(scalarValue)
       type(direction_t), intent(in) :: segments(:)
       type(field_data_t), intent(in) :: electric_field
-      real(kind=RKIND) :: value
+      real(kind=RKIND) :: scalarValue
       integer :: segment_index, orientation
 
-      value = 0.0_RKIND
+      scalarValue = 0.0_RKIND
       do segment_index = 1, size(segments)
          orientation = segments(segment_index)%orientation
          select case (abs(orientation))
-         case (iEx)
-            value = value + electric_field%x(segments(segment_index)%x, segments(segment_index)%y, &
+         case (IEX)
+            scalarValue = scalarValue + electric_field%x(segments(segment_index)%x, segments(segment_index)%y, &
                                              segments(segment_index)%z)*sign(1, orientation)* &
                     electric_field%deltaX(segments(segment_index)%x)
-         case (iEy)
-            value = value + electric_field%y(segments(segment_index)%x, segments(segment_index)%y, &
+         case (IEY)
+            scalarValue = scalarValue + electric_field%y(segments(segment_index)%x, segments(segment_index)%y, &
                                              segments(segment_index)%z)*sign(1, orientation)* &
                     electric_field%deltaY(segments(segment_index)%y)
-         case (iEz)
-            value = value + electric_field%z(segments(segment_index)%x, segments(segment_index)%y, &
+         case (IEZ)
+            scalarValue = scalarValue + electric_field%z(segments(segment_index)%x, segments(segment_index)%y, &
                                              segments(segment_index)%z)*sign(1, orientation)* &
                     electric_field%deltaZ(segments(segment_index)%z)
          end select
@@ -76,10 +76,10 @@ contains
       else
          this%segments = segments
       end if
-      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
+      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIME)
       call alloc_and_init(this%valueForTime, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND)
 
-      artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
+      artifact_paths(1) = trim(this%path)//'_'//TIMEEXTENSION//DATFILEEXTENSION
       artifact_kinds = OUTPUT_ARTIFACT_TEXT
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
       if (this%isWriter) then
@@ -109,7 +109,7 @@ contains
          return
       end if
       owned_upper_z = sweeps(component)%ZE
-      if (local_rank < local_rank_count - 1 .and. any(component == [iEx, iEy])) owned_upper_z = owned_upper_z - 1
+      if (local_rank < local_rank_count - 1 .and. any(component == [IEX, IEY])) owned_upper_z = owned_upper_z - 1
       line_segment_is_local = segment%x >= sweeps(component)%XI .and. segment%x <= sweeps(component)%XE .and. &
                               segment%y >= sweeps(component)%YI .and. segment%y <= sweeps(component)%YE .and. &
                               segment%z >= sweeps(component)%ZI .and. segment%z <= owned_upper_z
@@ -117,7 +117,7 @@ contains
 
    subroutine update_line_probe_output(this, step, electric_field)
       type(line_probe_output_t), intent(inout) :: this
-      real(kind=RKIND_tiempo), intent(in) :: step
+      real(kind=RKIND_TIME), intent(in) :: step
       type(field_data_t), intent(in) :: electric_field
 #ifdef CompileWithMPI
       integer :: ierr
@@ -143,20 +143,20 @@ contains
       if (this%nTime == 0) return
       this%nTimesFlushed = this%nTimesFlushed + this%nTime
       this%nTime = 0
-      this%timeStep = 0.0_RKIND_tiempo
+      this%timeStep = 0.0_RKIND_TIME
       this%valueForTime = 0.0_RKIND
    end subroutine complete_line_probe_sample
 
    subroutine flush_line_probe_output(this)
       type(line_probe_output_t), intent(inout) :: this
-      integer :: index, ios, unit
+      integer :: elementIndex, ios, unit
 
       if (this%nTime == 0) return
       if (this%isWriter) then
          open (newunit=unit, file=this%artifacts(1)%relative_path, status='old', action='write', position='append', iostat=ios)
          if (ios /= 0) return
-         do index = 1, this%nTime
-            write (unit, '(ES24.16E3,1X,ES24.16E3)', iostat=ios) this%timeStep(index), this%valueForTime(index)
+         do elementIndex = 1, this%nTime
+            write (unit, '(ES24.16E3,1X,ES24.16E3)', iostat=ios) this%timeStep(elementIndex), this%valueForTime(elementIndex)
             if (ios /= 0) exit
          end do
          close (unit)

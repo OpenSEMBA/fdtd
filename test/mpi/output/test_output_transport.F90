@@ -5,7 +5,7 @@ program test_output_transport
                                  OUTPUT_TRANSPORT_SUCCESS
    implicit none
 
-   integer, parameter :: root_rank = 0
+   integer, parameter :: ROOT_RANK = 0
    integer :: ierr, rank, rank_count, status, failures, i
    integer, allocatable :: counts(:), displacements(:)
     real(real64), allocatable :: local_batch(:), gathered_batch(:)
@@ -42,21 +42,21 @@ program test_output_transport
 
 contains
 
-   pure integer function rank_for_index(index)
-      integer, intent(in) :: index
+   pure integer function rank_for_index(elementIndex)
+      integer, intent(in) :: elementIndex
 
       rank_for_index = 0
-      do while ((rank_for_index + 1) * (rank_for_index + 2) / 2 < index)
+      do while ((rank_for_index + 1) * (rank_for_index + 2) / 2 < elementIndex)
          rank_for_index = rank_for_index + 1
       end do
    end function rank_for_index
 
-   pure integer function local_index(index)
-      integer, intent(in) :: index
+   pure integer function local_index(elementIndex)
+      integer, intent(in) :: elementIndex
       integer :: owner
 
-      owner = rank_for_index(index)
-      local_index = index - owner * (owner + 1) / 2
+      owner = rank_for_index(elementIndex)
+      local_index = elementIndex - owner * (owner + 1) / 2
    end function local_index
 
 end program test_output_transport

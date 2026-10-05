@@ -10,7 +10,7 @@ integer function test_output_binary_fragment_layout() bind(c) result(err)
    integer :: status
 
    err = 0
-   artifact%kind = OUTPUT_ARTIFACT_BINARY
+   artifact%kindTag = OUTPUT_ARTIFACT_BINARY
    artifact%role = OUTPUT_ARTIFACT_ROLE_FRAGMENT
    artifact%byte_order = BINARY_ENDIAN_LITTLE
    artifact%numeric_representation = BINARY_NUMERIC_REAL32
@@ -69,7 +69,7 @@ integer function test_output_binary_mixed_complex_layout() bind(c) result(err)
    integer :: status
 
    err = 0
-   artifact%kind = OUTPUT_ARTIFACT_BINARY
+   artifact%kindTag = OUTPUT_ARTIFACT_BINARY
    artifact%byte_order = BINARY_ENDIAN_LITTLE
    artifact%numeric_representation = BINARY_NUMERIC_REAL64
    artifact%complex_representation = BINARY_COMPLEX_REAL_IMAG
@@ -92,10 +92,10 @@ integer function test_output_binary_append_real64() bind(c) result(err)
 
    type(output_artifact_t) :: artifact
    integer :: file_size, ios, status
-   character(len=*), parameter :: path = 'testing binary/append-real64.bin'
+   character(len=*), parameter :: PATH = 'testing binary/append-real64.bin'
 
    err = 0
-   artifact%kind = OUTPUT_ARTIFACT_BINARY
+   artifact%kindTag = OUTPUT_ARTIFACT_BINARY
    artifact%byte_order = BINARY_ENDIAN_LITTLE
    artifact%numeric_representation = BINARY_NUMERIC_REAL64
    artifact%complex_representation = BINARY_COMPLEX_UNSPECIFIED
@@ -124,10 +124,10 @@ integer function test_output_binary_append_empty_real64() bind(c) result(err)
    type(output_artifact_t) :: artifact
    real(real64), allocatable :: values(:)
    integer :: file_size, ios, status
-   character(len=*), parameter :: path = 'testing binary/append-empty-real64.bin'
+   character(len=*), parameter :: PATH = 'testing binary/append-empty-real64.bin'
 
    err = 0
-   artifact%kind = OUTPUT_ARTIFACT_BINARY
+   artifact%kindTag = OUTPUT_ARTIFACT_BINARY
    artifact%byte_order = BINARY_ENDIAN_LITTLE
    artifact%numeric_representation = BINARY_NUMERIC_REAL64
    artifact%complex_representation = BINARY_COMPLEX_UNSPECIFIED

@@ -28,19 +28,19 @@ contains
         integer :: i
         sides_copy = sides
         do i = 1, size(sides_copy)
-            if (sides_copy(i)%init%position(edge) > sides_copy(i)%end%position(edge)) then 
-                c = sides_copy(i)%init%position(edge)
-                sides_copy(i)%init%position(edge) = sides_copy(i)%end%position(edge)
-                sides_copy(i)%end%position(edge) = c
+            if (sides_copy(i)%startNode%position(edge) > sides_copy(i)%endNode%position(edge)) then 
+                c = sides_copy(i)%startNode%position(edge)
+                sides_copy(i)%startNode%position(edge) = sides_copy(i)%endNode%position(edge)
+                sides_copy(i)%endNode%position(edge) = c
             end if
         end do
         res = sides_copy(1)
         do i = 2, size(sides_copy)
-            if (sides_copy(i)%init%position(edge) < res%init%position(edge)) then 
-                res%init%position(edge) = sides_copy(i)%init%position(edge)
+            if (sides_copy(i)%startNode%position(edge) < res%startNode%position(edge)) then 
+                res%startNode%position(edge) = sides_copy(i)%startNode%position(edge)
             end if
-            if (sides_copy(i)%end%position(edge) > res%end%position(edge)) then 
-                res%end%position(edge) = sides_copy(i)%end%position(edge)
+            if (sides_copy(i)%endNode%position(edge) > res%endNode%position(edge)) then 
+                res%endNode%position(edge) = sides_copy(i)%endNode%position(edge)
             end if
         end do
     end function
@@ -130,21 +130,21 @@ contains
         type(side_t), dimension(:), allocatable, intent(in) :: sides
         type(side_t), dimension(:), allocatable :: inner_path
         type(side_t), dimension(:), allocatable :: res
-        type(coord_t) :: init, end
+        type(coord_t) :: startNode, endNode
 
         if (size(sides) == 0) then 
             allocate(res(0))
         else
             inner_path = getPathOnFace(sides)
-            init = inner_path(1)%init
-            end = inner_path(size(inner_path))%end
-            if (init%isOnVertex() .and. end%isOnVertex()) then 
+            startNode = inner_path(1)%startNode
+            endNode = inner_path(size(inner_path))%endNode
+            if (startNode%isOnVertex() .and. endNode%isOnVertex()) then 
                 res = buildVertexToVertexContour(inner_path)
-            else if (init%isOnVertex() .and. .not. end%isOnVertex()) then 
+            else if (startNode%isOnVertex() .and. .not. endNode%isOnVertex()) then 
                 res = buildVertexToSideContour(inner_path)
-            else if (.not. init%isOnVertex() .and. end%isOnVertex()) then 
+            else if (.not. startNode%isOnVertex() .and. endNode%isOnVertex()) then 
                 res = buildSideToVertexContour(inner_path)
-            elseif (.not. init%isOnVertex() .and. .not. end%isOnVertex()) then 
+            else if (.not. startNode%isOnVertex() .and. .not. endNode%isOnVertex()) then 
                 res = buildSideToSideContour(inner_path)
             end if
         end if
@@ -160,36 +160,36 @@ contains
         
         allocate(res(size(inner_path) + 2))
         res(1:size(inner_path)) = inner_path
-        mid_corner_idx = mod(cornerIndex(corners, inner_path(size(inner_path))%end%position),4) + 1
-        res(size(inner_path) + 1) = buildSide(inner_path(size(inner_path))%end%position, corners(:,mid_corner_idx))
-        res(size(inner_path) + 2) = buildSide(corners(:,mid_corner_idx), inner_path(1)%init%position)
+        mid_corner_idx = mod(cornerIndex(corners, inner_path(size(inner_path))%endNode%position),4) + 1
+        res(size(inner_path) + 1) = buildSide(inner_path(size(inner_path))%endNode%position, corners(:,mid_corner_idx))
+        res(size(inner_path) + 2) = buildSide(corners(:,mid_corner_idx), inner_path(1)%startNode%position)
     end function
     
     function buildVertexToSideContour(inner_path) result(res)
         type(side_t), dimension(:), allocatable, intent(in) :: inner_path
         type(side_t), dimension(:), allocatable :: res
-        type(coord_t) :: init, end
+        type(coord_t) :: startNode, endNode
         integer :: i, idx
         real, dimension(3,4) :: corners
         type(side_t) :: cell_side
 
-        init = inner_path(1)%init
-        end = inner_path(size(inner_path))%end
+        startNode = inner_path(1)%startNode
+        endNode = inner_path(size(inner_path))%endNode
         corners = buildCorners(inner_path(1), inner_path(1)%getFace())
 
         allocate(res(size(inner_path)))
         res = inner_path
         do i = 1, 4
-            cell_side%init%position = corners(:,i)
-            cell_side%end%position  = corners(:,mod(i,4) + 1)
-            if (all(cell_side%getCell() .eq. floor(end%position)) .and. &
-                (cell_side%getEdge() == end%getEdge()) ) then 
+            cell_side%startNode%position = corners(:,i)
+            cell_side%endNode%position  = corners(:,mod(i,4) + 1)
+            if (all(cell_side%getCell() .eq. floor(endNode%position)) .and. &
+                (cell_side%getEdge() == endNode%getEdge()) ) then 
                 idx = i
                 exit
             end if
         end do
-        call addSide(res, buildSide(end%position, corners(:,mod(idx,4) + 1)))
-        do while (.not. all(corners(:,mod(idx,4) + 1) .eq. init%position))
+        call addSide(res, buildSide(endNode%position, corners(:,mod(idx,4) + 1)))
+        do while (.not. all(corners(:,mod(idx,4) + 1) .eq. startNode%position))
             call addSide(res, buildSide(corners(:,mod(idx,4) + 1), corners(:,mod(idx + 1,4) + 1)))
             idx = idx + 1
         end do
@@ -198,30 +198,30 @@ contains
     function buildSideToVertexContour(inner_path) result(res)
         type(side_t), dimension(:), allocatable, intent(in) :: inner_path
         type(side_t), dimension(:), allocatable :: res
-        type(coord_t) :: init, end
+        type(coord_t) :: startNode, endNode
         integer :: idx
         real, dimension(3,4) :: corners
         type(side_t) :: cell_side
 
-        init = inner_path(1)%init
-        end = inner_path(size(inner_path))%end
+        startNode = inner_path(1)%startNode
+        endNode = inner_path(size(inner_path))%endNode
         corners = buildCorners(inner_path(1), inner_path(1)%getFace())
 
         allocate(res(size(inner_path)))
         res = inner_path
 
-        idx = cornerIndex(corners, end%position)
+        idx = cornerIndex(corners, endNode%position)
 
-        cell_side%init%position = corners(:,idx)
-        cell_side%end%position  = corners(:,mod(idx,4) + 1)
-        do while (.not. (all(cell_side%getCell() .eq. floor(init%position)) .and. &
-                 (cell_side%getEdge() == init%getEdge()) ))
-                 call addSide(res, buildSide(cell_side%init%position, cell_side%end%position))
-                cell_side%init%position = corners(:,mod(idx,4) + 1)
-                cell_side%end%position  = corners(:,mod(idx + 1,4) + 1)
+        cell_side%startNode%position = corners(:,idx)
+        cell_side%endNode%position  = corners(:,mod(idx,4) + 1)
+        do while (.not. (all(cell_side%getCell() .eq. floor(startNode%position)) .and. &
+                 (cell_side%getEdge() == startNode%getEdge()) ))
+                 call addSide(res, buildSide(cell_side%startNode%position, cell_side%endNode%position))
+                cell_side%startNode%position = corners(:,mod(idx,4) + 1)
+                cell_side%endNode%position  = corners(:,mod(idx + 1,4) + 1)
                 idx = idx + 1
         end do
-        call addSide(res, buildSide(cell_side%init%position, init%position))
+        call addSide(res, buildSide(cell_side%startNode%position, startNode%position))
 
     end function
     
@@ -231,41 +231,41 @@ contains
         type(side_t) :: cell_side
         integer :: i, idx_i, idx_e, idx
         real, dimension(3,4) :: corners
-        type(coord_t) :: init, end
+        type(coord_t) :: startNode, endNode
 
 
-        init = inner_path(1)%init
-        end = inner_path(size(inner_path))%end
+        startNode = inner_path(1)%startNode
+        endNode = inner_path(size(inner_path))%endNode
 
         corners = buildCorners(inner_path(1), inner_path(1)%getFace())
         allocate(res(size(inner_path)))
         res = inner_path
         do i = 1, 4
-            cell_side%init%position = corners(:,i)
-            cell_side%end%position  = corners(:,mod(i,4) + 1)
-            if (all(cell_side%getCell() .eq. floor(init%position)) .and. &
-                (cell_side%getEdge() == init%getEdge()) ) then 
+            cell_side%startNode%position = corners(:,i)
+            cell_side%endNode%position  = corners(:,mod(i,4) + 1)
+            if (all(cell_side%getCell() .eq. floor(startNode%position)) .and. &
+                (cell_side%getEdge() == startNode%getEdge()) ) then 
                 idx_i = i
             end if
-            if (all(cell_side%getCell() .eq. floor(end%position)) .and. &
-                (cell_side%getEdge() == end%getEdge()) ) then 
+            if (all(cell_side%getCell() .eq. floor(endNode%position)) .and. &
+                (cell_side%getEdge() == endNode%getEdge()) ) then 
                 idx_e = i
             end if
         end do
         idx = mod(idx_e,4) + 1
-        call addSide(res, buildSide(end%position, corners(:,idx)))
+        call addSide(res, buildSide(endNode%position, corners(:,idx)))
 
         
-        cell_side%init%position = corners(:,idx)
-        cell_side%end%position  = corners(:,mod(idx,4) + 1)
-        do while (.not. (all(cell_side%getCell() .eq. floor(init%position)) .and. &
-                 (cell_side%getEdge() == init%getEdge()) ))
-                 call addSide(res, buildSide(cell_side%init%position, cell_side%end%position))
-                cell_side%init%position = corners(:,mod(idx,4) + 1)
-                cell_side%end%position  = corners(:,mod(idx + 1,4) + 1)
+        cell_side%startNode%position = corners(:,idx)
+        cell_side%endNode%position  = corners(:,mod(idx,4) + 1)
+        do while (.not. (all(cell_side%getCell() .eq. floor(startNode%position)) .and. &
+                 (cell_side%getEdge() == startNode%getEdge()) ))
+                 call addSide(res, buildSide(cell_side%startNode%position, cell_side%endNode%position))
+                cell_side%startNode%position = corners(:,mod(idx,4) + 1)
+                cell_side%endNode%position  = corners(:,mod(idx + 1,4) + 1)
                 idx = idx + 1
         end do
-        call addSide(res, buildSide(cell_side%init%position, init%position))
+        call addSide(res, buildSide(cell_side%startNode%position, startNode%position))
 
     end function
 
@@ -284,8 +284,8 @@ contains
     function buildSide(c1, c2) result(res)
         real, dimension(3), intent(in) :: c1, c2
         type(side_t) :: res
-        res%init%position = c1
-        res%end%position= c2
+        res%startNode%position = c1
+        res%endNode%position= c2
     end function
 
     integer function cornerIndex(corners, vertex)
@@ -337,7 +337,7 @@ contains
         integer, intent(in) :: face
         real, dimension(3) :: x_prod, diff
         isClockwise = .true.
-        diff = side%end%position - side%init%position
+        diff = side%endNode%position - side%startNode%position
         x_prod = cross(diff, side%normal)
         if (x_prod(face) < 0) isClockwise = .false.
     end function
@@ -360,8 +360,8 @@ contains
         aux_contour = contour
         if (isClockwise(contour(1), face)) then 
             do i = 1, size(contour)
-                aux_contour(size(contour) + 1 - i)%init = contour(i)%end
-                aux_contour(size(contour) + 1 - i)%end = contour(i)%init
+                aux_contour(size(contour) + 1 - i)%startNode = contour(i)%endNode
+                aux_contour(size(contour) + 1 - i)%endNode = contour(i)%startNode
             end do
         end if
 
@@ -369,8 +369,8 @@ contains
         dir2 = mod(face+1,3)+1
         res = 0
         do i = 1, size(aux_contour)
-           res = res + aux_contour(i)%init%position(dir1)*aux_contour(i)%end%position(dir2) - & 
-                       aux_contour(i)%end%position(dir1)*aux_contour(i)%init%position(dir2)
+           res = res + aux_contour(i)%startNode%position(dir1)*aux_contour(i)%endNode%position(dir2) - & 
+                       aux_contour(i)%endNode%position(dir1)*aux_contour(i)%startNode%position(dir2)
         end do
         res = 0.5*res
     end function
@@ -385,11 +385,11 @@ contains
         do while (n < size(res))
            do i = 1, size(sides) 
               if (n == 0) then 
-                if(.not. sides(i)%init%isOnAnyFace()) then 
+                if(.not. sides(i)%startNode%isOnAnyFace()) then 
                  n = n + 1
                  res(n) = sides(i)
                 end if
-              else if (n /= 0 .and. all(sides(i)%init%position .eq. res(n)%end%position)) then 
+              else if (n /= 0 .and. all(sides(i)%startNode%position .eq. res(n)%endNode%position)) then 
                  n = n + 1
                  res(n) = sides(i)
               end if

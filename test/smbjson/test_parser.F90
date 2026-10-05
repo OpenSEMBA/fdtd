@@ -1,10 +1,10 @@
 integer function test_parser_ctor() bind(C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'planewave.fdtd.json'
+   character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'planewave.fdtd.json'
    type(parser_t) :: parser
    
    parser = parser_t(filename)
@@ -17,7 +17,7 @@ end function
 
 integer function test_parser_tools_interval_to_coords() result(err)
    use parser_tools_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
@@ -27,7 +27,7 @@ integer function test_parser_tools_interval_to_coords() result(err)
 
    ! +Y oriented linel interval.
    interval = cell_interval_t( &
-      ini=cell_t([10, 0, 10]), end=cell_t([10, 5, 10]))
+      startNode=cell_t([10, 0, 10]), endNode=cell_t([10, 5, 10]))
    cs = cellIntervalsToCoords([interval])
 
    call expect_eq_int(err,  1, size(cs))
@@ -37,11 +37,11 @@ integer function test_parser_tools_interval_to_coords() result(err)
    call expect_eq_int(err,  4, cs(1)%Ye)
    call expect_eq_int(err, 10, cs(1)%Zi)
    call expect_eq_int(err, 10, cs(1)%Ze)
-   call expect_eq_int(err, +iEy, cs(1)%Or)
+   call expect_eq_int(err, +IEY, cs(1)%Or)
 
    ! -Z oriented linel interval.
    interval = cell_interval_t( &
-      ini=cell_t([10, 10, 5]), end=cell_t([10, 10, -1]))
+      startNode=cell_t([10, 10, 5]), endNode=cell_t([10, 10, -1]))
    cs = cellIntervalsToCoords([interval])
 
    call expect_eq_int(err,  1, size(cs))
@@ -51,11 +51,11 @@ integer function test_parser_tools_interval_to_coords() result(err)
    call expect_eq_int(err, 10, cs(1)%Ye)
    call expect_eq_int(err,  0, cs(1)%Zi)
    call expect_eq_int(err,  4, cs(1)%Ze)
-   call expect_eq_int(err, -iEz, cs(1)%Or)
+   call expect_eq_int(err, -IEZ, cs(1)%Or)
 
    ! +Y oriented surfel interval.
    interval = cell_interval_t( &
-      ini=cell_t([ 9,  2,  9]), end=cell_t([11,  2, 11]) )
+      startNode=cell_t([ 9,  2,  9]), endNode=cell_t([11,  2, 11]) )
    cs = cellIntervalsToCoords([interval])
    call expect_eq_int(err,  1, size(cs))
    call expect_eq_int(err,  9, cs(1)%Xi)
@@ -64,7 +64,7 @@ integer function test_parser_tools_interval_to_coords() result(err)
    call expect_eq_int(err,  2, cs(1)%Ye)
    call expect_eq_int(err,  9, cs(1)%Zi)
    call expect_eq_int(err, 10, cs(1)%Ze)
-   call expect_eq_int(err, +iEy, cs(1)%Or)
+   call expect_eq_int(err, +IEY, cs(1)%Or)
 
 
 end function
@@ -72,11 +72,11 @@ end function
 integer function test_parser_read_mesh() bind(C) result(err)
 
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'mtln.fdtd.json'
+   character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'mtln.fdtd.json'
    type(parser_t) :: parser
    type(mesh_t) :: mesh
    logical :: found
@@ -92,15 +92,15 @@ integer function test_parser_read_mesh() bind(C) result(err)
    
    obtained = mesh%getCoordinate(59, found)
    if (.not. found) err = err + 1
-   if ( any(obtained%position /= expected%position)) err = err + 1
+   if (any(obtained%position /= expected%position)) err = err + 1
 
    obtained = mesh%getCoordinate(64, found)
    if (.not. found) err = err + 1
-   if ( any(obtained%position /= expected%position)) err = err + 1
+   if (any(obtained%position /= expected%position)) err = err + 1
 
    obtained = mesh%getCoordinate(61, found)
    if (.not. found) err = err + 1
-   if ( any(obtained%position /= expected%position)) err = err + 1
+   if (any(obtained%position /= expected%position)) err = err + 1
 
 
 end function
@@ -108,11 +108,11 @@ end function
 integer function test_parser_read_conformal_volume() bind(C) result(err)
 
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
    
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'conformal.fdtd.json'
+   character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'conformal.fdtd.json'
    type(parser_t) :: parser
    type(mesh_t) :: mesh
    logical :: found

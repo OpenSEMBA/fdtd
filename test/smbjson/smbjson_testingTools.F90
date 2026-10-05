@@ -1,4 +1,4 @@
-module smbjson_testingTools
+module smbjson_testingTools_m
    use NFDETypes_extension_m
    implicit none
 
@@ -82,20 +82,20 @@ contains
 #ifdef CompileWithMTLN
    subroutine initializeCablePULParameters(cable, n)
       class(cable_t), pointer, intent(inout) :: cable
-      integer :: dim = 1
+      integer :: dimValue = 1
       integer, optional, intent(in) :: n
-      if (present(n)) dim = n
+      if (present(n)) dimValue = n
       select type(cable)
       type is(shielded_multiwire_t)
-         allocate(cable%inductance_per_meter(dim,dim), source = 0.0_rkind)
-         allocate(cable%capacitance_per_meter(dim,dim), source = 0.0_rkind)
-         allocate(cable%resistance_per_meter(dim,dim), source = 0.0_rkind)
-         allocate(cable%conductance_per_meter(dim,dim), source = 0.0_rkind)
+         allocate(cable%inductance_per_meter(dimValue,dimValue), source = 0.0_rkind)
+         allocate(cable%capacitance_per_meter(dimValue,dimValue), source = 0.0_rkind)
+         allocate(cable%resistance_per_meter(dimValue,dimValue), source = 0.0_rkind)
+         allocate(cable%conductance_per_meter(dimValue,dimValue), source = 0.0_rkind)
       type is (unshielded_multiwire_t)
-         allocate(cable%cell_inductance_per_meter(dim,dim), source = 0.0_rkind)
-         allocate(cable%cell_capacitance_per_meter(dim,dim), source = 0.0_rkind)
-         allocate(cable%resistance_per_meter(dim,dim), source = 0.0_rkind)
-         allocate(cable%conductance_per_meter(dim,dim), source = 0.0_rkind)
+         allocate(cable%cell_inductance_per_meter(dimValue,dimValue), source = 0.0_rkind)
+         allocate(cable%cell_capacitance_per_meter(dimValue,dimValue), source = 0.0_rkind)
+         allocate(cable%resistance_per_meter(dimValue,dimValue), source = 0.0_rkind)
+         allocate(cable%conductance_per_meter(dimValue,dimValue), source = 0.0_rkind)
          allocate(cable%multipolar_expansion(0))
       end select
       end subroutine

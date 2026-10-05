@@ -1,11 +1,11 @@
 module dispersive_m
     use mtln_utils_m
     use rational_approximation_m
-    use FDETYPES_m, only: RKIND, RKIND_TIEMPO
+    use FDETYPES_m, only: RKIND, RKIND_TIME
     implicit none
     
     type :: dispersive_t
-        real(kind=RKIND_TIEMPO) :: dt
+        real(kind=RKIND_TIME) :: dt
         integer :: number_of_divisions, number_of_conductors, number_of_poles
         real(kind=rkind), allocatable :: u(:,:)
         real(kind=rkind), allocatable, dimension(:,:,:) :: d, e
@@ -53,7 +53,7 @@ contains
     function dispersiveCtor(number_of_conductors, number_of_poles, number_of_divisions, dt) result(res)
         type(dispersive_t) :: res
         integer :: number_of_conductors, number_of_poles
-        real(kind=RKIND_TIEMPO) :: dt
+        real(kind=RKIND_TIME) :: dt
         integer, intent(in) :: number_of_divisions
         complex :: zero 
         res%dt = dt
@@ -125,56 +125,56 @@ contains
     function lumpedCtor(number_of_conductors, number_of_poles, number_of_divisions, dt) result(res)
         type(lumped_t) :: res
         integer :: number_of_conductors, number_of_poles
-        real(kind=RKIND_TIEMPO) :: dt
+        real(kind=RKIND_TIME) :: dt
         integer, intent(in) :: number_of_divisions
         res%dispersive_t = dispersiveCtor(number_of_conductors, number_of_poles, number_of_divisions, dt)
     end function 
 
-    function positionIsEmpty(this, index, conductor) result(res)
+    function positionIsEmpty(this, elementIndex, conductor) result(res)
         class(lumped_t) :: this
-        integer, intent(in) :: index, conductor
+        integer, intent(in) :: elementIndex, conductor
         logical :: res
         res = .true.
-        if ((this%d(index, conductor, conductor) /= 0.0).or.&
-            (this%e(index, conductor, conductor) /= 0.0).or.&
-            .not.(all(this%q1(index, conductor, conductor,:) == 0.0)) .or.&
-            .not.(all(this%q2(index, conductor, conductor,:) == 0.0)) .or.&
-            .not.(all(this%q3(index, conductor, conductor,:) == 0.0))) then
+        if ((this%d(elementIndex, conductor, conductor) /= 0.0).or.&
+            (this%e(elementIndex, conductor, conductor) /= 0.0).or.&
+            .not.(all(this%q1(elementIndex, conductor, conductor,:) == 0.0)) .or.&
+            .not.(all(this%q2(elementIndex, conductor, conductor,:) == 0.0)) .or.&
+            .not.(all(this%q3(elementIndex, conductor, conductor,:) == 0.0))) then
                 res = .false.
         end if
     end function
 
 
-    subroutine addDispersiveLumped(this, index, conductor, model)
+    subroutine addDispersiveLumped(this, elementIndex, conductor, model)
         class(lumped_t) :: this
-        integer, intent(in) :: index
+        integer, intent(in) :: elementIndex
         integer, intent(in) :: conductor
         type(transfer_impedance_per_meter_t), intent(in) :: model
         type(pol_res_t) :: connector
 
-        if (.not.this%positionIsEmpty(index, conductor))then
+        if (.not.this%positionIsEmpty(elementIndex, conductor))then
             error stop 'Dispersive connector already in conductor at position'
         end if
 
         connector = pol_res_t(model, this%dt)
         if (connector%number_of_poles > this%number_of_poles) call this%increaseOrder(connector%number_of_poles)
-        call this%addDispersiveLumpedInConductor(index, conductor, connector)
+        call this%addDispersiveLumpedInConductor(elementIndex, conductor, connector)
        
         this%q1_sum = sumQComponents(this%q1)
         this%q2_sum = sumQComponents(this%q2)
     end subroutine
 
-    subroutine addDispersiveLumpedInConductor(this, index, conductor, connector)
+    subroutine addDispersiveLumpedInConductor(this, elementIndex, conductor, connector)
         class(lumped_t) :: this
-        integer, intent(in) :: index, conductor
+        integer, intent(in) :: elementIndex, conductor
         type(pol_res_t), intent(in) :: connector
 
-        this%d(index, conductor, conductor) = this%d(index, conductor, conductor) + connector%r
-        this%e(index, conductor, conductor) = this%e(index, conductor, conductor) + connector%l
+        this%d(elementIndex, conductor, conductor) = this%d(elementIndex, conductor, conductor) + connector%r
+        this%e(elementIndex, conductor, conductor) = this%e(elementIndex, conductor, conductor) + connector%l
         if (connector%number_of_poles /= 0) then
-            this%q1(index, conductor, conductor,:) = this%q1(index, conductor, conductor,:) - connector%q1(:)
-            this%q2(index, conductor, conductor,:) = this%q2(index, conductor, conductor,:) - connector%q2(:)
-            this%q3(index, conductor, conductor,:) = this%q3(index, conductor, conductor,:) - connector%q3(:)
+            this%q1(elementIndex, conductor, conductor,:) = this%q1(elementIndex, conductor, conductor,:) - connector%q1(:)
+            this%q2(elementIndex, conductor, conductor,:) = this%q2(elementIndex, conductor, conductor,:) - connector%q2(:)
+            this%q3(elementIndex, conductor, conductor,:) = this%q3(elementIndex, conductor, conductor,:) - connector%q3(:)
         end if
     end subroutine
 
@@ -182,7 +182,7 @@ contains
     function transferImpendaceCtor(number_of_conductors, number_of_poles, number_of_divisions, dt) result(res)
         type(transfer_impedance_t) :: res
         integer :: number_of_conductors, number_of_poles
-        real(kind=RKIND_TIEMPO) :: dt
+        real(kind=RKIND_TIME) :: dt
         integer :: number_of_divisions
         res%dispersive_t = dispersiveCtor(number_of_conductors, number_of_poles, number_of_divisions, dt)
     end function 
@@ -227,9 +227,9 @@ contains
         this%q2_sum = sumQComponents(this%q2)
     end subroutine
 
-    subroutine setTransferImpedance(this, index, conductor_out, range_in, model)
+    subroutine setTransferImpedance(this, elementIndex, conductor_out, range_in, model)
         class(transfer_impedance_t) :: this
-        integer, intent(in) :: index
+        integer, intent(in) :: elementIndex
         integer, intent(in) :: conductor_out
         integer, dimension(:), intent(in) :: range_in
         type(transfer_impedance_per_meter_t) :: model
@@ -241,10 +241,10 @@ contains
 
         do i = 1, size(range_in)
             if (isCouplingInwards(connector%direction)) then
-                call this%setTransferImpedanceInConductors(index,range_in(i), conductor_out, connector)
+                call this%setTransferImpedanceInConductors(elementIndex,range_in(i), conductor_out, connector)
             end if  
             if (isCouplingOutwards(connector%direction)) then
-                call this%setTransferImpedanceInConductors(index, conductor_out, range_in(i), connector)
+                call this%setTransferImpedanceInConductors(elementIndex, conductor_out, range_in(i), connector)
             end if
         end do
 
@@ -252,17 +252,17 @@ contains
         this%q2_sum = sumQComponents(this%q2)
     end subroutine
 
-    subroutine setTransferImpedanceInConductors(this, index, conductor_1, conductor_2, connector)
+    subroutine setTransferImpedanceInConductors(this, elementIndex, conductor_1, conductor_2, connector)
         class(transfer_impedance_t) :: this
-        integer, intent(in) :: index, conductor_1, conductor_2
+        integer, intent(in) :: elementIndex, conductor_1, conductor_2
         type(pol_res_t), intent(in) :: connector
 
-        this%d(index, conductor_1, conductor_2) = - connector%r
-        this%e(index, conductor_1, conductor_2) = - connector%l
+        this%d(elementIndex, conductor_1, conductor_2) = - connector%r
+        this%e(elementIndex, conductor_1, conductor_2) = - connector%l
         if (connector%number_of_poles /= 0) then
-            this%q1(index, conductor_1, conductor_2,:) = connector%q1(:)
-            this%q2(index, conductor_1, conductor_2,:) = connector%q2(:)
-            this%q3(index, conductor_1, conductor_2,:) = connector%q3(:)
+            this%q1(elementIndex, conductor_1, conductor_2,:) = connector%q1(:)
+            this%q2(elementIndex, conductor_1, conductor_2,:) = connector%q2(:)
+            this%q3(elementIndex, conductor_1, conductor_2,:) = connector%q3(:)
         end if
     end subroutine
 

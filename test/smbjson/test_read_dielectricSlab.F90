@@ -1,10 +1,10 @@
 integer function test_read_dielectricslab() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
-   character(len=*), parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'dielectric_slab.fdtd.json'
+   character(len=*), parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'dielectric_slab.fdtd.json'
    type(Parseador_t) :: pr, ex
    type(parser_t) :: parser
    logical :: areSame
@@ -50,16 +50,16 @@ contains
       expected%despl%mz2 = 50
 
       ! Expected boundaries.
-      expected%front%tipoFrontera(F_XL) = F_PEC
-      expected%front%tipoFrontera(F_XU) = F_PEC
-      expected%front%tipoFrontera(F_YL) = F_PMC
-      expected%front%tipoFrontera(F_YU) = F_PMC
-      expected%front%tipoFrontera(F_ZL) = F_MUR
-      expected%front%tipoFrontera(F_ZU) = F_MUR
+      expected%front%boundaryType(F_XL) = F_PEC
+      expected%front%boundaryType(F_XU) = F_PEC
+      expected%front%boundaryType(F_YL) = F_PMC
+      expected%front%boundaryType(F_YU) = F_PMC
+      expected%front%boundaryType(F_ZL) = F_MUR
+      expected%front%boundaryType(F_ZU) = F_MUR
 
       ! Expected sources.
       allocate(expected%plnSrc%collection(1))
-      expected%plnSrc%collection(1)%nombre_fichero = "gauss.exc"
+      expected%plnSrc%collection(1)%sourceFileName = "gauss.exc"
       expected%plnSrc%collection(1)%atributo = "LOCKED"
       expected%plnSrc%collection(1)%coor1 = [0, 0, 2]
       expected%plnSrc%collection(1)%coor2 = [3, 3, 47]

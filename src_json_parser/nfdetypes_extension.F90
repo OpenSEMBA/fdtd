@@ -280,12 +280,12 @@ contains
       if (a%C_devia  /= b%C_devia) return
       if (a%DiodB    /= b%DiodB) return
       if (a%DiodIsat /= b%DiodIsat) return
-      if (a%DiodOri  /= b%DiodOri) return
+      if (a%diodeOrientation  /= b%diodeOrientation) return
       if (a%orient   /= b%orient) return
       if (a%resistor  .neqv. b%resistor) return
       if (a%inductor  .neqv. b%inductor) return
       if (a%capacitor .neqv. b%capacitor) return
-      if (a%diodo     .neqv. b%diodo) return
+      if (a%diode     .neqv. b%diode) return
       if (a%plain     .neqv. b%plain) return
       if (a%PMLbody   .neqv. b%PMLbody) return
       if (.not. associated(a%C1P)) return
@@ -326,7 +326,7 @@ contains
       if (.not. all(a%bm33  == b%bm33))  return
       if (.not. all(a%alpha  == b%alpha))  return
       if (.not. all(a%beta   == b%beta))   return
-      if (.not. all(a%gamma  == b%gamma))  return
+      if (.not. all(a%gammaValue  == b%gammaValue))  return
       if (.not. all(a%alpham == b%alpham)) return
       if (.not. all(a%betam  == b%betam))  return
       if (.not. all(a%gammam == b%gammam)) return
@@ -467,7 +467,7 @@ contains
       res = .false.
       if (a%nc       /= b%nc)       return
       if (a%files    /= b%files)    return
-      if (a%numcapas /= b%numcapas) return
+      if (a%numLayers /= b%numLayers) return
       if (.not. all(a%c            == b%c))            return
       if (.not. all(a%sigma        == b%sigma))        return
       if (.not. all(a%eps          == b%eps))          return
@@ -619,7 +619,6 @@ contains
       if (a%i    /= b%i)    return
       if (a%j    /= b%j)    return
       if (a%K    /= b%K)    return
-      if (a%node /= b%node) return
       if (a%dir  /= b%dir)  return
       if (a%Or   /= b%Or)   return
       if (a%tag  /= b%tag)  return
@@ -672,7 +671,7 @@ contains
    elemental logical function box_eq(a, b) result(res)
       type(Box_t), intent(in) :: a, b
       res = .false.
-      if (a%nombre_fichero /= b%nombre_fichero) return
+      if (a%sourceFileName /= b%sourceFileName) return
       if (.not. all(a%coor1 == b%coor1)) return
       if (.not. all(a%coor2 == b%coor2)) return
       res = .true.
@@ -690,7 +689,7 @@ contains
    elemental logical function planewave_eq(a,b) result(res)
       type(PlaneWave_t), intent(in) :: a, b
       res = .false.
-      if (a%nombre_fichero /= b%nombre_fichero) return
+      if (a%sourceFileName /= b%sourceFileName) return
       if (a%atributo /= b%atributo) return
       if (any(a%coor1 /= b%coor1)) return
       if (any(a%coor2 /= b%coor2)) return
@@ -771,7 +770,7 @@ contains
       res = .false.
       if (a%orden    /= b%orden) return
       if (a%refl     /= b%refl) return
-      if (a%numCapas /= b%numCapas) return
+      if (a%numLayers /= b%numLayers) return
       res = .true.
    end function
 
@@ -779,7 +778,7 @@ contains
       type(Frontera_t), intent(in) :: a, b
       integer :: i
       res = .false.
-      if (any(a%tipoFrontera /= b%tipoFrontera)) return
+      if (any(a%boundaryType /= b%boundaryType)) return
       if (any(.not. a%propiedadesPML == b%propiedadesPML)) return
       res = .true.
    end function

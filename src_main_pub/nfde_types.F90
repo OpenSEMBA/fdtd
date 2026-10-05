@@ -36,12 +36,12 @@ module NFDETypes_m
    integer(kind=4), parameter :: NP_COR_DDP = 7
    integer(kind=4), parameter :: NP_COR_LINE = 8
    integer(kind=4), parameter :: NP_COR_CHARGE = 9
-   LOGICAL, parameter :: BcELECT = .TRUE.
-   LOGICAL, parameter :: BcMAGNE = .FALSE.
+   logical, parameter :: BCELECT = .TRUE.
+   logical, parameter :: BCMAGNE = .FALSE.
    ! THIN WIRES
    integer(kind=4), parameter :: MATERIAL_CONS = 0
-   integer(kind=4), parameter :: MATERIAL_absorbing = 100
-   integer(kind=4), parameter :: Parallel_CONS = 1
+   integer(kind=4), parameter :: MATERIAL_ABSORBING = 100
+   integer(kind=4), parameter :: PARALLEL_CONS = 1
    integer(kind=4), parameter :: SERIES_CONS = 2
    integer(kind=4), parameter :: DISPERSIVE_CONS = 3
    ! BORDERS
@@ -57,13 +57,13 @@ module NFDETypes_m
    integer(kind=4), parameter :: F_ZL = 5
    integer(kind=4), parameter :: F_ZU = 6
    integer(kind=4), parameter :: F_TIMEFRECTRANSF = 0
-   ! rlc y diodos
-   integer(kind=4), parameter :: inductor = 20
-   integer(kind=4), parameter :: capacitor = 21
-   integer(kind=4), parameter :: resistor = 22
-   integer(kind=4), parameter :: diodo = 23
-   integer(kind=4), parameter :: Dielectric = 24
-   integer(kind=4), parameter :: PMLbody = 25
+   ! rlc and diodes
+   integer(kind=4), parameter :: INDUCTOR = 20
+   integer(kind=4), parameter :: CAPACITOR = 21
+   integer(kind=4), parameter :: RESISTOR = 22
+   integer(kind=4), parameter :: DIODE = 23
+   integer(kind=4), parameter :: DIELECTRIC = 24
+   integer(kind=4), parameter :: PMLBODY = 25
 
    !------------------------------------------------------------------------------
    ! TYPES
@@ -95,7 +95,7 @@ module NFDETypes_m
       real(kind=RK) :: xc = 0.0_RKIND
       real(kind=RK) :: yc = 0.0_RKIND
       real(kind=RK) :: zc = 0.0_RKIND
-      integer(kind=4) :: Or = 0 !field orientation nuevo 2015
+      integer(kind=4) :: Or = 0 !field orientation new 2015
       character(len=BUFSIZE) :: tag
    end type coords_scaled_t
    !-----------------> Material Types
@@ -206,11 +206,11 @@ module NFDETypes_m
       !
       real(kind=RK) :: DiodB = 0.0_RKIND
       real(kind=RK) :: DiodIsat = 0.0_RKIND
-      integer(kind=4) :: DiodOri = 0
+      integer(kind=4) :: diodeOrientation = 0
       !!! Berenger's waveports
       integer(kind=4) :: orient = 0
 !!!!!!!!!
-      logical :: resistor=.false. , inductor=.false. , capacitor=.false. , diodo=.false. , plain=.false. , PMLbody=.false.
+      logical :: resistor=.false. , inductor=.false. , capacitor=.false. , diode=.false. , plain=.false. , PMLbody=.false.
    end type Dielectric_t
    !------------------------------------------------------------------------------
    ! Locates all the different Non Metal Media found
@@ -260,7 +260,7 @@ module NFDETypes_m
       complex, dimension(:), pointer :: bm33 => NULL ()
       real(kind=RK), dimension(:), pointer :: alpha => NULL ()
       real(kind=RK), dimension(:), pointer :: beta => NULL ()
-      real(kind=RK), dimension(:), pointer :: gamma => NULL ()
+      real(kind=RK), dimension(:), pointer :: gammaValue => NULL ()
       real(kind=RK), dimension(:), pointer :: alpham => NULL ()
       real(kind=RK), dimension(:), pointer :: betam => NULL ()
       real(kind=RK), dimension(:), pointer :: gammam => NULL ()
@@ -284,7 +284,7 @@ module NFDETypes_m
       integer(kind=4) :: L = 0
       integer(kind=4) :: Lm = 0
       integer(kind=4) :: n_c = 0
-      character(len=BUFSIZE) :: files = ' ' !2015 si esta presente lee los polos/residuos desde fichero
+      character(len=BUFSIZE) :: files = ' ' !2015 if present it reads the poles/residues from file
    end type FreqDepenMaterial_t
    !------------------------------------------------------------------------------
    ! type that defines the list of frequency depedent materials
@@ -299,7 +299,7 @@ module NFDETypes_m
       integer(kind=4) :: nVols_max = 0
       integer(kind=4) :: nSurfs_max = 0
       integer(kind=4) :: nLins_max = 0
-      integer(kind=4) :: n_c_max = 0 !cota superior
+      integer(kind=4) :: n_c_max = 0 !upper bound
    end type FreqDepenMaterials_t
    !------------------------------------------------------------------------------
    ! Type for the ANISOTROPIC body, surface and lines since they will contain
@@ -325,7 +325,7 @@ module NFDETypes_m
       integer(kind=4) :: nVols_max = 0
       integer(kind=4) :: nSurfs_max = 0
       integer(kind=4) :: nLins_max = 0
-      integer(kind=4) :: n_C1P_max = 0 !cota superior de c1p y c2p en vols,sufs,lins
+      integer(kind=4) :: n_C1P_max = 0 !upper bound of c1p and c2p in vols,sufs,lins
       integer(kind=4) :: n_C2P_max = 0
    end type ANISOTROPICelements_t
    !------------------------------------------------------------------------------
@@ -347,7 +347,7 @@ module NFDETypes_m
       !
       integer(kind=4) :: nc = 0
       character(len=BUFSIZE) :: files = ' ' 
-      integer(kind=4) :: numcapas  
+      integer(kind=4) :: numLayers  
    end type LossyThinSurface_t
    !------------------------------------------------------------------------------
    ! Locates all the different Comp media found
@@ -356,7 +356,7 @@ module NFDETypes_m
       type(LossyThinSurface_t), dimension(:), pointer :: cs => NULL ()
       integer(kind=4) :: length = 0
       integer(kind=4) :: length_max = 0
-      integer(kind=4) :: nC_max = 0 !cota de todos los nc de LossyThinSurface
+      integer(kind=4) :: nC_max = 0 !bound of all the nc of LossyThinSurface
    end type LossyThinSurfaces_t
    !------------------------------------------------------------------------------
    ! Component for Thin Wires there is a list of this inside the component
@@ -379,7 +379,7 @@ module NFDETypes_m
    type, public :: ThinWire_t
       type(ThinWireComp_t), dimension(:), pointer :: twc => NULL ()
       real(kind=RK) :: rad = 0 , rad_devia = 0
-      LOGICAL :: disp = .false.
+      logical :: disp = .false.
       character(len=BUFSIZE) :: dispfile
       real(kind=RK) :: res = 0 , res_devia = 0
       real(kind=RK) :: ind = 0 , ind_devia = 0
@@ -431,7 +431,7 @@ module NFDETypes_m
    type, public :: SlantedWire_t
       type(SlantedWireComp_t), dimension(:), pointer :: swc => NULL ()
       real(kind=RK) :: rad = 0
-      LOGICAL :: disp = .false.
+      logical :: disp = .false.
       character(len=BUFSIZE) :: dispfile
       real(kind=RK) :: res = 0
       real(kind=RK) :: ind = 0
@@ -471,7 +471,6 @@ module NFDETypes_m
       integer(kind=4) :: i = 0
       integer(kind=4) :: j = 0
       integer(kind=4) :: K = 0
-      integer(kind=4) :: node = 0
       ! dir is the unsigned axis used by the Yee-material routines, while Or
       ! keeps the signed traversal of the source linel (Or = dir or -dir).
       ! The PEC plane normal that contains the slot is derived later, during
@@ -507,13 +506,13 @@ module NFDETypes_m
    type, public :: FronteraPML_t
       real(kind=RK) :: orden = 2.0_RK
       real(kind=RK) :: refl = 1e-3_RK
-      integer(kind=4) :: numCapas = 8
+      integer(kind=4) :: numLayers = 8
    end type FronteraPML_t
    !------------------------------------------------------------------------------
-   ! Tipo de la frontera
+   ! Border type
    !------------------------------------------------------------------------------
    type, public :: Frontera_t
-      integer(kind=4), dimension(6) :: tipoFrontera
+      integer(kind=4), dimension(6) :: boundaryType
       type(FronteraPML_t), dimension(6) :: propiedadesPML
    end type Frontera_t
    !-----------------> Probe Types
@@ -538,7 +537,7 @@ module NFDETypes_m
       type(MasSonda_t), dimension(:), pointer :: collection => NULL ()
       integer(kind=4) :: length = 0
       integer(kind=4) :: length_max = 0
-      integer(kind=4) :: len_cor_max = 0 !cota
+      integer(kind=4) :: len_cor_max = 0 !bound
    end type MasSondas_t
    !------------------------------------------------------------------------------
    ! This type contains the basic information in nearly all the different PROBES
@@ -553,7 +552,7 @@ module NFDETypes_m
       integer(kind=4) :: n_cord_max = 0
       real(kind=RK) :: tstart, tstop, tstep
       character(len=BUFSIZE) :: outputrequest
-      !por si se precisa para el Far Field
+      !in case it is needed for the Far Field
       real(kind=RK) :: fstart, fstop, fstep
       real(kind=RK) :: phistart, phistop, phistep
       real(kind=RK) :: thetastart, thetastop, thetastep
@@ -650,7 +649,7 @@ module NFDETypes_m
       integer(kind=4) :: n_probes_max = 0
    end type Sondas_t
    !------------------------------------------------------------------------------
-   ! Object type defined for the Bloque current probe
+   ! Object type defined for the Block current probe
    !------------------------------------------------------------------------------
    type, public :: BloqueProbe_t
       real(kind=RK) :: tstart, tstop, tstep
@@ -659,11 +658,11 @@ module NFDETypes_m
       integer(kind=4) :: type2
       integer(kind=4) :: i1, i2, j1, j2, k1, k2, skip
       integer(kind=4) :: nml
-      LOGICAL :: t
+      logical :: t
       character(len=BUFSIZE) :: outputrequest
       character(len=BUFSIZE) :: tag
    end type BloqueProbe_t
-   ! Object made for the collection of defined Bloque probes
+   ! Object made for the collection of defined Block probes
    type, public :: BloqueProbes_t
       type(BloqueProbe_t), dimension(:), pointer :: bp => NULL ()
       integer(kind=4) :: n_bp = 0
@@ -678,7 +677,7 @@ module NFDETypes_m
       real(kind=RK) :: tstart, tstop, tstep
       character(len=BUFSIZE) :: outputrequest
       integer(kind=4) :: len_cor = 0
-      !para freq domain
+      !for freq domain
       real(kind=RK) :: fstart, fstop, fstep
       integer(kind=4) :: type2
       character(len=BUFSIZE) :: filename
@@ -688,14 +687,14 @@ module NFDETypes_m
       type(VolProbe_t), dimension(:), pointer :: collection => NULL ()
       integer(kind=4) :: length = 0
       integer(kind=4) :: length_max = 0
-      integer(kind=4) :: len_cor_max = 0 !cota
+      integer(kind=4) :: len_cor_max = 0 !bound
    end type VolProbes_t
 
    !-----------------> Source Types
    !------------------------------------------------------------------------------
    !------------------------------------------------------------------------------
    type, public :: Box_t
-      character(len=BUFSIZE) :: nombre_fichero
+      character(len=BUFSIZE) :: sourceFileName
       integer(kind=4), dimension(3) :: coor1, coor2
    end type Box_t
    !------------------------------------------------------------------------------
@@ -708,7 +707,7 @@ module NFDETypes_m
    !------------------------------------------------------------------------------
    !------------------------------------------------------------------------------
    type, public :: PlaneWave_t
-      character(len=BUFSIZE) :: nombre_fichero
+      character(len=BUFSIZE) :: sourceFileName
       character(len=BUFSIZE) :: atributo
       integer(kind=4), dimension(3) :: coor1, coor2
       real(kind=RK) :: theta, phi, alpha, beta
@@ -724,7 +723,7 @@ module NFDETypes_m
       integer(kind=4) :: nC_max = 0
    end type PlaneWaves_t
    !------------------------------------------------------------------------------
-   ! Definicin de los tipos current density que existirn en el ficero
+   ! Definition of the current density types that will exist in the file
    ! nfde
    !------------------------------------------------------------------------------
    type, public :: Curr_Field_Src_t
@@ -733,10 +732,10 @@ module NFDETypes_m
       character(len=BUFSIZE) :: nombre
       integer(kind=4) :: n_C1P = 0
       integer(kind=4) :: n_C2P = 0
-      LOGICAL :: isElec, isHard, isInitialValue
+      logical :: isElec, isHard, isInitialValue
    end type Curr_Field_Src_t
    !------------------------------------------------------------------------------
-   ! Definicin de las Nodal Source global
+   ! Definition of the global Nodal Source
    !------------------------------------------------------------------------------
    type, public :: NodSource_t
       type(Curr_Field_Src_t), dimension(:), pointer :: NodalSource => NULL ()
@@ -758,7 +757,7 @@ module NFDETypes_m
    type NFDEGeneral_t
       real(kind=RK) :: dt
       integer(kind=4) :: nmax
-      LOGICAL :: mtlnProblem
+      logical :: mtlnProblem
    end type NFDEGeneral_t
    !------------------------------------------------------------------------------
    ! Definition of the type. Three vectors are defined, for each axis X,Y,Z. If
@@ -822,17 +821,17 @@ module NFDETypes_m
 #endif
    end type Parseador_t
    
-   !---> definicion de tipos
-   type, public :: t_linea_t
-      integer(kind=4) :: LEN
-      character(len=BUFSIZE) :: dato
-   end type t_linea_t
+   !---> type definitions
+   type, public :: t_line_t
+      integer(kind=4) :: lengthValue
+      character(len=BUFSIZE) :: lineText
+   end type t_line_t
    !--->
    type, public :: t_NFDE_FILE_t
       integer(kind=8) :: targ
       !--->
-      integer(kind=8) :: numero
-      type(t_linea_t), dimension(:), pointer :: lineas
+      integer(kind=8) :: numberValue
+      type(t_line_t), dimension(:), pointer :: lines
       logical :: thereare_stoch
    end type t_NFDE_FILE_t
 !--->

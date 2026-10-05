@@ -1,6 +1,6 @@
 integer function test_mesh_add_get() bind(C) result(error_cnt)
    use mesh_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
@@ -42,7 +42,7 @@ end function
 
 integer function test_mesh_add_get_long_list() bind(C) result(error_cnt)
    use mesh_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
@@ -50,40 +50,40 @@ integer function test_mesh_add_get_long_list() bind(C) result(error_cnt)
    logical :: found
 
    error_cnt = 0
-   call mesh%addCoordinate( 1 , coordinate_t([  1, 9, 1]))
-   call mesh%addCoordinate( 2 , coordinate_t([ 10, 9, 1]))
-   call mesh%addCoordinate( 5 , coordinate_t([ 18, 9, 1])) 
-   call mesh%addCoordinate( 6 , coordinate_t([ 10, 2, 1]))    
-   call mesh%addCoordinate( 11, coordinate_t([  1, 9, 1]))
-   call mesh%addCoordinate( 15, coordinate_t([ 10, 9, 1]))
-   call mesh%addCoordinate( 23, coordinate_t([ 18, 9, 1])) 
-   call mesh%addCoordinate( 24, coordinate_t([ 10, 2, 1])) 
-   call mesh%addCoordinate( 33, coordinate_t([  1, 9, 1]))
-   call mesh%addCoordinate( 34, coordinate_t([  1, 9, 1]))
-   call mesh%addCoordinate( 35, coordinate_t([  1, 9, 1]))
-   call mesh%addCoordinate( 36, coordinate_t([  1, 9, 1]))
-   call mesh%addCoordinate( 37, coordinate_t([  1, 9, 1]))
-   call mesh%addCoordinate( 38, coordinate_t([  1, 9, 1]))
-   call mesh%addCoordinate( 39, coordinate_t([  1, 9, 1]))
-   call mesh%addCoordinate( 40, coordinate_t([  1, 9, 1]))
-   call mesh%addCoordinate( 41, coordinate_t([ 10, 9, 1]))
-   call mesh%addCoordinate( 42, coordinate_t([ 10, 9, 1]))
-   call mesh%addCoordinate( 43, coordinate_t([ 10, 9, 1]))
-   call mesh%addCoordinate( 44, coordinate_t([ 10, 9, 1]))
-   call mesh%addCoordinate( 45, coordinate_t([ 10, 9, 1]))
-   call mesh%addCoordinate( 46, coordinate_t([ 10, 9, 1]))
-   call mesh%addCoordinate( 47, coordinate_t([ 10, 9, 1]))
-   call mesh%addCoordinate( 48, coordinate_t([ 10, 9, 1]))
-   call mesh%addCoordinate( 51, coordinate_t([ 18, 9, 1]))
-   call mesh%addCoordinate( 52, coordinate_t([ 18, 9, 1]))
-   call mesh%addCoordinate( 59, coordinate_t([ 10, 2, 1])) 
-   call mesh%addCoordinate( 60, coordinate_t([ 10, 2, 1])) 
-   call mesh%addCoordinate( 61, coordinate_t([ 10, 2, 1])) 
-   call mesh%addCoordinate( 62, coordinate_t([ 10, 2, 1])) 
-   call mesh%addCoordinate( 63, coordinate_t([ 10, 2, 1]))
-   call mesh%addCoordinate( 64, coordinate_t([ 10, 2, 1]))
-   call mesh%addCoordinate( 65, coordinate_t([ 10, 2, 1]))
-   call mesh%addCoordinate( 66, coordinate_t([ 10, 2, 1]))
+   call mesh%addCoordinate(1 , coordinate_t([  1, 9, 1]))
+   call mesh%addCoordinate(2 , coordinate_t([ 10, 9, 1]))
+   call mesh%addCoordinate(5 , coordinate_t([ 18, 9, 1])) 
+   call mesh%addCoordinate(6 , coordinate_t([ 10, 2, 1]))    
+   call mesh%addCoordinate(11, coordinate_t([  1, 9, 1]))
+   call mesh%addCoordinate(15, coordinate_t([ 10, 9, 1]))
+   call mesh%addCoordinate(23, coordinate_t([ 18, 9, 1])) 
+   call mesh%addCoordinate(24, coordinate_t([ 10, 2, 1])) 
+   call mesh%addCoordinate(33, coordinate_t([  1, 9, 1]))
+   call mesh%addCoordinate(34, coordinate_t([  1, 9, 1]))
+   call mesh%addCoordinate(35, coordinate_t([  1, 9, 1]))
+   call mesh%addCoordinate(36, coordinate_t([  1, 9, 1]))
+   call mesh%addCoordinate(37, coordinate_t([  1, 9, 1]))
+   call mesh%addCoordinate(38, coordinate_t([  1, 9, 1]))
+   call mesh%addCoordinate(39, coordinate_t([  1, 9, 1]))
+   call mesh%addCoordinate(40, coordinate_t([  1, 9, 1]))
+   call mesh%addCoordinate(41, coordinate_t([ 10, 9, 1]))
+   call mesh%addCoordinate(42, coordinate_t([ 10, 9, 1]))
+   call mesh%addCoordinate(43, coordinate_t([ 10, 9, 1]))
+   call mesh%addCoordinate(44, coordinate_t([ 10, 9, 1]))
+   call mesh%addCoordinate(45, coordinate_t([ 10, 9, 1]))
+   call mesh%addCoordinate(46, coordinate_t([ 10, 9, 1]))
+   call mesh%addCoordinate(47, coordinate_t([ 10, 9, 1]))
+   call mesh%addCoordinate(48, coordinate_t([ 10, 9, 1]))
+   call mesh%addCoordinate(51, coordinate_t([ 18, 9, 1]))
+   call mesh%addCoordinate(52, coordinate_t([ 18, 9, 1]))
+   call mesh%addCoordinate(59, coordinate_t([ 10, 2, 1])) 
+   call mesh%addCoordinate(60, coordinate_t([ 10, 2, 1])) 
+   call mesh%addCoordinate(61, coordinate_t([ 10, 2, 1])) 
+   call mesh%addCoordinate(62, coordinate_t([ 10, 2, 1])) 
+   call mesh%addCoordinate(63, coordinate_t([ 10, 2, 1]))
+   call mesh%addCoordinate(64, coordinate_t([ 10, 2, 1]))
+   call mesh%addCoordinate(65, coordinate_t([ 10, 2, 1]))
+   call mesh%addCoordinate(66, coordinate_t([ 10, 2, 1]))
 
 
    block
@@ -109,7 +109,7 @@ end function
 integer function test_mesh_node_to_pixel() bind(C) result(err)
    use mesh_m
    use cells_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
@@ -130,7 +130,7 @@ end function
 integer function test_mesh_polyline_to_linel() bind(C) result(err)
    use mesh_m
    use cells_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
@@ -160,8 +160,8 @@ integer function test_mesh_polyline_to_linel() bind(C) result(err)
       if (size(ls) /= 4) err = err + 1
 
       if (.not. linel_t(cell=[0, 0, 0], orientation=DIR_X, tag=1) == ls(1)) err = err + 1
-      if (.not. linel_t(cell=[1, 0, 0], orientation=DIR_X         ) == ls(2)) err = err + 1
-      if (.not. linel_t(cell=[2, 0, 0], orientation=DIR_X         ) == ls(3)) err = err + 1
+      if (.not. linel_t(cell=[1, 0, 0], orientation=DIR_X) == ls(2)) err = err + 1
+      if (.not. linel_t(cell=[2, 0, 0], orientation=DIR_X) == ls(3)) err = err + 1
       if (.not. linel_t(cell=[3, 0, 0], orientation=DIR_Y, tag=3) == ls(4)) err = err + 1
 
       if (mesh%arePolylineSegmentsStructured(pl) .neqv. .true.) err = err + 1
@@ -184,7 +184,7 @@ integer function test_mesh_polyline_to_linel() bind(C) result(err)
 
       if (.not. linel_t(cell=[3, 0, 0], orientation=-DIR_Y, tag=3) == ls(1)) err = err + 1
       if (.not. linel_t(cell=[2, 0, 0], orientation=-DIR_X, tag=2) == ls(2)) err = err + 1
-      if (.not. linel_t(cell=[1, 0, 0], orientation=-DIR_X       ) == ls(3)) err = err + 1
+      if (.not. linel_t(cell=[1, 0, 0], orientation=-DIR_X) == ls(3)) err = err + 1
       if (.not. linel_t(cell=[0, 0, 0], orientation=-DIR_X, tag=1) == ls(4)) err = err + 1
 
       if (mesh%arePolylineSegmentsStructured(pl) .neqv. .true.) err = err + 1
@@ -215,7 +215,7 @@ integer function test_mesh_polyline_to_linel() bind(C) result(err)
       if (.not. allocated(ls)) err = err + 1
       if (size(ls) /= 3) err = err + 1
       if (.not. linel_t(cell=[0, 0, 0], orientation=DIR_X, tag=1) == ls(1)) err = err + 1
-      if (.not. linel_t(cell=[1, 0, 0], orientation=DIR_X         ) == ls(2)) err = err + 1
+      if (.not. linel_t(cell=[1, 0, 0], orientation=DIR_X) == ls(2)) err = err + 1
       if (.not. linel_t(cell=[2, 0, 0], orientation=DIR_X, tag=4) == ls(3)) err = err + 1
 
       if (mesh%arePolylineSegmentsStructured(pl) .neqv. .true.) err = err + 1
@@ -232,7 +232,7 @@ integer function test_mesh_polyline_to_linel() bind(C) result(err)
       if (.not. allocated(ls)) err = err + 1
       if (size(ls) /= 3) err = err + 1
       if (.not. linel_t(cell=[2, 0, 0], orientation=-DIR_X, tag=4) == ls(1)) err = err + 1
-      if (.not. linel_t(cell=[1, 0, 0], orientation=-DIR_X       ) == ls(2)) err = err + 1
+      if (.not. linel_t(cell=[1, 0, 0], orientation=-DIR_X) == ls(2)) err = err + 1
       if (.not. linel_t(cell=[0, 0, 0], orientation=-DIR_X, tag=1) == ls(3)) err = err + 1
 
       if (mesh%arePolylineSegmentsStructured(pl) .neqv. .true.) err = err + 1

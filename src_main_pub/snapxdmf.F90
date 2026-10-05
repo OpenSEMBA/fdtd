@@ -25,7 +25,7 @@ contains
       type(xdmf_grid_id_t) :: grid
       type(xdmf_attribute_id_t) :: attribute
       integer(int64) :: dimensions(3)
-      real(real64) :: origin(3), spacing(3)
+      real(real64) :: origin(3), spacingValue(3)
 
       options%overwrite = .true.
       options%series_kind = XDMF_SERIES_TIME
@@ -37,8 +37,8 @@ contains
          int(maxZabs - minZabs + 1, int64)]
       origin = [real(minXabs, real64), real(minYabs, real64), &
          real(minZabs, real64)]
-      spacing = 1.0_real64
-      call writer%define_uniform_grid('snapshot', dimensions, origin, spacing, &
+      spacingValue = 1.0_real64
+      call writer%define_uniform_grid('snapshot', dimensions, origin, spacingValue, &
          grid, status)
       call check_status(status)
       call writer%define_attribute(grid, 'values', XDMF_CENTER_NODE, &
@@ -56,10 +56,10 @@ contains
 
    contains
 
-      subroutine check_status(result)
-         type(xdmf_status_t), intent(in) :: result
+      subroutine check_status(resultValue)
+         type(xdmf_status_t), intent(in) :: resultValue
 
-         if (result%is_error()) error stop result%message()
+         if (resultValue%is_error()) error stop resultValue%message()
       end subroutine check_status
    end subroutine write_xdmfsnap
 end module snapxdmf_m

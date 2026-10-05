@@ -1,5 +1,5 @@
 module valueReplacer_m
-  use FDETYPES_m, only: RKIND, CKIND, SINGLE, RKIND_tiempo
+  use FDETYPES_m, only: RKIND, CKIND, SINGLE, RKIND_TIME
   implicit none
   private
 
@@ -44,8 +44,8 @@ contains
   end subroutine
 
   subroutine replace_scalar_real_t(x, val)
-    real(RKIND_tiempo), intent(inout) :: x
-    real(RKIND_tiempo), intent(in) :: val
+    real(RKIND_TIME), intent(inout) :: x
+    real(RKIND_TIME), intent(in) :: val
     x = val
   end subroutine
 

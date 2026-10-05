@@ -3,7 +3,7 @@ module network_manager_m
     use network_m
     use circuit_m
     ! use mtln_types_m, only: node_source_t
-    use FDETYPES_m, only: RKIND, RKIND_TIEMPO
+    use FDETYPES_m, only: RKIND, RKIND_TIME
 
     implicit none 
 
@@ -62,7 +62,7 @@ contains
     function network_managerCtor(networks, description, final_time, dt) result(res)
         type(network_t), dimension(:), intent(in) :: networks
         character(*), dimension(:), intent(in) :: description
-        real(kind=RKIND_TIEMPO), intent(in) :: final_time, dt
+        real(kind=RKIND_TIME), intent(in) :: final_time, dt
         type(network_manager_t) :: res
         logical :: printInput = .true.
         res%dt = dt
@@ -88,7 +88,7 @@ contains
             n = 0
             do i = 1, size(nws)
                 do j = 1, nws(i)%number_of_nodes
-                    if (nws(i)%nodes(j)%open) n = n + 1
+                    if (nws(i)%nodes(j)%isOpen) n = n + 1
                 end do
             end do
             allocate(res(n))
@@ -96,7 +96,7 @@ contains
             n = 0
             do i = 1, size(nws)
                 do j = 1, nws(i)%number_of_nodes
-                    if (nws(i)%nodes(j)%open) then 
+                    if (nws(i)%nodes(j)%isOpen) then 
                         n = n + 1
                         res(n) = nws(i)%nodes(j)
                     end if
@@ -170,7 +170,7 @@ contains
                 end if
 
                 call c_f_pointer(info%vRealData, values,shape=[info%vLength])
-                if (this%networks(i)%nodes(j)%name /= "time" .and. .not. this%networks(i)%nodes(j)%open) then 
+                if (this%networks(i)%nodes(j)%name /= "time" .and. .not. this%networks(i)%nodes(j)%isOpen) then 
                     this%networks(i)%nodes(j)%v = values(ubound(values,1))
                 end if
             end do

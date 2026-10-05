@@ -1,4 +1,4 @@
-module interpreta_switches_m
+module interpret_switches_m
 
    use FDETYPES_m
    use Getargs_m
@@ -9,7 +9,7 @@ module interpreta_switches_m
    implicit none
    private
    !
-   type entrada_t
+   type input_t
 
       logical :: &
          forcing, &
@@ -103,7 +103,7 @@ module interpreta_switches_m
          forced, &
          maxCPUtime, &
          sgbcdepth, &
-         precision, &
+         precisionValue, &
          statuse
 
       real(kind=RKIND) :: &
@@ -122,14 +122,14 @@ module interpreta_switches_m
       real(kind=8) :: &
          time_begin, &
          time_end
-      real(kind=RKIND_wires) :: &
+      real(kind=RKIND_WIRES) :: &
          factorradius, &
          factordelta
 
       type(nf2ff_T) :: facesNF2FF
-      type(MedioExtra_t) :: MEDIOEXTRA
+      type(ExtraMedium_t) :: extraMedium
       type(EpsMuTimeScale_input_parameters_t) :: EpsMuTimeScale_input_parameters
-      type(tiempo_t) :: time_out2
+      type(time_t) :: time_out2
 
 !pgi        character(len=BUFSIZE_LONG) :: &
       character(len=BUFSIZE) :: &
@@ -151,34 +151,34 @@ module interpreta_switches_m
                                 fileH5, &
                                 inductance_model, &
                                 wiresflavor, &
-                                nEntradaRoot, &
+                                nInputRoot, &
                                 opcionestotales, &
                                 conformal_file_input_name, &
                                 geomfile
 
-   end type entrada_t
+   end type input_t
 
    public interpreta, insertalogtmp, print_help, print_basic_help, print_credits, &
       removeintraspaces, buscaswitchficheroinput, default_flags
-   public entrada_t
+   public input_t
    !
 contains
 
    subroutine interpreta(l, statuse)
 
 !!!!!!!!!!!!!
-      type(entrada_t), intent(INOUT) :: l
+      type(input_t), intent(inout) :: l
       integer(kind=4), intent(out) :: statuse
 !!!!!!!!!
 
       character(len=BUFSIZE) :: chari, f, dubuf, buff, binaryPath
       logical :: existiarunningigual, mpidirset, resume3
-      integer(kind=4) :: i, j, donde, n, newmpidir
+      integer(kind=4) :: i, j, position, n, newmpidir
       real(kind=RKIND) :: pausetime
       integer(kind=4) :: iostatus = 0
 
 !!!
-      l%input_conformal_flag = input_conformal_flag !ojooo 051223 es un flag global
+      l%input_conformal_flag = input_conformal_flag !careful 051223 it is a global flag
 
       mpidirset = .false.
       existiarunningigual = .false.
@@ -203,7 +203,7 @@ contains
       call print11(l%layoutnumber, 'Switches '//trim(adjustl(l%opcionestotales)))
 
       if (n > 0) then
-         i = 2  ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
+         i = 2  ! it starts at 2 because the first argument is always the executable name
          do while (i <= n)
             call getcommandargument(l%chaininput, i, l%chain, l%length, statuse, binaryPath)
             if (statuse /= 0) then
@@ -214,11 +214,11 @@ contains
             case ('-i')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
-               continue !ya interpretado
+               continue !already interpreted
             case ('-a')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
-               continue !ya interpretado
+               continue !already interpreted
             case ('-mpidir')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
@@ -296,145 +296,145 @@ contains
                   statuse = -1
                end select
                continue
-               !COMO LA RCS SE CALCULA SOLO AL FINAL NO OBLIGO A RESUMEAR CON IGUAL -NONFF2FF PARA PODER CALCULAR CON Y SIN ESTA OPCION resumeando
+               !SINCE THE RCS IS ONLY COMPUTED AT THE END, I DO NOT FORCE RESUMING WITH THE SAME -NONFF2FF TO BE ABLE TO COMPUTE WITH AND WITHOUT THIS OPTION when resuming
                !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
-            CASE ('-force')
+            case ('-force')
                l%forcing = .TRUE.
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
-               READ (f, *, ERR=412) l%forced
-               GO TO 312
+               read (f, *, ERR=412) l%forced
+               go TO 312
 412            call stoponerror(l%layoutnumber, l%num_procs, 'Invalid cut', .true.)
                statuse = -1
 312            continue
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
-            CASE ('-singlefile')
+            case ('-singlefile')
                l%singlefilewrite = .TRUE.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-ignoresamplingerrors')
+            case ('-ignoresamplingerrors')
                l%ignoresamplingerrors = .TRUE.
-            CASE ('-prioritizeTHINWIRE')
+            case ('-prioritizeTHINWIRE')
                l%prioritizeTHINWIRE = .true.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
                l%ignoreerrors = .TRUE.
-            CASE ('-prioritizeCOMPOoverPEC')
+            case ('-prioritizeCOMPOoverPEC')
                l%prioritizeCOMPOoverPEC = .true.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
                l%ignoreerrors = .TRUE.
-            CASE ('-noshared')
+            case ('-noshared')
                l%updateshared = .false.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-prioritizeISOTROPICBODYoverall')
+            case ('-prioritizeISOTROPICBODYoverall')
                l%prioritizeISOTROPICBODYoverall = .true.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-wirecrank')
+            case ('-wirecrank')
                l%wirecrank = .TRUE.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-clip')
+            case ('-clip')
                l%CLIPREGION = .TRUE.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
 !!!!#endif
 !
 
-            CASE ('-verbose')
+            case ('-verbose')
                l%verbose = .TRUE.
-            CASE ('-ignoreerrors')
+            case ('-ignoreerrors')
                l%ignoreerrors = .TRUE.
-            CASE ('-r')
+            case ('-r')
                l%resume = .TRUE.
                l%forcesteps = .true.
 #ifdef CompileWithOldSaving
-            CASE ('-old')
+            case ('-old')
                l%resume_fromold = .TRUE.
 #endif
-            CASE ('-cpumax')
+            case ('-cpumax')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
-               READ (f, *, iostat=iostatus) l%maxCPUtime
+               read (f, *, iostat=iostatus) l%maxCPUtime
                if (iostatus /= 0) call stoponerror(l%layoutnumber, l%num_procs, 'Invalid CPU maximum time', .true.)
                if (l%maxCPUtime <= 0) then
                   call stoponerror(l%layoutnumber, l%num_procs, 'Invalid CPU maximum time', .true.)
                   statuse = -1
                end if
 
-            CASE ('-s')
+            case ('-s')
                l%freshstart = .TRUE.
-            CASE ('-flush')
+            case ('-flush')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
-               READ (f, *, iostat=iostatus) l%flushminutesFields
+               read (f, *, iostat=iostatus) l%flushminutesFields
                if (iostatus /= 0) call stoponerror(l%layoutnumber, l%num_procs, 'Invalid flushing interval', .true.)
                if (l%flushminutesFields <= 0) then
                   call stoponerror(l%layoutnumber, l%num_procs, 'Invalid flushing interval', .true.)
                   statuse = -1
                end if
-            CASE ('-flushdata')
+            case ('-flushdata')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
-               READ (f, *, iostat=iostatus) l%flushminutesData
+               read (f, *, iostat=iostatus) l%flushminutesData
                if (iostatus /= 0) call stoponerror(l%layoutnumber, l%num_procs, 'Invalid flushing interval', .true.)
 401            if (l%flushminutesData <= 0) then
                   call stoponerror(l%layoutnumber, l%num_procs, 'Invalid flushing interval', .true.)
                   statuse = -1
                end if
-            CASE ('-run')
+            case ('-run')
                l%run = .TRUE.
-            CASE ('-map')
+            case ('-map')
                l%createmap = .TRUE.
-            CASE ('-dontwritevtk')
+            case ('-dontwritevtk')
                l%dontwritevtk = .true.
-            CASE ('-vtkindex')
+            case ('-vtkindex')
                l%vtkindex = .TRUE.
-            CASE ('-mapvtk')
+            case ('-mapvtk')
                l%createmapvtk = .TRUE.
-            CASE ('-dmma')
+            case ('-dmma')
                l%run_with_dmma = .TRUE.
                l%run_with_abrezanjas = .FALSE.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-takeintcripte')
+            case ('-takeintcripte')
                l%takeintcripte = .true.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
 #ifdef CompileWithNIBC
-            CASE ('-skindepthpre')
+            case ('-skindepthpre')
                l%skindepthpre = .true.
 !            l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
-            CASE ('-mibc', '-skindepth')
+            case ('-mibc', '-skindepth')
                l%mibc = .true.
                l%sgbc = .false.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-conformalskin')
+            case ('-conformalskin')
                l%conformalskin = .true.
                l%mibc = .true.
                l%sgbc = .false.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-ade')
+            case ('-ade')
                l%ade = .true.
                l%mibc = .true.
                l%sgbc = .false.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-NOcompomur')
+            case ('-NOcompomur')
                l%NOcompomur = .true.
                l%mibc = .true.
                l%sgbc = .false.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
 #endif
-            CASE ('-mur2')
+            case ('-mur2')
                l%MurAfterPML = .true.
                !l%mur_second=.true.
                l%mur_first = .true.
-               !arreglar cuando resuelva el bug en mur segundo orden
+               !fix when I resolve the second-order Mur bug
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-mur1')
+            case ('-mur1')
                l%MurAfterPML = .true.
                l%mur_first = .true.
                l%mur_second = .false.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-pmlalpha')
+            case ('-pmlalpha')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                ! Converts the characters to real
-               READ (f, *, ERR=7621) l%alphamaxpar
-               GO TO 8621
+               read (f, *, ERR=7621) l%alphamaxpar
+               go TO 8621
 7621           call stoponerror(l%layoutnumber, l%num_procs, 'Invalid CPML alpha factor', .true.)
                statuse = -1
                !goto 668
@@ -447,8 +447,8 @@ contains
                !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                ! Converts the characters to real
-               READ (f, *, ERR=7121) l%alphaOrden
-               GO TO 8121
+               read (f, *, ERR=7121) l%alphaOrden
+               go TO 8121
 7121           call stoponerror(l%layoutnumber, l%num_procs, 'Invalid CPML order factor', .true.)
                statuse = -1
                !goto 668
@@ -458,12 +458,12 @@ contains
                   !goto 668
                end if
                !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))
-            CASE ('-pmlkappa')
+            case ('-pmlkappa')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                ! Converts the characters to real
-               READ (f, *, ERR=7622) l%kappamaxpar
-               GO TO 8622
+               read (f, *, ERR=7622) l%kappamaxpar
+               go TO 8622
 7622           call stoponerror(l%layoutnumber, l%num_procs, 'Invalid CPML kappa factor', .true.)
                statuse = -1
                !goto 668
@@ -473,165 +473,165 @@ contains
                   !goto 668
                end if
                !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))
-            CASE ('-pmlcorr')
-               l%MEDIOEXTRA%exists = .true.
+            case ('-pmlcorr')
+               l%extraMedium%exists = .true.
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                ! Converts the characters to real
-               READ (f, *, ERR=7672) l%MEDIOEXTRA%sigma
-               GO TO 8672
+               read (f, *, ERR=7672) l%extraMedium%sigma
+               go TO 8672
 7672           call stoponerror(l%layoutnumber, l%num_procs, 'Invalid pmlcorr sigma factor', .true.)
                statuse = -1
                !goto 668
-8672           if (l%MEDIOEXTRA%sigma < 0.0_RKIND) then
+8672           if (l%extraMedium%sigma < 0.0_RKIND) then
                   call stoponerror(l%layoutnumber, l%num_procs, 'Invalid pmlcorr sigma factor', .true.)
                   statuse = -1
                   !goto 668
                end if
-               l%MEDIOEXTRA%sigmam = -1.0_RKIND!voids it. later overriden
+               l%extraMedium%sigmam = -1.0_RKIND!voids it. later overriden
                !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                ! Converts the characters to real
-               READ (f, *, ERR=7662) l%MEDIOEXTRA%pml_size
-               GO TO 8662
+               read (f, *, ERR=7662) l%extraMedium%pml_size
+               go TO 8662
 7662           call stoponerror(l%layoutnumber, l%num_procs, 'Invalid pmlcorr depth factor', .true.)
                statuse = -1
                !goto 668
-8662           if (l%MEDIOEXTRA%pml_size < 0) then
+8662           if (l%extraMedium%pml_size < 0) then
                   call stoponerror(l%layoutnumber, l%num_procs, 'Invalid pmlcorr depth factor', .true.); statuse = -1; !goto 668
                end if
                !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))
-            CASE ('-attc')
+            case ('-attc')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                ! Converts the characters to real
-               READ (f, *, ERR=766) l%attfactorc
-               GO TO 866
+               read (f, *, ERR=766) l%attfactorc
+               go TO 866
 766            call stoponerror(l%layoutnumber, l%num_procs, 'Invalid dissipation factor', .true.); statuse = -1; !goto 668
 866            if ((l%attfactorc <= -1.0_RKIND) .or. (l%attfactorc > 1.0_RKIND)) then
                   call stoponerror(l%layoutnumber, l%num_procs, 'Invalid dissipation factor', .true.); statuse = -1; !goto 668
                end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
-            CASE ('-sgbcdepth')
+            case ('-sgbcdepth')
                l%mibc = .false.
                l%sgbc = .true.
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                ! Converts the characters to real
-               READ (f, *, ERR=7466) l%sgbcdepth
-               GO TO 8466
+               read (f, *, ERR=7466) l%sgbcdepth
+               go TO 8466
 7466           call stoponerror(l%layoutnumber, l%num_procs, 'Invalid sgbc depth ', .true.); statuse = -1; !goto 668
 8466           if (l%sgbcdepth < -1) then
                   call stoponerror(l%layoutnumber, l%num_procs, 'Invalid sgbc depth', .true.); statuse = -1; !goto 668
                end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
-            CASE ('-sgbcfreq')
+            case ('-sgbcfreq')
                l%sgbc = .true.
                l%mibc = .false.
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                ! Converts the characters to real
-               READ (f, *, ERR=74616) l%sgbcfreq
-               GO TO 84616
+               read (f, *, ERR=74616) l%sgbcfreq
+               go TO 84616
 74616          call stoponerror(l%layoutnumber, l%num_procs, 'Invalid sgbc freq ', .true.); statuse = -1; !goto 668
 84616          if (l%sgbcfreq < 0.) then
                   call stoponerror(l%layoutnumber, l%num_procs, 'Invalid sgbc freq', .true.); statuse = -1; !goto 668
                end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
-            CASE ('-sgbcresol')
+            case ('-sgbcresol')
                l%mibc = .false.
                l%sgbc = .true.
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                ! Converts the characters to real
-               READ (f, *, ERR=74626) l%sgbcresol
-               GO TO 84626
+               read (f, *, ERR=74626) l%sgbcresol
+               go TO 84626
 74626          call stoponerror(l%layoutnumber, l%num_procs, 'Invalid sgbc decay ', .true.); statuse = -1; !goto 668
 84626          if (l%sgbcresol < 0.0) then
                   call stoponerror(l%layoutnumber, l%num_procs, 'Invalid sgbc decay', .true.); statuse = -1; !goto 668
                end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
-            CASE ('-sgbcyee')
+            case ('-sgbcyee')
                l%sgbc = .true.
                l%mibc = .false.
                l%sgbccrank = .false.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-sgbccrank') !es el default. Lo mantengo por compatibilidad con lanzamientos previos
+            case ('-sgbccrank') !it is the default. I keep it for compatibility with previous launches
                l%sgbccrank = .true.
                l%mibc = .false.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-nosgbc') !opcion generica que aglutina varios switches que estan den default (l%sgbcresol, l%sgbccrank, l%sgbcfreq)
+            case ('-nosgbc') !generic option that groups several switches that are default (l%sgbcresol, l%sgbccrank, l%sgbcfreq)
                l%sgbc = .false.
                l%mibc = .true.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-sgbc') !opcion generica que aglutina varios switches que estan den default (l%sgbcresol, l%sgbccrank, l%sgbcfreq)
+            case ('-sgbc') !generic option that groups several switches that are default (l%sgbcresol, l%sgbccrank, l%sgbcfreq)
                l%sgbc = .true.
                l%mibc = .false.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-sgbcDispersive') !opcion generica que aglutina varios switches que estan den default (l%sgbcresol, l%sgbccrank, l%sgbcfreq)
+            case ('-sgbcDispersive') !generic option that groups several switches that are default (l%sgbcresol, l%sgbccrank, l%sgbcfreq)
                l%sgbc = .true.
                l%mibc = .false.
                l%sgbcDispersive = .true.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-saveall')
+            case ('-saveall')
                l%saveall = .TRUE.
-            CASE ('-attw')
+            case ('-attw')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                ! Converts the characters to real
-               READ (f, *, ERR=732) l%attfactorw
-               GO TO 832
+               read (f, *, ERR=732) l%attfactorw
+               go TO 832
 732            call stoponerror(l%layoutnumber, l%num_procs, 'Invalid dissipation factor', .true.); statuse = -1; !goto 668
 832            if ((l%attfactorw <= -1.0_RKIND) .or. (l%attfactorw > 1.0_RKIND)) then
                   call stoponerror(l%layoutnumber, l%num_procs, 'Invalid dissipation factor', .true.); statuse = -1; !goto 668
                end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
-            CASE ('-maxwireradius')
+            case ('-maxwireradius')
                l%boundwireradius = .true.
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                ! Converts the characters to real
-               READ (f, *, ERR=737) l%maxwireradius
-               GO TO 837
+               read (f, *, ERR=737) l%maxwireradius
+               go TO 837
 737            call stoponerror(l%layoutnumber, l%num_procs, 'Invalid dissipation factor', .true.); statuse = -1; !goto 668
 837            if ((l%maxwireradius <= 0.0_RKIND)) then
                   call stoponerror(l%layoutnumber, l%num_procs, 'Invalid maximumwireradius', .true.); statuse = -1; !goto 668
                end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
-            CASE ('-mindistwires')
+            case ('-mindistwires')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                ! Converts the characters to real
-               READ (f, *, ERR=1732) l%mindistwires
-               GO TO 1832
+               read (f, *, ERR=1732) l%mindistwires
+               go TO 1832
 1732           call stoponerror(l%layoutnumber, l%num_procs, 'Invalid minimum distance between wires', .true.); statuse = -1; !goto 668
 1832           if (l%mindistwires <= 0.0_RKIND) then
                   call stoponerror(l%layoutnumber, l%num_procs, 'Invalid minimum distance between wires', .true.); statuse = -1; !goto 668
                end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
-            CASE ('-makeholes')
+            case ('-makeholes')
                l%makeholes = .TRUE.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-connectendings')
+            case ('-connectendings')
                l%connectendings = .TRUE.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-nostrictOLD')
+            case ('-nostrictOLD')
                l%strictOLD = .false.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-nomtlnberenger')
+            case ('-nomtlnberenger')
                l%mtlnberenger = .false.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-stableradholland')
+            case ('-stableradholland')
                l%stableradholland = .true.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
                !  CASE ('-mtln')
                !      buff='-mtln option deprecated and ignored. Check -nomtlnberenger or -l%stableradholland'
                !      call WarnErrReport(Trim(buff),.false.)
-            CASE ('-intrawiresimplify')
+            case ('-intrawiresimplify')
                l%strictOLD = .false.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-notaparrabos')
+            case ('-notaparrabos')
                l%TAPARRABOS = .false.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
             case ('-fieldtotl')
@@ -641,26 +641,26 @@ contains
           !!    l%experimentalVideal=.true.
           !!    l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
 
-            case ('-forceresampled') !a menos que se pida explicitamente, no se resamplea 120123
+            case ('-forceresampled') !unless explicitly requested, it is not resampled 120123
                l%forceresampled = .true.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
 
-            CASE ('-wirethickness')
+            case ('-wirethickness')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                ! Converts the characters to real
-               READ (f, *, ERR=7416) l%wirethickness
-               GO TO 8416
+               read (f, *, ERR=7416) l%wirethickness
+               go TO 8416
 7416           call stoponerror(l%layoutnumber, l%num_procs, 'Invalid l%wirethickness ', .true.); statuse = -1; !goto 668
 8416           if (l%sgbcdepth < -1) then
                   call stoponerror(l%layoutnumber, l%num_procs, 'Invalid l%wirethickness', .true.); statuse = -1; !goto 668
                end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
-            CASE ('-wiresflavor')
+            case ('-wiresflavor')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
-               READ (f, '(a)', ERR=3621) l%wiresflavor
+               read (f, '(a)', ERR=3621) l%wiresflavor
                if (trim(adjustl(l%wiresflavor(1:1))) == 'g') l%wiresflavor = 'slanted'
                select case (trim(adjustl(l%wiresflavor)))
                case ('holland', 'old')
@@ -678,15 +678,15 @@ contains
                   call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                   l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(f))
                   ! Converts the characters to real
-                  READ (f, *, ERR=2561) l%precision
-                  GO TO 2562
+                  read (f, *, ERR=2561) l%precisionValue
+                  go TO 2562
 2561              call stoponerror(l%layoutnumber, l%num_procs, 'Invalid l%precision for semistructured', .true.); statuse = -1; !goto 668
-2562              if (l%precision < 0) then
+2562              if (l%precisionValue < 0) then
                      call stoponerror(l%layoutnumber, l%num_procs, 'Invalid l%precision for semistructured', .true.); statuse = -1; !goto 668
                   end if
                   !
                end select
-               GO TO 4621
+               go TO 4621
 3621           call stoponerror(l%layoutnumber, l%num_procs, 'Invalid wires flavor', .true.); statuse = -1; !goto 668
 4621           if (((trim(adjustl(l%wiresflavor)) /= 'holland') .AND. &
                     (trim(adjustl(l%wiresflavor)) /= 'transition') .AND. &
@@ -734,70 +734,70 @@ contains
                   call stoponerror(l%layoutnumber, l%num_procs, 'Experimental wire flavor not available in this compilation', .true.); statuse = -1; !goto 668
                end select
 #endif
-            CASE ('-isolategroupgroups')
+            case ('-isolategroupgroups')
                l%isolategroupgroups = .TRUE.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-groundwires')
+            case ('-groundwires')
                l%groundwires = .TRUE.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-noSlantedcrecepelo ') !opcion niapa excperimental 131219
+            case ('-noSlantedcrecepelo ') !niapa experimental option 131219
                l%noSlantedcrecepelo = .TRUE.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
-            CASE ('-inductance')
+            case ('-inductance')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
-               READ (f, '(a)', ERR=361) l%inductance_model
-               GO TO 461
+               read (f, '(a)', ERR=361) l%inductance_model
+               go TO 461
 361            call stoponerror(l%layoutnumber, l%num_procs, 'Invalid inductance model', .true.); statuse = -1; !goto 668
 461            if ((l%inductance_model /= 'ledfelt') .AND. (l%inductance_model /= 'berenger') .AND. &
                        &    (l%inductance_model /= 'boutayeb')) then
                   call stoponerror(l%layoutnumber, l%num_procs, 'Invalid inductance model', .true.); statuse = -1; !goto 668
                end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
-            CASE ('-inductanceorder')
+            case ('-inductanceorder')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
-               READ (f, *, ERR=179) l%inductance_order
-               GO TO 180
+               read (f, *, ERR=179) l%inductance_order
+               go TO 180
 179            call stoponerror(l%layoutnumber, l%num_procs, 'Invalid inductance order', .true.); statuse = -1; !goto 668
 180            l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
-            CASE ('-prefix')
+            case ('-prefix')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                l%prefix = '_'//trim(adjustl(f))
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
-            CASE ('-cfl')
+            case ('-cfl')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                ! Converts the characters to real
-               READ (f, *, ERR=3762) l%cfltemp
-               GO TO 3862
+               read (f, *, ERR=3762) l%cfltemp
+               go TO 3862
 3762           call stoponerror(l%layoutnumber, l%num_procs, 'Invalid Courant Number', .true.); statuse = -1; !goto 668
 3862           if (l%cfltemp <= 0.0) then
                   call print11(l%layoutnumber, '------> Ignoring negative or null l%cfl Courant Number')
-!!!!!!!!!               call stoponerror (l%layoutnumber, l%num_procs, 'Invalid negative or null l%cfl Courant Number',.true.); statuse=-1; !goto 668 !!!sgg 151216 para evitar el error l%cfl 0 del problem-type sigue como si no estuviera
+!!!!!!!!!               call stoponerror (l%layoutnumber, l%num_procs, 'Invalid negative or null l%cfl Courant Number',.true.); statuse=-1; !goto 668 !!!sgg 151216 to avoid the l%cfl 0 error from problem-type it continues as if it were not there
                   l%forcecfl = .false.
                else
                   l%cfl = l%cfltemp
                   l%forcecfl = .true.
                   l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
                end if
-            CASE ('-noconformalmapvtk')
+            case ('-noconformalmapvtk')
                l%noconformalmapvtk = .true.
-            CASE ('-niapapostprocess')
+            case ('-niapapostprocess')
                l%niapapostprocess = .true.
 #ifdef CompileWithPrescale
 !!!!210918 permit scaling
-            CASE ('-pscale')
+            case ('-pscale')
                l%permitscaling = .true.
-               l%saveall = .true. !lo salvo todo en permit scaling para evitar errores
+               l%saveall = .true. !I save everything in permit scaling to avoid errors
                i = i + 1
                buff = ""
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
-               READ (f, *, ERR=33762) buff
+               read (f, *, ERR=33762) buff
                l%EpsMuTimeScale_input_parameters%electric = .False.
                l%EpsMuTimeScale_input_parameters%electric = .False.
-               Select case (trim(adjustl(buff)))
+               select case (trim(adjustl(buff)))
                case ("ee")
                   l%EpsMuTimeScale_input_parameters%electric = .True.
                case ("hh")
@@ -806,22 +806,22 @@ contains
                   l%EpsMuTimeScale_input_parameters%electric = .True.
                   l%EpsMuTimeScale_input_parameters%magnetic = .True.
                case default
-                  GO TO 33862
+                  go TO 33862
                end select
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
                ! Converts the characters to real
-               READ (f, *, ERR=33762) l%EpsMuTimeScale_input_parameters%tini
+               read (f, *, ERR=33762) l%EpsMuTimeScale_input_parameters%tini
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(f))
-               READ (f, *, ERR=33762) l%EpsMuTimeScale_input_parameters%tend
+               read (f, *, ERR=33762) l%EpsMuTimeScale_input_parameters%tend
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(f))
-               READ (f, *, ERR=33762) l%EpsMuTimeScale_input_parameters%alpha_max
-               GO TO 33862
+               read (f, *, ERR=33762) l%EpsMuTimeScale_input_parameters%alpha_max
+               go TO 33862
 33762          call stoponerror(l%layoutnumber, l%num_procs, 'Invalid pscale parameters', .true.); statuse = -1; !goto 668
 33862          continue
                if (l%EpsMuTimeScale_input_parameters%checkError() /= 0) then
@@ -832,51 +832,51 @@ contains
                   l%EpsMuTimeScale_input_parameters%are_there = .true.
                end if
 #endif
-            CASE ('-n')
+            case ('-n')
                l%forcesteps = .TRUE.
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                ! Converts the characters to integer
-               READ (f, *, ERR=602) l%finaltimestep
-               GO TO 702
+               read (f, *, ERR=602) l%finaltimestep
+               go TO 702
 602            call stoponerror(l%layoutnumber, l%num_procs, 'Invalid time step', .true.); statuse = -1; !goto 668
 702            if (l%finaltimestep < -2) then
                   call stoponerror(l%layoutnumber, l%num_procs, 'Invalid time step', .true.); statuse = -1; !goto 668
                end if
 !!!!!!
-            CASE ('-factorradius')
+            case ('-factorradius')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                ! Converts the characters to integer
-               READ (f, *, ERR=6032) l%factorradius
-               GO TO 7032
+               read (f, *, ERR=6032) l%factorradius
+               go TO 7032
 6032           call stoponerror(l%layoutnumber, l%num_procs, 'Invalid l%factorradius', .true.); statuse = -1; !goto 668
 7032           continue
-            CASE ('-factordelta')
+            case ('-factordelta')
                i = i + 1
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                ! Converts the characters to integer
-               READ (f, *, ERR=6072) l%factordelta
-               GO TO 7072
+               read (f, *, ERR=6072) l%factordelta
+               go TO 7072
 6072           call stoponerror(l%layoutnumber, l%num_procs, 'Invalid l%factordelta', .true.); statuse = -1; !goto 668
 7072           continue
 !!!!!!!!!!!!!
-            CASE ('-stoch')
+            case ('-stoch')
                l%stochastic = .true.
                l%chosenyesornostochastic = .true.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
 #ifndef CompileWithMPI
                call stoponerror(l%layoutnumber, l%num_procs, 'l%stochastic simulation unsupported without MPI compilation', .true.); statuse = -1; !goto 668
 #endif
-            CASE ('-nostoch')
+            case ('-nostoch')
                l%stochastic = .false.
                l%chosenyesornostochastic = .true.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
             case ('-forcecreateh5bin')
                l%createh5bin = .true.
-            CASE ('') !100615 para evitar el crlf del .sh
+            case ('') !100615 to avoid the crlf of the .sh
                continue
-            CASE DEFAULT
+            case DEFAULT
                call stoponerror(l%layoutnumber, l%num_procs, 'Wrong switch '//trim(adjustl(l%chain)), .true.); statuse = -1; !goto 668
             end select
             i = i + 1
@@ -925,12 +925,12 @@ contains
       if (l%stochastic .and. l%wirecrank) then
          call stoponerror(l%layoutnumber, l%num_procs, 'Wires Crank Nicolson is unsupported with l%stochastic', .true.); statuse = -1; !goto 668
       end if
-   !!!si esta soportado 170719
+   !!!it is supported 170719
    !! if (l%permitscaling.and.l%resume) then
    !!   call stoponerror (l%layoutnumber, l%num_procs, 'Resuming with Permittivity scaling unsupported',.true.); statuse=-1; !goto 668
    !!end if
       if (l%permitscaling .and. (l%kappamaxpar .gt. 1.000001_rkind)) then
-   !!!061118 no lo permito porque cpml toca los idxe, idye, idze en funcion del kappa y permittivity scaling conflicta
+   !!!061118 I do not allow it because cpml touches idxe, idye, idze depending on kappa and permittivity scaling conflicts
             call stoponerror (l%layoutnumber, l%num_procs, 'Unsupported CPML kappa factor since 061118 because conflicts with Idxe...in permittivity scaling',.true.)
       end if
       if (l%stochastic) then
@@ -966,92 +966,92 @@ contains
          end do
       end do
       if (l%prefix(1:1) == '_') then
-     !!!acortado 120219  l%nEntradaRoot = trim (adjustl(l%fichin)) // trim (adjustl(prefix))// trim (adjustl(l%prefixopci))
-         l%nEntradaRoot = trim(adjustl(l%fichin))//'_'//trim(adjustl(l%prefixopci))
+     !!!shortened 120219  l%nEntradaRoot = trim (adjustl(l%fichin)) // trim (adjustl(prefix))// trim (adjustl(l%prefixopci))
+         l%nInputRoot = trim(adjustl(l%fichin))//'_'//trim(adjustl(l%prefixopci))
       else
-         l%nEntradaRoot = trim(adjustl(l%fichin))
+         l%nInputRoot = trim(adjustl(l%fichin))
       end if
 !!!l%stochastic
 #ifdef CompileWithStochastic
       if (l%stochastic) then
-         if (l%layoutnumber <= l%num_procs/2 - 1) then !aun no se ha dividido el l%num_procs
-            l%nEntradaRoot = trim(adjustl(l%nEntradaRoot))
+         if (l%layoutnumber <= l%num_procs/2 - 1) then !l%num_procs has not been divided yet
+            l%nInputRoot = trim(adjustl(l%nInputRoot))
          else
-            l%nEntradaRoot = trim(adjustl('devia_'//trim(adjustl(l%nEntradaRoot))))
+            l%nInputRoot = trim(adjustl('devia_'//trim(adjustl(l%nInputRoot))))
          end if
       end if
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI, l%ierr)
 #endif
 #endif
-!!!fin l%stochastic
+!!!end of l%stochastic
 !!!   sgg%nEntradaRoot=trim (adjustl(l%nEntradaRoot))
       !
       write(chari, '(i5)') l%layoutnumber + 1
-      l%nresumeable2 = trim(adjustl(l%nEntradaRoot))//'_'//trim(adjustl(chari))//'.fields'
+      l%nresumeable2 = trim(adjustl(l%nInputRoot))//'_'//trim(adjustl(chari))//'.fields'
       !
 
-      l%geomfile = trim(adjustl(l%nEntradaRoot))//'_'//trim(adjustl(chari))
+      l%geomfile = trim(adjustl(l%nInputRoot))//'_'//trim(adjustl(chari))
       !warning file management
       if (statuse /= -1) then
-         call CLOSEWARNINGFILE(l%layoutnumber, l%num_procs, l%fatalerror, .false., .false.) !!cierra el temporal !todavia no se ha dividido el l%num_procs
-       !!!borra el tmp si no hay l%fatalerror y reabre el de verdad
+         call CLOSEWARNINGFILE(l%layoutnumber, l%num_procs, l%fatalerror, .false., .false.) !!closes the temporary !l%num_procs has not been divided yet
+       !!!deletes the tmp if there is no l%fatalerror and reopens the real one
          if ((.not. l%fatalerror) .and. (l%layoutnumber == 0)) then
             open (unit=1320, file=trim(adjustl(l%fichin))//'_tmpWarnings.txt_Warnings.txt')
             close (unit=1320, status='delete')
          end if
-         call INITWARNINGFILE(l%layoutnumber, l%num_procs, l%nEntradaRoot, l%verbose, l%ignoreerrors)
+         call INITWARNINGFILE(l%layoutnumber, l%num_procs, l%nInputRoot, l%verbose, l%ignoreerrors)
       end if
       !
       !
       if (l%resume_fromold) then
          inquire(file=trim(adjustl(l%nresumeable2))//'.old', EXIST=resume3)
-      ELSE
+      else
          inquire(file=trim(adjustl(l%nresumeable2)), EXIST=resume3)
       end if
       if (l%resume) then
          if (.NOT. resume3) then
             call stoponerror(l%layoutnumber, l%num_procs, 'l%resume fields not present', .true.); statuse = -1; !goto 668
          end if
-         write(dubuf, *) 'RESUMING simulation ', trim(adjustl(l%nEntradaRoot)), ' until n= ', l%finaltimestep
+         write(dubuf, *) 'RESUMING simulation ', trim(adjustl(l%nInputRoot)), ' until n= ', l%finaltimestep
          call print11(l%layoutnumber, dubuf)
-      ELSE
+      else
          if (resume3 .AND. (.NOT. l%freshstart) .and. (.not. l%run)) then
          call stoponerror (l%layoutnumber, l%num_procs, 'Restarting file exists. Either specify -r to l%resume, -s to do a fresh START, or -run to run in whatever the case',.true.); statuse = -1; !goto 668
-         ELSEIF (resume3 .and. (l%run)) then
+         else if (resume3 .and. (l%run)) then
             l%resume = .true.
-         ELSE
+         else
             open(35, file=trim(adjustl(l%nresumeable2)))
             write(35, '(a)') '!END'
-            CLOSE (35, status='DELETE')
+            close (35, status='DELETE')
             open(35, file=trim(adjustl(l%nresumeable2))//'.old')
             write(35, '(a)') '!END'
-            CLOSE (35, status='DELETE')
+            close (35, status='DELETE')
          end if
       end if
 !
 !
 !
       if (((l%wiresflavor == 'slanted') .or. (l%wiresflavor == 'semistructured')) .AND. (l%mpidir /= 3)) then
-         continue !arreglado l%mpidir slanted 2019
+         continue !fixed l%mpidir slanted 2019
          !         call stoponerror (l%layoutnumber, l%num_procs, 'slanted wires unsupported with -l%mpidir {x,y}',.true.); statuse=-1; !goto 668
       end if
       if (l%input_conformal_flag .AND. (l%mpidir /= 3)) then
-         continue !arreglado l%mpidir conformal 2019
+         continue !fixed l%mpidir conformal 2019
          !TODO: under test
-         !26-sep-2018: lo comento
+         !26-sep-2018: I comment it out
          !call stoponerror (l%layoutnumber, l%num_procs, 'CONFORMAL -conf  unsupported with -l%mpidir {x,y}',.true.); statuse=-1; !goto 668
       end if
       if (l%run_with_abrezanjas .AND. (l%mpidir /= 3)) then
-         continue !arreglado l%mpidir conformal 2019
+         continue !fixed l%mpidir conformal 2019
          !under test
-         !26-sep-2018: lo comento
+         !26-sep-2018: I comment it out
          !call stoponerror (l%layoutnumber, l%num_procs, 'New abrezanjas thin gaps unsupported with -l%mpidir {x,y}',.true.); statuse=-1; !goto 668
       end if
       if (l%run_with_abrezanjas .AND. l%flag_conf_sgg) then
-         !pass Mayo-2018
+         !pass May-2018
          !call stoponerror (l%layoutnumber, l%num_procs, 'CONFORMAL -conf currently unsupported with new abrezanjas thin gaps (unsupported 2 simultaneous conformal meshes at this moment',.true.); statuse=-1; !goto 668
-         !se hace en otro sitio
+         !it is done elsewhere
       end if
 
       !
@@ -1060,24 +1060,24 @@ contains
          !depending on wether the resuming files are present or not
          if (l%resume_fromold) then
             inquire(file=trim(adjustl(l%nresumeable2))//'.old', EXIST=l%resume)
-         ELSE
+         else
             inquire(file=trim(adjustl(l%nresumeable2)), EXIST=l%resume)
          end if
          if (l%resume) then
             if ((l%layoutnumber == 0) .or. ((l%layoutnumber == l%num_procs/2) .and. l%stochastic)) then
                !the temporary
-               CLOSE (11)
+               close (11)
                l%file11isopen = .false.
-               open(11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted', POSITION='append')
+               open(11, file=trim(adjustl(l%nInputRoot))//'_Report.txt', FORM='formatted', POSITION='append')
                l%file11isopen = .true.
- !!!           if (l%layoutnumber==0) call insertalogtmp !ojo lo quito aqui porque borra el _log con la info de credits
+ !!!           if (l%layoutnumber==0) call insertalogtmp !careful, I remove it here because it erases the _log with the credits info
                if (l%resume_fromold) then
                   call print11(l%layoutnumber, 'Resuming from .fields.old files')
-               ELSE
+               else
                   call print11(l%layoutnumber, 'Resuming from .fields files')
                end if
             end if
-         ELSE
+         else
          !!!if ((l%layoutnumber==0).or.((l%layoutnumber == l%num_procs/2).and.l%stochastic)) then
          !!!   !the temporary
          !!!   CLOSE (11)
@@ -1098,16 +1098,16 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       if ((l%run)) then
 #ifdef keeppause
-          !!!solo para el cluster
+          !!!only for the cluster
          inquire(file='running', EXIST=hayinput)
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI, l%ierr)
 #endif
          if (hayinput) then
             open(9, file='running', FORM='formatted', action='read')
-            READ (9, '(a)') chain4
+            read (9, '(a)') chain4
             chain4 = trim(adjustl(chain4))
-            CLOSE (9)
+            close (9)
                   !!!!!!!!
 #ifdef CompileWithMPI
             call MPI_Barrier(SUBCOMM_MPI, l%ierr)
@@ -1125,7 +1125,7 @@ contains
          if (l%layoutnumber == 0) then
             open(38, file='running')
             write(38, '(a)') trim(adjustl(l%opcionespararesumeo))
-            CLOSE (38)
+            close (38)
          end if
       end if
 #ifdef CompileWithMPI
@@ -1138,17 +1138,17 @@ contains
          print *, 'Opening _Report.txt file'
          if (l%resume) then
             !the temporary
-            CLOSE (11)
+            close (11)
             l%file11isopen = .false.
-            open(11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted')
+            open(11, file=trim(adjustl(l%nInputRoot))//'_Report.txt', FORM='formatted')
             l%file11isopen = .true.
-            donde = 0
-            do while (donde == 0)
+            position = 0
+            do while (position == 0)
                !the first one is a dummy read
-               READ (11, '(a)') l%chdummy
-               donde = index(l%chdummy, 'mpirun -n')
+               read (11, '(a)') l%chdummy
+               position = index(l%chdummy, 'mpirun -n')
             end do
-            CLOSE (11)
+            close (11)
             l%file11isopen = .false.
             l%opcionesoriginales = l%chdummy
 !
@@ -1161,24 +1161,24 @@ contains
             !
          !!!!!!!!!        CLOSE (11, status='delete')
          !!!!!!!!!        l%file11isopen=.false.
-            open(11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted')
+            open(11, file=trim(adjustl(l%nInputRoot))//'_Report.txt', FORM='formatted')
             l%file11isopen = .true.
-            donde = 0
-            do while (donde == 0)
+            position = 0
+            do while (position == 0)
                !the first one is a dummy read
-               READ (11, '(a)') l%chdummy
-               donde = index(l%chdummy, '!SLICES')
+               read (11, '(a)') l%chdummy
+               position = index(l%chdummy, '!SLICES')
             end do
             l%slicesoriginales = trim(adjustl(l%chdummy))
-            CLOSE (11)
+            close (11)
             l%file11isopen = .false.
-            open(11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted', POSITION='append')
+            open(11, file=trim(adjustl(l%nInputRoot))//'_Report.txt', FORM='formatted', POSITION='append')
             l%file11isopen = .true.
             if (l%layoutnumber == 0) call insertalogtmp(l)
-         ELSE
-            CLOSE (11)
+         else
+            close (11)
             l%file11isopen = .false.
-            open(11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted')
+            open(11, file=trim(adjustl(l%nInputRoot))//'_Report.txt', FORM='formatted')
             l%file11isopen = .true.
             if (l%layoutnumber == 0) call insertalogtmp(l)
          end if
@@ -1199,26 +1199,26 @@ contains
 #endif
          write(dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
       !!!call print11 (l%layoutnumber, dubuf,.true.)
-         write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
+         write (11, '(a)') trim(adjustl(dubuf)) !crudely so that l%stochastic can resume
          write(dubuf, *) 'Launched on              ', l%time_out2%fecha(7:8), '/', l%time_out2%fecha(5:6), '/', &
          &                l%time_out2%fecha(1:4), ' ', l%time_out2%hora(1:2), ':', l%time_out2%hora(3:4)
       !!!call print11 (l%layoutnumber, dubuf,.true.)
-         write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
+         write (11, '(a)') trim(adjustl(dubuf)) !crudely so that l%stochastic can resume
          write(dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
       !!!call print11 (l%layoutnumber, dubuf,.true.)
-         write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
+         write (11, '(a)') trim(adjustl(dubuf)) !crudely so that l%stochastic can resume
          write(dubuf, '(a)') 'Launched with total options '
       !!!call print11 (l%layoutnumber, dubuf,.true.)
-         write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
+         write (11, '(a)') trim(adjustl(dubuf)) !crudely so that l%stochastic can resume
          write(dubuf, *) trim(adjustl(l%opcionestotales))
       !!!call print11 (l%layoutnumber, dubuf,.true.)
-         write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
+         write (11, '(a)') trim(adjustl(dubuf)) !crudely so that l%stochastic can resume
          write(dubuf, '(a)') 'If later resuming use compulsory options '
       !!!call print11 (l%layoutnumber, dubuf,.true.)
-         write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
+         write (11, '(a)') trim(adjustl(dubuf)) !crudely so that l%stochastic can resume
          write(dubuf, *) trim(adjustl(l%opcionespararesumeo))
       !!!call print11 (l%layoutnumber, dubuf,.true.)
-         write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
+         write (11, '(a)') trim(adjustl(dubuf)) !crudely so that l%stochastic can resume
          write(dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
          call print11(l%layoutnumber, dubuf)
       end if
@@ -1237,35 +1237,35 @@ contains
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI, l%ierr)
 #endif
-      if (existiarunningigual) then !lo pongo aqui pq si no no se escribe en el report
+      if (existiarunningigual) then !I put it here because otherwise it is not written to the report
          call stoponerror(l%layoutnumber, l%num_procs, 'Running flag file with same options than requested exist. ', .true.); statuse = -1; 
       end if
 
 668   continue
 
-      input_conformal_flag = l%input_conformal_flag  !es un flag global!!!!ojooo 051223 !devolverlo correctamente
-      return !el unico return que he dejado !240817
+      input_conformal_flag = l%input_conformal_flag  !it is a global flag!!!!careful 051223 !return it properly
+      return !the only return I have left !240817
 
    end subroutine interpreta
 
-   subroutine insertalogtmp(l) !para 100920
-      type(entrada_t), intent(INOUT) :: l
+   subroutine insertalogtmp(l) !for 100920
+      type(input_t), intent(inout) :: l
       character(len=BUFSIZE) :: dubuf
       integer(kind=4) :: MYUNIT11
-      call OffPrint !no reimprimas, esto ya estaba por pantalla
+      call OffPrint !do not reprint, this was already on screen
       open(newunit=myunit11, file='SEMBA_FDTD_temp.log')
       do
          read (myunit11, '(1024a)', end=7211) dubuf
-         dubuf = '&'//dubuf !para respetar los espacios
+         dubuf = '&'//dubuf !to preserve the spaces
          call print11(l%layoutnumber, dubuf)
       end do
-7211  CLOSE (myunit11, status='delete')
+7211  close (myunit11, status='delete')
       call OnPrint
       return
    end subroutine insertalogtmp
 
    subroutine print_basic_help(l)
-      type(entrada_t), intent(INOUT) :: l
+      type(input_t), intent(inout) :: l
       call print_credits(l)
       call print11(l%layoutnumber, '___________________________________________________________________________')
       call print11(l%layoutnumber, 'Basic usage: ')
@@ -1277,7 +1277,7 @@ contains
    end subroutine print_basic_help
 
    subroutine print_credits(l)
-      type(entrada_t), intent(INOUT) :: l
+      type(input_t), intent(inout) :: l
       character(len=BUFSIZE) :: dubuf
 
       if (l%creditosyaprinteados) return
@@ -1294,7 +1294,7 @@ contains
       call print11(l%layoutnumber, 'cmake build type: '//cmake_build_type)
       if (cmake_build_type == "Debug") then
          call print11(l%layoutnumber, 'cmake compilation flags: '//compilation_flags_debug)
-      elseif (cmake_build_type == "Release") then
+      else if (cmake_build_type == "Release") then
          call print11(l%layoutnumber, 'cmake compilation flags: '//compilation_flags_release)
       else
          call print11(l%layoutnumber, 'cmake compilation flags: '//compilation_flags)
@@ -1330,7 +1330,7 @@ contains
    end subroutine print_credits
 
    subroutine print_help(l)
-      type(entrada_t), intent(INOUT) :: l
+      type(input_t), intent(inout) :: l
       character(len=BUFSIZE) :: buff
       call print11(l%layoutnumber, '___________________________________________________________________________')
       call print11(l%layoutnumber, 'Command line arguments: ')
@@ -1518,7 +1518,7 @@ contains
       call print11(l%layoutnumber, '&                 stop file permits to launch simulations on-demand        ')
       call print11(l%layoutnumber, '___________________________________________________________________________')
       !
-      write (buff, '(a,i14,a)') 'Max CPU time is ', topCPUtime, ' seconds (can be overriden by -cpumax)'
+      write (buff, '(a,i14,a)') 'Max CPU time is ', TOPCPUTIME, ' seconds (can be overriden by -cpumax)'
       call print11(l%layoutnumber, buff)
 #ifdef CompileWithOpenMP
       call print11(l%layoutnumber, 'SUPPORTED:   MultiCPU parallel simulation (OpenMP)')
@@ -1577,7 +1577,7 @@ contains
 
    subroutine removeintraspaces(a)
       character(len=*), intent(inout):: a
-      integer(Kind=4) :: i, longi
+      integer(kind=4) :: i, longi
       logical correc
       correc = .true.
       do while (correc)
@@ -1601,10 +1601,10 @@ contains
    subroutine buscaswitchficheroinput(l)
 
 !!!!!!!!!!!!!
-      type(entrada_t), intent(INOUT) :: l
+      type(input_t), intent(inout) :: l
 !!!!!!!!!
 
-      character(len=BUFSIZE) :: dato, buff, f, binaryPath
+      character(len=BUFSIZE) :: lineText, buff, f, binaryPath
       integer(kind=4) :: i, n, statuse, NUM_NFDES, TEMP_NUMNFDES, p
       character(len=5) :: NFDEEXTENSION, CONFEXTENSION, CMSHEXTENSION
 
@@ -1632,8 +1632,8 @@ contains
                goto 667
             end if
             !
-            SELECT CASE (trim(adjustl(l%chain)))
-            CASE ('-mpidir')
+            select case (trim(adjustl(l%chain)))
+            case ('-mpidir')
                i = i + 1
                call getcommandargument(l%chain2, i, f, l%length, statuse, binaryPath)
                select case (trim(adjustl(f)))
@@ -1643,27 +1643,27 @@ contains
                   l%mpidir = 2   
                case ('z', 'Z')
                   l%mpidir = 3
-               CASE DEFAULT
-                  GOTO 1762
+               case DEFAULT
+                  goto 1762
                end select
-               GO TO 2762
+               go TO 2762
 1762           call stoponerror(l%layoutnumber, l%num_procs, 'Invalid -l%mpidir option', .true.)
                statuse = -1
                goto 667
 2762           continue
-            CASE ('-h')
+            case ('-h')
                call print_credits(l)
                call print_help(l)
                call print_credits(l)
-               STOP
-            CASE ('-i')
+               stop
+            case ('-i')
                num_nfdes = num_nfdes + 1
             end select
             i = i + 1
          end do
          if (num_nfdes > 1) then
             temp_numnfdes = 0
-            i = 2 ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
+            i = 2 ! it starts at 2 because the first argument is always the executable name
             do while (i <= n)
                call getcommandargument(l%chain2, i, l%chain, l%length, statuse, binaryPath)
                if (statuse /= 0) then
@@ -1671,8 +1671,8 @@ contains
                   goto 667
                end if
                !
-               SELECT CASE (trim(adjustl(l%chain)))
-               CASE ('-i')
+               select case (trim(adjustl(l%chain)))
+               case ('-i')
                   temp_numnfdes = temp_numnfdes + 1
                   i = i + 1
                   call getcommandargument(l%chain2, i, f, l%length, statuse, binaryPath)
@@ -1682,12 +1682,12 @@ contains
                         NFDEEXTENSION = f((p - 4):p)
                         l%extension = NFDEEXTENSION
                         l%fichin = f(1:p - 5)
-                     ELSE
+                     else
                         l%fichin = f(1:p)
                      end if
-                  ELSE if (p >= 1) then
+                  else if (p >= 1) then
                      l%fichin = f(1:p)
-                  ELSE
+                  else
                      call stoponerror(l%layoutnumber, l%num_procs, 'There is not a .nfde file for input', .true.)
                      statuse = -1
                      goto 667
@@ -1700,23 +1700,23 @@ contains
                      goto 667
                   end if
 !
-                  if (temp_numnfdes == 1) then !solo el primero
+                  if (temp_numnfdes == 1) then !only the first one
                      if (l%layoutnumber == 0) open (194, file='multi_'//trim(adjustl(l%fichin))//NFDEEXTENSION, form='formatted')
                   end if
                   if (l%layoutnumber == 0) then
                      open (196, file=trim(adjustl(l%fichin))//NFDEEXTENSION, form='formatted')
                      do
-                        read (196, '(a)', end=197) dato
-                        if (trim(adjustl(dato)) /= '!END') then
-                           write (194, '(a)') trim(adjustl(dato))
+                        read (196, '(a)', end=197) lineText
+                        if (trim(adjustl(lineText)) /= '!END') then
+                           write (194, '(a)') trim(adjustl(lineText))
                         else
-                           dato = '***** End merging file: '//trim(adjustl(l%fichin))//NFDEEXTENSION//' ********'
-                           write (194, '(a)') trim(adjustl(dato))
+                           lineText = '***** End merging file: '//trim(adjustl(l%fichin))//NFDEEXTENSION//' ********'
+                           write (194, '(a)') trim(adjustl(lineText))
                         end if
                      end do
 197                  close (196)
                   end if
-                  if (temp_numnfdes == num_nfdes) then !solo el primero
+                  if (temp_numnfdes == num_nfdes) then !only the first one
                      if (l%layoutnumber == 0) then
                         write (194, '(a)') '!END'
                         close (194)
@@ -1733,7 +1733,7 @@ contains
       
       temp_numnfdes = 0
       if (n > 0) then
-         i = 2  ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
+         i = 2  ! it starts at 2 because the first argument is always the executable name
          do while (i <= n)
             call getcommandargument(l%chain2, i, l%chain, l%length, statuse, binaryPath)
             if (statuse /= 0) then
@@ -1741,9 +1741,9 @@ contains
                goto 667
             end if
             !
-            SELECT CASE (trim(adjustl(l%chain)))
+            select case (trim(adjustl(l%chain)))
                !
-            CASE ('-i')
+            case ('-i')
                temp_numnfdes = temp_numnfdes + 1
                i = i + 1
                if (temp_numnfdes == 1) then
@@ -1755,12 +1755,12 @@ contains
                         NFDEEXTENSION = f((p - 4):p)
                         l%extension = NFDEEXTENSION
                         l%fichin = f(1:p - 5)
-                     ELSE
+                     else
                         l%fichin = f(1:p)
                      end if
-                  ELSE if (p >= 1) then
+                  else if (p >= 1) then
                      l%fichin = f(1:p)
-                  ELSE
+                  else
                      call stoponerror(l%layoutnumber, l%num_procs, 'There is not a .nfde file for input', .true.)
                      statuse = -1
                      goto 667
@@ -1777,7 +1777,7 @@ contains
                      statuse = -1
                      goto 667
                   end if
-               elseif (temp_numnfdes == 2) then
+               else if (temp_numnfdes == 2) then
                   l%fichin = 'multi_'//trim(adjustl(l%fichin))
                else
                   l%fichin = l%fichin
@@ -1805,31 +1805,31 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine default_flags(l)
 !!!!!!!!!!!!!
-      type(entrada_t), intent(INOUT) :: l
+      type(input_t), intent(inout) :: l
       l%noconformalmapvtk = .false.
       l%forced = -1
       l%sgbcdepth = -1
       l%statuse = 0
       l%time_begin = 0
 !
-      l%precision = 0 !redondeo del semiestructurado
+      l%precisionValue = 0 !rounding for the semistructured
       l%stochastic = .false.
-      l%chosenyesornostochastic = .false. !es un flag informativo que debe inicializarse a .false. a pesar de qu el sentido comun diga lo contrario
+      l%chosenyesornostochastic = .false. !it is an informative flag that must be initialized to .false. even though common sense says otherwise
       l%simu_devia = .false.
 
       l%createh5bin = .false.
       l%permitscaling = .false.
       l%niapapostprocess = .false.
-      l%prioritizeCOMPOoverPEC = .false.  !pec has default more priority than compo (para siva hay que cambiarlo)
-      l%prioritizeTHINWIRE = .false. !solo para visualizacion y experimentacion 231024
-      l%prioritizeISOTROPICBODYoverall = .FALSE. !PARA EL SIVA SE CAMBIA POR LINEA DE COMANDO
+      l%prioritizeCOMPOoverPEC = .false.  !pec has more priority than compo by default (for siva it must be changed)
+      l%prioritizeTHINWIRE = .false. !only for visualization and experimentation 231024
+      l%prioritizeISOTROPICBODYoverall = .FALSE. !FOR SIVA IT IS CHANGED FROM THE COMMAND LINE
       l%mpidir = 3 !DEFAULT do NOT ROTATE GEOMETRY !JUST TO TAKE PROFIT OF MPI
       l%maxwireradius = -1.0_RKIND
       l%boundwireradius = .false.
       l%wirecrank = .FALSE.
       l%ignoreerrors = .false.
       l%ignoresamplingerrors = .false.
-      l%vtkindex = .FALSE. !SOLO AFECTA A LOS VTK (SACA INDICES EN VEZ DE POSICION FISICA)
+      l%vtkindex = .FALSE. !ONLY AFFECTS THE VTK (OUTPUTS INDICES INSTEAD OF PHYSICAL POSITION)
       l%CLIPREGION = .false.
       l%NF2FFDecim = .FALSE.
       l%facesNF2FF%tr = .true.
@@ -1848,25 +1848,25 @@ contains
 
       l%finaltimestep = 0
       l%cfltemp = 1.0 !dummy
-      l%cfl = 1.0 !default courant number !no tocarlo 310715 solo afecta si se usa -l%cfl
+      l%cfl = 1.0 !default courant number !do not touch it 310715, only affects if -l%cfl is used
       l%forcecfl = .false.
       !PML default
       !cpml stretching maximum parameters !!l%alphamaxpar=StaticFrequency*2*pi*Eps0
-      l%alphamaxpar = 0.0_RKIND !0.24  !expresion 7.78 taflove 3 edic)
+      l%alphamaxpar = 0.0_RKIND !0.24  !expression 7.78 taflove 3rd ed)
       l%alphaOrden = 1.0_RKIND
-      l%kappamaxpar = 1.0_RKIND !15.0_RKIND !061118 mantener a 1 por conflictos cpml and permittivity scaling
+      l%kappamaxpar = 1.0_RKIND !15.0_RKIND !061118 keep at 1 due to cpml and permittivity scaling conflicts
       !and final layer electric sigma
-      l%MEDIOEXTRA%exists = .false.
-      l%MEDIOEXTRA%index = -7 !void
-      l%MEDIOEXTRA%pml_size = -1  !void
-      l%MEDIOEXTRA%sigma = -1e20 !void
+      l%extraMedium%exists = .false.
+      l%extraMedium%elementIndex = -7 !void
+      l%extraMedium%pml_size = -1  !void
+      l%extraMedium%sigma = -1e20 !void
       !
       l%MurAfterPML = .false.
       l%mur_second = .false.
       l%mur_first = .false.
       l%mur_exist = .false.
       !!!!!!!!!!!!
-      l%takeintcripte = .false. !a peticion de OLD, redondear los nodos de cripte a la baja
+      l%takeintcripte = .false. !at OLD's request, round the crypt nodes down
       l%attfactorc = 1.0_RKIND !default dissipation factor for composites
       l%attfactorw = 1.0_RKIND!default dissipation factor for wires
 
@@ -1876,17 +1876,17 @@ contains
       l%sgbc = .true. !default is false unless required
       l%sgbcDispersive = .false. !default is false unless required
       l%skindepthpre = .false.
-      l%sgbcdepth = -1  ! se calcula automaticamente a menos que se use el switch
-      l%sgbcfreq = 1e9 !default es cazar el skin depth hasta 1e9
-      l%sgbcresol = 1.0 !numero de celdas por skin depth (caida a exp(-1))
-      l%sgbccrank = .true. !default es l%sgbccrank
+      l%sgbcdepth = -1  ! it is computed automatically unless the switch is used
+      l%sgbcfreq = 1e9 !default is to capture the skin depth up to 1e9
+      l%sgbcresol = 1.0 !number of cells per skin depth (decay to exp(-1))
+      l%sgbccrank = .true. !default is l%sgbccrank
 
       l%fatalerror = .false.
       l%fatalerrornfde2sgg = .false.
 
       l%dontwritevtk = .false.
 
-      l%NOcompomur = .false. !DEFAULT mi formulacion
+      l%NOcompomur = .false. !DEFAULT my formulation
 
       !default no join the wires which are adjacent (ORIGINAL election)
       !do not connect endings unless specified in ORIGINAL
@@ -1894,18 +1894,18 @@ contains
       l%connectendings = .false.
       l%isolategroupgroups = .false.
       l%strictOLD = .true. !default is strict ORIGINAL overriden manually
-      l%TAPARRABOS = .true. !default since 101116 !cortar los multizigzag rabitos
-      l%mtlnberenger = .true. !solo actua si se invoca con l%wiresflavor berenger esto va a ser siempre true a menos que tambien se invoque con -nomtlnberenger (solo para debugeo y que coincida con Holland) 020719
-      l%stableradholland = .false. !solo actua si se invoca con l%wiresflavor holland
+      l%TAPARRABOS = .true. !default since 101116 !cut the multizigzag tails
+      l%mtlnberenger = .true. !only acts if invoked with l%wiresflavor berenger, this will always be true unless also invoked with -nomtlnberenger (only for debugging and to match Holland) 020719
+      l%stableradholland = .false. !only acts if invoked with l%wiresflavor holland
       l%fieldtotl = .false.
       l%experimentalVideal = .false.
       l%thereare_stoch = .false.
       l%forceresampled = .false.
-      l%factorradius = 1.0e+30 !para evitar division por cero 120123
-      l%factordelta = 1.0e+30 !para evitar division por cero 120123
+      l%factorradius = 1.0e+30 !to avoid division by zero 120123
+      l%factordelta = 1.0e+30 !to avoid division by zero 120123
       !default
       l%groundwires = .false.
-      l%noSlantedcrecepelo = .false. !131219 experimental niapa ojoooo
+      l%noSlantedcrecepelo = .false. !131219 experimental niapa careful
       l%inductance_model = 'boutayeb'
       l%inductance_order = 8
       l%wiresflavor = 'holland'
@@ -1921,7 +1921,7 @@ contains
       l%forcesteps = .FALSE.
       l%resume = .FALSE.
       l%freshstart = .FALSE.
-      l%run = .FALSE.  !si hay .fields restartea y si no comienza
+      l%run = .FALSE.  !if .fields exists it restarts, otherwise it starts
       l%deleteintermediates = .FALSE.
       !
       l%existeNFDE = .FALSE.
@@ -1930,11 +1930,11 @@ contains
       !default is NO flush fields
       l%flushminutesFields = 0
       !default is to flush data when the buffer is filled up
-      !si se pone cada tantos minutos y se guardan las sondas en trancos!puede haber errores de redondeo porque el buffer se limpia tras cada flusheo
-      l%flushminutesData = topCPUtime
+      !if it is set every so many minutes and probes are saved in blocks!there may be rounding errors because the buffer is cleared after each flush
+      l%flushminutesData = TOPCPUTIME
       !
       !maximum runtime
-      l%maxCPUtime = topCPUtime
+      l%maxCPUtime = TOPCPUTIME
       l%input_conformal_flag = .false.
       l%file11isopen = .false.
       l%relaunching = .false.
@@ -1945,4 +1945,4 @@ contains
       return
    end subroutine default_flags
 
-end module interpreta_switches_m
+end module interpret_switches_m

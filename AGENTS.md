@@ -134,6 +134,13 @@ with `SEMBA_FDTD_ENABLE_MPI`.
 
 From `CONTRIBUTING.md`: PRs must pass both unit tests and Python integration tests. AI-generated code is allowed but the contributor is responsible for its correctness. New functionality should include corresponding tests.
 
+## Code Style
+
+Fortran code must follow the conventions in `doc/style.md` (English names
+and comments, lowercase keywords, `_t` type names, `_m` module names,
+two-word endings, no keyword identifiers, no space before `(`, uppercase
+`parameter` names).
+
 ## Commit Guidance
 
 For all commit-related work, use `.agents/commit-format/SKILL.md` as the primary reference. Follow its workflow for workspace analysis, atomic semantic commits, conventional commit messages, staging, and post-commit verification.

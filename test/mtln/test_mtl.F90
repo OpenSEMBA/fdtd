@@ -1,13 +1,13 @@
 integer function test_mtl_wrong_dt() bind(C) result(error_cnt)
 
     use mtl_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     implicit none
 
 
     type(mtl_t) :: line
-    real(kind=RKIND_tiempo) :: dt = 1.0 
-    line = buildLineWithNConductors(2,'line0', dt = dt, type = "shielded")
+    real(kind=RKIND_TIME) :: dt = 1.0 
+    line = buildLineWithNConductors(2,'line0', dt = dt, typeName = "shielded")
     error_cnt = 0
     if (line%dt == dt) then 
         error_cnt = error_cnt + 1
@@ -17,10 +17,10 @@ end function
 
 integer function test_mtl_init_homogeneous() bind(C) result(error_cnt) 
     use mtl_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     implicit none
 
-    character(len=*), parameter :: name = 'line0'
+    character(len=*), parameter :: NAME = 'line0'
     integer :: i,j
 
     
@@ -53,12 +53,12 @@ integer function test_mtl_init_homogeneous() bind(C) result(error_cnt)
     end do
 
     error_cnt = 0
-    line = mtl_shielded(lpul, cpul, rpul, gpul, step_size, name, segments=segments, dt = 1e-12_RKIND_TIEMPO, parent_name ="p", conductor_in_parent = 1, transfer_impedance = Zt)
+    line = mtl_shielded(lpul, cpul, rpul, gpul, step_size, name, segments=segments, dt = 1e-12_RKIND_TIME, parent_name ="p", conductor_in_parent = 1, transfer_impedance = Zt)
     call comparePULMatrices(error_cnt, line%lpul, lpul)
     call comparePULMatrices(error_cnt, line%cpul, cpul)
     call comparePULMatrices(error_cnt, line%rpul, rpul)
     call comparePULMatrices(error_cnt, line%gpul, gpul)
-    line = mtl_unshielded(lpul, cpul, rpul, gpul, step_size, name, segments=segments, dt = 1e-12_RKIND_TIEMPO, multipolar_expansion = mE, radius = 0.0_rkind)
+    line = mtl_unshielded(lpul, cpul, rpul, gpul, step_size, name, segments=segments, dt = 1e-12_RKIND_TIME, multipolar_expansion = mE, radius = 0.0_rkind)
     call comparePULMatrices(error_cnt, line%lpul, lpul)
     call comparePULMatrices(error_cnt, line%cpul, cpul)
     call comparePULMatrices(error_cnt, line%rpul, rpul)
@@ -69,7 +69,7 @@ end function
 integer function test_mtl_time_step() bind(C) result(error_cnt)    
 
     use mtl_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
 
     implicit none
 
@@ -78,7 +78,7 @@ integer function test_mtl_time_step() bind(C) result(error_cnt)
 
 
     type(mtl_t) :: line 
-    line = buildLineWithNConductors(2, "line0", dt = 1e-6_rkind_tiempo, type = "unshielded")
+    line = buildLineWithNConductors(2, "line0", dt = 1e-6_RKIND_TIME, typeName = "unshielded")
 
     error_cnt = 0
 

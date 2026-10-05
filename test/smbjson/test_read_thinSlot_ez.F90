@@ -1,6 +1,6 @@
 integer function test_read_thinSlot_ez() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
@@ -33,7 +33,7 @@ integer function test_read_thinSlot_ez() bind (C) result(err)
       if (pr%tSlots%tg(1)%tgc(i)%i /= 5 .or. &
           pr%tSlots%tg(1)%tgc(i)%j /= 5 .or. &
           pr%tSlots%tg(1)%tgc(i)%k /= 7 + i .or. &
-          pr%tSlots%tg(1)%tgc(i)%dir /= iEz) then
+          pr%tSlots%tg(1)%tgc(i)%dir /= IEZ) then
          call testFails(err, 'Unexpected Ez thin-slot component coordinates')
          return
       end if
