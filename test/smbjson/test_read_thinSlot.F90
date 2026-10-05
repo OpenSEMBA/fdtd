@@ -102,7 +102,6 @@ contains
       expected%tSlots%tg(1)%tgc(1)%i = 1
       expected%tSlots%tg(1)%tgc(1)%j = 2
       expected%tSlots%tg(1)%tgc(1)%k = 25
-      expected%tSlots%tg(1)%tgc(1)%node = 0
       expected%tSlots%tg(1)%tgc(1)%dir = IEX
       expected%tSlots%tg(1)%tgc(1)%Or = +IEX
       expected%tSlots%tg(1)%tgc(1)%tag = "3mm-gap@slot"

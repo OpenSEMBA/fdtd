@@ -619,7 +619,6 @@ contains
       if (a%i    /= b%i)    return
       if (a%j    /= b%j)    return
       if (a%K    /= b%K)    return
-      if (a%node /= b%node) return
       if (a%dir  /= b%dir)  return
       if (a%Or   /= b%Or)   return
       if (a%tag  /= b%tag)  return
