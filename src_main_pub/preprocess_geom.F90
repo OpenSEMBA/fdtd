@@ -4824,30 +4824,56 @@ contains
             (sgg%Med(medium)%Is%Surface .and. sgg%Med(medium)%Sigma /= 0.0_RKIND)
       end function
 
+      ! Two perpendicular linels of the same slot that meet at a vertex with no
+      ! other incident linel form a simple turn. The completion is driven by the
+      ! shared vertex and the H-face adjacency, not by the signed traversal kept
+      ! by the parser, so every corner orientation gets the same treatment: the
+      ! edges of the corner H face shared with a neighbouring slot face are the
+      ! internal thin-slot E edges, and the remaining external edges are cleared
+      ! to PEC.
       subroutine completeThinSlotTurns(slot)
          integer(kind=4), intent(in) :: slot
-         integer(kind=4) :: incomingIndex, outgoingIndex, vx, vy, vz
-         integer(kind=4) :: sx, sy, sz, incomingCount, outgoingCount
-         type(ThinSlotComp_t) :: incoming, outgoing
+         integer(kind=4) :: firstIndex, secondIndex, vx, vy, vz
+         type(ThinSlotComp_t) :: first, second
 
-         do incomingIndex = 1, this%tSlots%Tg(slot)%n_tgc
-            incoming = this%tSlots%Tg(slot)%TgC(incomingIndex)
-            call componentTraversalEnd(incoming, vx, vy, vz)
-            do outgoingIndex = 1, this%tSlots%Tg(slot)%n_tgc
-               if (incomingIndex == outgoingIndex) cycle
-               outgoing = this%tSlots%Tg(slot)%TgC(outgoingIndex)
-               if (abs(thinSlotData(slot)%normal(incomingIndex)) /= &
-                   abs(thinSlotData(slot)%normal(outgoingIndex))) cycle
-               if (incoming%dir == outgoing%dir) cycle
-               call componentTraversalStart(outgoing, sx, sy, sz)
-               if (vx /= sx .or. vy /= sy .or. vz /= sz) cycle
-               call directedVertexDegree(slot, vx, vy, vz, thinSlotData(slot)%normal(incomingIndex), &
-                                         incomingCount, outgoingCount)
-               if (incomingCount /= 1 .or. outgoingCount /= 1) cycle
-               call reconcileThinSlotTurnFaces(slot, thinSlotData(slot)%normal(incomingIndex), vx, vy, vz)
+         do firstIndex = 1, this%tSlots%Tg(slot)%n_tgc - 1
+            if (thinSlotData(slot)%normal(firstIndex) <= 0) cycle
+            first = this%tSlots%Tg(slot)%TgC(firstIndex)
+            do secondIndex = firstIndex + 1, this%tSlots%Tg(slot)%n_tgc
+               if (thinSlotData(slot)%normal(secondIndex) <= 0) cycle
+               if (abs(thinSlotData(slot)%normal(firstIndex)) /= &
+                   abs(thinSlotData(slot)%normal(secondIndex))) cycle
+               second = this%tSlots%Tg(slot)%TgC(secondIndex)
+               if (first%dir == second%dir) cycle
+               if (.not. componentsShareVertex(first, second, vx, vy, vz)) cycle
+               if (thinSlotVertexDegree(slot, vx, vy, vz, thinSlotData(slot)%normal(firstIndex)) /= 2) cycle
+               call reconcileThinSlotTurnFaces(slot, thinSlotData(slot)%normal(firstIndex), vx, vy, vz)
             end do
          end do
       end subroutine
+
+      ! Returns the end point shared by two slot linels, comparing their end
+      ! points as a set so the signed traversal does not matter.
+      logical function componentsShareVertex(first, second, vx, vy, vz)
+         type(ThinSlotComp_t), intent(in) :: first, second
+         integer(kind=4), intent(out) :: vx, vy, vz
+         integer(kind=4) :: fx, fy, fz, sx, sy, sz
+
+         call componentTerminal(first, fx, fy, fz)
+         call componentTerminal(second, sx, sy, sz)
+         componentsShareVertex = .true.
+         if (first%i == second%i .and. first%j == second%j .and. first%k == second%k) then
+            vx = first%i; vy = first%j; vz = first%k
+         else if (first%i == sx .and. first%j == sy .and. first%k == sz) then
+            vx = first%i; vy = first%j; vz = first%k
+         else if (fx == second%i .and. fy == second%j .and. fz == second%k) then
+            vx = fx; vy = fy; vz = fz
+         else if (fx == sx .and. fy == sy .and. fz == sz) then
+            vx = fx; vy = fy; vz = fz
+         else
+            componentsShareVertex = .false.
+         end if
+      end function
 
       subroutine completeThinSlotTerminalFaces(slot)
          integer(kind=4), intent(in) :: slot
@@ -4878,44 +4904,6 @@ contains
                   call stampHz(ax, ay, az, sourceMedium, sourceTag)
                end select
             end do
-         end do
-      end subroutine
-
-      subroutine componentTraversalStart(component, vx, vy, vz)
-         type(ThinSlotComp_t), intent(in) :: component
-         integer(kind=4), intent(out) :: vx, vy, vz
-
-         if (component%or > 0) then
-            vx = component%i; vy = component%j; vz = component%k
-         else
-            call componentTerminal(component, vx, vy, vz)
-         end if
-      end subroutine
-
-      subroutine componentTraversalEnd(component, vx, vy, vz)
-         type(ThinSlotComp_t), intent(in) :: component
-         integer(kind=4), intent(out) :: vx, vy, vz
-
-         if (component%or > 0) then
-            call componentTerminal(component, vx, vy, vz)
-         else
-            vx = component%i; vy = component%j; vz = component%k
-         end if
-      end subroutine
-
-      subroutine directedVertexDegree(slot, vx, vy, vz, normal, incomingCount, outgoingCount)
-         integer(kind=4), intent(in) :: slot, vx, vy, vz, normal
-         integer(kind=4), intent(out) :: incomingCount, outgoingCount
-         integer(kind=4) :: a, sx, sy, sz, ex, ey, ez
-
-         incomingCount = 0
-         outgoingCount = 0
-         do a = 1, this%tSlots%Tg(slot)%n_tgc
-            if (abs(thinSlotData(slot)%normal(a)) /= abs(normal)) cycle
-            call componentTraversalStart(this%tSlots%Tg(slot)%TgC(a), sx, sy, sz)
-            call componentTraversalEnd(this%tSlots%Tg(slot)%TgC(a), ex, ey, ez)
-            if (sx == vx .and. sy == vy .and. sz == vz) outgoingCount = outgoingCount + 1
-            if (ex == vx .and. ey == vy .and. ez == vz) incomingCount = incomingCount + 1
          end do
       end subroutine
 
