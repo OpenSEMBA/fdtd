@@ -148,8 +148,9 @@ jobs:
         # DLLs shipped with Windows itself; any other dependency must be bundled.
         $systemDlls = @(
           "advapi32.dll", "bcrypt.dll", "comdlg32.dll", "crypt32.dll", "gdi32.dll",
-          "kernel32.dll", "ntdll.dll", "ole32.dll", "oleaut32.dll", "shell32.dll",
-          "shlwapi.dll", "user32.dll", "userenv.dll", "winmm.dll", "ws2_32.dll"
+          "imagehlp.dll", "kernel32.dll", "ntdll.dll", "ole32.dll", "oleaut32.dll",
+          "shell32.dll", "shlwapi.dll", "user32.dll", "userenv.dll", "winmm.dll",
+          "wintrust.dll", "ws2_32.dll"
         )
 
         $missing = @()
