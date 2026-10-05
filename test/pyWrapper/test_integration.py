@@ -444,6 +444,120 @@ def test_map_vtk_discontinuous_thin_slot_rectangle_bounds(tmp_path):
     assert face_media_type(26, 26) >= 400.0
     assert np.isclose(face_media_type(25, 25), 0.0)
 
+
+@pytest.mark.thinSlot
+@pytest.mark.vtk
+def test_map_vtk_discontinuous_thin_slot_corners_are_uniform(tmp_path):
+    """Every thin-slot H-face corner keeps the same media criteria whatever the
+    signed traversal of the input linels: the edges shared with a neighbouring
+    slot H face keep the thin-slot medium and the exposed edges are PEC."""
+    import pyvista as pv
+
+    case_folder = CASES_FOLDER + "thin_slot_rectangle_lumped"
+    case = json.loads(
+        Path(case_folder, "thin_slot_rectangle_lumped.fdtd.json").read_text()
+    )
+    # Canonical increasing linel order exposes the end-to-end and start-to-start
+    # corners, which must complete exactly like the directed turns.
+    for element in case["mesh"]["elements"]:
+        if element.get("type") == "cell" and element.get("name", "").startswith(
+            "DiscontinuousSlot"
+        ):
+            element["intervals"] = [
+                sorted(interval) for interval in element["intervals"]
+            ]
+    case["general"]["numberOfSteps"] = 1
+
+    case_dir = tmp_path / "case"
+    case_dir.mkdir()
+    shutil.copy(os.path.join(case_folder, "gauss_1ghz.exc"), case_dir)
+    input_path = case_dir / "thin_slot_rectangle_lumped.fdtd.json"
+    input_path.write_text(json.dumps(case, indent=2))
+
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    solver = FDTD(
+        input_filename=input_path,
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=run_dir,
+        flags=["-dmma", "-mapvtk"],
+    )
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+    vtk_map_filename = solver.getVTKMap()
+    assert os.path.isfile(vtk_map_filename)
+
+    ugrid = pv.UnstructuredGrid(vtk_map_filename)
+    mt = ugrid.cell_data["mediatype"]
+
+    origin = np.array(case["mesh"]["grid"]["origin"], dtype=float)
+    dx = float(case["mesh"]["grid"]["steps"]["x"][0])
+    f32_tol = 1e-5
+
+    def point(i, k):
+        return origin + np.array([i, 10, k], dtype=float) * dx
+
+    def edge_media_type(start, end):
+        expected = np.array([point(*start), point(*end)])
+        matches = []
+        for ci in np.where(ugrid.celltypes == 3)[0]:
+            cell_points = ugrid.get_cell(int(ci)).points
+            if all(
+                any(np.allclose(actual, desired, atol=f32_tol) for actual in cell_points)
+                for desired in expected
+            ):
+                matches.append(ci)
+        assert len(matches) == 1
+        return mt[matches[0]]
+
+    def face_media_type(i, k):
+        expected = np.array(
+            [point(i, k), point(i + 1, k), point(i + 1, k + 1), point(i, k + 1)]
+        )
+        matches = []
+        for ci in np.where(ugrid.celltypes == 9)[0]:
+            cell_points = ugrid.get_cell(int(ci)).points
+            if all(
+                any(np.allclose(actual, desired, atol=f32_tol) for actual in cell_points)
+                for desired in expected
+            ):
+                matches.append(ci)
+        assert len(matches) == 1
+        return mt[matches[0]]
+
+    # Each entry is the corner H-face cell plus its internal (shared with the
+    # neighbouring slot H faces) and exposed (PEC) E edges.
+    corners = [
+        (
+            (68, 46),
+            [((68, 46), (69, 46)), ((68, 46), (68, 47))],
+            [((68, 47), (69, 47)), ((69, 46), (69, 47))],
+        ),
+        (
+            (36, 26),
+            [((36, 27), (37, 27)), ((37, 26), (37, 27))],
+            [((36, 26), (37, 26)), ((36, 26), (36, 27))],
+        ),
+        (
+            (36, 46),
+            [((36, 46), (37, 46)), ((37, 46), (37, 47))],
+            [((36, 47), (37, 47)), ((36, 46), (36, 47))],
+        ),
+        (
+            (68, 26),
+            [((68, 27), (69, 27)), ((68, 26), (68, 27))],
+            [((68, 26), (69, 26)), ((69, 26), (69, 27))],
+        ),
+    ]
+    for (i, k), internal, exposed in corners:
+        assert face_media_type(i, k) >= 400.0
+        for start, end in internal:
+            assert np.isclose(edge_media_type(start, end), 4.5)
+        for start, end in exposed:
+            assert np.isclose(edge_media_type(start, end), 0.5)
+
+
 @pytest.mark.lumped
 @pytest.mark.vtk
 def test_map_vtk_lumped_elements_get_distinct_media_type(tmp_path):
