@@ -691,9 +691,17 @@ contains
       do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForCurrent(iCur, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
-            call save_current(this%xValueForTime, this%nTime, coordIdx, iEx, i, j, k, fieldsReference)
-            call save_current(this%yValueForTime, this%nTime, coordIdx, iEy, i, j, k, fieldsReference)
-            call save_current(this%zValueForTime, this%nTime, coordIdx, iEz, i, j, k, fieldsReference)
+            ! Only store the components whose edge lies on a surface. Otherwise the
+            ! non-surface components would leak total current densities into the output.
+            if (isValidPointForCurrent(iEx, i, j, k, problemInfo)) then
+               call save_current(this%xValueForTime, this%nTime, coordIdx, iEx, i, j, k, fieldsReference)
+            end if
+            if (isValidPointForCurrent(iEy, i, j, k, problemInfo)) then
+               call save_current(this%yValueForTime, this%nTime, coordIdx, iEy, i, j, k, fieldsReference)
+            end if
+            if (isValidPointForCurrent(iEz, i, j, k, problemInfo)) then
+               call save_current(this%zValueForTime, this%nTime, coordIdx, iEz, i, j, k, fieldsReference)
+            end if
          end if
       end do
       end do

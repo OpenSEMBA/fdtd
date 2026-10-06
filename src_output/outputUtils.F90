@@ -705,6 +705,8 @@ contains
          surface_output_media_type = 100.0_RKIND + media
       else if (material%is%ThinSlot) then
          surface_output_media_type = 400.0_RKIND + media
+      else if (material%is%Lumped) then
+         surface_output_media_type = 500.0_RKIND + media
       else if (material%is%Dielectric .or. material%is%Anisotropic) then
          surface_output_media_type = 200.0_RKIND + media
       else if (material%is%already_YEEadvanced_byconformal) then
@@ -740,6 +742,8 @@ contains
          edge_output_media_type = 1.5_RKIND
       else if (material%is%ThinSlot) then
          edge_output_media_type = 4.5_RKIND
+      else if (material%is%Lumped) then
+         edge_output_media_type = 4.25_RKIND
       else if (material%is%Dielectric .or. material%is%Anisotropic) then
          edge_output_media_type = 2.5_RKIND
       else if (material%is%ThinWire) then

@@ -1,0 +1,28 @@
+{
+  "_format": "FDTD Input file",
+  "__comments": "Slot running along the perimeter of a conductive (non-PEC) surface. It must be rejected.",
+  "general": { "timeStep": 1e-11, "numberOfSteps": 1 },
+  "boundary": { "all": { "type": "pml", "layers": 4 } },
+  "materials": [
+    { "name": "conductor", "id": 1, "type": "isotropic", "relativePermittivity": 1.0, "electricConductivity": 1e5 },
+    { "name": "slot", "id": 2, "type": "thinSlot", "width": 1e-4 }
+  ],
+  "materialAssociations": [
+    { "materialId": 1, "elementIds": [1] },
+    { "materialId": 2, "type": "thinSlot", "elementIds": [2] }
+  ],
+  "probes": [],
+  "mesh": {
+    "grid": {
+      "numberOfCells": [40, 20, 40],
+      "steps": { "x": [0.01], "y": [0.01], "z": [0.01] },
+      "origin": [0.0, 0.0, 0.0]
+    },
+    "elements": [
+      { "id": 1, "name": "conductive-face", "type": "cell",
+        "intervals": [ [[10, 10, 10], [30, 10, 30]] ] },
+      { "id": 2, "name": "slot-on-perimeter", "type": "cell",
+        "intervals": [ [[14, 10, 10], [26, 10, 10]] ] }
+    ]
+  }
+}

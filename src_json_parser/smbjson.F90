@@ -133,13 +133,13 @@ contains
       call res%jsonfile%initialize()
       if (res%jsonfile%failed()) then
          call WarnErrReport("Failed to initialize JSONfile", .true.)
-         return
+         error stop 'smbjson: failed to initialize JSON file: '//res%filename
       end if
 
       call res%jsonfile%load(filename = res%filename)
       if (res%jsonfile%failed()) then
          call WarnErrReport("Failed to load JSON file: "//res%filename, .true.)
-         return
+         error stop 'smbjson: failed to load JSON file: '//res%filename
       end if
 
       allocate(res%core)
@@ -153,6 +153,11 @@ contains
       class(parser_t) :: this
       type(Parseador_t) :: res
       integer :: stat 
+
+      if (.not. this%isInitialized .or. .not. associated(this%core) .or. .not. associated(this%root)) then
+         call WarnErrReport('smbjson: parser is not initialized for input file: '//this%filename, .true.)
+         error stop 'smbjson: parser is not initialized'
+      end if
 
       this%mesh = this%readMesh()
       this%matTable = IdChildTable_t(this%core, this%root, J_MATERIALS)
@@ -715,7 +720,7 @@ contains
          type(materialAssociation_t) :: mA
          type(cell_region_t) :: cR
 
-         integer :: i, j
+         integer :: i, j, e
          integer :: nCs, nDielectrics
          
          mAs = this%getMaterialAssociations( &
@@ -725,12 +730,21 @@ contains
             return
          end if
 
-         ! Precounts
+         ! Precounts. Lumped associations contribute one component per element.
          nDielectrics = 0
-         do i = 1, size(mAs)           
+         mAs = this%getMaterialAssociations([J_MAT_TYPE_ISOTROPIC])
+         do i = 1, size(mAs)
             if (containsCellRegionsWithType(mAs(i), cellType)) then
                nDielectrics = nDielectrics + 1
-            end if 
+            end if
+         end do
+         mAs = this%getMaterialAssociations([J_MAT_TYPE_LUMPED])
+         do i = 1, size(mAs)
+            do e = 1, size(mAs(i)%elementIds)
+               if (any(mAs(i)%elementIds(1:e - 1) == mAs(i)%elementIds(e))) cycle
+               cR = this%mesh%getCellRegion(mAs(i)%elementIds(e))
+               if (size(cellRegionToCoords(cR, cellType)) /= 0) nDielectrics = nDielectrics + 1
+            end do
          end do
 
          ! Fills
@@ -740,17 +754,23 @@ contains
 
          j = 0
          mAs = this%getMaterialAssociations([J_MAT_TYPE_ISOTROPIC])
-         do i = 1, size(mAs)       
+         do i = 1, size(mAs)
             if (.not. containsCellRegionsWithType(mAs(i), cellType)) cycle
             j = j + 1
             res(j) = readDielectric(mAs(i), cellType)
          end do
 
+         ! One lumped element per element listed in the association.
          mAs = this%getMaterialAssociations([J_MAT_TYPE_LUMPED])
          do i = 1, size(mAs)
-            if (.not. containsCellRegionsWithType(mAs(i), cellType)) cycle
-            j = j + 1
-            res(j) = readLumped(mAs(i), cellType)
+            do e = 1, size(mAs(i)%elementIds)
+               if (any(mAs(i)%elementIds(1:e - 1) == mAs(i)%elementIds(e))) cycle
+               mA = mAs(i)
+               mA%elementIds = [mAs(i)%elementIds(e)]
+               if (.not. containsCellRegionsWithType(mA, cellType)) cycle
+               j = j + 1
+               res(j) = readLumped(mA, cellType)
+            end do
          end do
       end subroutine
 
@@ -1848,7 +1868,7 @@ contains
       res%n_tg = size(mAs)
       allocate(res%tg(res%n_tg))
       do i = 1, size(mAs)
-         res%tg = readThinSlot(mAs(i))
+         res%tg(i) = readThinSlot(mAs(i))
       end do
    contains
       function readThinSlot(mA) result(res)
@@ -1875,7 +1895,6 @@ contains
          type(ThinSlotComp_t), dimension(:), pointer :: tc
          integer :: i, j, k
          integer :: nTgc, nXYZ
-         integer :: dir
          ! Precount
          nTgc = 0
          do i = 1, size(cs)
@@ -1885,7 +1904,7 @@ contains
             nTgc = nTgc + nXYZ
          end do
 
-         ! Fill
+         ! Fill along the linel orientation axis
          j = 1
          allocate(tc(nTgc))
          do i = 1, size(cs)
@@ -1897,13 +1916,13 @@ contains
                   j = j + 1
                end do
             case (iEy)
-               do k = 1, (cs(i)%xe - cs(i)%xi + 1)
+               do k = 1, (cs(i)%ye - cs(i)%yi + 1)
                   tc(j) = buildBaseThinSlotComponent(cs(i))
                   tc(j)%j = cs(i)%yi + k - 1
                   j = j + 1
                end do
             case (iEz)
-               do k = 1, (cs(i)%xe - cs(i)%xi + 1)
+               do k = 1, (cs(i)%ze - cs(i)%zi + 1)
                   tc(j) = buildBaseThinSlotComponent(cs(i))
                   tc(j)%k = cs(i)%zi + k - 1
                   j = j + 1
@@ -1919,6 +1938,7 @@ contains
          res%j = cs%yi
          res%k = cs%zi
          res%dir = abs(cs%Or)
+         res%Or = cs%Or
          res%tag = cs%tag
       end function
    end function
@@ -2329,7 +2349,7 @@ contains
 
          node = this%mesh%getNode(elemIds(1))
          probe_coord = this%mesh%getCoordinate(node%coordIds(1))
-         fieldLabel = this%getStrAt(p, J_FIELD, default=J_FIELD_VOLTAGE)
+         fieldLabel = this%getStrAt(p, J_FIELD, default=J_FIELD_CURRENT)
 
          allocate(res%cordinates(1))
          res%cordinates(1)%tag = outputName
@@ -3936,14 +3956,13 @@ contains
       logical function isProbeDefinedOnMultiwire(p)
          type(json_value), pointer :: p
          character (len=:), allocatable :: fieldLabel
-         logical :: found
          type(materialAssociation_t), dimension(:), allocatable :: mAs
          integer :: i, j
          integer :: cId
          type(polyline_t) :: polyline
          
-         fieldLabel = this%getStrAt(p, J_FIELD, found=found)
-         if (.not. found .or. (fieldLabel /= J_FIELD_CURRENT .and. fieldLabel /= J_FIELD_VOLTAGE)) then
+         fieldLabel = this%getStrAt(p, J_FIELD, default=J_FIELD_CURRENT)
+         if (fieldLabel /= J_FIELD_CURRENT .and. fieldLabel /= J_FIELD_VOLTAGE) then
             isProbeDefinedOnMultiwire = .false.
             return
          end if
@@ -4060,7 +4079,7 @@ contains
          integer :: res
          character(len=BUFSIZE) :: errorMsg
 
-         probe_type = this%getStrAt(probe, J_FIELD)
+         probe_type = this%getStrAt(probe, J_FIELD, default=J_FIELD_CURRENT)
          if (probe_type == J_FIELD_VOLTAGE) then
             res = PROBE_TYPE_VOLTAGE
          else if (probe_type == J_FIELD_CURRENT) then

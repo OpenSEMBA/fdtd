@@ -12,7 +12,7 @@ module output_m
    use frequencySliceProbeOutput_m
    use farFieldOutput_m
    use mapVTKOutput_m
-   use outputDecomposition_m, only: output_partition_t, build_output_partition, &
+   use outputDecomposition_m, only: output_partition_t, build_output_partition, point_is_owned_by_rank, &
                                     OUTPUT_PARTITION_SUCCESS, OUTPUT_PARTITION_INVALID_ARGUMENT
    use outputCollective_m, only: output_collective_t, init_output_collective, select_output_participants, &
                                  prepare_output_partition_publication, OUTPUT_COLLECTIVE_SUCCESS
@@ -302,6 +302,8 @@ contains
 #endif
 
             case (iEx, iEy, iEz, iHx, iHy, iHz)
+               if (.not. point_is_owned_by_rank(lowerBound, outputRequestType, control%layoutnumber, &
+                                                max(control%num_procs, 1), sweep_of(outputRequestType))) cycle
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = POINT_PROBE_ID
 
@@ -422,25 +424,30 @@ contains
 
       subroutine attach_output_partition(output_index)
          integer(kind=SINGLE), intent(in) :: output_index
-         type(limit_t) :: local_sweep
          integer :: field_component, partition_status
 
          field_component = fieldo(outputRequestType, 'Z')
-         local_sweep%XI = sgg%Sweep(field_component)%XI
-         local_sweep%XE = sgg%Sweep(field_component)%XE
-         local_sweep%YI = sgg%Sweep(field_component)%YI
-         local_sweep%YE = sgg%Sweep(field_component)%YE
-         local_sweep%ZI = sgg%Sweep(field_component)%ZI
-         local_sweep%ZE = sgg%Sweep(field_component)%ZE
-         local_sweep%NX = local_sweep%XE - local_sweep%XI + 1
-         local_sweep%NY = local_sweep%YE - local_sweep%YI + 1
-         local_sweep%NZ = local_sweep%ZE - local_sweep%ZI + 1
-         call build_output_partition(lowerBound, upperBound, SINPML_fullsize(field_component), local_sweep, &
-                                     field_component, control%layoutnumber, max(control%num_procs, 1), &
-                                     outputPartitions(output_index), partition_status)
+         call build_output_partition(lowerBound, upperBound, SINPML_fullsize(field_component), &
+                                     sweep_of(field_component), field_component, control%layoutnumber, &
+                                     max(control%num_procs, 1), outputPartitions(output_index), partition_status)
          if (partition_status /= OUTPUT_PARTITION_SUCCESS) return
 
       end subroutine attach_output_partition
+
+      function sweep_of(component) result(local_sweep)
+         integer(kind=SINGLE), intent(in) :: component
+         type(limit_t) :: local_sweep
+
+         local_sweep%XI = sgg%Sweep(component)%XI
+         local_sweep%XE = sgg%Sweep(component)%XE
+         local_sweep%YI = sgg%Sweep(component)%YI
+         local_sweep%YE = sgg%Sweep(component)%YE
+         local_sweep%ZI = sgg%Sweep(component)%ZI
+         local_sweep%ZE = sgg%Sweep(component)%ZE
+         local_sweep%NX = local_sweep%XE - local_sweep%XI + 1
+         local_sweep%NY = local_sweep%YE - local_sweep%YI + 1
+         local_sweep%NZ = local_sweep%ZE - local_sweep%ZI + 1
+      end function sweep_of
 
       subroutine configure_output_publication(output_index, publication)
          integer(kind=SINGLE), intent(in) :: output_index
@@ -761,19 +768,13 @@ contains
       integer, intent(in) :: writer_rank
       integer :: i, ios
 
-      if (associated(outputs)) then
-         do i = 1, size(outputs)
-            if (outputs(i)%outputID /= MAPVTK_ID) cycle
-            if (outputs(i)%mapvtkOutput%localParticipates) then
-               call remove_folder(outputs(i)%mapvtkOutput%path, ios)
-            end if
-            if (writer_rank == 0) call delete_file(outputs(i)%mapvtkOutput%masterPath, ios)
-         end do
-      end if
       if (writer_rank /= 0) return
       if (associated(outputs)) then
          do i = 1, size(outputs)
             select case (outputs(i)%outputID)
+            case (MAPVTK_ID)
+               call remove_folder(outputs(i)%mapvtkOutput%path, ios)
+               call delete_file(outputs(i)%mapvtkOutput%masterPath, ios)
             case (POINT_PROBE_ID)
                call delete_artifacts(outputs(i)%pointProbe%artifacts)
             case (WIRE_CURRENT_PROBE_ID)
