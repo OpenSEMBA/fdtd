@@ -41,12 +41,6 @@ contains
         type(edge_t), dimension(:), allocatable, intent(inout) :: conformal_edges
         integer(kind=4), intent(in) :: n
         type(edge_t), dimension(:), allocatable :: aux_edges
-        ! allocate(aux_edges(size(conformal_edges) + 1))
-        ! aux_edges(1:size(conformal_edges)) = conformal_edges
-        ! aux_edges(size(conformal_edges) + 1) = edge
-        ! deallocate(conformal_edges)
-        ! allocate(conformal_edges(size(aux_edges)))
-        ! conformal_edges = aux_edges
         conformal_edges(n) = edge
         call edge_map%addEdge(conformal_edges(n))
     end subroutine
@@ -54,7 +48,6 @@ contains
     subroutine addAdditionalConformalFeatures(conf_maps, conformal_edges)
         type(conformal_maps_t), intent(inout) :: conf_maps
         type(edge_map_t) :: aux_edge_map
-        ! type(face_map_t), intent(in) :: face_map
         type(edge_t), dimension(:), allocatable, intent(inout) :: conformal_edges
         type(edge_t), dimension(:), allocatable :: aux_conformal_edges
         type(face_t), pointer :: face
@@ -144,192 +137,81 @@ contains
         end do
     end function
 
-
-    ! logical function isInRegionI(face, j)
-    !     type(face_t), intent(in) :: face
-    !     integer(kind=4), intent(in) :: j
-    !     integer(kind=4) :: dir
-    !     select case (face%direction)
-    !     case (FACE_X)
-    !         if (mod(j,2)==0) then 
-    !             dir = EDGE_Z
-    !         else if (mod(j,2)/=0) then 
-    !             dir = EDGE_Y
-    !         end if
-    !     case (FACE_Y)
-    !         if (mod(j,2)==0) then 
-    !             dir = EDGE_X
-    !         else if (mod(j,2)/=0) then 
-    !             dir = EDGE_Z
-    !         end if
-    !     case (FACE_Z)
-    !         if (mod(j,2)==0) then 
-    !             dir = EDGE_Y
-    !         else if (mod(j,2)/=0) then 
-    !             dir = EDGE_X
-    !         end if
-    !     end select
-    !     if (j==1) then 
-    !         if (face%normal(dir) > 0) then
-    !             isInRegionI = .false. 
-    !         else if (face%normal(dir) < 0) then 
-    !             isInRegionI = .true. 
-    !         end if
-    !     else if (j == 2) then 
-    !         if (face%normal(dir) > 0) then 
-    !             isInRegionI = .true. 
-    !         else if (face%normal(dir) < 0) then 
-    !             isInRegionI = .false. 
-    !         end if
-    !     else if (j == 3) then 
-    !         if (face%normal(dir) > 0) then 
-    !             isInRegionI = .true. 
-    !         else if (face%normal(dir) < 0) then 
-    !             isInRegionI = .false. 
-    !         end if
-    !     else if (j == 4) then 
-    !         if (face%normal(dir) > 0) then 
-    !             isInRegionI = .false. 
-    !         else if (face%normal(dir) < 0) then 
-    !             isInRegionI = .true. 
-    !         end if
-    !     end if
-    ! end function
-
-    ! logical function isInRegionII(face,j)
-    !     type(face_t), intent(in) :: face
-    !     integer(kind=4), intent(in) :: j
-    !     isInRegionII = (.not. isInRegionI(face,j))
-    ! end function
-
-    subroutine assignEdgeFieldsOnFace(Ex, Ey, Ez, face, j, cell)
+    subroutine assignEdgeFieldsOnFace(Ex, Ey, Ez, face, edge_on_face, j)
+        real(kind=rkind), pointer, dimension(:,:,:) :: Ex, Ey, Ez
+        real(kind=rkind), pointer :: E
         type(face_t), pointer :: face
         integer(kind=4), intent(in) :: j
-        integer(kind=4), dimension(3), intent(in) :: cell
+        type(map_key_t), intent(in) ::edge_on_face
         integer(kind=4), dimension(3) :: c
-        real(kind=rkind), pointer, dimension(:,:,:) :: Ex, Ey, Ez, E
-        type(map_key_t) :: edges_on_face(4), edge_on_face
         integer :: dir
-        c = cell
+        c = edge_on_face%key(1:3)
         select case (face%direction)
         case (FACE_X)
         if (mod(j,2)==0) then 
-            E => Ey
+            E => Ey(c(1),c(2),c(3))
             dir = EDGE_Z
         else if (mod(j,2)/=0) then 
-            E => Ez
+            E => Ez(c(1),c(2),c(3))
             dir = EDGE_Y
         end if
         case (FACE_Y)
         if (mod(j,2)==0) then 
-            E => Ez
+            E => Ez(c(1),c(2),c(3))
             dir = EDGE_X
         else if (mod(j,2)/=0) then 
-            E => Ex
+            E => Ex(c(1),c(2),c(3))
             dir = EDGE_Z
         end if
         case (FACE_Z)
         if (mod(j,2)==0) then 
-            E => Ex
+            E => Ex(c(1),c(2),c(3))
             dir = EDGE_Y
         else if (mod(j,2)/=0) then 
-            E => Ey
+            E => Ey(c(1),c(2),c(3))
             dir = EDGE_X
         end if
         end select
 
-        if (j==2 .or. j==3) c(dir) = cell(dir) + 1
-        edges_on_face = buildEdgesOnFace(face%cell, face%direction)
-        edge_on_face = edges_on_face(j)
+        ! if (j==2 .or. j==3) c(dir) = c(dir) + 1
         if (isInRegionII(face,edge_on_face)) then 
             if (j == 1) then 
                 allocate(face%region_I_fields%E1)
                 face%region_I_fields%E1 = 0.0
-                face%region_II_fields%E1 => E(c(1),c(2),c(3))
+                face%region_II_fields%E1 => E
             else if (j==2) then 
                 allocate(face%region_I_fields%E2)
                 face%region_I_fields%E2 = 0.0
-                face%region_II_fields%E2 => E(c(1),c(2),c(3))
+                face%region_II_fields%E2 => E
             else if (j==3) then 
                 allocate(face%region_I_fields%E3)
                 face%region_I_fields%E3 = 0.0
-                face%region_II_fields%E3 => E(c(1),c(2),c(3))
+                face%region_II_fields%E3 => E
             else if (j==4) then 
                 allocate(face%region_I_fields%E4)
                 face%region_I_fields%E4 = 0.0
-                face%region_II_fields%E4 => E(c(1),c(2),c(3))
+                face%region_II_fields%E4 => E
             end if
         ! if (isInRegionI(face,edge_on_face)) then 
         else
             if (j == 1) then 
-                face%region_I_fields%E1 => E(c(1),c(2),c(3))
+                face%region_I_fields%E1 => E
                 allocate(face%region_II_fields%E1)
                 face%region_II_fields%E1 = 0.0
             else if (j == 2) then 
-                face%region_I_fields%E2 => E(c(1),c(2),c(3))
+                face%region_I_fields%E2 => E
                 allocate(face%region_II_fields%E2)
                 face%region_II_fields%E2 = 0.0
             else if (j == 3) then 
-                face%region_I_fields%E3 => E(c(1),c(2),c(3))
+                face%region_I_fields%E3 => E
                 allocate(face%region_II_fields%E3)
                 face%region_II_fields%E3 = 0.0
             else if (j == 4) then 
-                face%region_I_fields%E4 => E(c(1),c(2),c(3))
+                face%region_I_fields%E4 => E
                 allocate(face%region_II_fields%E4)
                 face%region_II_fields%E4 = 0.0
             end if
         end if
-
-        ! if (j==1) then 
-        !     if (isInRegionII(face,edge_on_face)) then 
-        !         allocate(face%region_I_fields%E1)
-        !         face%region_I_fields%E1 = 0.0
-        !         face%region_II_fields%E1 => E(c(1),c(2),c(3))
-        !     ! if (isInRegionI(face,edge_on_face)) then 
-        !     else
-        !         face%region_I_fields%E1 => E(c(1),c(2),c(3))
-        !         allocate(face%region_II_fields%E1)
-        !         face%region_II_fields%E1 = 0.0
-        !     end if
-        ! else if (j == 2) then 
-        !     c(dir) = cell(dir) + 1
-
-        !     if (isInRegionII(face, edge_on_face)) then 
-        !         allocate(face%region_I_fields%E2)
-        !         face%region_I_fields%E2 = 0.0
-        !         face%region_II_fields%E2 => E(c(1),c(2),c(3))
-        !     else 
-        !         ! if (isInRegionI(face, edge_on_face)) then 
-        !         face%region_I_fields%E2=> E(c(1),c(2),c(3))
-        !         allocate(face%region_II_fields%E2)
-        !         face%region_II_fields%E2 = 0.0
-        !     end if
-        ! else if (j == 3) then 
-        !     c(dir) = cell(dir) + 1
-        !     if (isInRegionII(face, edge_on_face)) then 
-        !         allocate(face%region_I_fields%E3)
-        !         face%region_I_fields%E3 = 0.0
-        !         face%region_II_fields%E3 => E(c(1),c(2),c(3))
-        !     else
-        !         ! if (isInRegionI(face, edge_on_face)) then 
-        !         face%region_I_fields%E3 => E(c(1),c(2),c(3))
-        !         allocate(face%region_II_fields%E3)
-        !         face%region_II_fields%E3 = 0.0
-        !     end if
-        ! else if (j == 4) then 
-        !     if (isInRegionII(face, edge_on_face)) then 
-        !         allocate(face%region_I_fields%E4)
-        !         face%region_I_fields%E4 = 0.0
-        !         face%region_II_fields%E4 => E(c(1),c(2),c(3))
-        !     else   
-        !     ! else if (isInRegionI(face,edge_on_face)) then 
-        !         face%region_I_fields%E4 => E(c(1),c(2),c(3))
-        !         allocate(face%region_II_fields%E4)
-        !         face%region_II_fields%E4 = 0.0
-
-        !     end if
-        ! end if
-
 
     end subroutine
 
@@ -352,156 +234,151 @@ contains
         end if
     end subroutine
 
-    subroutine assignFaceFieldsOnEdge(Hx, Hy, Hz, edge, j, cell)
+    subroutine assignFaceFieldsOnEdge(Hx, Hy, Hz, edge, j, c)
         type(edge_t), pointer :: edge
         integer(kind=4), intent(in) :: j
-        integer(kind=4), dimension(3), intent(in) :: cell
-        integer(kind=4), dimension(3) :: c
-        real(kind=rkind), pointer, dimension(:,:,:) :: Hx, Hy, Hz, H
+        integer(kind=4), intent(in), dimension(3) :: c
+        real(kind=rkind), pointer, dimension(:,:,:) :: Hx, Hy, Hz
+        real(kind=rkind), pointer :: H
         integer :: dir
-        c = cell
         select case (edge%direction)
         case (EDGE_X)
             if (mod(j,2)==0) then 
-                H => Hy
+                H => Hy(c(1),c(2),c(3))
                 dir = FACE_Z
             else if (mod(j,2)/=0) then 
-                H => Hz
+                H => Hz(c(1),c(2),c(3))
                 dir = FACE_Y
             end if
         case (EDGE_Y)
             if (mod(j,2)==0) then 
-                H => Hz
+                H => Hz(c(1),c(2),c(3))
                 dir = FACE_X
             else if (mod(j,2)/=0) then 
-                H => Hx
+                H => Hx(c(1),c(2),c(3))
                 dir = FACE_Z
             end if
         case (EDGE_Z)
             if (mod(j,2)==0) then 
-                H => Hx
+                H => Hx(c(1),c(2),c(3))
                 dir = FACE_Y
             else if (mod(j,2)/=0) then 
-                H => Hy
+                H => Hy(c(1),c(2),c(3))
                 dir = FACE_X
             end if
         end select
-        if (j==1) then 
-            if (edge%ratio == 0.0) then 
-                edge%region_II_fields%H1 => H(c(1),c(2),c(3))
-                allocate(edge%region_I_fields%H1)
-                edge%region_I_fields%H1 = 0.0
-            else if (edge%ratio == 1.0) then 
-                edge%region_I_fields%H1  => H(c(1),c(2),c(3))
+
+        if (edge%edge_region == EDGE_REGION_I) then 
+            if (j == 1) then 
+                edge%region_I_fields%H1  => H
                 allocate(edge%region_II_fields%H1)
                 edge%region_II_fields%H1 = 0.0
-            else
-                edge%region_I_fields%H1  => H(c(1),c(2),c(3))
-                edge%region_II_fields%H1 => H(c(1),c(2),c(3))
-            end if
-        else if (j==2) then 
-            c(dir) = cell(dir) - 1
-            if (edge%ratio == 0.0) then 
-                edge%region_II_fields%H2 => H(c(1),c(2),c(3))
-                allocate(edge%region_I_fields%H2)
-                edge%region_I_fields%H2 = 0.0
-            else if (edge%ratio == 1.0) then 
-                edge%region_I_fields%H2  => H(c(1),c(2),c(3))
+            else if (j == 2) then 
+                edge%region_I_fields%H2  => H
                 allocate(edge%region_II_fields%H2)
                 edge%region_II_fields%H2 = 0.0
-            else
-                edge%region_I_fields%H2  => H(c(1),c(2),c(3))
-                edge%region_II_fields%H2 => H(c(1),c(2),c(3))
-            end if
-        else if (j==3) then 
-            c(dir) = cell(dir) - 1
-            if (edge%ratio == 0.0) then 
-                edge%region_II_fields%H3 => H(c(1),c(2),c(3))
-                allocate(edge%region_I_fields%H3)
-                edge%region_I_fields%H3 = 0.0
-            else if (edge%ratio == 1.0) then 
-                edge%region_I_fields%H3 => H(c(1),c(2),c(3))
+            else if (j == 3) then 
+                edge%region_I_fields%H3  => H
                 allocate(edge%region_II_fields%H3)
                 edge%region_II_fields%H3 = 0.0
-            else
-                edge%region_I_fields%H3  => H(c(1),c(2),c(3))
-                edge%region_II_fields%H3 => H(c(1),c(2),c(3))
-            end if
-        else if (j==4) then 
-            if (edge%ratio == 0.0) then 
-                edge%region_II_fields%H4 => H(c(1),c(2),c(3))
-                allocate(edge%region_I_fields%H4)
-                edge%region_I_fields%H4 = 0.0
-            else if (edge%ratio == 1.0) then 
-                edge%region_I_fields%H4  => H(c(1),c(2),c(3))
+            else if (j == 4) then
+                edge%region_I_fields%H4  => H
                 allocate(edge%region_II_fields%H4)
                 edge%region_II_fields%H4 = 0.0
-            else
-                edge%region_I_fields%H4   => H(c(1),c(2),c(3))
-                edge%region_II_fields%H4  => H(c(1),c(2),c(3))
-            end if
+            end if 
+        else if (edge%edge_region == EDGE_REGION_II) then 
+            if (j == 1) then 
+                allocate(edge%region_I_fields%H1)
+                edge%region_I_fields%H1 = 0.0
+                edge%region_II_fields%H1 => H
+            else if (j == 2) then 
+                allocate(edge%region_I_fields%H2)
+                edge%region_I_fields%H2 = 0.0
+                edge%region_II_fields%H2 => H
+            else if (j == 3) then 
+                allocate(edge%region_I_fields%H3)
+                edge%region_I_fields%H3 = 0.0
+                edge%region_II_fields%H3 => H
+            else if (j == 4) then
+                allocate(edge%region_I_fields%H4)
+                edge%region_I_fields%H4 = 0.0
+                edge%region_II_fields%H4 => H
+            end if 
+
+        else if (edge%edge_region == EDGE_REGION_CONFORMAL) then 
+            if (j == 1) then 
+                edge%region_I_fields%H1  => H
+                edge%region_II_fields%H1 => H
+            else if (j == 2) then 
+                edge%region_I_fields%H2  => H
+                edge%region_II_fields%H2 => H
+            else if (j == 3) then 
+                edge%region_I_fields%H3  => H
+                edge%region_II_fields%H3 => H
+            else if (j == 4) then
+                edge%region_I_fields%H4  => H
+                edge%region_II_fields%H4 => H
+            end if 
+
         end if
-
-
     end subroutine
 
     subroutine assignSplitFaceFieldsOnEdge(face, edge, j)
         type(face_t), pointer :: face
         type(edge_t), pointer :: edge
         integer(kind=4), intent(in) :: j
-        if (j==1) then 
-            if (edge%ratio == 0.0) then 
-                allocate(edge%region_I_fields%H1)
-                edge%region_I_fields%H1  = 0.0
-                edge%region_II_fields%H1 => face%region_II_fields%H
-            else if (edge%ratio == 1.0) then 
+
+        if (edge%edge_region == EDGE_REGION_I) then 
+            if (j == 1) then 
                 edge%region_I_fields%H1  => face%region_I_fields%H
                 allocate(edge%region_II_fields%H1)
                 edge%region_II_fields%H1 = 0.0
-            else 
-                edge%region_I_fields%H1  => face%region_I_fields%H
-                edge%region_II_fields%H1 => face%region_II_fields%H
-            end if
-        else if (j==2) then 
-            if (edge%ratio == 0.0) then 
-                allocate(edge%region_I_fields%H2)
-                edge%region_I_fields%H2  = 0.0
-                edge%region_II_fields%H2 => face%region_II_fields%H
-            else if (edge%ratio == 1.0) then 
+            else if (j == 2) then 
                 edge%region_I_fields%H2  => face%region_I_fields%H
                 allocate(edge%region_II_fields%H2)
                 edge%region_II_fields%H2 = 0.0
-            else
-                edge%region_I_fields%H2  => face%region_I_fields%H
-                edge%region_II_fields%H2 => face%region_II_fields%H
-            end if
-        else if (j==3) then 
-            if (edge%ratio == 0.0) then 
-                allocate(edge%region_I_fields%H3)
-                edge%region_I_fields%H3 = 0.0
-                edge%region_II_fields%H3 => face%region_II_fields%H
-            else if (edge%ratio == 1.0) then 
+            else if (j == 3) then 
                 edge%region_I_fields%H3  => face%region_I_fields%H
                 allocate(edge%region_II_fields%H3)
                 edge%region_II_fields%H3 = 0.0
-            else 
-                edge%region_I_fields%H3  => face%region_I_fields%H
-                edge%region_II_fields%H3 => face%region_II_fields%H
-            end if
-        else if (j==4) then 
-            if (edge%ratio == 0.0) then 
-                allocate(edge%region_I_fields%H4)
-                edge%region_I_fields%H4 = 0.0
-                edge%region_II_fields%H4 => face%region_II_fields%H
-            else if (edge%ratio == 1.0) then 
+            else if (j == 4) then 
                 edge%region_I_fields%H4  => face%region_I_fields%H
                 allocate(edge%region_II_fields%H4)
                 edge%region_II_fields%H4 = 0.0
-            else
+            end if
+        else if (edge%edge_region == EDGE_REGION_II) then 
+            if (j == 1) then 
+                allocate(edge%region_I_fields%H1)
+                edge%region_I_fields%H1  = 0.0
+                edge%region_II_fields%H1 => face%region_II_fields%H
+            else if (j == 2) then 
+                allocate(edge%region_I_fields%H2)
+                edge%region_I_fields%H2  = 0.0
+                edge%region_II_fields%H2 => face%region_II_fields%H
+            else if (j == 3) then 
+                allocate(edge%region_I_fields%H3)
+                edge%region_I_fields%H3  = 0.0
+                edge%region_II_fields%H3 => face%region_II_fields%H
+            else if (j == 4) then 
+                allocate(edge%region_I_fields%H4)
+                edge%region_I_fields%H4  = 0.0
+                edge%region_II_fields%H4 => face%region_II_fields%H
+            end if
+        else if (edge%edge_region == EDGE_REGION_CONFORMAL) then
+            if (j == 1) then 
+                edge%region_I_fields%H1  => face%region_I_fields%H
+                edge%region_II_fields%H1 => face%region_II_fields%H
+            else if (j == 2) then 
+                edge%region_I_fields%H2  => face%region_I_fields%H
+                edge%region_II_fields%H2 => face%region_II_fields%H
+            else if (j == 3) then 
+                edge%region_I_fields%H3  => face%region_I_fields%H
+                edge%region_II_fields%H3 => face%region_II_fields%H
+            else if (j == 4) then 
                 edge%region_I_fields%H4  => face%region_I_fields%H
                 edge%region_II_fields%H4 => face%region_II_fields%H
             end if
-        end if
+        end if 
     end subroutine
 
 
@@ -511,14 +388,6 @@ contains
         type(face_t), dimension(:), allocatable :: faces
         type(edge_t), dimension(:), allocatable :: edges
         integer :: i,j
-        ! if (.not. allocated(face_map%keys)) allocate(face_map%keys(0))
-        ! if (.not. allocated(edge_map%keys)) allocate(edge_map%keys(0))
-        ! do i = 1, size(faces)
-        !     call face_map%addFace(faces(i))
-        ! end do
-        ! do i = 1, size(edges)
-        !     call edge_map%addEdge(edges(i))
-        ! end do
         call buildConformalFaceMap(face_map, faces)
         call buildConformalEdgeMap(edge_map, edges)
     end subroutine
@@ -552,8 +421,6 @@ contains
             end if
         end do
     end subroutine
-
-
 
     subroutine face_addFace(this, face)
         class(face_map_t) :: this

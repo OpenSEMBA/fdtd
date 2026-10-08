@@ -2763,9 +2763,7 @@ contains
 
             edge => conformal_maps%edge_map%getEdge(edges_on_face(j)%key)
             if (.not. edge%is_two_sided) then 
-            ! if (edge%ratio == 0.0 .or. edge%ratio == 1.0) then 
-               cell = edges_on_face(j)%key(1:3)
-               call assignEdgeFieldsOnFace(this%Ex, this%Ey, this%Ez, face, j, cell)
+               call assignEdgeFieldsOnFace(this%Ex, this%Ey, this%Ez, face, edges_on_face(j), j)
             else
                call assignSplitEdgeFieldsOnFace(face, edge, j)
             end if
