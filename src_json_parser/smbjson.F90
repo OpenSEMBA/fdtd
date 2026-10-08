@@ -797,13 +797,13 @@ contains
                if (cR%type == REGION_TYPE_VOLUME) then
                   call appendRegion(res%volumes, cR, tagName)
                else if (cR%type == REGION_TYPE_SURFACE) then
-                  if (isClosedRegion(cR)) then
-                     ! A closed PEC shell has the same electromagnetic semantics as a
-                     ! conformal volume; use the established volume filling path.
-                     call appendRegion(res%volumes, cR, tagName)
-                  else
-                     call appendRegion(res%surfaces, cR, tagName)
-                  end if
+                  ! if (isClosedRegion(cR)) then
+                  !    ! A closed PEC shell has the same electromagnetic semantics as a
+                  !    ! conformal volume; use the established volume filling path.
+                  !    call appendRegion(res%volumes, cR, tagName)
+                  ! else
+                  call appendRegion(res%surfaces, cR, tagName)
+                  ! end if
                end if
             end if
          end do

@@ -674,6 +674,7 @@ module  FDETYPES_m
       integer(kind=4) :: direction = -1
       real(kind=rkind) :: ratio = -1
       logical :: is_two_sided = .false.
+      type(edge_t), dimension(:), allocatable :: contour_inside_edges
       real(kind=RKIND), dimension(3) :: normal
       integer(kind=4) :: split_direction = 0
       real(kind=rkind) :: lower_fraction = 0.0_RKIND

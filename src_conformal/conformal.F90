@@ -1192,6 +1192,7 @@ contains
 
    subroutine fillFaceFromContour(contour, faces, is_two_sided)
       type(side_t), dimension(:), allocatable, intent(in) :: contour
+      type(edge_t), dimension(:), allocatable :: edges_inside
       type(face_t), dimension(:), allocatable :: faces
       logical, intent(in) :: is_two_sided
       real(kind=rkind) :: area
@@ -1201,11 +1202,32 @@ contains
       cell = findContourCell(contour)
       face = findContourFace(contour)
       normal = computeNormalFromSidesOnFace(contour)
+      edges_inside =  getEdgesFromInside(contour)
       if (size(contour) /= 0) then
          area = 1.0 - contourArea(contour)
-         call addFace(faces, cell, face, area, is_two_sided, normal)
+         call addFace(faces, cell, face, area, is_two_sided, normal, edges_inside)
       end if
    end subroutine
+
+   function getEdgesFromInside(contour) result(res)
+      type(side_t), dimension(:), allocatable, intent(in) :: contour
+      type(edge_t), dimension(:), allocatable :: res
+      integer(kind=4) :: i, n
+      n = 0
+      do i = 1, size(contour)
+         if(contour(i)%isOnAnyEdge() .and. abs(contour(i)%length() -1.0) < EDGE_RATIO_EQ_TOLERANCE) then 
+            n = n + 1
+         end if
+      end do
+      allocate(res(n))
+      n = 0
+      do i = 1, size(contour)
+         if(contour(i)%isOnAnyEdge() .and. abs(contour(i)%length() -1.0) < EDGE_RATIO_EQ_TOLERANCE) then 
+            n = n + 1
+            res(n) = edge_t(cell=contour(i)%getCell(), direction=contour(i)%getEdge(), ratio = 0.0)
+         end if
+      end do
+   end function
 
    function computeNormalFromSidesOnFace(contour) result(res)
       type(side_t), dimension(:), allocatable, intent(in) :: contour
@@ -1342,7 +1364,7 @@ contains
       edges = aux
    end subroutine
 
-   subroutine addFace(faces, cell, face, ratio, is_two_sided, normal)
+   subroutine addFace(faces, cell, face, ratio, is_two_sided, normal, edges_inside)
       type(face_t), dimension(:), allocatable, intent(inout) :: faces
       type(face_t), dimension(:), allocatable :: aux
       integer(kind=4), dimension(3), intent(in) :: cell
@@ -1351,6 +1373,8 @@ contains
       real(kind=rkind) :: ratio
       logical, optional, intent(in) :: is_two_sided
       real(kind=RKIND), dimension(3), optional :: normal
+      type(edge_t), dimension(:), allocatable, optional :: edges_inside
+      type(edge_t), dimension(:), allocatable :: inside
       real(kind=RKIND), dimension(3) :: n = [0.0,0.0,0.0]
       logical :: split = .false.
       integer :: i
@@ -1369,9 +1393,14 @@ contains
       ! end do
       if (present(is_two_sided)) split = is_two_sided
       if (present(normal)) n = normal
+      if (present(edges_inside)) then 
+         inside = edges_inside 
+      else
+         allocate(inside(0))
+      end if
       allocate(aux(size(faces) + 1))
       aux(1:size(faces)) = faces
-      new_face = face_t(cell=cell, ratio=ratio, direction=face, is_two_sided=split, normal = n)
+      new_face = face_t(cell=cell, ratio=ratio, direction=face, is_two_sided=split, normal = n, contour_inside_edges = inside)
       ! new_face = face_t(cell=cell, ratio=ratio, direction=face, is_two_sided=split_candidate)
       aux(size(faces) + 1) = new_face
 

@@ -500,6 +500,80 @@ integer function test_conformal_detect_split_face() bind(C) result(err)
 
 end function
 
+integer function test_conformal_edges_from_contour_inside() bind(C) result(err)
+
+!         /|
+!       /  |
+!     /    |
+!   /_____2|==________
+!   |    \\|__\\===3_|____
+!   |     /\\     // |   /
+!   |    /  \\    || |  /
+!   |  /      \\ //  | /
+!   |/__________1____|/
+
+    use conformal_m
+    implicit none
+
+    type(side_t), dimension(:), allocatable :: sides_on_face, contour
+    type(coord_t) :: c1, c2, c3
+    type(coord_t), dimension(3) :: vertices
+    
+    err = 0
+    c1 = coord_t(position = [0.75,0.0,0.0],  id = 1)
+    c2 = coord_t(position = [0.25,0.0,1.0],  id=  2)
+    c3 = coord_t(position = [0.65,1.0,0.0],  id=  3)
+
+    allocate(sides_on_face(1))
+    sides_on_face(1)%init = c2
+    sides_on_face(1)%end = c1
+    sides_on_face(1)%normal = [sqrt(2.0)/2.0,0.0,sqrt(2.0)/2.0]
+
+    contour = findLargestContour(sides_on_face)
+    if (.not. size(contour) == 4) err = err + 1
+    if (.not. all(contour(2)%getCell() == [0, 0, 0])) err = err + 1
+    if (.not. contour(2)%getEdge() == 1) err = err + 1
+    if (.not. all(contour(3)%getCell() == [0, 0, 0])) err = err + 1
+    if (.not. contour(3)%getEdge() == 3) err = err + 1
+    if (.not. all(contour(4)%getCell() == [0, 0, 1])) err = err + 1
+    if (.not. contour(4)%getEdge() == 1) err = err + 1
+
+    ! invert inside/outside
+    sides_on_face(1)%init = c1
+    sides_on_face(1)%end = c2
+    sides_on_face(1)%normal = [-sqrt(2.0)/2.0,0.0,-sqrt(2.0)/2.0]
+
+    contour = findLargestContour(sides_on_face)
+    if (.not. size(contour) == 4) err = err + 1
+    if (.not. all(contour(2)%getCell() == [0, 0, 1])) err = err + 1
+    if (.not. contour(2)%getEdge() == 1) err = err + 1
+    if (.not. all(contour(3)%getCell() == [1, 0, 0])) err = err + 1
+    if (.not. contour(3)%getEdge() == 3) err = err + 1
+    if (.not. all(contour(4)%getCell() == [0, 0, 0])) err = err + 1
+    if (.not. contour(4)%getEdge() == 1) err = err + 1
+
+    
+    ! ! inside in +x
+    ! allocate(tris(1))
+    ! vertices = [c1,c2,c3]
+    ! tris(1) = triangle_t(vertices)
+
+    ! allocate(cR%surfaces(1))
+    ! allocate(cR%surfaces(1)%triangles(1))
+    ! allocate(cR%surfaces(1)%intervals(0))
+    ! cR%surfaces(1)%triangles(1) = tris(1)
+
+    ! cMs = buildMedia(cR%surfaces, BODY_TYPE_SURFACE)
+    ! cM = cMs(1)
+
+    ! do face_media = 1, size(cM%face_media) 
+    !     do face_index = 1, size(cM%face_media(face_media)%faces)
+    !         if (.not. cM%face_media(face_media)%faces(face_index)%is_two_sided) err = err + 1
+    !     end do
+    ! end do
+
+end function
+
 integer function test_conformal_split_faces() bind(C) result(err)
 !         /|
 !       /  |
@@ -989,3 +1063,4 @@ integer function test_conformal_filling_cylinder_base_on_grid_plane() bind(C) re
     ! if (abs(cM%cfl - 0.9055) > 0.01) err = err + 1
 
 end function
+

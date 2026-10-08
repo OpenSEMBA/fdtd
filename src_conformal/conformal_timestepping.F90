@@ -4,7 +4,7 @@ module conformal_timestepping_m
     use FDETypes_m, only: face_t, edge_t, FACE_X, FACE_Y, FACE_Z, EDGE_X, EDGE_Y, EDGE_Z, EDGE_REGION_CONFORMAL, EDGE_REGION_I, EDGE_REGION_II
     use NFDETypes_m, only: rkind
     use fhash, only: fhash_tbl_t, key=>fhash_key
-
+    use Report_m
 
     type, extends(fhash_tbl_t) :: face_map_t
         type(map_key_t), dimension(:), allocatable :: keys
@@ -20,6 +20,7 @@ module conformal_timestepping_m
         procedure :: hasKey  => edge_hasKey
         procedure :: getEdge => edge_getEdge
         procedure :: addEdge => edge_addEdge
+        procedure :: allocateEdges => edge_allocateEdges
     end type
 
     type, public :: conformal_maps_t
@@ -50,10 +51,10 @@ contains
         call edge_map%addEdge(conformal_edges(n))
     end subroutine
 
-    subroutine addAdditionalConformalFeatures(face_map, edge_map, conformal_edges)
-        type(edge_map_t), intent(inout) :: edge_map
+    subroutine addAdditionalConformalFeatures(conf_maps, conformal_edges)
+        type(conformal_maps_t), intent(inout) :: conf_maps
         type(edge_map_t) :: aux_edge_map
-        type(face_map_t), intent(inout) :: face_map
+        ! type(face_map_t), intent(in) :: face_map
         type(edge_t), dimension(:), allocatable, intent(inout) :: conformal_edges
         type(edge_t), dimension(:), allocatable :: aux_conformal_edges
         type(face_t), pointer :: face
@@ -63,14 +64,14 @@ contains
         real(kind=RKIND) :: ratio
         integer(kind=4) :: i, j, k, additional_edges = 0, prev_size
         
-        do i = 1, size(face_map%keys)
-            face => face_map%getFace(face_map%keys(i)%key)
+        do i = 1, size(conf_maps%face_map%keys)
+            face => conf_maps%face_map%getFace(conf_maps%face_map%keys(i)%key)
             if (.not. face%is_two_sided) cycle
             edges_on_face = buildEdgesOnFace(face%cell, face%direction)
             do j = 1, size(edges_on_face) 
-                if (.not. edge_map%hasKey(edges_on_face(j)%key)) then
+                if (.not. conf_maps%edge_map%hasKey(edges_on_face(j)%key)) then
                     new_edge = edge_t(cell=edges_on_face(j)%key(1:3), direction=edges_on_face(j)%key(4))
-                    call edge_map%addEdge(new_edge)
+                    call conf_maps%edge_map%addEdge(new_edge)
                     additional_edges = additional_edges + 1
                 end if
             end do
@@ -88,16 +89,18 @@ contains
         
         additional_edges = 0
 
+        call aux_edge_map%allocateEdges(500*size(conf_maps%edge_map%keys))
+
         call buildConformalEdgeMap(aux_edge_map, conformal_edges)
         
-        do i = 1, size(face_map%keys)
-            face => face_map%getFace(face_map%keys(i)%key)
+        do i = 1, size(conf_maps%face_map%keys)
+            face => conf_maps%face_map%getFace(conf_maps%face_map%keys(i)%key)
             if (.not. face%is_two_sided) cycle
             edges_on_face = buildEdgesOnFace(face%cell, face%direction)
             do j = 1, size(edges_on_face) 
                 if (.not. aux_edge_map%hasKey(edges_on_face(j)%key)) then
                     additional_edges = additional_edges + 1
-                    if (isInRegionI(face, j))  then 
+                    if (.not. isInRegionII(face, edges_on_face(j)))  then 
                         ratio = 1.0
                         new_edge = edge_t(cell=edges_on_face(j)%key(1:3), & 
                             ratio=ratio, & 
@@ -109,7 +112,7 @@ contains
                         new_edge%region_I_fields%E = 0.0
                         ! new_edge%region_II_fields%E => null()
 
-                    else if (isInRegionII(face, j)) then 
+                    else if (isInRegionII(face, edges_on_face(j))) then 
                         ratio = 0.0
                         new_edge = edge_t(cell=edges_on_face(j)%key(1:3), & 
                             ratio=ratio, & 
@@ -127,65 +130,77 @@ contains
                 end if
             end do
         end do
-        edge_map = aux_edge_map
+        conf_maps%edge_map = aux_edge_map
     end subroutine
 
-    logical function isInRegionI(face, j)
+    logical function isInRegionII(face, edge_on_face)
         type(face_t), intent(in) :: face
-        integer(kind=4), intent(in) :: j
-        integer(kind=4) :: dir
-        select case (face%direction)
-        case (FACE_X)
-            if (mod(j,2)==0) then 
-                dir = EDGE_Z
-            else if (mod(j,2)/=0) then 
-                dir = EDGE_Y
-            end if
-        case (FACE_Y)
-            if (mod(j,2)==0) then 
-                dir = EDGE_X
-            else if (mod(j,2)/=0) then 
-                dir = EDGE_Z
-            end if
-        case (FACE_Z)
-            if (mod(j,2)==0) then 
-                dir = EDGE_Y
-            else if (mod(j,2)/=0) then 
-                dir = EDGE_X
-            end if
-        end select
-        if (j==1) then 
-            if (face%normal(dir) > 0) then
-                isInRegionI = .false. 
-            else if (face%normal(dir) < 0) then 
-                isInRegionI = .true. 
-            end if
-        else if (j == 2) then 
-            if (face%normal(dir) > 0) then 
-                isInRegionI = .true. 
-            else if (face%normal(dir) < 0) then 
-                isInRegionI = .false. 
-            end if
-        else if (j == 3) then 
-            if (face%normal(dir) > 0) then 
-                isInRegionI = .true. 
-            else if (face%normal(dir) < 0) then 
-                isInRegionI = .false. 
-            end if
-        else if (j == 4) then 
-            if (face%normal(dir) > 0) then 
-                isInRegionI = .false. 
-            else if (face%normal(dir) < 0) then 
-                isInRegionI = .true. 
-            end if
-        end if
+        type(map_key_t) :: edge_on_face
+        integer(kind=4) :: l
+        isInRegionII = .false.
+        do l = 1, size(face%contour_inside_edges)
+            isInRegionII = isInRegionII .or. ((all(edge_on_face%key(1:3) == face%contour_inside_edges(l)%cell)) .and. &
+                                              edge_on_face%key(4) == face%contour_inside_edges(l)%direction)
+        end do
     end function
 
-    logical function isInRegionII(face,j)
-        type(face_t), intent(in) :: face
-        integer(kind=4), intent(in) :: j
-        isInRegionII = (.not. isInRegionI(face,j))
-    end function
+
+    ! logical function isInRegionI(face, j)
+    !     type(face_t), intent(in) :: face
+    !     integer(kind=4), intent(in) :: j
+    !     integer(kind=4) :: dir
+    !     select case (face%direction)
+    !     case (FACE_X)
+    !         if (mod(j,2)==0) then 
+    !             dir = EDGE_Z
+    !         else if (mod(j,2)/=0) then 
+    !             dir = EDGE_Y
+    !         end if
+    !     case (FACE_Y)
+    !         if (mod(j,2)==0) then 
+    !             dir = EDGE_X
+    !         else if (mod(j,2)/=0) then 
+    !             dir = EDGE_Z
+    !         end if
+    !     case (FACE_Z)
+    !         if (mod(j,2)==0) then 
+    !             dir = EDGE_Y
+    !         else if (mod(j,2)/=0) then 
+    !             dir = EDGE_X
+    !         end if
+    !     end select
+    !     if (j==1) then 
+    !         if (face%normal(dir) > 0) then
+    !             isInRegionI = .false. 
+    !         else if (face%normal(dir) < 0) then 
+    !             isInRegionI = .true. 
+    !         end if
+    !     else if (j == 2) then 
+    !         if (face%normal(dir) > 0) then 
+    !             isInRegionI = .true. 
+    !         else if (face%normal(dir) < 0) then 
+    !             isInRegionI = .false. 
+    !         end if
+    !     else if (j == 3) then 
+    !         if (face%normal(dir) > 0) then 
+    !             isInRegionI = .true. 
+    !         else if (face%normal(dir) < 0) then 
+    !             isInRegionI = .false. 
+    !         end if
+    !     else if (j == 4) then 
+    !         if (face%normal(dir) > 0) then 
+    !             isInRegionI = .false. 
+    !         else if (face%normal(dir) < 0) then 
+    !             isInRegionI = .true. 
+    !         end if
+    !     end if
+    ! end function
+
+    ! logical function isInRegionII(face,j)
+    !     type(face_t), intent(in) :: face
+    !     integer(kind=4), intent(in) :: j
+    !     isInRegionII = (.not. isInRegionI(face,j))
+    ! end function
 
     subroutine assignEdgeFieldsOnFace(Ex, Ey, Ez, face, j, cell)
         type(face_t), pointer :: face
@@ -193,6 +208,7 @@ contains
         integer(kind=4), dimension(3), intent(in) :: cell
         integer(kind=4), dimension(3) :: c
         real(kind=rkind), pointer, dimension(:,:,:) :: Ex, Ey, Ez, E
+        type(map_key_t) :: edges_on_face(4), edge_on_face
         integer :: dir
         c = cell
         select case (face%direction)
@@ -222,65 +238,97 @@ contains
         end if
         end select
 
-        if (j==1) then 
-            if (isInRegionI(face,j)) then 
-
-                face%region_I_fields%E1 => E(c(1),c(2),c(3))
-                allocate(face%region_II_fields%E1)
-                face%region_II_fields%E1 = 0.0
-
-            else if (isInRegionII(face,j)) then 
-
+        if (j==2 .or. j==3) c(dir) = cell(dir) + 1
+        edges_on_face = buildEdgesOnFace(face%cell, face%direction)
+        edge_on_face = edges_on_face(j)
+        if (isInRegionII(face,edge_on_face)) then 
+            if (j == 1) then 
                 allocate(face%region_I_fields%E1)
                 face%region_I_fields%E1 = 0.0
                 face%region_II_fields%E1 => E(c(1),c(2),c(3))
-    
-            end if
-        else if (j == 2) then 
-            c(dir) = cell(dir) + 1
-            if (isInRegionI(face,j)) then 
-
-                face%region_I_fields%E2=> E(c(1),c(2),c(3))
-                allocate(face%region_II_fields%E2)
-                face%region_II_fields%E2 = 0.0
-
-            else if (isInRegionII(face,j)) then 
-
+            else if (j==2) then 
                 allocate(face%region_I_fields%E2)
                 face%region_I_fields%E2 = 0.0
                 face%region_II_fields%E2 => E(c(1),c(2),c(3))
-
-            end if
-        else if (j == 3) then 
-            c(dir) = cell(dir) + 1
-            if (isInRegionI(face,j)) then 
-
-                face%region_I_fields%E3 => E(c(1),c(2),c(3))
-                allocate(face%region_II_fields%E3)
-                face%region_II_fields%E3 = 0.0
-
-            else if (isInRegionII(face,j)) then 
-
+            else if (j==3) then 
                 allocate(face%region_I_fields%E3)
                 face%region_I_fields%E3 = 0.0
                 face%region_II_fields%E3 => E(c(1),c(2),c(3))
-
-            end if
-        else if (j == 4) then 
-            if (isInRegionII(face,j)) then 
-
+            else if (j==4) then 
                 allocate(face%region_I_fields%E4)
                 face%region_I_fields%E4 = 0.0
                 face%region_II_fields%E4 => E(c(1),c(2),c(3))
-                
-            else if (isInRegionI(face,j)) then 
-
+            end if
+        ! if (isInRegionI(face,edge_on_face)) then 
+        else
+            if (j == 1) then 
+                face%region_I_fields%E1 => E(c(1),c(2),c(3))
+                allocate(face%region_II_fields%E1)
+                face%region_II_fields%E1 = 0.0
+            else if (j == 2) then 
+                face%region_I_fields%E2 => E(c(1),c(2),c(3))
+                allocate(face%region_II_fields%E2)
+                face%region_II_fields%E2 = 0.0
+            else if (j == 3) then 
+                face%region_I_fields%E3 => E(c(1),c(2),c(3))
+                allocate(face%region_II_fields%E3)
+                face%region_II_fields%E3 = 0.0
+            else if (j == 4) then 
                 face%region_I_fields%E4 => E(c(1),c(2),c(3))
                 allocate(face%region_II_fields%E4)
                 face%region_II_fields%E4 = 0.0
-
             end if
         end if
+
+        ! if (j==1) then 
+        !     if (isInRegionII(face,edge_on_face)) then 
+        !         allocate(face%region_I_fields%E1)
+        !         face%region_I_fields%E1 = 0.0
+        !         face%region_II_fields%E1 => E(c(1),c(2),c(3))
+        !     ! if (isInRegionI(face,edge_on_face)) then 
+        !     else
+        !         face%region_I_fields%E1 => E(c(1),c(2),c(3))
+        !         allocate(face%region_II_fields%E1)
+        !         face%region_II_fields%E1 = 0.0
+        !     end if
+        ! else if (j == 2) then 
+        !     c(dir) = cell(dir) + 1
+
+        !     if (isInRegionII(face, edge_on_face)) then 
+        !         allocate(face%region_I_fields%E2)
+        !         face%region_I_fields%E2 = 0.0
+        !         face%region_II_fields%E2 => E(c(1),c(2),c(3))
+        !     else 
+        !         ! if (isInRegionI(face, edge_on_face)) then 
+        !         face%region_I_fields%E2=> E(c(1),c(2),c(3))
+        !         allocate(face%region_II_fields%E2)
+        !         face%region_II_fields%E2 = 0.0
+        !     end if
+        ! else if (j == 3) then 
+        !     c(dir) = cell(dir) + 1
+        !     if (isInRegionII(face, edge_on_face)) then 
+        !         allocate(face%region_I_fields%E3)
+        !         face%region_I_fields%E3 = 0.0
+        !         face%region_II_fields%E3 => E(c(1),c(2),c(3))
+        !     else
+        !         ! if (isInRegionI(face, edge_on_face)) then 
+        !         face%region_I_fields%E3 => E(c(1),c(2),c(3))
+        !         allocate(face%region_II_fields%E3)
+        !         face%region_II_fields%E3 = 0.0
+        !     end if
+        ! else if (j == 4) then 
+        !     if (isInRegionII(face, edge_on_face)) then 
+        !         allocate(face%region_I_fields%E4)
+        !         face%region_I_fields%E4 = 0.0
+        !         face%region_II_fields%E4 => E(c(1),c(2),c(3))
+        !     else   
+        !     ! else if (isInRegionI(face,edge_on_face)) then 
+        !         face%region_I_fields%E4 => E(c(1),c(2),c(3))
+        !         allocate(face%region_II_fields%E4)
+        !         face%region_II_fields%E4 = 0.0
+
+        !     end if
+        ! end if
 
 
     end subroutine
@@ -579,6 +627,9 @@ contains
                 if (present(found)) found = .true.
                 res => alloc_val
             end select
+        else
+            write(*,*) 'key: ', k
+            call WarnErrReport('Key not found in map ', .true.)
         end if
     end function
 
@@ -651,6 +702,12 @@ contains
         deallocate(edges)
         allocate(edges(size(aux_edges)))
         edges = aux_edges
+   end subroutine
+
+    subroutine edge_allocateEdges(this, buck)
+      class(edge_map_t) :: this
+      integer :: buck
+      call this%allocate(buck)
    end subroutine
 
 

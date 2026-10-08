@@ -2025,7 +2025,10 @@ contains
 
       call flushPlanewaveOff(planewave_switched_off, this%still_planewave_time, thereareplanewave)
       call this%AdvanceAnisotropicE()
+      ! write(*,*) this%ex
+      ! write(*,*) '------------'
       call this%advanceE()
+      ! write(*,*) this%ex
       call this%advanceConformalE()
 #ifdef CompileWithConformal
       if (this%control%input_conformal_flag) call conformal_advance_E()
@@ -2513,10 +2516,10 @@ contains
       integer(kind=integersizeofmediamatrices) :: med
       integer(kind=4), dimension(3) :: c
       integer :: i, j, k, n
-      logical :: two_sided
-      E_eff = 0.0
+      ! logical :: two_sided
       do n = 1, size(this%conformal_fields%edges)
-         two_sided = this%conformal_fields%edges(n)%is_two_sided        
+         E_eff = 0.0
+         ! two_sided = this%conformal_fields%edges(n)%is_two_sided        
          c = this%conformal_fields%edges(n)%cell
          i = c(1); j = c(2); k = c(3)
          select case (this%conformal_fields%edges(n)%direction)
@@ -2532,7 +2535,7 @@ contains
             H2 => this%conformal_fields%edges(n)%region_I_fields%H2
             H3 => this%conformal_fields%edges(n)%region_I_fields%H3
             H4 => this%conformal_fields%edges(n)%region_I_fields%H4
-            E = this%g%g1(med)*E + this%g%g2(med)*((H2 - H4)*id2 - (H3-H1)*id1)
+            E = this%g%g1(med)*E + this%g%g2(med)*((H1 - H3)*id2 - (H4-H2)*id1)
 
             E_eff = E
             ! if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_CONFORMAL) then 
@@ -2745,8 +2748,7 @@ contains
                               this%conformal_fields%faces, &
                               this%conformal_fields%edges)
 
-      call addAdditionalConformalFeatures(conformal_maps%face_map, & 
-                                          conformal_maps%edge_map, & 
+      call addAdditionalConformalFeatures(conformal_maps, &
                                           this%conformal_fields%edges)
 
       do i = 1, size(conformal_maps%face_map%keys)
@@ -2760,7 +2762,8 @@ contains
          do j = 1, size(edges_on_face)
 
             edge => conformal_maps%edge_map%getEdge(edges_on_face(j)%key)
-            if (edge%ratio == 0.0 .or. edge%ratio == 1.0) then 
+            if (.not. edge%is_two_sided) then 
+            ! if (edge%ratio == 0.0 .or. edge%ratio == 1.0) then 
                cell = edges_on_face(j)%key(1:3)
                call assignEdgeFieldsOnFace(this%Ex, this%Ey, this%Ez, face, j, cell)
             else
@@ -2785,7 +2788,9 @@ contains
 
    logical function isConformalSurface(medium)
       type(MediaData_t), intent(in) :: medium
-      isConformalSurface = (medium%Is%ConformalPEC .or. medium%Is%ConformalSGBC) .and. medium%Is%Surface
+      isConformalSurface = (medium%Is%ConformalPEC .or. medium%Is%ConformalSGBC) .and. & 
+                           medium%Is%Surface .and. &
+                           .not. medium%is%pml
    end function
 
    subroutine initializeConformalSurfaceStates(this)
