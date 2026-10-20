@@ -95,10 +95,10 @@ contains
       this%tagNumber = 0_IKINDMTAG
       this%mediaType = -1.0_RKIND
       call store_classification(this, problemInfo)
-      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIME)
-      call alloc_and_init(this%xValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
-      call alloc_and_init(this%yValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
-      call alloc_and_init(this%zValueForTime, OUTPUT_TIME_BUFFER_SIZE, this%nPoints, 0.0_RKIND)
+      call alloc_and_init(this%timeStep, time_buffer_capacity(this%domain), 0.0_RKIND_TIME)
+      call alloc_and_init(this%xValueForTime, time_buffer_capacity(this%domain), this%nPoints, 0.0_RKIND)
+      call alloc_and_init(this%yValueForTime, time_buffer_capacity(this%domain), this%nPoints, 0.0_RKIND)
+      call alloc_and_init(this%zValueForTime, time_buffer_capacity(this%domain), this%nPoints, 0.0_RKIND)
 
        if (publication%local_is_owner) then
           call create_folder(this%path, error)

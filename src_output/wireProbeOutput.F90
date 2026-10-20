@@ -65,7 +65,8 @@ contains
       call find_current_segment(this, node, field, media, wiresflavor)
       this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
 
-      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIME)
+      call alloc_and_init(this%timeStep, time_buffer_capacity(this%domain), 0.0_RKIND_TIME)
+      allocate (this%currentValues(time_buffer_capacity(this%domain)))
       artifact_paths(1) = trim(this%path)//'_'//TIMEEXTENSION//DATFILEEXTENSION
       artifact_kinds = OUTPUT_ARTIFACT_TEXT
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
@@ -93,8 +94,8 @@ contains
       call find_charge_segment(this, node, field, wiresflavor)
       this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
 
-      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIME)
-      call alloc_and_init(this%chargeValue, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND)
+      call alloc_and_init(this%timeStep, time_buffer_capacity(this%domain), 0.0_RKIND_TIME)
+      call alloc_and_init(this%chargeValue, time_buffer_capacity(this%domain), 0.0_RKIND)
       artifact_paths(1) = trim(this%path)//'_'//TIMEEXTENSION//DATFILEEXTENSION
       artifact_kinds = OUTPUT_ARTIFACT_TEXT
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)

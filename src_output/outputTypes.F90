@@ -265,7 +265,7 @@ module outputTypes_m
 
    type, extends(abstract_time_probe_t) :: wire_current_probe_output_t
       integer(kind=SINGLE) :: signValue = +1
-      type(current_values_t) :: currentValues(OUTPUT_TIME_BUFFER_SIZE)
+      type(current_values_t), allocatable :: currentValues(:)
       type(CurrentSegments_t), pointer :: segment
       type(output_artifact_t) :: artifacts(1)
 #ifdef CompileWithBerengerWires
@@ -365,6 +365,13 @@ module outputTypes_m
    end type problem_info_t
 
 contains
+
+   ! Outputs flush every OUTPUT_TIME_BUFFER_SIZE steps, so a probe sampling every tstride steps
+   ! stores at most ceil(OUTPUT_TIME_BUFFER_SIZE/tstride) samples between flushes.
+   pure integer function time_buffer_capacity(domain)
+      type(domain_t), intent(in) :: domain
+      time_buffer_capacity = (OUTPUT_TIME_BUFFER_SIZE + max(1, domain%tstride) - 1)/max(1, domain%tstride)
+   end function time_buffer_capacity
 
    pure integer function binary_numeric_representation_for_bytes(component_bytes)
       integer, intent(in) :: component_bytes(:)

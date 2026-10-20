@@ -870,6 +870,18 @@ integer function test_update_time_probe_ranges() bind(c) result(err)
    test_err = test_err + assert_integer_equal(outputs(LINE_OUTPUT)%outputID, LINE_PROBE_ID, &
                                                'Unexpected line output id')
 
+   ! tstep = 2*dt, so buffers only need ceil(OUTPUT_TIME_BUFFER_SIZE/2) samples between flushes.
+   test_err = test_err + assert_integer_equal(size(outputs(CURRENT_OUTPUT)%wireCurrentProbe%timeStep), 64, &
+                                               'Wire-current buffer not sized to its sampling stride')
+   test_err = test_err + assert_integer_equal(size(outputs(CURRENT_OUTPUT)%wireCurrentProbe%currentValues), 64, &
+                                               'Wire-current values not sized to its sampling stride')
+   test_err = test_err + assert_integer_equal(size(outputs(CHARGE_OUTPUT)%wireChargeProbe%chargeValue), 64, &
+                                               'Wire-charge buffer not sized to its sampling stride')
+   test_err = test_err + assert_integer_equal(size(outputs(BULK_OUTPUT)%bulkCurrentProbe%valueForTime), 64, &
+                                               'Bulk buffer not sized to its sampling stride')
+   test_err = test_err + assert_integer_equal(size(outputs(LINE_OUTPUT)%lineProbe%valueForTime), 64, &
+                                               'Line buffer not sized to its sampling stride')
+
    test_err = test_err + assert_integer_equal(outputs(CURRENT_OUTPUT)%wireCurrentProbe%nTime, 2, &
                                                'Wire-current probe ignored its time range')
    test_err = test_err + assert_integer_equal(outputs(CHARGE_OUTPUT)%wireChargeProbe%nTime, 2, &
@@ -1044,6 +1056,7 @@ integer function test_flush_wire_probe_dat() bind(c) result(err)
    allocate (current_probe%timeStep(1))
    current_probe%nTime = 1
    current_probe%timeStep(1) = 1.0_RKIND_TIME
+   allocate (current_probe%currentValues(1))
    current_probe%currentValues(1)%current = 2.0_RKIND
    call create_file_with_path(current_probe%filePathTime, ios)
    call flush_wire_current_probe_output(current_probe)
@@ -1327,8 +1340,8 @@ integer function test_init_movie_probe() bind(c) result(err)
 
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, MOVIE_PROBE_ID, 'Unexpected probe id')
    test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nPoints, expectedNumMeasurments, 'Unexpected number of measurements')
-   test_err = test_err + assert_integer_equal(size(outputs(1)%movieProbe%xValueForTime), expectedNumMeasurments*OUTPUT_TIME_BUFFER_SIZE, 'Unexpected allocation size')
-   test_err = test_err + assert_integer_equal(size(outputs(1)%movieProbe%timeStep), OUTPUT_TIME_BUFFER_SIZE, 'Unexpected timestep buffer size')
+   test_err = test_err + assert_integer_equal(size(outputs(1)%movieProbe%xValueForTime), expectedNumMeasurments*time_buffer_capacity(outputs(1)%movieProbe%domain), 'Unexpected allocation size')
+   test_err = test_err + assert_integer_equal(size(outputs(1)%movieProbe%timeStep), time_buffer_capacity(outputs(1)%movieProbe%domain), 'Unexpected timestep buffer size')
 
    expectedProbePath = trim(nInput)//WORDSEPARATION//'movieProbe_BC_2_2_2__5_5_5'
    test_err = test_err + assert_string_equal(outputs(1)%movieProbe%path, expectedProbePath, 'Unexpected path')
@@ -1511,7 +1524,9 @@ integer function test_update_movie_probe() bind(c) result(err)
                                             errormessage='Stored a non-surface Z current component')
 
    test_err = test_err + assert_integer_equal( &
-              size(outputs(1)%movieProbe%timeStep), OUTPUT_TIME_BUFFER_SIZE, 'Unexpected timestep buffer size')
+              size(outputs(1)%movieProbe%timeStep), 64, 'Movie buffer not sized to its sampling stride')
+   test_err = test_err + assert_integer_equal( &
+              size(outputs(1)%movieProbe%yValueForTime, 1), 64, 'Movie value buffer not sized to its sampling stride')
    test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nTime, 1, 'Movie update did not buffer a timestep')
    test_err = test_err + assert_true(outputs(1)%movieProbe%timeStep(1) == dummysgg%time(3), &
                                       'Movie update stored an incorrect timestep')
@@ -2097,4 +2112,22 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    call remove_folder(testPath, ios)
 
    err = test_err
+end function
+
+integer function test_time_buffer_capacity() bind(c) result(err)
+   ! Verifies time buffers hold exactly the samples a probe can take between flushes.
+   use outputTypes_m, only: domain_t, time_buffer_capacity
+   use assertionTools_m, only: assert_integer_equal
+   implicit none
+
+   type(domain_t) :: domain
+   integer :: i
+   integer, parameter :: strides(5) = [1, 3, 10, 128, 200]
+   integer, parameter :: expected(5) = [128, 43, 13, 1, 1]
+
+   err = 0
+   do i = 1, size(strides)
+      domain%tstride = strides(i)
+      err = err + assert_integer_equal(time_buffer_capacity(domain), expected(i), 'Unexpected time buffer capacity')
+   end do
 end function
