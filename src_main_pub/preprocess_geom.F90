@@ -151,7 +151,7 @@ contains
      allocate(sgg%EShared%elem(1:sgg%EShared%MaxConta))
 
 
-      call buildConformalMedia(this%conformalRegs, conformal_volumes, conformal_surfaces, conformal_sgbc_surfaces)
+      call buildConformalMedia(this%conformalRegs, conformal_volumes, conformal_surfaces, conformal_sgbc_surfaces, sgg%alloc)
       sgg%dt = changeTimeStepIfConformalNeeded(sgg%dt)
       if (associated(this%conformalRegs%volumes)) then
          volume_side_maps = buildSideMaps(this%conformalRegs%volumes)
@@ -2530,7 +2530,8 @@ contains
 
       do j = 1, ubound(conformal_volumes,1)
 
-         call addConformalMedia(sgg, media, conformal_volumes(j), edge_ratios, face_ratios, contamedia, conf_bounding_box, volume_side_maps(j), isVolume)
+         call addConformalMedia(sgg, media, conformal_volumes(j), edge_ratios, face_ratios, contamedia, volume_side_maps(j), isVolume)
+         ! call addConformalMedia(sgg, media, conformal_volumes(j), edge_ratios, face_ratios, contamedia, conf_bounding_box, volume_side_maps(j), isVolume)
          numertag = searchtag(tagtype,conformal_volumes(j)%tag)
          call CreateConformalPECVolume (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
             & media%sggMiHx, media%sggMiHy, media%sggMiHz,  Alloc_iEx_XI, &
@@ -2538,7 +2539,7 @@ contains
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
             & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
-            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, conf_bounding_box, 0)
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, conformal_volumes(j)%bbox, 0)
 
       end do
 
@@ -2549,7 +2550,8 @@ contains
       end if
 
       do j = 1, ubound(conformal_surfaces,1)
-         call addConformalMedia(sgg, media, conformal_surfaces(j), edge_ratios, face_ratios, contamedia, conf_bounding_box, surface_side_maps(j), isSurface)
+         call addConformalMedia(sgg, media, conformal_surfaces(j), edge_ratios, face_ratios, contamedia, surface_side_maps(j), isSurface)
+         ! call addConformalMedia(sgg, media, conformal_surfaces(j), edge_ratios, face_ratios, contamedia, conf_bounding_box, surface_side_maps(j), isSurface)
       end do
 
       if (ubound(conformal_surfaces, 1) > 0) then
@@ -2563,7 +2565,9 @@ contains
          do j = 1, size(conformal_sgbc_surfaces)
             sgg%ConformalSGBCProfiles(j) = conformal_sgbc_surfaces(j)%sgbc_profile
             call addConformalMedia(sgg, media, conformal_sgbc_surfaces(j), sgbc_edge_ratios, &
-               sgbc_face_ratios, contamedia, conf_bounding_box, sgbc_side_maps(j), isSurface, .true., j)
+               sgbc_face_ratios, contamedia, sgbc_side_maps(j), isSurface, .true., j)
+            ! call addConformalMedia(sgg, media, conformal_sgbc_surfaces(j), sgbc_edge_ratios, &
+            !    sgbc_face_ratios, contamedia, conf_bounding_box, sgbc_side_maps(j), isSurface, .true., j)
          end do
          contamedia = contamedia + ubound(sgbc_edge_ratios,1) + ubound(sgbc_face_ratios,1)
          if (findloc(sgbc_edge_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
@@ -3744,9 +3748,9 @@ contains
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%XI = gridPoint%XI
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%YI = gridPoint%YI
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = gridPoint%ZI
-                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then 
+                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = IJX
-                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then 
+                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = IQX
                                  end if
 
@@ -3758,9 +3762,9 @@ contains
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%XI = gridPoint%XI
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%YI = gridPoint%YI
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = gridPoint%ZI
-                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then 
+                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = IJY
-                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then 
+                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = IQY
                                  end if
                                case (IEZ)
@@ -3769,9 +3773,9 @@ contains
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%XI = gridPoint%XI
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%YI = gridPoint%YI
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = gridPoint%ZI
-                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then 
+                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = IJZ
-                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then 
+                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = IQZ
                                  end if
                               end select
@@ -3796,9 +3800,9 @@ contains
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%XI = floor(this%swires%SW(j1)%SWC(i1)%x)
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%YI = floor(this%swires%SW(j1)%SWC(i1)%y)
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = floor(this%swires%SW(j1)%SWC(i1)%z)
-                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then 
+                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = IJX
-                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then 
+                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then
                                     sgg%observation(i)%P(sgg%observation(i)%nP)%What = IQX
                                  end if
                                  exit do_loop_busqueda3
@@ -3807,7 +3811,7 @@ contains
                         end do
                      end do do_loop_busqueda3
                   end if
-               else if (abs(this%Sonda%collection(i)%cordinates(j)%or) == NP_COR_LINE) then 
+               else if (abs(this%Sonda%collection(i)%cordinates(j)%or) == NP_COR_LINE) then
                   block
                      integer(kind=4) :: line_size, obs_size, idx
                      !intrinsic num_procs function coopted by num_procs global variable...
@@ -4746,38 +4750,6 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      function computeConformalTimeFactor(volumes, surfaces, sgbc_surfaces) result(res)
-         type(ConformalMedia_t), dimension(:), allocatable, intent(in) :: volumes, surfaces, sgbc_surfaces
-         real(kind=rkind) :: res
-         integer :: i
-         res = 1.0_RKIND
-         do i = 1, ubound(volumes, 1)
-            res = min(res, volumes(i)%time_step_scale_factor)
-         end do
-         do i = 1, ubound(surfaces, 1)
-            res = min(res, surfaces(i)%time_step_scale_factor)
-         end do
-         do i = 1, ubound(sgbc_surfaces, 1)
-            res = min(res, sgbc_surfaces(i)%time_step_scale_factor)
-         end do
-      end function computeConformalTimeFactor
-
-      function changeTimeStepIfConformalNeeded(sgg_dt) result(res)
-         real(kind=RKIND_tiempo), intent(in) :: sgg_dt
-         real(kind=RKIND_tiempo) :: res, yee_dt, time_scale_factor
-         time_scale_factor = computeConformalTimeFactor(conformal_volumes, conformal_surfaces, conformal_sgbc_surfaces)
-         yee_dt = (1.0_RKIND/(cluz*sqrt(((1.0_RKIND / minval(sgg%DX))**2.0_RKIND) + &
-                  ((1.0_RKIND / minval(sgg%DY))**2.0_RKIND) + &
-                  ((1.0_RKIND / minval(sgg%DZ))**2.0_RKIND))))
-         res = sgg_dt
-         if (sgg_dt > yee_dt*time_scale_factor) then
-            write(*,*) '-- Conformal geometry requires a time step change'
-            write(*,*) 'Previous time step: ', sgg_dt
-            res = yee_dt*time_scale_factor
-            write(*,*) 'New time step: ', res
-         end if
-      end function changeTimeStepIfConformalNeeded
-
       ! The normal per-cell stamping represents an embedded straight linel with
       ! one E edge and one H face. A terminal-to-terminal corner needs its
       ! outer H face. At every directed turn, the E edges around the local
@@ -5389,16 +5361,48 @@ contains
             kk >= Alloc_iHz_ZI .and. kk <= Alloc_iHz_ZE
       end function
 
-      subroutine initConformalBoundingBox(sgg, bbox)
-         type(SGGFDTDINFO_t), intent(in) :: sgg
-         type(XYZlimit_t), intent(inout) :: bbox
-         bbox%XI = -sgg%Alloc(IHX)%XI
-         bbox%XE = -sgg%Alloc(IHX)%XE
-         bbox%YI = -sgg%Alloc(IHY)%YI
-         bbox%YE = -sgg%Alloc(IHY)%YE
-         bbox%ZI = -sgg%Alloc(IHZ)%ZI
-         bbox%ZE = -sgg%Alloc(IHZ)%ZE
-      end subroutine
+      function computeConformalTimeFactor(volumes, surfaces, sgbc_surfaces) result(res)
+         type(ConformalMedia_t), dimension(:), allocatable, intent(in) :: volumes, surfaces, sgbc_surfaces
+         real(kind=rkind) :: res
+         integer :: i
+         res = 1.0_RKIND
+         do i = 1, ubound(volumes, 1)
+            res = min(res, volumes(i)%time_step_scale_factor)
+         end do
+         do i = 1, ubound(surfaces, 1)
+            res = min(res, surfaces(i)%time_step_scale_factor)
+         end do
+         do i = 1, ubound(sgbc_surfaces, 1)
+            res = min(res, sgbc_surfaces(i)%time_step_scale_factor)
+         end do
+      end function computeConformalTimeFactor
+
+      function changeTimeStepIfConformalNeeded(sgg_dt) result(res)
+         real(kind=RKIND_TIME), intent(in) :: sgg_dt
+         real(kind=RKIND_TIME) :: res, yee_dt, time_scale_factor
+         time_scale_factor = computeConformalTimeFactor(conformal_volumes, conformal_surfaces, conformal_sgbc_surfaces)
+         yee_dt = (1.0_RKIND/(cluz*sqrt(((1.0_RKIND / minval(sgg%DX))**2.0_RKIND) + &
+                  ((1.0_RKIND / minval(sgg%DY))**2.0_RKIND) + &
+                  ((1.0_RKIND / minval(sgg%DZ))**2.0_RKIND))))
+         res = sgg_dt
+         if (sgg_dt > yee_dt*time_scale_factor) then
+            write(*,*) '-- Conformal geometry requires a time step change'
+            write(*,*) 'Previous time step: ', sgg_dt
+            res = yee_dt*time_scale_factor
+            write(*,*) 'New time step: ', res
+         end if
+      end function changeTimeStepIfConformalNeeded
+
+      ! subroutine initConformalBoundingBox(sgg, bbox)
+      !    type(SGGFDTDINFO_t), intent(in) :: sgg
+      !    type(XYZlimit_t), intent(inout) :: bbox
+      !    bbox%XI = -sgg%Alloc(IHX)%XI
+      !    bbox%XE = -sgg%Alloc(IHX)%XE
+      !    bbox%YI = -sgg%Alloc(IHY)%YI
+      !    bbox%YE = -sgg%Alloc(IHY)%YE
+      !    bbox%ZI = -sgg%Alloc(IHZ)%ZI
+      !    bbox%ZE = -sgg%Alloc(IHZ)%ZE
+      ! end subroutine
 
       subroutine getDifferentEdgeRatios(ratios, conformal_media)
          real(kind=rkind), dimension(:), allocatable, intent(inout) :: ratios
@@ -5469,8 +5473,10 @@ contains
          end do
       end subroutine getDifferentFaceRatios
 
-      subroutine addConformalMedia(sgg, media, conformal_media, edge_ratios, face_ratios, contamedia, bbox, side_map, type, &
+      subroutine addConformalMedia(sgg, media, conformal_media, edge_ratios, face_ratios, contamedia, side_map, type, &
                                    is_sgbc, profile_index)
+      ! subroutine addConformalMedia(sgg, media, conformal_media, edge_ratios, face_ratios, contamedia, bbox, side_map, type, &
+      !                              is_sgbc, profile_index)
          type(SGGFDTDINFO_t), intent(inout) :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
@@ -5478,7 +5484,7 @@ contains
          real(kind=rkind), dimension(:), allocatable :: edge_ratios_no_zero, face_ratios_no_zero
          integer(kind=4), intent(in) :: contamedia
          integer(kind=4) :: num_media
-         type(XYZlimit_t), intent(inout) :: bbox
+         ! type(XYZlimit_t), intent(inout) :: bbox
          type(side_tris_map_t), intent(in) :: side_map
          integer(kind=4), intent(in) :: type
          logical, optional, intent(in) :: is_sgbc
@@ -5490,7 +5496,7 @@ contains
          if (present(is_sgbc)) sgbc_behavior = is_sgbc
          sgbc_profile_index = 0
          if (present(profile_index)) sgbc_profile_index = profile_index
-         call initConformalBoundingBox(sgg,bbox)
+         ! call initConformalBoundingBox(sgg,bbox)
 
          if (findloc(edge_ratios, 0.0, 1) /= 0) then
             allocate(edge_ratios_no_zero(ubound(edge_ratios,1) - 1))
@@ -5518,16 +5524,21 @@ contains
             face_ratios_no_zero = face_ratios
          end if
          num_media = contamedia
-         call addConformalEdgeMedia(sgg, media, conformal_media, num_media, edge_ratios_no_zero, bbox, type, sgbc_behavior)
+         call addConformalEdgeMedia(sgg, media, conformal_media, num_media, edge_ratios_no_zero, type, sgbc_behavior)
+         ! call addConformalEdgeMedia(sgg, media, conformal_media, num_media, edge_ratios_no_zero, bbox, type, sgbc_behavior)
          num_media = contamedia + ubound(edge_ratios_no_zero,1)
-         call addConformalFaceMedia(sgg, media, conformal_media, num_media, face_ratios_no_zero, bbox, type, &
+         call addConformalFaceMedia(sgg, media, conformal_media, num_media, face_ratios_no_zero, type, &
                                     sgbc_behavior, sgbc_profile_index)
+         ! call addConformalFaceMedia(sgg, media, conformal_media, num_media, face_ratios_no_zero, bbox, type, &
+         !                            sgbc_behavior, sgbc_profile_index)
          if (type == isVolume) then
-            call addUndetectedBorderFaces(sgg, media, conformal_media, num_media, edge_ratios_no_zero, bbox, side_map)
+            call addUndetectedBorderFaces(sgg, media, conformal_media, num_media, edge_ratios_no_zero, side_map)
+            ! call addUndetectedBorderFaces(sgg, media, conformal_media, num_media, edge_ratios_no_zero, bbox, side_map)
          end if
       end subroutine
 
-      subroutine addConformalFaceMedia(sgg, media, conformal_media, num_media, face_ratios, bbox, type, is_sgbc, profile_index)
+      subroutine addConformalFaceMedia(sgg, media, conformal_media, num_media, face_ratios, type, is_sgbc, profile_index)
+      ! subroutine addConformalFaceMedia(sgg, media, conformal_media, num_media, face_ratios, bbox, type, is_sgbc, profile_index)
          type(SGGFDTDINFO_t), intent(INOUT) :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
@@ -5538,7 +5549,7 @@ contains
          integer(kind=4) :: cell(3)
          integer(kind=4) :: previous_faces
          type(face_t), dimension(:), allocatable :: combined_faces
-         type(XYZlimit_t), intent(inout) :: bbox
+         ! type(XYZlimit_t), intent(inout) :: bbox
          integer(kind=4), intent(in) :: type
          logical, intent(in) :: is_sgbc
          integer(kind=4), intent(in) :: profile_index
@@ -5600,12 +5611,12 @@ contains
                ! PEC/SGBC junction and, importantly, avoids creating an SGBC
                ! state that is not connected to the selected Yee face.
                if (sgg%Med(existing_face_media)%Priority > sgg%Med(face_media)%Priority) cycle
-               if (cell(1) < bbox%xi) bbox%xi = cell(1)
-               if (cell(1) > bbox%xe) bbox%xe = cell(1)
-               if (cell(2) < bbox%yi) bbox%yi = cell(2)
-               if (cell(2) > bbox%ye) bbox%ye = cell(2)
-               if (cell(3) < bbox%zi) bbox%zi = cell(3)
-               if (cell(3) > bbox%ze) bbox%ze = cell(3)
+               ! if (cell(1) < bbox%xi) bbox%xi = cell(1)
+               ! if (cell(1) > bbox%xe) bbox%xe = cell(1)
+               ! if (cell(2) < bbox%yi) bbox%yi = cell(2)
+               ! if (cell(2) > bbox%ye) bbox%ye = cell(2)
+               ! if (cell(3) < bbox%zi) bbox%zi = cell(3)
+               ! if (cell(3) > bbox%ze) bbox%ze = cell(3)
 
                select case(conformal_media%face_media(j)%faces(k)%direction)
                case(F_X)
@@ -5636,7 +5647,8 @@ contains
          res = res/ubound(triangles,1)
       end function
 
-      subroutine addConformalEdgeMedia(sgg, media, conformal_media, num_media, edge_ratios, bbox, type, is_sgbc)
+      subroutine addConformalEdgeMedia(sgg, media, conformal_media, num_media, edge_ratios, type, is_sgbc)
+      ! subroutine addConformalEdgeMedia(sgg, media, conformal_media, num_media, edge_ratios, bbox, type, is_sgbc)
          type(SGGFDTDINFO_t), intent(INOUT) :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
@@ -5647,7 +5659,7 @@ contains
          integer(kind=4) :: cell(3)
          integer(kind=4) :: previous_edges
          type(edge_t), dimension(:), allocatable :: combined_edges
-         type(XYZlimit_t), intent(inout) :: bbox
+         ! type(XYZlimit_t), intent(inout) :: bbox
          integer(kind=4), intent(in) :: type
          logical, intent(in) :: is_sgbc
          integer :: j, k
@@ -5691,12 +5703,12 @@ contains
             do k = 1, conformal_media%edge_media(j)%size
                cell(:) = conformal_media%edge_media(j)%edges(k)%cell(:)
 
-               if (cell(1) < bbox%xi) bbox%xi = cell(1)
-               if (cell(1) > bbox%xe) bbox%xe = cell(1)
-               if (cell(2) < bbox%yi) bbox%yi = cell(2)
-               if (cell(2) > bbox%ye) bbox%ye = cell(2)
-               if (cell(3) < bbox%zi) bbox%zi = cell(3)
-               if (cell(3) > bbox%ze) bbox%ze = cell(3)
+               ! if (cell(1) < bbox%xi) bbox%xi = cell(1)
+               ! if (cell(1) > bbox%xe) bbox%xe = cell(1)
+               ! if (cell(2) < bbox%yi) bbox%yi = cell(2)
+               ! if (cell(2) > bbox%ye) bbox%ye = cell(2)
+               ! if (cell(3) < bbox%zi) bbox%zi = cell(3)
+               ! if (cell(3) > bbox%ze) bbox%ze = cell(3)
 
                select case(conformal_media%edge_media(j)%edges(k)%direction)
                case(E_X)
@@ -5712,7 +5724,8 @@ contains
          end do
       end subroutine
 
-      subroutine addUndetectedBorderFaces(sgg, media, conformal_media, num_media, edge_ratios, bbox, side_map)
+      subroutine addUndetectedBorderFaces(sgg, media, conformal_media, num_media, edge_ratios, side_map)
+      ! subroutine addUndetectedBorderFaces(sgg, media, conformal_media, num_media, edge_ratios, bbox, side_map)
          type(SGGFDTDINFO_t), intent(inout) :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
@@ -5721,7 +5734,7 @@ contains
          real(kind=rkind), dimension(:), allocatable, intent(in) :: edge_ratios
          integer(kind=4) :: edge_media
          integer(kind=4) :: cell(3)
-         type(XYZlimit_t), intent(inout) :: bbox
+         ! type(XYZlimit_t), intent(inout) :: bbox
          type(side_tris_map_t), intent(in) :: side_map
          type(triangle_t), dimension(:), allocatable :: tris
          integer(kind=4), dimension(4) :: key

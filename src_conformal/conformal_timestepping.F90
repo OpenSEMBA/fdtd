@@ -103,6 +103,8 @@ contains
                         
                         allocate(new_edge%region_I_fields%E)
                         new_edge%region_I_fields%E = 0.0
+                        ! allocate(new_edge%region_II_fields%E)
+                        ! new_edge%region_II_fields%E = 0.0
                         ! new_edge%region_II_fields%E => null()
 
                     else if (isInRegionII(face, edges_on_face(j))) then 
@@ -113,13 +115,12 @@ contains
                             material_coords = [0.0,1.0],&
                             edge_region= EDGE_REGION_II)
                         ! new_edge%region_II_fields%E => null()
+                        ! allocate(new_edge%region_I_fields%E)
+                        ! new_edge%region_I_fields%E = 0.0
                         allocate(new_edge%region_II_fields%E)
                         new_edge%region_II_fields%E = 0.0
                     end if                
                     call addNewEdge(new_edge, aux_edge_map, conformal_edges, prev_size + additional_edges)
-                !     edge => new_edge
-                ! else
-                !     edge=> edge_map%getEdge(edges_on_face(j)%key)
                 end if
             end do
         end do
@@ -518,7 +519,7 @@ contains
         if (stat == 0) edge_hasKey = .true.
     end function
 
-   subroutine addConformalFaces(faces, media_faces)
+    subroutine addConformalFaces(faces, media_faces)
         type(face_t), dimension(:), allocatable, intent(inout) :: faces
         type(face_t), dimension(:), allocatable, intent(in) :: media_faces
         type(face_t), dimension(:), allocatable :: aux_faces
@@ -543,9 +544,9 @@ contains
         deallocate(faces)
         allocate(faces(size(aux_faces)))
         faces = aux_faces
-   end subroutine
+    end subroutine
 
-   subroutine addConformalEdges(edges, media_edges)
+    subroutine addConformalEdges(edges, media_edges)
         type(edge_t), dimension(:), allocatable, intent(inout) :: edges
         type(edge_t), dimension(:), allocatable, intent(in) :: media_edges
         type(edge_t), dimension(:), allocatable :: aux_edges
@@ -555,13 +556,13 @@ contains
         if (size(media_edges) == 0) return
         n = 0
         do i = 1, size(media_edges) 
-            if (media_edges(i)%ratio /= 0) n = n + 1
+            if (media_edges(i)%ratio /= 0 .and. media_edges(i)%is_two_sided) n = n + 1
         end do
         allocate(aux_edges(size(edges) + n))
         aux_edges(1:size(edges)) = edges
         n = 0
         do i = 1, size(media_edges)
-            if (media_edges(i)%ratio /= 0) then 
+            if (media_edges(i)%ratio /= 0 .and. media_edges(i)%is_two_sided) then 
                 n = n + 1
                 aux_edges(size(edges) + n) = media_edges(i)
             end if
@@ -569,13 +570,28 @@ contains
         deallocate(edges)
         allocate(edges(size(aux_edges)))
         edges = aux_edges
-   end subroutine
+    end subroutine
 
     subroutine edge_allocateEdges(this, buck)
-      class(edge_map_t) :: this
-      integer :: buck
-      call this%allocate(buck)
-   end subroutine
+        class(edge_map_t) :: this
+        integer :: buck
+        call this%allocate(buck)
+    end subroutine
+
+    function computeEdgeRegionIICorrection(edge)
+        type(edge_t), intent(in) :: edge
+        real(kind=rkind) :: res
+        res = 1.0
+        if (edge%edge_region == EDGE_REGION_CONFORMAL) then 
+            res = (1.0-edge%ratio)/edge%ratio
+        end if
+    end function
+
+    function computeFaceRegionIICorrection(face)
+        type(face_t), intent(in) :: face
+        real(kind=rkind) :: res
+        res = face%ratio/(1.0-face%ratio)
+    end function
 
 
 end module

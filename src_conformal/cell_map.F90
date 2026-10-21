@@ -1,6 +1,6 @@
 module cell_map_m
 
-    use geometry_m, only: triangle_t, side_t, interval_t, map_key_t, FACE_X, FACE_Y, FACE_Z, EDGE_X, EDGE_Y, EDGE_Z, isNewSide
+    use geometry_m, only: triangle_t, side_t, interval_t, map_key_t, FACE_X, FACE_Y, FACE_Z, EDGE_X, EDGE_Y, EDGE_Z, isNewSide, coord_t, point_t
     use fhash, only: fhash_tbl_t, key=>fhash_key
     use NFDETypes_m, only: rkind, ConformalPECElements_t
     use FDETypes_m, only: face_t, edge_t
@@ -15,7 +15,7 @@ module cell_map_m
         type(triangle_t), dimension(:), allocatable :: triangles ! triangles on faces
         type(side_t), dimension(:), allocatable :: sides ! sides from triangles off faces
         type(side_t), dimension(:), allocatable :: sides_on  ! sides from triangles on faces
-        ! type(interval_t), dimension(:), allocatable :: intervals
+        type(interval_t), dimension(:), allocatable :: intervals
     end type
 
     type :: cell_t
@@ -43,7 +43,7 @@ module cell_map_m
         procedure :: getTrianglesInCell
         procedure :: getSidesInCell
         procedure :: getOnSidesInCell
-        ! procedure :: getIntervalsInCell
+        procedure :: getIntervalsInCell
     end type
 
     type, extends(cell_map_t) :: triangle_map_t
@@ -51,10 +51,10 @@ module cell_map_m
         procedure :: addTriangle
     end type
 
-    ! type, extends(cell_map_t) :: interval_map_t
-    ! contains
-    !     procedure :: addInterval
-    ! end type
+    type, extends(cell_map_t) :: interval_map_t
+    contains
+        procedure :: addInterval
+    end type
 
     type, extends(cell_map_t) :: side_map_t
     contains
@@ -80,13 +80,15 @@ contains
 
 
 
-    subroutine buildSideToTrisMap(res, triangles)
+    subroutine buildSideToTrisMap(res, triangles, intervals)
         type(side_triangle_map_t), intent(inout) :: res
         type(triangle_t), dimension(:), allocatable :: triangles
+        type(triangle_t), dimension(2) :: triangles_from_interval
+        type(interval_t), dimension(:), allocatable :: intervals
         type(side_t), dimension(:), allocatable :: sides
         type(side_t) :: aux_side
 
-        integer :: i, j
+        integer :: i, j, t
         if (.not. allocated(res%keys)) allocate(res%keys(0))
         do i = 1, size(triangles)
             sides = triangles(i)%getSides()
@@ -96,7 +98,68 @@ contains
                 end if
             end do
         end do
+        do i = 1, size(intervals)
+            triangles_from_interval = getTrisFromInterval(intervals(i))
+            do t = 1, 2
+                sides = triangles_from_interval(t)%getSides()
+                do j = 1, 3
+                    if (sides(j)%isOnAnyEdge()) then 
+                        call res%addTriangleToSide(sides(j), triangles_from_interval(t))
+                    end if
+                end do
+            end do
+        end do
     end subroutine
+
+    function getTrisFromInterval(interval) result(res)
+        type(interval_t), intent(in) :: interval
+        type(triangle_t), dimension(2) :: res
+        integer :: delta(3), lower(3), c(4,3), tmp(3)
+        integer :: face
+
+        delta = interval%endNode%cell - interval%startNode%cell
+
+        if (.not. (all(delta >= 0) .or. all(delta <= 0))) then
+            error stop 'getTrisFromInterval: interval must be uniformly oriented'
+        end if
+
+        face = minloc(abs(interval%endNode%cell - interval%startNode%cell), dim=1)
+        lower = min(interval%startNode%cell, interval%endNode%cell)
+
+        select case (face)
+        case (FACE_X)
+            c(1,1:3) = lower(1:3)
+            c(2,1:3) = lower(1:3) + [0, 1, 0]
+            c(3,1:3) = lower(1:3) + [0, 1, 1]
+            c(4,1:3) = lower(1:3) + [0, 0, 1]
+        case (FACE_Y)
+            c(1,1:3) = lower(1:3)
+            c(2,1:3) = lower(1:3) + [0, 0, 1]
+            c(3,1:3) = lower(1:3) + [1, 0, 1]
+            c(4,1:3) = lower(1:3) + [1, 0, 0]
+        case (FACE_Z)
+            c(1,1:3) = lower(1:3)
+            c(2,1:3) = lower(1:3) + [1, 0, 0]
+            c(3,1:3) = lower(1:3) + [1, 1, 0]
+            c(4,1:3) = lower(1:3) + [0, 1, 0]
+        end select
+
+        ! reverse the rectangle winding if the interval is negative
+        if (all(delta <= 0)) then
+            tmp(1:3) = c(2,1:3)
+            c(2,1:3) = c(4,1:3)
+            c(4,1:3) = tmp(1:3)
+        end if
+
+        res(1) = triangle_t(vertices=[coord_t(position=real(c(1,1:3))), &
+                                        coord_t(position=real(c(2,1:3))), &
+                                        coord_t(position=real(c(3,1:3)))])
+        res(2) = triangle_t(vertices=[coord_t(position=real(c(1,1:3))), &
+                                        coord_t(position=real(c(3,1:3))), &
+                                        coord_t(position=real(c(4,1:3)))])
+    end function getTrisFromInterval
+
+
 
     subroutine addTriangleToSide(this, side, triangle)
         class(side_triangle_map_t) :: this
@@ -138,14 +201,15 @@ contains
 
     end subroutine
 
-    subroutine buildSideMap(res, triangles)
+    subroutine buildSideMap(res, triangles, intervals)
         type(side_tris_map_t), intent(inout) :: res
         type(triangle_t), dimension(:), allocatable :: triangles
+        type(interval_t), dimension(:), allocatable :: intervals
         type(side_triangle_map_t) :: tri_map
         type(map_key_t), dimension(:), allocatable :: keys
         type(element_set_t) :: elems
         integer(kind=4) :: i
-        call buildSideToTrisMap(tri_map, triangles)
+        call buildSideToTrisMap(tri_map, triangles, intervals)
         keys = tri_map%keys
         do i = 1, size(keys)
             elems%triangles = tri_map%getTrianglesFromSide(keys(i)%key)
@@ -159,23 +223,23 @@ contains
         type(ConformalPECElements_t), intent(in) :: volume
         integer(kind=4), optional :: body_type
         type(triangle_map_t) :: tri_map
-        ! type(interval_map_t) :: interval_map
+        type(interval_map_t) :: interval_map
         type(side_map_t) :: side_map, side_map_on
         type(cell_t), dimension(:), allocatable :: keys
         type(element_set_t) :: elems
         integer(kind=4) :: i
         call buildMapOfTrisOnFaces(tri_map, volume%triangles)
-        ! call buildMapOfIntervals(interval_map, volume%intervals)
+        call buildMapOfIntervals(interval_map, volume%intervals)
         call buildMapOfSidesOnFaceOrEdgeFromTrisNotOnFaces(side_map, volume%triangles)
         call buildMapOfSidesOnEdgeFromTrisOnFaces(side_map_on, volume%triangles)
         keys = mergeKeys(tri_map%keys, side_map%keys)
         keys = mergeKeys(keys, side_map_on%keys)
-        ! keys = mergeKeys(keys, interval_map%keys)
+        keys = mergeKeys(keys, interval_map%keys)
         do i = 1, size(keys)
             elems%triangles = tri_map%getTrianglesInCell(keys(i)%cell)
             elems%sides = side_map%getSidesInCell(keys(i)%cell)
             elems%sides_on = side_map_on%getOnSidesInCell(keys(i)%cell)
-            ! elems%intervals = interval_map%getIntervalsInCell(keys(i)%cell)
+            elems%intervals = interval_map%getIntervalsInCell(keys(i)%cell)
             call res%set(key(keys(i)%cell), value=elems)
         end do
         res%keys = keys
@@ -235,16 +299,15 @@ contains
         end do
     end subroutine
     
-
-    ! subroutine buildMapOfIntervals(res, intervals)
-    !     type(interval_map_t), intent(inout) :: res
-    !     type(interval_t), dimension(:), allocatable :: intervals
-    !     integer(kind=4) :: i
-    !     if (.not. allocated(res%keys)) allocate(res%keys(0))
-    !     do i = 1, size(intervals)
-    !         call res%addInterval(intervals(i))
-    !     end do
-    ! end subroutine
+    subroutine buildMapOfIntervals(res, intervals)
+        type(interval_map_t), intent(inout) :: res
+        type(interval_t), dimension(:), allocatable :: intervals
+        integer(kind=4) :: i
+        if (.not. allocated(res%keys)) allocate(res%keys(0))
+        do i = 1, size(intervals)
+            call res%addInterval(intervals(i))
+        end do
+    end subroutine
     
 
     subroutine buildMapOfSidesOnFaceOrEdgeFromTrisNotOnFaces(res, triangles)
@@ -350,45 +413,45 @@ contains
 
     end subroutine
 
-    ! subroutine addInterval(this, interval)
-    !     class(interval_map_t) :: this
-    !     type(interval_t) :: interval
-    !     class(*), allocatable :: alloc_list
-    !     type(element_set_t) :: aux_list
-    !     integer(kind=4), dimension(3) :: cell
-    !     type(cell_t), dimension(:), allocatable :: aux_keys
-    !     type(side_t) :: aux
-    !     aux%startNode%position = interval%startNode%cell
-    !     aux%endNode%position = interval%endNode%cell
-    !     cell = aux%getCell()
-    !     if (this%hasKey(cell)) then 
+    subroutine addInterval(this, interval)
+        class(interval_map_t) :: this
+        type(interval_t) :: interval
+        class(*), allocatable :: alloc_list
+        type(element_set_t) :: aux_list
+        integer(kind=4), dimension(3) :: cell
+        type(cell_t), dimension(:), allocatable :: aux_keys
+        type(side_t) :: aux
+        aux%startNode%position = interval%startNode%cell
+        aux%endNode%position = interval%endNode%cell
+        cell = aux%getCell()
+        if (this%hasKey(cell)) then 
 
-    !         call this%get_raw(key(cell), alloc_list)
-    !         select type(alloc_list)
-    !         type is(element_set_t)
-    !             allocate(aux_list%intervals(size(alloc_list%intervals) + 1))
-    !             aux_list%intervals(1:size(alloc_list%intervals)) = alloc_list%intervals
-    !             aux_list%intervals(size(alloc_list%intervals) + 1) = interval
-    !             deallocate(alloc_list%intervals)
-    !             allocate(alloc_list%intervals(size(aux_list%intervals)))
-    !             alloc_list%intervals = aux_list%intervals
-    !             call this%set(key(cell), value = alloc_list)
-    !         end select
+            call this%get_raw(key(cell), alloc_list)
+            select type(alloc_list)
+            type is(element_set_t)
+                allocate(aux_list%intervals(size(alloc_list%intervals) + 1))
+                aux_list%intervals(1:size(alloc_list%intervals)) = alloc_list%intervals
+                aux_list%intervals(size(alloc_list%intervals) + 1) = interval
+                deallocate(alloc_list%intervals)
+                allocate(alloc_list%intervals(size(aux_list%intervals)))
+                alloc_list%intervals = aux_list%intervals
+                call this%set(key(cell), value = alloc_list)
+            end select
 
-    !     else 
-    !         allocate(aux_list%intervals(1))
-    !         aux_list%intervals(1) = interval
-    !         call this%set(key(cell), value = aux_list)
+        else 
+            allocate(aux_list%intervals(1))
+            aux_list%intervals(1) = interval
+            call this%set(key(cell), value = aux_list)
 
-    !         allocate(aux_keys(size(this%keys) + 1))
-    !         aux_keys(1:size(this%keys)) = this%keys
-    !         aux_keys(size(this%keys) + 1)%cell = aux%getCell()
-    !         deallocate(this%keys)
-    !         allocate(this%keys(size(aux_keys)))
-    !         this%keys = aux_keys
-    !     end if
+            allocate(aux_keys(size(this%keys) + 1))
+            aux_keys(1:size(this%keys)) = this%keys
+            aux_keys(size(this%keys) + 1)%cell = aux%getCell()
+            deallocate(this%keys)
+            allocate(this%keys(size(aux_keys)))
+            this%keys = aux_keys
+        end if
 
-    ! end subroutine
+    end subroutine
 
     subroutine addSide(this, side)
         class(side_map_t) :: this
@@ -486,23 +549,23 @@ contains
         end if
     end function
 
-    ! function getIntervalsInCell(this, k) result(res)
-    !     class(cell_map_t) :: this
-    !     integer(kind=4), dimension(3) :: k
-    !     class(*), allocatable :: alloc_list
-    !     type(interval_t), dimension(:), allocatable :: res
+    function getIntervalsInCell(this, k) result(res)
+        class(cell_map_t) :: this
+        integer(kind=4), dimension(3) :: k
+        class(*), allocatable :: alloc_list
+        type(interval_t), dimension(:), allocatable :: res
 
-    !     if (this%hasKey(k)) then 
-    !         call this%get_raw(key(k), alloc_list)
-    !         select type(alloc_list)
-    !         type is(element_set_t)
-    !             allocate(res(size(alloc_list%intervals)))
-    !             res = alloc_list%intervals
-    !         end select
-    !     else
-    !         allocate(res(0))
-    !     end if
-    ! end function
+        if (this%hasKey(k)) then 
+            call this%get_raw(key(k), alloc_list)
+            select type(alloc_list)
+            type is(element_set_t)
+                allocate(res(size(alloc_list%intervals)))
+                res = alloc_list%intervals
+            end select
+        else
+            allocate(res(0))
+        end if
+    end function
 
     function getTrianglesFromSide(this, k) result(res)
         class(side_tris_map_t) :: this

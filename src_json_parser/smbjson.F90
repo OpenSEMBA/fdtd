@@ -358,9 +358,9 @@ contains
          subtype = this%getStrAt(place, J_SUBTYPE)
 
          if (subtype == J_CONF_SUBTYPE_VOLUME) then
-            res%type = REGION_TYPE_VOLUME
+            res%typename = REGION_TYPE_VOLUME
          else if (subtype == J_CONF_SUBTYPE_SURFACE) then
-            res%type = REGION_TYPE_SURFACE
+            res%typename = REGION_TYPE_SURFACE
          else
             call WarnErrReport('Invalid conformal subtype label: ' // subtype // '. Expected "surface" or "volume".', .true.)
             return
@@ -405,8 +405,8 @@ contains
                   return
                end if
                nStructured = nStructured + 1
-               structured(nStructured)%ini%cell = nint(ini(1:3))
-               structured(nStructured)%end%cell = nint(fin(1:3))
+               structured(nStructured)%startNode%cell = nint(ini(1:3))
+               structured(nStructured)%endNode%cell = nint(fin(1:3))
             case (2)
                normal = minloc(abs(delta), 1)
                first = mod(normal, 3) + 1
@@ -421,8 +421,8 @@ contains
                      return
                   end if
                   nStructured = nStructured + 1
-                  structured(nStructured)%ini%cell = nint(ini(1:3))
-                  structured(nStructured)%end%cell = nint(fin(1:3))
+                  structured(nStructured)%startNode%cell = nint(ini(1:3))
+                  structured(nStructured)%endNode%cell = nint(fin(1:3))
                else
                   if (abs(fin(normal)-ini(normal)) > 1.0e-5 .or. &
                       abs(ini(first)-anint(ini(first))) >= 1.0e-5 .or. &
@@ -799,7 +799,7 @@ contains
             if (found) then
                if (size(cR%triangles) == 0) cycle
                tagName = this%buildTagName(mAs(i)%materialId, mAs(i)%elementIds(j))
-               if (cR%typeName == REGION_TYPE_VOLUME) then 
+               if (cR%typeName == REGION_TYPE_VOLUME) then
                   call appendRegion(res%volumes, cR, tagName)
                else if (cR%typeName == REGION_TYPE_SURFACE) then
                   ! if (isClosedRegion(cR)) then
@@ -821,7 +821,7 @@ contains
       do i = 1, size(mAs)
          do j = 1, size(mAs(i)%elementIds)
             cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j), found)
-            if (.not. found .or. cR%type /= REGION_TYPE_SURFACE .or. size(cR%triangles) == 0) cycle
+            if (.not. found .or. cR%typename /= REGION_TYPE_SURFACE .or. size(cR%triangles) == 0) cycle
             tagName = this%buildTagName(mAs(i)%materialId, mAs(i)%elementIds(j))
             call appendSGBCRegion(res%sgbc_surfaces, cR, tagName, readSGBCProfile(mAs(i)%materialId))
          end do
@@ -963,11 +963,12 @@ contains
          if (.not. associated(regions)) then
             validation_region%triangles = region%triangles
             validation_region%intervals = cell_intervals_to_intervals(region%intervals)
-            call validateRegion(validation_region, region%type, tagName, is_valid, validation_message)
+            call validateRegion(validation_region, region%typename, tagName, is_valid, validation_message)
             if (is_valid) then 
                allocate(regions(1))
                regions(1)%triangles = region%triangles
-               allocate(regions(1)%intervals(0))
+               regions(1)%intervals = cell_intervals_to_intervals(region%intervals)
+               ! allocate(regions(1)%intervals(0))
                regions(1)%tag = tagName
             end if
          else
@@ -979,7 +980,8 @@ contains
                   aux(i) = regions(i)
                end do
                aux(size(regions) + 1)%triangles = region%triangles
-               allocate(aux(size(regions) + 1)%intervals(0))
+               aux(size(regions) + 1)%intervals = cell_intervals_to_intervals(region%intervals)
+               ! allocate(aux(size(regions) + 1)%intervals(0))
                aux(size(regions) + 1)%tag  = tagName
                deallocate(regions)
 
@@ -997,8 +999,8 @@ contains
          integer :: i
          allocate(res(size(cell_intervals)))
          do i = 1, size(cell_intervals)
-            res(i)%ini%cell(:) = cell_intervals(i)%ini%cell(:)
-            res(i)%end%cell(:) = cell_intervals(i)%end%cell(:)
+            res(i)%startNode%cell(:) = cell_intervals(i)%startNode%cell(:)
+            res(i)%endNode%cell(:) = cell_intervals(i)%endNode%cell(:)
          end do
       end function
 

@@ -6,6 +6,7 @@ module conformal_m
    use NFDETypes_m, only: ConformalPECRegions_t, ConformalPECElements_t, ConformalMedia_t, &
                         edge_t, face_t, &
                         conformal_face_media_t, conformal_edge_media_t, rkind
+   use FDETYPES_m, only: XYZlimit_t, IHX, IHY, IHZ
 
    real(kind=rkind), parameter :: EDGE_RATIO_EQ_TOLERANCE = 1e-5
    real(kind=rkind), parameter :: FACE_RATIO_EQ_TOLERANCE = 1e-3
@@ -31,16 +32,17 @@ contains
       allocate(res(size(elements)))
       do i = 1, size(elements)
          canonical_element = canonicalClosedSurfaceOrientation(elements(i))
-         call buildSideMap(res(i), canonical_element%triangles)
+         call buildSideMap(res(i), canonical_element%triangles, canonical_element%intervals)
       end do
    end function
 
-   subroutine buildConformalMedia(conformalRegs, volumes, surfaces, sgbc_surfaces)
+   subroutine buildConformalMedia(conformalRegs, volumes, surfaces, sgbc_surfaces, alloc)
       type(ConformalPECRegions_t), pointer, intent(in) :: conformalRegs
       type(ConformalMedia_t), allocatable, dimension(:), intent(inout) :: volumes, surfaces
       type(ConformalMedia_t), allocatable, dimension(:), optional, intent(inout) :: sgbc_surfaces
+      type(XYZlimit_t), dimension(1:6), intent(in) :: alloc
       if (associated(conformalRegs%volumes)) then
-         volumes = buildMedia(conformalRegs%volumes, BODY_TYPE_VOLUME)
+         volumes = buildMedia(conformalRegs%volumes, BODY_TYPE_VOLUME, alloc)
       else
          allocate(volumes(0))
       end if
@@ -362,7 +364,7 @@ contains
       message = ''
       if (.not. allocated(intervals)) return
       do interval_index = 1, size(intervals)
-         diff = intervals(interval_index)%end%cell - intervals(interval_index)%ini%cell
+         diff = intervals(interval_index)%endNode%cell - intervals(interval_index)%startNode%cell
          if (count(diff /= 0) /= 2) then
             write(message, '(A,I0,A)') 'interval ', interval_index, ' must define a non-zero rectangular surface'
             is_valid = .false.
@@ -395,12 +397,12 @@ contains
 
       is_valid = .true.
       message = ''
-      diff = interval%end%cell - interval%ini%cell
+      diff = interval%endNode%cell - interval%startNode%cell
       face = minloc(abs(diff), 1)
       first_direction = mod(face,3) + 1
       second_direction = mod(face+1,3) + 1
       orientation = merge(1, -1, diff(first_direction) > 0)
-      lower = min(interval%ini%cell, interval%end%cell)
+      lower = min(interval%startNode%cell, interval%endNode%cell)
 
       do first_offset = 0, abs(diff(first_direction))-1
          do second_offset = 0, abs(diff(second_direction))-1
@@ -628,9 +630,9 @@ contains
       outgoing = 0
       nvertices = 0
       do side_index = 1, size(sides)
-         call registerContourVertex(sides(side_index)%init, vertices, incoming, outgoing, nvertices, vertex_index)
+         call registerContourVertex(sides(side_index)%startNode, vertices, incoming, outgoing, nvertices, vertex_index)
          outgoing(vertex_index) = outgoing(vertex_index) + 1
-         call registerContourVertex(sides(side_index)%end, vertices, incoming, outgoing, nvertices, vertex_index)
+         call registerContourVertex(sides(side_index)%endNode, vertices, incoming, outgoing, nvertices, vertex_index)
          incoming(vertex_index) = incoming(vertex_index) + 1
       end do
       do vertex_index = 1, nvertices
@@ -715,8 +717,8 @@ contains
 
    logical function sidesTouch(first, second)
       type(side_t), intent(in) :: first, second
-      sidesTouch = sameCoordinate(first%init, second%init) .or. sameCoordinate(first%init, second%end) .or. &
-                   sameCoordinate(first%end, second%init) .or. sameCoordinate(first%end, second%end)
+      sidesTouch = sameCoordinate(first%startNode, second%startNode  ) .or. sameCoordinate(first%startNode, second%endNode) .or. &
+                   sameCoordinate(first%endNode, second%startNode) .or. sameCoordinate(first%endNode, second%endNode)
    end function sidesTouch
 
    logical function sameCoordinate(first, second)
@@ -836,9 +838,10 @@ contains
       triangle%vertices(3) = swapped_vertex
    end subroutine reverseTriangle
 
-   function buildMedia(elements, body_type) result(res)
+   function buildMedia(elements, body_type, alloc) result(res)
       type(ConformalPECElements_t), dimension(:), pointer :: elements
       integer(kind=4), optional :: body_type
+      type(XYZlimit_t), dimension(1:6), optional :: alloc
       integer(kind=4) :: b = BODY_TYPE_UNDEFINED
       type(ConformalPECElements_t) :: canonical_element
       type(ConformalMedia_t), dimension(:), allocatable :: res
@@ -847,13 +850,30 @@ contains
       allocate(res(size(elements)))
       do i = 1, size(elements)
          canonical_element = canonicalClosedSurfaceOrientation(elements(i))
-         res(i) = buildMediaFromElement(canonical_element, b)
+         if (present(alloc)) then 
+            res(i) = buildMediaFromElement(canonical_element, b, alloc)
+         else
+            res(i) = buildMediaFromElement(canonical_element, b)
+         end if 
+        
       end do
    end function
 
-   function buildMediaFromElement(element, body_type) result(res)
+   subroutine initConformalBoundingBox(alloc, bbox)
+      type(XYZlimit_t), dimension(1:6), intent(in) :: alloc
+      type(XYZlimit_t), intent(inout) :: bbox
+      bbox%XI = -alloc(IHX)%XI
+      bbox%XE = -alloc(IHX)%XE
+      bbox%YI = -alloc(IHY)%YI
+      bbox%YE = -alloc(IHY)%YE
+      bbox%ZI = -alloc(IHZ)%ZI
+      bbox%ZE = -alloc(IHZ)%ZE
+   end subroutine
+
+   function buildMediaFromElement(element, body_type, alloc) result(res)
       type(ConformalPECElements_t), intent(in) :: element
       integer(kind=4), optional :: body_type
+      type(XYZlimit_t), dimension(1:6), optional :: alloc
       integer(kind=4) :: b = BODY_TYPE_UNDEFINED
       type(ConformalMedia_t) :: res
 
@@ -865,6 +885,10 @@ contains
       if (present(body_type)) b = body_type
 
       call buildCellMap(cell_map, element, b)
+      if (present(alloc)) then 
+            call initConformalBoundingBox(alloc, res%bbox)
+            call buildBoundingBox(cell_map, res%bbox)
+      end if
       call fillElements(cell_map, faces, edges)
       call addNewRatios(edges, faces, edge_ratios, face_ratios)
       res%edge_media => addEdgeMedia(edges, edge_ratios)
@@ -876,6 +900,22 @@ contains
       res%time_step_scale_factor = computeTimeStepScalingFactor(res%edge_media, res%face_media)
       res%tag = element%tag
    end function
+
+   subroutine buildBoundingBox(cell_map, bbox)
+      type(cell_map_t), intent(in) :: cell_map
+      type(XYZlimit_t), intent(inout) :: bbox
+      integer(kind=4), dimension(3) :: cell
+      integer :: i
+      do i = 1, size(cell_map%keys)
+         cell = cell_map%keys(i)%cell
+         if (cell(1) < bbox%xi) bbox%xi = cell(1)
+         if (cell(1) > bbox%xe) bbox%xe = cell(1)
+         if (cell(2) < bbox%yi) bbox%yi = cell(2)
+         if (cell(2) > bbox%ye) bbox%ye = cell(2)
+         if (cell(3) < bbox%zi) bbox%zi = cell(3)
+         if (cell(3) > bbox%ze) bbox%ze = cell(3)
+      end do
+   end subroutine
 
    subroutine addNewRatios(edges, faces, edge_ratios, face_ratios)
       type(edge_t), dimension(:), allocatable, intent(in) :: edges
@@ -998,7 +1038,9 @@ contains
          cell = cell_map%keys(i)%cell
          sides = cell_map%getSidesInCell(cell)
          tris =  cell_map%getTrianglesInCell(cell)
-         ! intervals = cell_map%getIntervalsInCell(cell)
+         !!! WATCH
+         intervals = cell_map%getIntervalsInCell(cell)
+         !!! WATCH
          do face = FACE_X, FACE_Z
             sides_on_face = getSidesOnFace(sides, face)
             tris_on_face = getTrianglesOnFace(tris, face)
@@ -1012,7 +1054,9 @@ contains
             end if
 
          end do
-         ! call fillIntervals(intervals,edges, faces)
+         !!! WATCH
+         call fillIntervals(intervals,edges, faces)
+         !!! WATCH
       end do
 
       do i = 1, size(cell_map%keys)
@@ -1074,17 +1118,17 @@ contains
       res(4)%endNode  = cs(1)
    end function
 
-   ! subroutine fillIntervals(intervals, edges, faces)
-   !    type(interval_t), dimension(:), allocatable :: intervals
-   !    type(edge_t), dimension(:), allocatable, intent(inout) :: edges
-   !    type(face_t), dimension(:), allocatable, intent(inout) :: faces
-   !    integer :: i
-   !    type(side_t), dimension(:), allocatable :: contour
-   !    do i = 1, size(intervals)
-   !       call fillEdgesFromInterval(edges, intervals(i))
-   !       call fillFaceFromInterval(faces, intervals(i))
-   !    end do
-   ! end subroutine
+   subroutine fillIntervals(intervals, edges, faces)
+      type(interval_t), dimension(:), allocatable :: intervals
+      type(edge_t), dimension(:), allocatable, intent(inout) :: edges
+      type(face_t), dimension(:), allocatable, intent(inout) :: faces
+      integer :: i
+      type(side_t), dimension(:), allocatable :: contour
+      do i = 1, size(intervals)
+         call fillEdgesFromInterval(edges, intervals(i))
+         call fillFaceFromInterval(faces, intervals(i))
+      end do
+   end subroutine
 
    subroutine fillFacesFromTriangles(tris_on_face, faces, edges)
       type(triangle_t), dimension(:), allocatable, intent(in) :: tris_on_face
@@ -1391,7 +1435,11 @@ contains
       !       return
       !    end if
       ! end do
-      if (present(is_two_sided)) split = is_two_sided
+      if (present(is_two_sided)) then 
+         split = is_two_sided
+      else 
+         split = .false.
+      end if
       if (present(normal)) n = normal
       if (present(edges_inside)) then 
          inside = edges_inside 

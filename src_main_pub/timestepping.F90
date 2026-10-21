@@ -2025,10 +2025,7 @@ contains
 
       call flushPlanewaveOff(planewave_switched_off, this%still_planewave_time, thereareplanewave)
       call this%AdvanceAnisotropicE()
-      ! write(*,*) this%ex
-      ! write(*,*) '------------'
       call this%advanceE()
-      ! write(*,*) this%ex
       call this%advanceConformalE()
 #ifdef CompileWithConformal
       if (this%control%input_conformal_flag) call conformal_advance_E()
@@ -2493,7 +2490,7 @@ contains
          E4 => this%conformal_fields%faces(n)%region_I_fields%E4
 
          H = this%g%gm1(med)*H + this%g%gm2(med)*((E2 - E4)*id1 - (E3 - E1)*id2)
-         
+         ! this%conformal_fields%faces(n)%region_I_fields%H = H
          !region 2
          H  => this%conformal_fields%faces(n)%region_II_fields%H
          E1 => this%conformal_fields%faces(n)%region_II_fields%E1
@@ -2501,9 +2498,15 @@ contains
          E3 => this%conformal_fields%faces(n)%region_II_fields%E3
          E4 => this%conformal_fields%faces(n)%region_II_fields%E4
 
-         corr = this%conformal_fields%faces(n)%ratio/(1.0-this%conformal_fields%faces(n)%ratio)
-
+         corr = computeFaceRegionIICorrection(this%conformal_fields%faces(n))
          H = this%g%gm1(med)*H + this%g%gm2(med)*corr*((E2 - E4)*id1 - (E3 - E1)*id2)
+         ! this%conformal_fields%faces(n)%region_II_fields%H = H
+         ! select case (this%conformal_fields%faces(n)%direction)
+         ! case (FACE_X); this%Hx(i,j,k) = 0.0
+         ! case (FACE_Y); this%Hy(i,j,k) = 0.0
+         ! case (FACE_Z); this%Hz(i,j,k) = 0.0
+         ! end select
+
       end do
    end subroutine
 
@@ -2516,10 +2519,8 @@ contains
       integer(kind=integersizeofmediamatrices) :: med
       integer(kind=4), dimension(3) :: c
       integer :: i, j, k, n
-      ! logical :: two_sided
       do n = 1, size(this%conformal_fields%edges)
          E_eff = 0.0
-         ! two_sided = this%conformal_fields%edges(n)%is_two_sided        
          c = this%conformal_fields%edges(n)%cell
          i = c(1); j = c(2); k = c(3)
          select case (this%conformal_fields%edges(n)%direction)
@@ -2536,13 +2537,8 @@ contains
             H3 => this%conformal_fields%edges(n)%region_I_fields%H3
             H4 => this%conformal_fields%edges(n)%region_I_fields%H4
             E = this%g%g1(med)*E + this%g%g2(med)*((H1 - H3)*id2 - (H4-H2)*id1)
-
+            ! this%conformal_fields%edges(n)%region_I_fields%E = E
             E_eff = E
-            ! if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_CONFORMAL) then 
-            !    E_eff = E*this%conformal_fields%edges(n)%ratio
-            ! else
-            !    E_eff = E
-            ! end if
 
          end if
          !region 2
@@ -2554,21 +2550,13 @@ contains
             H3 => this%conformal_fields%edges(n)%region_II_fields%H3
             H4 => this%conformal_fields%edges(n)%region_II_fields%H4
 
-            corr = 1.0
-            if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_CONFORMAL) then 
-               corr = (1.0-this%conformal_fields%edges(n)%ratio)/this%conformal_fields%edges(n)%ratio
-            end if
+            corr = computeEdgeRegionIICorrection(this%conformal_fields%edges(n))
             E = this%g%g1(med)*E + this%g%g2(med)*corr*((H1 - H3)*id2 - (H4-H2)*id1)
-
+            ! this%conformal_fields%edges(n)%region_II_fields%E = E
             E_eff = E_eff + E
-            ! if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_CONFORMAL) then 
-            !    E_eff = E_eff + E*(1.0-this%conformal_fields%edges(n)%ratio)
-            ! else
-            !    E_eff = E
-            ! end if
 
          end if
-
+         ! E_eff = this%conformal_fields%edges(n)%region_I_fields%E + this%conformal_fields%edges(n)%region_II_fields%E
          select case (this%conformal_fields%edges(n)%direction)
          case (EDGE_X); this%Ex(i,j,k) = E_eff
          case (EDGE_Y); this%Ey(i,j,k) = E_eff

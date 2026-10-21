@@ -700,6 +700,7 @@ module  FDETYPES_m
       character(len=BUFSIZE) :: tag
       logical :: is_sgbc = .false.
       type(SGBCMaterialProfile_t) :: sgbc_profile
+      type(XYZlimit_t) :: bbox
    end type
 
 
