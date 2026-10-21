@@ -137,7 +137,7 @@ end function
 
 integer function test_parser_reject_conformal_nonpec_material() bind(C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
    use Report_m, only: isFatalError, resetFatalError
    implicit none
 
@@ -154,7 +154,7 @@ end function
 
 integer function test_parser_read_conformal_sgbc_material() bind(C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
    use FDETYPES_m, only: EPSILON_VACUUM, MU_VACUUM, RKIND
    use Report_m, only: resetFatalError
    implicit none

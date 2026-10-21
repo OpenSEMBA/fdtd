@@ -7,7 +7,7 @@ integer function test_conformal_sgbc_zero_state() bind(C) result(err)
 
    err = 0
    call make_profile(profile, .false.)
-   call state%init(profile, 1.0e-12_RKIND_tiempo, 0.005_RKIND, 0.005_RKIND, &
+   call state%init(profile, 1.0e-12_RKIND_TIME, 0.005_RKIND, 0.005_RKIND, &
       1.0e9_RKIND, 1.0_RKIND, 2, .false.)
    call state%advance(0.0_RKIND, 0.0_RKIND)
    if (.not. state%initialized) err = err+1
@@ -44,9 +44,9 @@ integer function test_conformal_sgbc_layer_orientation() bind(C) result(err)
    profile%mu = MU_VACUUM
    profile%sigma = [0.0_RKIND, 100.0_RKIND]
    profile%sigmam = 0.0_RKIND
-   call forward%init(profile, 1.0e-12_RKIND_tiempo, 0.005_RKIND, 0.005_RKIND, &
+   call forward%init(profile, 1.0e-12_RKIND_TIME, 0.005_RKIND, 0.005_RKIND, &
       1.0e9_RKIND, 1.0_RKIND, 2, .false.)
-   call reverse%init(profile, 1.0e-12_RKIND_tiempo, 0.005_RKIND, 0.005_RKIND, &
+   call reverse%init(profile, 1.0e-12_RKIND_TIME, 0.005_RKIND, 0.005_RKIND, &
       1.0e9_RKIND, 1.0_RKIND, 2, .true.)
    do iteration = 1, 8
       call forward%advance(1.0_RKIND, 0.0_RKIND)

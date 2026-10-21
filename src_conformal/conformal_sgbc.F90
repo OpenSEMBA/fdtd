@@ -1,6 +1,6 @@
 module conformal_sgbc_m
 
-   use FDETYPES_m, only: RKIND, RKIND_tiempo, SGBCMaterialProfile_t, EPSILON_VACUUM, MU_VACUUM
+   use FDETYPES_m, only: RKIND, RKIND_TIME, SGBCMaterialProfile_t, EPSILON_VACUUM, MU_VACUUM
    use Report_m, only: WarnErrReport
    implicit none
    private
@@ -26,7 +26,7 @@ contains
    subroutine conformal_sgbc_init(this, profile, dt, lower_distance, upper_distance, maximum_frequency, resolution, depth, reverse_layers)
       class(conformal_sgbc_state_t), intent(inout) :: this
       type(SGBCMaterialProfile_t), intent(in) :: profile
-      real(kind=RKIND_tiempo), intent(in) :: dt
+      real(kind=RKIND_TIME), intent(in) :: dt
       real(kind=RKIND), intent(in) :: lower_distance, upper_distance, maximum_frequency, resolution
       integer, intent(in) :: depth
       logical, intent(in) :: reverse_layers

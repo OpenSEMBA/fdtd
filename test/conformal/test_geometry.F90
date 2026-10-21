@@ -157,12 +157,12 @@ integer function test_geometry_combined_surface_topology() bind(C) result(err)
 
     err = 0
     allocate(region%triangles(0), region%intervals(6))
-    region%intervals(1)%ini%cell = [1,0,0]; region%intervals(1)%end%cell = [1,1,1]
-    region%intervals(2)%ini%cell = [0,1,1]; region%intervals(2)%end%cell = [0,0,0]
-    region%intervals(3)%ini%cell = [0,1,0]; region%intervals(3)%end%cell = [1,1,1]
-    region%intervals(4)%ini%cell = [1,0,1]; region%intervals(4)%end%cell = [0,0,0]
-    region%intervals(5)%ini%cell = [0,0,1]; region%intervals(5)%end%cell = [1,1,1]
-    region%intervals(6)%ini%cell = [1,1,0]; region%intervals(6)%end%cell = [0,0,0]
+    region%intervals(1)%startNode%cell = [1,0,0]; region%intervals(1)%endNode%cell = [1,1,1]
+    region%intervals(2)%startNode%cell = [0,1,1]; region%intervals(2)%endNode%cell = [0,0,0]
+    region%intervals(3)%startNode%cell = [0,1,0]; region%intervals(3)%endNode%cell = [1,1,1]
+    region%intervals(4)%startNode%cell = [1,0,1]; region%intervals(4)%endNode%cell = [0,0,0]
+    region%intervals(5)%startNode%cell = [0,0,1]; region%intervals(5)%endNode%cell = [1,1,1]
+    region%intervals(6)%startNode%cell = [1,1,0]; region%intervals(6)%endNode%cell = [0,0,0]
     call validateConformalVolume(region, is_valid, message)
     if (.not. is_valid) err = err + 1
     do interval_index = 1, size(region%intervals)
@@ -180,11 +180,11 @@ integer function test_geometry_combined_surface_topology() bind(C) result(err)
 
     deallocate(region%triangles, region%intervals)
     allocate(region%intervals(5), region%triangles(2))
-    region%intervals(1)%ini%cell = [1,0,0]; region%intervals(1)%end%cell = [1,1,1]
-    region%intervals(2)%ini%cell = [0,1,1]; region%intervals(2)%end%cell = [0,0,0]
-    region%intervals(3)%ini%cell = [0,1,0]; region%intervals(3)%end%cell = [1,1,1]
-    region%intervals(4)%ini%cell = [1,0,1]; region%intervals(4)%end%cell = [0,0,0]
-    region%intervals(5)%ini%cell = [1,1,0]; region%intervals(5)%end%cell = [0,0,0]
+    region%intervals(1)%startNode%cell = [1,0,0]; region%intervals(1)%endNode%cell = [1,1,1]
+    region%intervals(2)%startNode%cell = [0,1,1]; region%intervals(2)%endNode%cell = [0,0,0]
+    region%intervals(3)%startNode%cell = [0,1,0]; region%intervals(3)%endNode%cell = [1,1,1]
+    region%intervals(4)%startNode%cell = [1,0,1]; region%intervals(4)%endNode%cell = [0,0,0]
+    region%intervals(5)%startNode%cell = [1,1,0]; region%intervals(5)%endNode%cell = [0,0,0]
     c1 = coord_t(position=[0.0,0.0,1.0], id=1)
     c2 = coord_t(position=[1.0,0.0,1.0], id=2)
     c3 = coord_t(position=[1.0,1.0,1.0], id=3)
@@ -199,8 +199,8 @@ integer function test_geometry_combined_surface_topology() bind(C) result(err)
 
     deallocate(region%triangles, region%intervals)
     allocate(region%triangles(0), region%intervals(2))
-    region%intervals(1)%ini%cell = [0,0,0]; region%intervals(1)%end%cell = [1,1,0]
-    region%intervals(2)%ini%cell = [1,0,0]; region%intervals(2)%end%cell = [2,1,0]
+    region%intervals(1)%startNode%cell = [0,0,0]; region%intervals(1)%endNode%cell = [1,1,0]
+    region%intervals(2)%startNode%cell = [1,0,0]; region%intervals(2)%endNode%cell = [2,1,0]
     call validateConformalSurface(region, is_valid, message)
     if (.not. is_valid) err = err + 1
     call reverse_interval(region%intervals(2))
@@ -210,15 +210,15 @@ integer function test_geometry_combined_surface_topology() bind(C) result(err)
     region%intervals(2) = region%intervals(1)
     call validateConformalSurface(region, is_valid, message)
     if (is_valid) err = err + 1
-    region%intervals(2)%ini%cell = [0,0,0]
-    region%intervals(2)%end%cell = [1,0,0]
+    region%intervals(2)%startNode%cell = [0,0,0]
+    region%intervals(2)%endNode%cell = [1,0,0]
     call validateConformalSurface(region, is_valid, message)
     if (is_valid) err = err + 1
 
     deallocate(region%triangles, region%intervals)
     allocate(region%triangles(0), region%intervals(1))
-    region%intervals(1)%ini%cell = [0,1,0]
-    region%intervals(1)%end%cell = [1,0,0]
+    region%intervals(1)%startNode%cell = [0,1,0]
+    region%intervals(1)%endNode%cell = [1,0,0]
     call resetFatalError()
     call validateConformalSurface(region, is_valid, message)
     if (is_valid) err = err + 1
@@ -230,9 +230,9 @@ contains
     subroutine reverse_interval(interval)
         type(interval_t), intent(inout) :: interval
         type(point_t) :: point
-        point = interval%ini
-        interval%ini = interval%end
-        interval%end = point
+        point = interval%startNode
+        interval%startNode = interval%endNode
+        interval%endNode = point
     end subroutine reverse_interval
 end function test_geometry_combined_surface_topology
 

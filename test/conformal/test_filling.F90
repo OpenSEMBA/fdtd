@@ -525,8 +525,8 @@ integer function test_conformal_edges_from_contour_inside() bind(C) result(err)
     c3 = coord_t(position = [0.65,1.0,0.0],  id=  3)
 
     allocate(sides_on_face(1))
-    sides_on_face(1)%init = c2
-    sides_on_face(1)%end = c1
+    sides_on_face(1)%startNode = c2
+    sides_on_face(1)%endNode = c1
     sides_on_face(1)%normal = [sqrt(2.0)/2.0,0.0,sqrt(2.0)/2.0]
 
     contour = findLargestContour(sides_on_face)
@@ -539,8 +539,8 @@ integer function test_conformal_edges_from_contour_inside() bind(C) result(err)
     if (.not. contour(4)%getEdge() == 1) err = err + 1
 
     ! invert inside/outside
-    sides_on_face(1)%init = c1
-    sides_on_face(1)%end = c2
+    sides_on_face(1)%startNode = c1
+    sides_on_face(1)%endNode = c2
     sides_on_face(1)%normal = [-sqrt(2.0)/2.0,0.0,-sqrt(2.0)/2.0]
 
     contour = findLargestContour(sides_on_face)
