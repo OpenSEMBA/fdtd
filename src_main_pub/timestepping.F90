@@ -18,6 +18,7 @@ module Solver_m
    use logUtils_m
    use FDETYPES_m
    use Report_m
+   use progress_m
    use ilumina_m
    use output_m
    use outputTypes_m
