@@ -1,0 +1,39 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Nodal source defined over a zero-length interval - should fail with a fatal error, not be silently ignored.",
+
+    "general": {
+        "timeStep": 10e-12,
+        "numberOfSteps": 2000
+    },
+
+    "boundary": {
+        "all": {"type": "mur"}
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [10, 10, 10],
+            "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
+        },
+        "coordinates": [],
+        "elements": [
+            {
+                "id": 1,
+                "type": "cell",
+                "intervals": [
+                    [ [5, 5, 5], [5, 5, 5] ]
+                ]
+            }
+        ]
+    },
+
+    "sources": [
+        {
+            "name": "zero_length_nodal_source",
+            "type": "nodalSource",
+            "magnitudeFile": "gauss.exc",
+            "elementIds": [1]
+        }
+    ]
+}

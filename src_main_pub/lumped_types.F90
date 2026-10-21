@@ -12,11 +12,11 @@ module lumped_vars_m
       real(kind=RKIND) :: g2a,g2b,GJ
       real(kind=RKIND) :: g1_usual
       real(kind=RKIND) :: g2a_usual,g2b_usual
-      integer(kind=4) :: jmed, Orient !!! positivo o negativo...... 
+      integer(kind=4) :: jmed, Orient !!! positive or negative...... 
 !!!!for_devia 151222
 #ifdef CompileWithStochastic
       real(kind=RKIND) :: EfieldPrev_for_devia,EfieldPrevPrev_for_devia,Jcur_for_devia,sigmaEffResistInduct_devia
-      real(kind=RKIND) :: Efield_for_devia,Ha_Plus_for_devia,Ha_Minu_for_devia,Hb_Plus_for_devia,Hb_Minu_for_devia !no son punteros para stochastic sino valores que recibe desde mpi
+      real(kind=RKIND) :: Efield_for_devia,Ha_Plus_for_devia,Ha_Minu_for_devia,Hb_Plus_for_devia,Hb_Minu_for_devia !not pointers for stochastic but values received from mpi
       real(kind=RKIND) :: g1_devia
       real(kind=RKIND) :: g2a_devia,g2b_devia,GJ_devia
       real(kind=RKIND) :: g1_usual_devia

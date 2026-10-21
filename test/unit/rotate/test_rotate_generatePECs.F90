@@ -1,7 +1,7 @@
 integer function test_rotate_generate_pecs() bind(C) result(err)
     use smbjson_m
     use nfde_rotate_m
-    use rotate_testingTools
+    use rotate_testingTools_m
     type(Parseador_t) :: this
     integer(kind=4) :: mpidir
     integer :: test_err = 0  
@@ -19,7 +19,7 @@ integer function test_rotate_generate_pecs() bind(C) result(err)
     this%pecRegs%Vols(1)%XE = 4
     this%pecRegs%Vols(1)%YE = 5
     this%pecRegs%Vols(1)%ZE = 6
-    this%pecRegs%Vols(1)%OR = iEx
+    this%pecRegs%Vols(1)%OR = IEX
     
     
     this%pecRegs%nsurfs = 1
@@ -30,7 +30,7 @@ integer function test_rotate_generate_pecs() bind(C) result(err)
     this%pecRegs%Surfs(1)%XE = 10
     this%pecRegs%Surfs(1)%YE = 11
     this%pecRegs%Surfs(1)%ZE = 12
-    this%pecRegs%Surfs(1)%OR = iEy
+    this%pecRegs%Surfs(1)%OR = IEY
     
     
     this%pecRegs%nlins = 1
@@ -41,7 +41,7 @@ integer function test_rotate_generate_pecs() bind(C) result(err)
     this%pecRegs%Lins(1)%XE = 16
     this%pecRegs%Lins(1)%YE = 17
     this%pecRegs%Lins(1)%ZE = 18
-    this%pecRegs%Lins(1)%OR = iEz
+    this%pecRegs%Lins(1)%OR = IEZ
     
     
     call rotate_generatePECs(this, mpidir)
@@ -53,7 +53,7 @@ integer function test_rotate_generate_pecs() bind(C) result(err)
     call expect_eq_int(test_err, this%pecRegs%Vols(1)%XE, 6, "rotate_generatePECs: Vols XE should be 6")
     call expect_eq_int(test_err, this%pecRegs%Vols(1)%YE, 4, "rotate_generatePECs: Vols YE should be 4")
     call expect_eq_int(test_err, this%pecRegs%Vols(1)%ZE, 5, "rotate_generatePECs: Vols ZE should be 5")
-    call expect_eq_int(test_err, this%pecRegs%Vols(1)%OR, iEy, "rotate_generatePECs: Vols OR should be iEy")
+    call expect_eq_int(test_err, this%pecRegs%Vols(1)%OR, IEY, "rotate_generatePECs: Vols OR should be iEy")
     
     
     call expect_eq_int(test_err, this%pecRegs%Surfs(1)%XI, 9, "rotate_generatePECs: Surfs XI should be 9")
@@ -62,7 +62,7 @@ integer function test_rotate_generate_pecs() bind(C) result(err)
     call expect_eq_int(test_err, this%pecRegs%Surfs(1)%XE, 12, "rotate_generatePECs: Surfs XE should be 12")
     call expect_eq_int(test_err, this%pecRegs%Surfs(1)%YE, 10, "rotate_generatePECs: Surfs YE should be 10")
     call expect_eq_int(test_err, this%pecRegs%Surfs(1)%ZE, 11, "rotate_generatePECs: Surfs ZE should be 11")
-    call expect_eq_int(test_err, this%pecRegs%Surfs(1)%OR, iEz, "rotate_generatePECs: Surfs OR should be iEz")
+    call expect_eq_int(test_err, this%pecRegs%Surfs(1)%OR, IEZ, "rotate_generatePECs: Surfs OR should be iEz")
     
     
     call expect_eq_int(test_err, this%pecRegs%Lins(1)%XI, 15, "rotate_generatePECs: Lins XI should be 15")
@@ -71,7 +71,7 @@ integer function test_rotate_generate_pecs() bind(C) result(err)
     call expect_eq_int(test_err, this%pecRegs%Lins(1)%XE, 18, "rotate_generatePECs: Lins XE should be 18")
     call expect_eq_int(test_err, this%pecRegs%Lins(1)%YE, 16, "rotate_generatePECs: Lins YE should be 16")
     call expect_eq_int(test_err, this%pecRegs%Lins(1)%ZE, 17, "rotate_generatePECs: Lins ZE should be 17")
-    call expect_eq_int(test_err, this%pecRegs%Lins(1)%OR, iEx, "rotate_generatePECs: Lins OR should be iEx")
+    call expect_eq_int(test_err, this%pecRegs%Lins(1)%OR, IEX, "rotate_generatePECs: Lins OR should be iEx")
     
     deallocate(this%pecRegs%Vols)
     deallocate(this%pecRegs%Surfs)
@@ -91,7 +91,7 @@ integer function test_rotate_generate_pecs() bind(C) result(err)
     this%pecRegs%Vols(1)%XE = 4
     this%pecRegs%Vols(1)%YE = 5
     this%pecRegs%Vols(1)%ZE = 6
-    this%pecRegs%Vols(1)%OR = iEx
+    this%pecRegs%Vols(1)%OR = IEX
     
     this%pecRegs%nsurfs = 1
     allocate(this%pecRegs%Surfs(1))
@@ -101,7 +101,7 @@ integer function test_rotate_generate_pecs() bind(C) result(err)
     this%pecRegs%Surfs(1)%XE = 10
     this%pecRegs%Surfs(1)%YE = 11
     this%pecRegs%Surfs(1)%ZE = 12
-    this%pecRegs%Surfs(1)%OR = iEy
+    this%pecRegs%Surfs(1)%OR = IEY
     
     this%pecRegs%nlins = 1
     allocate(this%pecRegs%Lins(1))
@@ -111,7 +111,7 @@ integer function test_rotate_generate_pecs() bind(C) result(err)
     this%pecRegs%Lins(1)%XE = 16
     this%pecRegs%Lins(1)%YE = 17
     this%pecRegs%Lins(1)%ZE = 18
-    this%pecRegs%Lins(1)%OR = iEz
+    this%pecRegs%Lins(1)%OR = IEZ
     
     
     call rotate_generatePECs(this, mpidir)
@@ -123,7 +123,7 @@ integer function test_rotate_generate_pecs() bind(C) result(err)
     call expect_eq_int(test_err, this%pecRegs%Vols(1)%XE, 5, "rotate_generatePECs: Vols XE should be 5")
     call expect_eq_int(test_err, this%pecRegs%Vols(1)%YE, 6, "rotate_generatePECs: Vols YE should be 6")
     call expect_eq_int(test_err, this%pecRegs%Vols(1)%ZE, 4, "rotate_generatePECs: Vols ZE should be 4")
-    call expect_eq_int(test_err, this%pecRegs%Vols(1)%OR, iEz, "rotate_generatePECs: Vols OR should be iEz")
+    call expect_eq_int(test_err, this%pecRegs%Vols(1)%OR, IEZ, "rotate_generatePECs: Vols OR should be iEz")
     
     
     call expect_eq_int(test_err, this%pecRegs%Surfs(1)%XI, 8, "rotate_generatePECs: Surfs XI should be 8")
@@ -132,7 +132,7 @@ integer function test_rotate_generate_pecs() bind(C) result(err)
     call expect_eq_int(test_err, this%pecRegs%Surfs(1)%XE, 11, "rotate_generatePECs: Surfs XE should be 11")
     call expect_eq_int(test_err, this%pecRegs%Surfs(1)%YE, 12, "rotate_generatePECs: Surfs YE should be 12")
     call expect_eq_int(test_err, this%pecRegs%Surfs(1)%ZE, 10, "rotate_generatePECs: Surfs ZE should be 10")
-    call expect_eq_int(test_err, this%pecRegs%Surfs(1)%OR, iEx, "rotate_generatePECs: Surfs OR should be iEx")
+    call expect_eq_int(test_err, this%pecRegs%Surfs(1)%OR, IEX, "rotate_generatePECs: Surfs OR should be iEx")
     
     
     call expect_eq_int(test_err, this%pecRegs%Lins(1)%XI, 14, "rotate_generatePECs: Lins XI should be 14")
@@ -141,7 +141,7 @@ integer function test_rotate_generate_pecs() bind(C) result(err)
     call expect_eq_int(test_err, this%pecRegs%Lins(1)%XE, 17, "rotate_generatePECs: Lins XE should be 17")
     call expect_eq_int(test_err, this%pecRegs%Lins(1)%YE, 18, "rotate_generatePECs: Lins YE should be 18")
     call expect_eq_int(test_err, this%pecRegs%Lins(1)%ZE, 16, "rotate_generatePECs: Lins ZE should be 16")
-    call expect_eq_int(test_err, this%pecRegs%Lins(1)%OR, iEy, "rotate_generatePECs: Lins OR should be iEy")
+    call expect_eq_int(test_err, this%pecRegs%Lins(1)%OR, IEY, "rotate_generatePECs: Lins OR should be iEy")
     
     deallocate(this%pecRegs%Vols)
     deallocate(this%pecRegs%Surfs)

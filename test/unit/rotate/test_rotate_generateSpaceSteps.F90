@@ -1,7 +1,7 @@
 integer function test_rotate_generate_space_steps() bind(C) result(err)
     use smbjson_m
     use nfde_rotate_m
-    use rotate_testingTools
+    use rotate_testingTools_m
     type(Parseador_t) :: this
     integer(kind=4) :: mpidir
     type(Desplazamiento_t), pointer :: old_despl => null()

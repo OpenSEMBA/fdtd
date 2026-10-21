@@ -66,7 +66,7 @@ module mesh_m
    type, public :: conformal_region_t
       type(triangle_t), dimension(:), allocatable :: triangles
       type(cell_interval_t), dimension(:), allocatable :: intervals
-      integer :: type
+      integer :: typeName
     end type
 
 
@@ -327,8 +327,8 @@ contains
       do i = 1, size(pl%coordIds)-1
          iC = this%getCoordinate(pl%coordIds(i))
          eC = this%getCoordinate(pl%coordIds(i+1))
-         interval%ini%cell = int(iC%position)
-         interval%end%cell = int(eC%position)
+         interval%startNode%cell = int(iC%position)
+         interval%endNode%cell = int(eC%position)
          res = res + interval%getSize()
       end do
       
@@ -386,10 +386,10 @@ contains
       do i = 1, size(pl%coordIds)-1
          iC = this%getCoordinate(pl%coordIds(i))
          eC = this%getCoordinate(pl%coordIds(i+1))
-         interval%ini%cell = int(iC%position)
-         interval%end%cell = int(eC%position)
+         interval%startNode%cell = int(iC%position)
+         interval%endNode%cell = int(eC%position)
          if (any(iC%position /= eC%position)) then
-            segment = (interval%end%cell - interval%ini%cell) / interval%getSize()
+            segment = (interval%endNode%cell - interval%startNode%cell) / interval%getSize()
             
             res(lastSegment)%tag = pl%coordIds(i)
             do j = 1, interval%getSize()
@@ -401,8 +401,8 @@ contains
          end if
       end do
 
-      res(1)%tag             = pl%coordIds( 1 )
-      res(lastSegment-1)%tag = pl%coordIds( size(pl%coordIds) )
+      res(1)%tag             = pl%coordIds(1)
+      res(lastSegment-1)%tag = pl%coordIds(size(pl%coordIds))
       
    end function
 

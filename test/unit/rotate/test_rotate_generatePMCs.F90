@@ -1,7 +1,7 @@
 integer function test_rotate_generate_pmcs() bind(C) result(err)
     use smbjson_m
     use nfde_rotate_m
-    use rotate_testingTools
+    use rotate_testingTools_m
     type(Parseador_t) :: this
     integer(kind=4) :: mpidir
     integer :: test_err = 0  
@@ -19,7 +19,7 @@ integer function test_rotate_generate_pmcs() bind(C) result(err)
     this%pmcRegs%Vols(1)%XE = 4
     this%pmcRegs%Vols(1)%YE = 5
     this%pmcRegs%Vols(1)%ZE = 6
-    this%pmcRegs%Vols(1)%OR = iEx
+    this%pmcRegs%Vols(1)%OR = IEX
     
     
     this%pmcRegs%nsurfs = 1
@@ -30,7 +30,7 @@ integer function test_rotate_generate_pmcs() bind(C) result(err)
     this%pmcRegs%Surfs(1)%XE = 10
     this%pmcRegs%Surfs(1)%YE = 11
     this%pmcRegs%Surfs(1)%ZE = 12
-    this%pmcRegs%Surfs(1)%OR = iEy
+    this%pmcRegs%Surfs(1)%OR = IEY
     
     
     this%pmcRegs%nlins = 1
@@ -41,7 +41,7 @@ integer function test_rotate_generate_pmcs() bind(C) result(err)
     this%pmcRegs%Lins(1)%XE = 16
     this%pmcRegs%Lins(1)%YE = 17
     this%pmcRegs%Lins(1)%ZE = 18
-    this%pmcRegs%Lins(1)%OR = iEz
+    this%pmcRegs%Lins(1)%OR = IEZ
     
     
     call rotate_generatePMCs(this, mpidir)
@@ -53,7 +53,7 @@ integer function test_rotate_generate_pmcs() bind(C) result(err)
     call expect_eq_int(test_err, this%pmcRegs%Vols(1)%XE, 6, "rotate_generatePMCs: Vols XE should be 6")
     call expect_eq_int(test_err, this%pmcRegs%Vols(1)%YE, 4, "rotate_generatePMCs: Vols YE should be 4")
     call expect_eq_int(test_err, this%pmcRegs%Vols(1)%ZE, 5, "rotate_generatePMCs: Vols ZE should be 5")
-    call expect_eq_int(test_err, this%pmcRegs%Vols(1)%OR, iEy, "rotate_generatePMCs: Vols OR should be iEy")
+    call expect_eq_int(test_err, this%pmcRegs%Vols(1)%OR, IEY, "rotate_generatePMCs: Vols OR should be iEy")
     
     
     call expect_eq_int(test_err, this%pmcRegs%Surfs(1)%XI, 9, "rotate_generatePMCs: Surfs XI should be 9")
@@ -62,7 +62,7 @@ integer function test_rotate_generate_pmcs() bind(C) result(err)
     call expect_eq_int(test_err, this%pmcRegs%Surfs(1)%XE, 12, "rotate_generatePMCs: Surfs XE should be 12")
     call expect_eq_int(test_err, this%pmcRegs%Surfs(1)%YE, 10, "rotate_generatePMCs: Surfs YE should be 10")
     call expect_eq_int(test_err, this%pmcRegs%Surfs(1)%ZE, 11, "rotate_generatePMCs: Surfs ZE should be 11")
-    call expect_eq_int(test_err, this%pmcRegs%Surfs(1)%OR, iEz, "rotate_generatePMCs: Surfs OR should be iEz")
+    call expect_eq_int(test_err, this%pmcRegs%Surfs(1)%OR, IEZ, "rotate_generatePMCs: Surfs OR should be iEz")
     
     
     call expect_eq_int(test_err, this%pmcRegs%Lins(1)%XI, 15, "rotate_generatePMCs: Lins XI should be 15")
@@ -71,7 +71,7 @@ integer function test_rotate_generate_pmcs() bind(C) result(err)
     call expect_eq_int(test_err, this%pmcRegs%Lins(1)%XE, 18, "rotate_generatePMCs: Lins XE should be 18")
     call expect_eq_int(test_err, this%pmcRegs%Lins(1)%YE, 16, "rotate_generatePMCs: Lins YE should be 16")
     call expect_eq_int(test_err, this%pmcRegs%Lins(1)%ZE, 17, "rotate_generatePMCs: Lins ZE should be 17")
-    call expect_eq_int(test_err, this%pmcRegs%Lins(1)%OR, iEx, "rotate_generatePMCs: Lins OR should be iEx")
+    call expect_eq_int(test_err, this%pmcRegs%Lins(1)%OR, IEX, "rotate_generatePMCs: Lins OR should be iEx")
     
     deallocate(this%pmcRegs%Vols)
     deallocate(this%pmcRegs%Surfs)
@@ -91,7 +91,7 @@ integer function test_rotate_generate_pmcs() bind(C) result(err)
     this%pmcRegs%Vols(1)%XE = 4
     this%pmcRegs%Vols(1)%YE = 5
     this%pmcRegs%Vols(1)%ZE = 6
-    this%pmcRegs%Vols(1)%OR = iEx
+    this%pmcRegs%Vols(1)%OR = IEX
     
     this%pmcRegs%nsurfs = 1
     allocate(this%pmcRegs%Surfs(1))
@@ -101,7 +101,7 @@ integer function test_rotate_generate_pmcs() bind(C) result(err)
     this%pmcRegs%Surfs(1)%XE = 10
     this%pmcRegs%Surfs(1)%YE = 11
     this%pmcRegs%Surfs(1)%ZE = 12
-    this%pmcRegs%Surfs(1)%OR = iEy
+    this%pmcRegs%Surfs(1)%OR = IEY
     
     this%pmcRegs%nlins = 1
     allocate(this%pmcRegs%Lins(1))
@@ -111,7 +111,7 @@ integer function test_rotate_generate_pmcs() bind(C) result(err)
     this%pmcRegs%Lins(1)%XE = 16
     this%pmcRegs%Lins(1)%YE = 17
     this%pmcRegs%Lins(1)%ZE = 18
-    this%pmcRegs%Lins(1)%OR = iEz
+    this%pmcRegs%Lins(1)%OR = IEZ
     
     
     call rotate_generatePMCs(this, mpidir)
@@ -123,7 +123,7 @@ integer function test_rotate_generate_pmcs() bind(C) result(err)
     call expect_eq_int(test_err, this%pmcRegs%Vols(1)%XE, 5, "rotate_generatePMCs: Vols XE should be 5")
     call expect_eq_int(test_err, this%pmcRegs%Vols(1)%YE, 6, "rotate_generatePMCs: Vols YE should be 6")
     call expect_eq_int(test_err, this%pmcRegs%Vols(1)%ZE, 4, "rotate_generatePMCs: Vols ZE should be 4")
-    call expect_eq_int(test_err, this%pmcRegs%Vols(1)%OR, iEz, "rotate_generatePMCs: Vols OR should be iEz")
+    call expect_eq_int(test_err, this%pmcRegs%Vols(1)%OR, IEZ, "rotate_generatePMCs: Vols OR should be iEz")
     
     
     call expect_eq_int(test_err, this%pmcRegs%Surfs(1)%XI, 8, "rotate_generatePMCs: Surfs XI should be 8")
@@ -132,7 +132,7 @@ integer function test_rotate_generate_pmcs() bind(C) result(err)
     call expect_eq_int(test_err, this%pmcRegs%Surfs(1)%XE, 11, "rotate_generatePMCs: Surfs XE should be 11")
     call expect_eq_int(test_err, this%pmcRegs%Surfs(1)%YE, 12, "rotate_generatePMCs: Surfs YE should be 12")
     call expect_eq_int(test_err, this%pmcRegs%Surfs(1)%ZE, 10, "rotate_generatePMCs: Surfs ZE should be 10")
-    call expect_eq_int(test_err, this%pmcRegs%Surfs(1)%OR, iEx, "rotate_generatePMCs: Surfs OR should be iEx")
+    call expect_eq_int(test_err, this%pmcRegs%Surfs(1)%OR, IEX, "rotate_generatePMCs: Surfs OR should be iEx")
     
     
     call expect_eq_int(test_err, this%pmcRegs%Lins(1)%XI, 14, "rotate_generatePMCs: Lins XI should be 14")
@@ -141,7 +141,7 @@ integer function test_rotate_generate_pmcs() bind(C) result(err)
     call expect_eq_int(test_err, this%pmcRegs%Lins(1)%XE, 17, "rotate_generatePMCs: Lins XE should be 17")
     call expect_eq_int(test_err, this%pmcRegs%Lins(1)%YE, 18, "rotate_generatePMCs: Lins YE should be 18")
     call expect_eq_int(test_err, this%pmcRegs%Lins(1)%ZE, 16, "rotate_generatePMCs: Lins ZE should be 16")
-    call expect_eq_int(test_err, this%pmcRegs%Lins(1)%OR, iEy, "rotate_generatePMCs: Lins OR should be iEy")
+    call expect_eq_int(test_err, this%pmcRegs%Lins(1)%OR, IEY, "rotate_generatePMCs: Lins OR should be iEy")
     
     deallocate(this%pmcRegs%Vols)
     deallocate(this%pmcRegs%Surfs)

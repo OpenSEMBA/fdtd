@@ -12,6 +12,7 @@ module directoryUtils_m
    public :: get_last_component
    public :: remove_folder
    public :: file_exists
+   public :: file_has_samples
    public :: delete_file
    public :: list_files
     public :: create_file_with_path
@@ -41,9 +42,9 @@ module directoryUtils_m
          character(kind=c_char), intent(in) :: path(*)
        end function fdtd_delete_file
 
-       integer(c_int) function fdtd_atomic_replace(source, target) bind(C, name='fdtd_atomic_replace')
+       integer(c_int) function fdtd_atomic_replace(source, targetValue) bind(C, name='fdtd_atomic_replace')
           import :: c_char, c_int
-          character(kind=c_char), intent(in) :: source(*), target(*)
+          character(kind=c_char), intent(in) :: source(*), targetValue(*)
        end function fdtd_atomic_replace
    end interface
 
@@ -193,6 +194,37 @@ contains
    end function file_exists
 
    !------------------------------------------------------------
+   ! Check whether a file holds at least minimumSamples lines
+   ! that can be read as a (time, value) pair. Missing, unreadable
+   ! and empty files all return false.
+   !------------------------------------------------------------
+   function file_has_samples(fileName, minimumSamples) result(hasSamples)
+      character(len=*), intent(in) :: fileName
+      integer, intent(in), optional :: minimumSamples
+      logical :: hasSamples
+      integer :: unit, ios, countValue, required
+      real(kind=RKIND) :: sampleTime, sampleValue
+
+      required = 1
+      if (present(minimumSamples)) required = max(1, minimumSamples)
+      hasSamples = .false.
+
+      open (newunit=unit, file=trim(adjustl(fileName)), status='old', action='read', iostat=ios)
+      if (ios /= 0) return
+
+      countValue = 0
+      do
+         read (unit, *, iostat=ios) sampleTime, sampleValue
+         if (ios /= 0) exit
+         countValue = countValue + 1
+         if (countValue >= required) exit
+      end do
+      close (unit)
+
+      hasSamples = countValue >= required
+   end function file_has_samples
+
+   !------------------------------------------------------------
    ! Delete a file
    !------------------------------------------------------------
    subroutine delete_file(path, ios)
@@ -269,7 +301,7 @@ contains
 
       ios = 0
       ! Find last slash or backslash
-       pos = scan(trim(fullpath), '/\\', back=.true.)
+       pos = scan(trim(fullpath), '/\\', BACK=.true.)
 
       if (pos > 0) then
          folder = adjustl(fullpath(:pos - 1))
@@ -281,20 +313,20 @@ contains
 
      end subroutine create_file_with_path
 
-    subroutine atomic_replace_file(source, target, ios)
-       character(len=*), intent(in) :: source, target
+    subroutine atomic_replace_file(source, targetValue, ios)
+       character(len=*), intent(in) :: source, targetValue
        integer, intent(out) :: ios
        character(kind=c_char), allocatable :: c_source(:), c_target(:)
        integer :: i, source_length, target_length
 
        source_length = len_trim(source)
-       target_length = len_trim(target)
+       target_length = len_trim(targetValue)
        allocate(c_source(source_length + 1), c_target(target_length + 1))
        do i = 1, source_length
           c_source(i) = source(i:i)
        end do
        do i = 1, target_length
-          c_target(i) = target(i:i)
+          c_target(i) = targetValue(i:i)
        end do
        c_source(source_length + 1) = c_null_char
        c_target(target_length + 1) = c_null_char

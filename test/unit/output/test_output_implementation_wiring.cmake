@@ -10,7 +10,7 @@ foreach(legacy_source
 endforeach()
 
 file(READ "${PROJECT_SOURCE_DIR}/src_main_pub/semba_fdtd.F90" solver_lifecycle)
-file(READ "${PROJECT_SOURCE_DIR}/src_main_pub/interpreta_switches.F90" solver_switches)
+file(READ "${PROJECT_SOURCE_DIR}/src_main_pub/interpret_switches.F90" solver_switches)
 file(READ "${PROJECT_SOURCE_DIR}/CMakeLists.txt" top_level_cmake)
 string(TOLOWER "${solver_lifecycle}${solver_switches}${top_level_cmake}" retired_output_paths)
 foreach(retired_output_path createh5filefromsinglebin xdmf_h5_m _outputrequests_ _outputlists.dat)

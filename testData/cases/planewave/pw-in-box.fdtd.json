@@ -47,7 +47,19 @@
 
     "probes": [
         {"name": "before", "type": "point", "elementIds": [1], "directions": ["x"]},
-        {"name": "inbox",  "type": "point", "elementIds": [2], "directions": ["x"]},
+        {
+            "name": "inbox",
+            "type": "point",
+            "elementIds": [2],
+            "directions": ["x"],
+            "domain": {
+                "type": "timeFrequency",
+                "initialFrequency": 5e8,
+                "finalFrequency": 1.5e9,
+                "numberOfFrequencies": 3,
+                "frequencySpacing": "linear"
+            }
+        },
         {"name": "after",  "type": "point", "elementIds": [3], "directions": ["x"]}
     ]
 }

@@ -16,7 +16,7 @@ module nodalsources_m
       real(kind=RKIND), pointer, dimension(:) :: evol
       real(kind=RKIND) :: deltaevol
       integer(kind=4) :: numus
-      type(xyzlimit_singlescaled_t) :: punto
+      type(xyzlimit_singlescaled_t) :: gridPoint
       logical :: IsInitialValue
    end type NodalLocal_t
 
@@ -26,7 +26,7 @@ module nodalsources_m
       type(NodalLocal_t), pointer, dimension(:) :: nodHard,nodSoft
    end type
 
-   !!!!!variables locales
+   !!!!!local variables
 
    type(nodsou_t), save, target :: Nodal_Ex,Nodal_Ey,Nodal_Ez
    type(nodsou_t), save, target :: Nodal_Hx,Nodal_Hy,Nodal_Hz
@@ -78,22 +78,22 @@ contains
       
       do j=1,NumNodalSources
          if (sggNodalSource(j)%IsElec) then
-            do i=1,sggNodalSource(j)%numpuntos
-               if (sggNodalSource(j)%punto(i)%xc /= 0.0_RKIND) then
+            do i=1,sggNodalSource(j)%numPoints
+               if (sggNodalSource(j)%gridPoint(i)%xc /= 0.0_RKIND) then
                   if (sggNodalSource(j)%IsHard) then
                      numNodalHard_Ex = numNodalHard_Ex  +1
                   else
                      numNodalSoft_Ex = numNodalSoft_Ex  +1
                   end if
                end if
-               if (sggNodalSource(j)%punto(i)%yc /= 0.0_RKIND) then
+               if (sggNodalSource(j)%gridPoint(i)%yc /= 0.0_RKIND) then
                   if (sggNodalSource(j)%IsHard) then
                      numNodalHard_Ey = numNodalHard_Ey  +1
                   else
                      numNodalSoft_Ey = numNodalSoft_Ey  +1
                   end if
                end if
-               if (sggNodalSource(j)%punto(i)%zc /= 0.0_RKIND) then
+               if (sggNodalSource(j)%gridPoint(i)%zc /= 0.0_RKIND) then
                   if (sggNodalSource(j)%IsHard) then
                      numNodalHard_Ez = numNodalHard_Ez  +1
                   else
@@ -102,22 +102,22 @@ contains
                end if
             end do
          else
-            do i=1,sggNodalSource(j)%numpuntos
-               if (sggNodalSource(j)%punto(i)%xc /= 0.0_RKIND) then
+            do i=1,sggNodalSource(j)%numPoints
+               if (sggNodalSource(j)%gridPoint(i)%xc /= 0.0_RKIND) then
                   if (sggNodalSource(j)%IsHard) then
                      numNodalHard_Hx = numNodalHard_Hx  +1
                   else
                      numNodalSoft_Hx = numNodalSoft_Hx  +1
                   end if
                end if
-               if (sggNodalSource(j)%punto(i)%yc /= 0.0_RKIND) then
+               if (sggNodalSource(j)%gridPoint(i)%yc /= 0.0_RKIND) then
                   if (sggNodalSource(j)%IsHard) then
                      numNodalHard_Hy = numNodalHard_Hy  +1
                   else
                      numNodalSoft_Hy = numNodalSoft_Hy  +1
                   end if
                end if
-               if (sggNodalSource(j)%punto(i)%zc /= 0.0_RKIND) then
+               if (sggNodalSource(j)%gridPoint(i)%zc /= 0.0_RKIND) then
                   if (sggNodalSource(j)%IsHard) then
                      numNodalHard_Hz = numNodalHard_Hz  +1
                   else
@@ -172,33 +172,33 @@ contains
 
       do j=1,NumNodalSources
          if (sggNodalSource(j)%IsElec) then
-            do i=1,sggNodalSource(j)%numpuntos
-               amplit = sggNodalSource(J)%punto(i)%xc
+            do i=1,sggNodalSource(j)%numPoints
+               amplit = sggNodalSource(J)%gridPoint(i)%xc
                if (amplit /= 0.0_RKIND) then
-                  call CreateNodal(layoutnumber,Nodal_Ex,sggNodalSource(J),sggSweep(iEx),i,amplit)
+                  call CreateNodal(layoutnumber,Nodal_Ex,sggNodalSource(J),sggSweep(IEX),i,amplit)
                end if
-               amplit = sggNodalSource(j)%punto(i)%yc
+               amplit = sggNodalSource(j)%gridPoint(i)%yc
                if (amplit /= 0.0_RKIND) then
-                  call CreateNodal(layoutnumber,Nodal_Ey,sggNodalSource(J),sggSweep(iEy),i,amplit)
+                  call CreateNodal(layoutnumber,Nodal_Ey,sggNodalSource(J),sggSweep(IEY),i,amplit)
                end if
-               amplit = sggNodalSource(j)%punto(i)%zc
+               amplit = sggNodalSource(j)%gridPoint(i)%zc
                if (amplit /= 0.0_RKIND) then
-                  call CreateNodal(layoutnumber,Nodal_Ez,sggNodalSource(J),sggSweep(iEz),i,amplit)
+                  call CreateNodal(layoutnumber,Nodal_Ez,sggNodalSource(J),sggSweep(IEZ),i,amplit)
                end if
             end do
-         else !es magnetico
-            do i=1,sggNodalSource(j)%numpuntos
-               amplit = sggNodalSource(J)%punto(i)%xc
+         else !it is magnetic
+            do i=1,sggNodalSource(j)%numPoints
+               amplit = sggNodalSource(J)%gridPoint(i)%xc
                if (amplit /= 0.0_RKIND) then
-                  call CreateNodal(layoutnumber,Nodal_Hx,sggNodalSource(J),sggSweep(iHx),i,amplit)
+                  call CreateNodal(layoutnumber,Nodal_Hx,sggNodalSource(J),sggSweep(IHX),i,amplit)
                end if
-               amplit = sggNodalSource(j)%punto(i)%yc
+               amplit = sggNodalSource(j)%gridPoint(i)%yc
                if (amplit /= 0.0_RKIND) then
-                  call CreateNodal(layoutnumber,Nodal_Hy,sggNodalSource(J),sggSweep(iHy),i,amplit)
+                  call CreateNodal(layoutnumber,Nodal_Hy,sggNodalSource(J),sggSweep(IHY),i,amplit)
                end if
-               amplit = sggNodalSource(j)%punto(i)%zc
+               amplit = sggNodalSource(j)%gridPoint(i)%zc
                if (amplit /= 0.0_RKIND) then
-                  call CreateNodal(layoutnumber,Nodal_Hz,sggNodalSource(J),sggSweep(iHz),i,amplit)
+                  call CreateNodal(layoutnumber,Nodal_Hz,sggNodalSource(J),sggSweep(IHZ),i,amplit)
                end if
             end do
          end if
@@ -211,12 +211,12 @@ contains
 
    contains
 
-      subroutine createnodal(layoutnumber,dummy,sggdummy,sggSweep,index,amplit)
+      subroutine createnodal(layoutnumber,dummy,sggdummy,sggSweep,elementIndex,amplit)
 
          type(nodsou_t), intent (inout) :: dummy
          type(NodalSource_t), intent(in), target :: sggdummy
          real(kind=rkind), intent(in) :: amplit
-         integer(kind=4), intent(in) :: index
+         integer(kind=4), intent(in) :: elementIndex
          integer(kind=4) :: layoutnumber,i,j,k
          type(XYZlimit_t) :: sggSweep
 
@@ -227,44 +227,44 @@ contains
             dummy%numHard=dummy%numHard+1
             !
             dummy%nodHard(dummy%numHard)%IsInitialValue=sggdummy%IsInitialValue
-            dummy%nodHard(dummy%numHard)%punto%XI = max(sggdummy%punto(index)%XI,sggSweep%XI)
-            dummy%nodHard(dummy%numHard)%punto%XE = min(sggdummy%punto(index)%XE,sggSweep%XE)
-            dummy%nodHard(dummy%numHard)%punto%YI = max(sggdummy%punto(index)%YI,sggSweep%YI)
-            dummy%nodHard(dummy%numHard)%punto%YE = min(sggdummy%punto(index)%YE,sggSweep%YE)
-            dummy%nodHard(dummy%numHard)%punto%ZI = max(sggdummy%punto(index)%ZI,sggSweep%ZI)
-            dummy%nodHard(dummy%numHard)%punto%ZE = min(sggdummy%punto(index)%ZE,sggSweep%ZE)
+            dummy%nodHard(dummy%numHard)%gridPoint%XI = max(sggdummy%gridPoint(elementIndex)%XI,sggSweep%XI)
+            dummy%nodHard(dummy%numHard)%gridPoint%XE = min(sggdummy%gridPoint(elementIndex)%XE,sggSweep%XE)
+            dummy%nodHard(dummy%numHard)%gridPoint%YI = max(sggdummy%gridPoint(elementIndex)%YI,sggSweep%YI)
+            dummy%nodHard(dummy%numHard)%gridPoint%YE = min(sggdummy%gridPoint(elementIndex)%YE,sggSweep%YE)
+            dummy%nodHard(dummy%numHard)%gridPoint%ZI = max(sggdummy%gridPoint(elementIndex)%ZI,sggSweep%ZI)
+            dummy%nodHard(dummy%numHard)%gridPoint%ZE = min(sggdummy%gridPoint(elementIndex)%ZE,sggSweep%ZE)
             !
-            dummy%nodHard(dummy%numHard)%punto%amplitude = amplit
+            dummy%nodHard(dummy%numHard)%gridPoint%amplitude = amplit
             !Read the time evolution
-            dummy%nodHard(dummy%numHard)%deltaevol=sggdummy%fichero%deltaSamples
+            dummy%nodHard(dummy%numHard)%deltaevol=sggdummy%sourceFile%deltaSamples
             if (dummy%nodHard(dummy%numHard)%deltaevol > sgg%dt) then
-               write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sggdummy%Fichero%Name))// &
+               write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sggdummy%sourceFile%Name))// &
                ' undersampled by a factor ',dummy%nodHard(dummy%numHard)%deltaevol/sgg%dt
                call WarnErrReport(buff)
             end if
-            dummy%nodHard(dummy%numHard)%numus =  sggdummy%Fichero%NumSamples
-            dummy%nodHard(dummy%numHard)%evol  => sggdummy%fichero%Samples
+            dummy%nodHard(dummy%numHard)%numus =  sggdummy%sourceFile%NumSamples
+            dummy%nodHard(dummy%numHard)%evol  => sggdummy%sourceFile%Samples
          else
             dummy%numSoft=dummy%numSoft+1
             !
             dummy%nodSoft(dummy%numSoft)%IsInitialValue=sggdummy%IsInitialValue
-            dummy%nodSoft(dummy%numSoft)%punto%XI = max(sggdummy%punto(index)%XI,sggSweep%XI)
-            dummy%nodSoft(dummy%numSoft)%punto%XE = min(sggdummy%punto(index)%XE,sggSweep%XE)
-            dummy%nodSoft(dummy%numSoft)%punto%YI = max(sggdummy%punto(index)%YI,sggSweep%YI)
-            dummy%nodSoft(dummy%numSoft)%punto%YE = min(sggdummy%punto(index)%YE,sggSweep%YE)
-            dummy%nodSoft(dummy%numSoft)%punto%ZI = max(sggdummy%punto(index)%ZI,sggSweep%ZI)
-            dummy%nodSoft(dummy%numSoft)%punto%ZE = min(sggdummy%punto(index)%ZE,sggSweep%ZE)
+            dummy%nodSoft(dummy%numSoft)%gridPoint%XI = max(sggdummy%gridPoint(elementIndex)%XI,sggSweep%XI)
+            dummy%nodSoft(dummy%numSoft)%gridPoint%XE = min(sggdummy%gridPoint(elementIndex)%XE,sggSweep%XE)
+            dummy%nodSoft(dummy%numSoft)%gridPoint%YI = max(sggdummy%gridPoint(elementIndex)%YI,sggSweep%YI)
+            dummy%nodSoft(dummy%numSoft)%gridPoint%YE = min(sggdummy%gridPoint(elementIndex)%YE,sggSweep%YE)
+            dummy%nodSoft(dummy%numSoft)%gridPoint%ZI = max(sggdummy%gridPoint(elementIndex)%ZI,sggSweep%ZI)
+            dummy%nodSoft(dummy%numSoft)%gridPoint%ZE = min(sggdummy%gridPoint(elementIndex)%ZE,sggSweep%ZE)
             !
-            dummy%nodSoft(dummy%numSoft)%punto%amplitude = amplit
+            dummy%nodSoft(dummy%numSoft)%gridPoint%amplitude = amplit
             !Read the time evolution
-            dummy%nodSoft(dummy%numSoft)%deltaevol=sggdummy%fichero%deltaSamples
+            dummy%nodSoft(dummy%numSoft)%deltaevol=sggdummy%sourceFile%deltaSamples
             if (dummy%nodSoft(dummy%numSoft)%deltaevol > sgg%dt) then
-               write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sggdummy%Fichero%Name))// &
+               write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sggdummy%sourceFile%Name))// &
                ' undersampled by a factor ',dummy%nodSoft(dummy%numSoft)%deltaevol/sgg%dt
                call WarnErrReport(buff)
             end if
-            dummy%nodSoft(dummy%numSoft)%numus =  sggdummy%Fichero%NumSamples
-            dummy%nodSoft(dummy%numSoft)%evol  => sggdummy%fichero%Samples
+            dummy%nodSoft(dummy%numSoft)%numus =  sggdummy%sourceFile%NumSamples
+            dummy%nodSoft(dummy%numSoft)%evol  => sggdummy%sourceFile%Samples
          end if
 
          return
@@ -287,7 +287,7 @@ contains
       real(kind=RKIND) t,deltaevol
       integer(kind=4) :: numus
       integer(kind=8) :: nprev
-      real(kind=RKIND), pointer, dimension( : ) :: evol
+      real(kind=RKIND), pointer, dimension(:) :: evol
       type(NodalLocal_t), intent(in) :: dummy
 
       if (dummy%IsInitialValue) then
@@ -308,14 +308,14 @@ contains
 
       nprev=int(t/deltaevol)
       !first order interpolation
-      if ((nprev+1 > numus).OR.(NPREV+1 <= 0)) then !SI NPREV<0 ES PORQUE SE HA DESBORADO EL ENTERO !BUG MIGEL 130614
-         evolucion=0.0_RKIND !se asume que el fichero de entrada contiene una excitacion que se anula despues
+      if ((nprev+1 > numus).OR.(NPREV+1 <= 0)) then !IF NPREV<0 IT IS BECAUSE THE INTEGER HAS OVERFLOWED !BUG MIGEL 130614
+         evolucion=0.0_RKIND !it is assumed that the input file contains an excitation that vanishes afterwards
       else
-         evolucion=(evol(nprev+1)-evol(nprev))/deltaevol*((t)-nprev*deltaevol)+evol(nprev) !interpolacion lineal
+         evolucion=(evol(nprev+1)-evol(nprev))/deltaevol*((t)-nprev*deltaevol)+evol(nprev) !linear interpolation
       end if
       !second order !no advantages over first order
       !  if (nprev+2 > numus) then
-      !      evolucion=0.0_RKIND !se asume que el fichero de entrada contiene una excitacion que se anula despues
+      !      evolucion=0.0_RKIND !it is assumed that the input file contains an excitation that vanishes afterwards
       !  else
       !      evolucion=evol(nprev+2) * ( ((t)-nprev    *deltaevol) * ((t)-(nprev+1)*deltaevol) ) /(2.0_RKIND * deltaevol**2.0_RKIND ) - &
       !                evol(nprev+1) * ( ((t)-nprev    *deltaevol) * ((t)-(nprev+2)*deltaevol) ) /(   deltaevol**2.0_RKIND ) + &
@@ -331,7 +331,7 @@ contains
    !!!  Free-up memory
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine DestroyNodal(sgg)
-      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
 
 
       if (Nodal_Ex%NumSoft+Nodal_Ey%NumSoft+Nodal_Ez%NumSoft /= 0) then
@@ -366,33 +366,33 @@ contains
       !---------------------------> inputs <----------------------------------------------------------
       type(SGGFDTDINFO_t), intent(in)     , target  :: sgg
       logical, intent(in) :: simu_devia
-      integer, intent( IN) :: NumMedia, timeinstant
+      integer, intent(in) :: NumMedia, timeinstant
       !!!
-      type( bounds_t), intent( IN) :: b
+      type(bounds_t), intent(in) :: b
       !--->
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEx%NX-1, 0 :  b%sggMiEx%NY-1, 0 :  b%sggMiEx%NZ-1), intent( IN) :: sggMiEx
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEy%NX-1, 0 :  b%sggMiEy%NY-1, 0 :  b%sggMiEy%NZ-1), intent( IN) :: sggMiEy
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEz%NX-1, 0 :  b%sggMiEz%NY-1, 0 :  b%sggMiEz%NZ-1), intent( IN) :: sggMiEz
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiEx%NX-1, 0 :  b%sggMiEx%NY-1, 0 :  b%sggMiEx%NZ-1), intent(in) :: sggMiEx
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiEy%NX-1, 0 :  b%sggMiEy%NY-1, 0 :  b%sggMiEy%NZ-1), intent(in) :: sggMiEy
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiEz%NX-1, 0 :  b%sggMiEz%NY-1, 0 :  b%sggMiEz%NZ-1), intent(in) :: sggMiEz
       !--->
-      real(kind = RKIND), dimension( 0 :  NumMedia), intent( IN) :: g2
+      real(kind = RKIND), dimension(0 :  NumMedia), intent(in) :: g2
       !--->
-      real(kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN) :: Idxh
-      real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN) :: Idyh
-      real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN) :: Idzh
+      real(kind = RKIND), dimension(0 :  b%dxh%NX-1), intent(in) :: Idxh
+      real(kind = RKIND), dimension(0 :  b%dyh%NY-1), intent(in) :: Idyh
+      real(kind = RKIND), dimension(0 :  b%dzh%NZ-1), intent(in) :: Idzh
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( INOUT) :: Ex
-      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( INOUT) :: Ey
-      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( INOUT) :: Ez
+      real(kind = RKIND), dimension(0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent(inout) :: Ex
+      real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(inout) :: Ey
+      real(kind = RKIND), dimension(0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent(inout) :: Ez
 
-      !---------------------------> variables locales <-----------------------------------------------
+      !---------------------------> local variables <-----------------------------------------------
       real(kind = RKIND) :: timei,amp
-      integer  :: i, j, k, i_m, j_m, k_m,ii,medio
-      !---------------------------> empieza AdvancenodalE <---------------------------------------
+      integer  :: i, j, k, i_m, j_m, k_m,ii,medium
+      !---------------------------> starts AdvancenodalE <---------------------------------------
 
       !!!
-      !!!! deprecado en pscale y el+3 de la sincronia con ORIGINAL se jode para siempre 110219 
+      !!!! deprecated in pscale and the +3 of the synchronization with ORIGINAL is broken forever 110219 
       !!!timei = (timeinstant +3) * sgg%dt !ORIGINAL sync
-      timei = sgg%tiempo(timeinstant) 
+      timei = sgg%time(timeinstant) 
 
       !
       barridonodalhardEx: do ii=1,Nodal_Ex%numHard
@@ -400,21 +400,21 @@ contains
               cycle barridonodalhardEx
          end if
          !     
-         amp = Nodal_Ex%nodHard(ii)%punto%amplitude
-         do k=Nodal_Ex%nodHard(ii)%punto%zi,Nodal_Ex%nodHard(ii)%punto%ze
+         amp = Nodal_Ex%nodHard(ii)%gridPoint%amplitude
+         do k=Nodal_Ex%nodHard(ii)%gridPoint%zi,Nodal_Ex%nodHard(ii)%gridPoint%ze
             k_m = k - b%Ex%ZI
-            do j=Nodal_Ex%nodHard(ii)%punto%yi,Nodal_Ex%nodHard(ii)%punto%ye
+            do j=Nodal_Ex%nodHard(ii)%gridPoint%yi,Nodal_Ex%nodHard(ii)%gridPoint%ye
                j_m = j - b%Ex%YI
-               do i=Nodal_Ex%nodHard(ii)%punto%xi,Nodal_Ex%nodHard(ii)%punto%xe
+               do i=Nodal_Ex%nodHard(ii)%gridPoint%xi,Nodal_Ex%nodHard(ii)%gridPoint%xe
                   i_m = i - b%Ex%XI
-                  medio = sggMiEx(i_m,j_m,k_m)
+                  medium = sggMiEx(i_m,j_m,k_m)
                   if (.not.simu_devia)   then !bug 280323 mdrc
-                        if (.not.sgg%Med(medio)%Is%PEC) Ex(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Ex%nodHard(ii))
+                        if (.not.sgg%Med(medium)%Is%PEC) Ex(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Ex%nodHard(ii))
                   else
-                        if (.not.sgg%Med(medio)%Is%PEC) Ex(i_m,j_m,k_m) = 0.0 !!!!!!
+                        if (.not.sgg%Med(medium)%Is%PEC) Ex(i_m,j_m,k_m) = 0.0 !!!!!!
                   end if
                end do
-            End do
+            end do
          end do
       end do barridonodalhardEx
       !
@@ -423,22 +423,22 @@ contains
               cycle barridonodalsoftEx
          end if
          !     
-         amp = Nodal_Ex%nodSoft(ii)%punto%amplitude
-         do k=Nodal_Ex%nodSoft(ii)%punto%zi,Nodal_Ex%nodSoft(ii)%punto%ze
+         amp = Nodal_Ex%nodSoft(ii)%gridPoint%amplitude
+         do k=Nodal_Ex%nodSoft(ii)%gridPoint%zi,Nodal_Ex%nodSoft(ii)%gridPoint%ze
             k_m = k - b%Ex%ZI
-            do j=Nodal_Ex%nodSoft(ii)%punto%yi,Nodal_Ex%nodSoft(ii)%punto%ye
+            do j=Nodal_Ex%nodSoft(ii)%gridPoint%yi,Nodal_Ex%nodSoft(ii)%gridPoint%ye
                j_m = j - b%Ex%YI
-               do i=Nodal_Ex%nodSoft(ii)%punto%xi,Nodal_Ex%nodSoft(ii)%punto%xe
+               do i=Nodal_Ex%nodSoft(ii)%gridPoint%xi,Nodal_Ex%nodSoft(ii)%gridPoint%xe
                   i_m = i - b%Ex%XI
-                  medio = sggMiEx(i_m,j_m,k_m)
+                  medium = sggMiEx(i_m,j_m,k_m)
                   
                   if (.not.simu_devia)   then !bug 280323 mdrc
-                        if (.not.sgg%Med(medio)%Is%PEC) Ex(i_m,j_m,k_m) = Ex(i_m,j_m,k_m)- G2(medio) * Idyh(j_m) * Idzh(k_m) * amp * evolucion(timei,Nodal_Ex%nodSoft(ii)) 
+                        if (.not.sgg%Med(medium)%Is%PEC) Ex(i_m,j_m,k_m) = Ex(i_m,j_m,k_m)- G2(medium) * Idyh(j_m) * Idzh(k_m) * amp * evolucion(timei,Nodal_Ex%nodSoft(ii)) 
                   else
-                       if (.not.sgg%Med(medio)%Is%PEC)  Ex(i_m,j_m,k_m) = Ex(i_m,j_m,k_m) !!!!!!
+                       if (.not.sgg%Med(medium)%Is%PEC)  Ex(i_m,j_m,k_m) = Ex(i_m,j_m,k_m) !!!!!!
                   end if
                end do
-            End do
+            end do
          end do
       end do barridonodalsoftEx
       !
@@ -448,22 +448,22 @@ contains
               cycle barridonodalhardEy
          end if
          !
-         amp = Nodal_Ey%nodHard(ii)%punto%amplitude
-         do k=Nodal_Ey%nodHard(ii)%punto%zi,Nodal_Ey%nodHard(ii)%punto%ze
+         amp = Nodal_Ey%nodHard(ii)%gridPoint%amplitude
+         do k=Nodal_Ey%nodHard(ii)%gridPoint%zi,Nodal_Ey%nodHard(ii)%gridPoint%ze
             k_m = k - b%Ey%ZI
-            do j=Nodal_Ey%nodHard(ii)%punto%yi,Nodal_Ey%nodHard(ii)%punto%ye
+            do j=Nodal_Ey%nodHard(ii)%gridPoint%yi,Nodal_Ey%nodHard(ii)%gridPoint%ye
                j_m = j - b%Ey%YI
-               do i=Nodal_Ey%nodHard(ii)%punto%xi,Nodal_Ey%nodHard(ii)%punto%xe
+               do i=Nodal_Ey%nodHard(ii)%gridPoint%xi,Nodal_Ey%nodHard(ii)%gridPoint%xe
                   i_m = i - b%Ey%XI
-                  medio = sggMiEy(i_m,j_m,k_m)
+                  medium = sggMiEy(i_m,j_m,k_m)
                   
                   if (.not.simu_devia)   then !bug 280323 mdrc
-                        if (.not.sgg%Med(medio)%Is%PEC) Ey(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Ey%nodHard(ii))   
+                        if (.not.sgg%Med(medium)%Is%PEC) Ey(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Ey%nodHard(ii))   
                   else
-                        if (.not.sgg%Med(medio)%Is%PEC) Ey(i_m,j_m,k_m) = 0.0 !!!!!!
+                        if (.not.sgg%Med(medium)%Is%PEC) Ey(i_m,j_m,k_m) = 0.0 !!!!!!
                   end if
                end do
-            End do
+            end do
          end do
       end do barridonodalhardEy
       !
@@ -472,22 +472,22 @@ contains
               cycle barridonodalsoftEy
          end if
          !     
-         amp = Nodal_Ey%nodSoft(ii)%punto%amplitude
-         do k=Nodal_Ey%nodSoft(ii)%punto%zi,Nodal_Ey%nodSoft(ii)%punto%ze
+         amp = Nodal_Ey%nodSoft(ii)%gridPoint%amplitude
+         do k=Nodal_Ey%nodSoft(ii)%gridPoint%zi,Nodal_Ey%nodSoft(ii)%gridPoint%ze
             k_m = k - b%Ey%ZI
-            do j=Nodal_Ey%nodSoft(ii)%punto%yi,Nodal_Ey%nodSoft(ii)%punto%ye
+            do j=Nodal_Ey%nodSoft(ii)%gridPoint%yi,Nodal_Ey%nodSoft(ii)%gridPoint%ye
                j_m = j - b%Ey%YI
-               do i=Nodal_Ey%nodSoft(ii)%punto%xi,Nodal_Ey%nodSoft(ii)%punto%xe
+               do i=Nodal_Ey%nodSoft(ii)%gridPoint%xi,Nodal_Ey%nodSoft(ii)%gridPoint%xe
                   i_m = i - b%Ey%XI
-                  medio = sggMiEy(i_m,j_m,k_m)
+                  medium = sggMiEy(i_m,j_m,k_m)
                   
                   if (.not.simu_devia)   then !bug 280323 mdrc
-                        if (.not.sgg%Med(medio)%Is%PEC) Ey(i_m,j_m,k_m) = Ey(i_m,j_m,k_m)- G2(medio) * Idxh(i_m) * Idzh(k_m) * amp * evolucion(timei,Nodal_Ey%nodSoft(ii))   
+                        if (.not.sgg%Med(medium)%Is%PEC) Ey(i_m,j_m,k_m) = Ey(i_m,j_m,k_m)- G2(medium) * Idxh(i_m) * Idzh(k_m) * amp * evolucion(timei,Nodal_Ey%nodSoft(ii))   
                   else
-                       if (.not.sgg%Med(medio)%Is%PEC)  Ey(i_m,j_m,k_m) = Ey(i_m,j_m,k_m) !!!!!!
+                       if (.not.sgg%Med(medium)%Is%PEC)  Ey(i_m,j_m,k_m) = Ey(i_m,j_m,k_m) !!!!!!
                   end if
                end do
-            End do
+            end do
          end do
       end do barridonodalsoftEy
 
@@ -496,22 +496,22 @@ contains
               cycle barridonodalhardEz
          end if
          !
-         amp = Nodal_Ez%nodHard(ii)%punto%amplitude
-         do k=Nodal_Ez%nodHard(ii)%punto%zi,Nodal_Ez%nodHard(ii)%punto%ze
+         amp = Nodal_Ez%nodHard(ii)%gridPoint%amplitude
+         do k=Nodal_Ez%nodHard(ii)%gridPoint%zi,Nodal_Ez%nodHard(ii)%gridPoint%ze
             k_m = k - b%Ez%ZI
-            do j=Nodal_Ez%nodHard(ii)%punto%yi,Nodal_Ez%nodHard(ii)%punto%ye
+            do j=Nodal_Ez%nodHard(ii)%gridPoint%yi,Nodal_Ez%nodHard(ii)%gridPoint%ye
                j_m = j - b%Ez%YI
-               do i=Nodal_Ez%nodHard(ii)%punto%xi,Nodal_Ez%nodHard(ii)%punto%xe
+               do i=Nodal_Ez%nodHard(ii)%gridPoint%xi,Nodal_Ez%nodHard(ii)%gridPoint%xe
                   i_m = i - b%Ez%XI
-                  medio = sggMiEz(i_m,j_m,k_m)
+                  medium = sggMiEz(i_m,j_m,k_m)
                   
                   if (.not.simu_devia)   then !bug 280323 mdrc
-                        if (.not.sgg%Med(medio)%Is%PEC) Ez(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Ez%nodHard(ii))  
+                        if (.not.sgg%Med(medium)%Is%PEC) Ez(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Ez%nodHard(ii))  
                   else
-                        if (.not.sgg%Med(medio)%Is%PEC) Ez(i_m,j_m,k_m) = 0.0 !!!!!!
+                        if (.not.sgg%Med(medium)%Is%PEC) Ez(i_m,j_m,k_m) = 0.0 !!!!!!
                   end if
                end do
-            End do
+            end do
          end do
       end do barridonodalhardEz
       !
@@ -520,22 +520,22 @@ contains
               cycle barridonodalsoftEz
          end if
          !     
-         amp = Nodal_Ez%nodSoft(ii)%punto%amplitude
-         do k=Nodal_Ez%nodSoft(ii)%punto%zi,Nodal_Ez%nodSoft(ii)%punto%ze
+         amp = Nodal_Ez%nodSoft(ii)%gridPoint%amplitude
+         do k=Nodal_Ez%nodSoft(ii)%gridPoint%zi,Nodal_Ez%nodSoft(ii)%gridPoint%ze
             k_m = k - b%Ez%ZI
-            do j=Nodal_Ez%nodSoft(ii)%punto%yi,Nodal_Ez%nodSoft(ii)%punto%ye
+            do j=Nodal_Ez%nodSoft(ii)%gridPoint%yi,Nodal_Ez%nodSoft(ii)%gridPoint%ye
                j_m = j - b%Ez%YI
-               do i=Nodal_Ez%nodSoft(ii)%punto%xi,Nodal_Ez%nodSoft(ii)%punto%xe
+               do i=Nodal_Ez%nodSoft(ii)%gridPoint%xi,Nodal_Ez%nodSoft(ii)%gridPoint%xe
                   i_m = i - b%Ez%XI
-                  medio = sggMiEz(i_m,j_m,k_m)
+                  medium = sggMiEz(i_m,j_m,k_m)
                   
                   if (.not.simu_devia)   then !bug 280323 mdrc
-                        if (.not.sgg%Med(medio)%Is%PEC) Ez(i_m,j_m,k_m) = Ez(i_m,j_m,k_m)- G2(medio) * Idyh(j_m) * Idxh(i_m) * amp * evolucion(timei,Nodal_Ez%nodSoft(ii))
+                        if (.not.sgg%Med(medium)%Is%PEC) Ez(i_m,j_m,k_m) = Ez(i_m,j_m,k_m)- G2(medium) * Idyh(j_m) * Idxh(i_m) * amp * evolucion(timei,Nodal_Ez%nodSoft(ii))
                   else
-                        if (.not.sgg%Med(medio)%Is%PEC) Ez(i_m,j_m,k_m) = Ez(i_m,j_m,k_m) !!!!!!
+                        if (.not.sgg%Med(medium)%Is%PEC) Ez(i_m,j_m,k_m) = Ez(i_m,j_m,k_m) !!!!!!
                   end if
                end do
-            End do
+            end do
          end do
       end do barridonodalsoftEz
 
@@ -544,7 +544,7 @@ contains
 
       return
 
-   endsubroutine AdvancenodalE
+   end subroutine AdvancenodalE
    !**************************************************************************************************
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Feed the currents to illuminate the H-field at n+0.5_RKIND
@@ -553,28 +553,28 @@ contains
    subroutine AdvancenodalH(sgg,sggMiHx, sggMiHy, sggMiHz,NumMedia,timeinstant, b,gm2,Idxe,Idye,Idze,Hx,Hy,Hz,simu_devia)
       !---------------------------> inputs <----------------------------------------------------------
       type(SGGFDTDINFO_t), intent(in)     , target  :: sgg
-      logical , intent(in) :: simu_devia !ojo untested con simu_devia este tipo de fuentes
-      integer, intent( IN) :: NumMedia, timeinstant
+      logical , intent(in) :: simu_devia !note untested with simu_devia this type of sources
+      integer, intent(in) :: NumMedia, timeinstant
       !!!
-      type( bounds_t), intent( IN) :: b
+      type(bounds_t), intent(in) :: b
       !--->
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHx%NX-1, 0 :  b%sggMiHx%NY-1, 0 :  b%sggMiHx%NZ-1), intent( IN) :: sggMiHx
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent( IN) :: sggMiHy
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent( IN) :: sggMiHz
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiHx%NX-1, 0 :  b%sggMiHx%NY-1, 0 :  b%sggMiHx%NZ-1), intent(in) :: sggMiHx
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent(in) :: sggMiHy
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent(in) :: sggMiHz
       !--->
-      real(kind = RKIND), dimension( 0 :  NumMedia), intent( IN) :: gm2
+      real(kind = RKIND), dimension(0 :  NumMedia), intent(in) :: gm2
       !--->
-      real(kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN) :: Idxe
-      real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN) :: Idye
-      real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN) :: Idze
+      real(kind = RKIND), dimension(0 :  b%dxh%NX-1), intent(in) :: Idxe
+      real(kind = RKIND), dimension(0 :  b%dyh%NY-1), intent(in) :: Idye
+      real(kind = RKIND), dimension(0 :  b%dzh%NZ-1), intent(in) :: Idze
 
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT) :: Hx
-      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT) :: Hy
-      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT) :: Hz
-      !---------------------------> variables locales <-----------------------------------------------
+      real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(inout) :: Hx
+      real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(inout) :: Hy
+      real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(inout) :: Hz
+      !---------------------------> local variables <-----------------------------------------------
       real(kind = RKIND) :: timei,amp
-      integer(kind=4) :: i, j, k, i_m, j_m, k_m,ii,medio
+      integer(kind=4) :: i, j, k, i_m, j_m, k_m,ii,medium
       real(kind = RKIND) :: GM2_1
       !!!
       if (simu_devia) then
@@ -582,10 +582,10 @@ contains
           stop
       end if
       GM2_1=GM2(1)
-      !---------------------------> empieza AdvancenodalH <---------------------------------------
+      !---------------------------> starts AdvancenodalH <---------------------------------------
       
-      timei = sgg%tiempo(timeinstant) + 0.5_RKIND  * sgg%dt
-      !!!! deprecado en pscale y el+3 de la sincronia con ORIGINAL se jode para siempre 110219 
+      timei = sgg%time(timeinstant) + 0.5_RKIND  * sgg%dt
+      !!!! deprecated in pscale and the +3 of the synchronization with ORIGINAL is broken forever 110219 
       !!! timei = ( timeinstant + 0.5_RKIND  +3.0_RKIND) * sgg%dt  !ORIGINAL sync
 
 
@@ -594,17 +594,17 @@ contains
               cycle barridonodalhardHx
          end if
          !     
-         amp = Nodal_Hx%nodHard(ii)%punto%amplitude
-         do k=Nodal_Hx%nodHard(ii)%punto%zi,Nodal_Hx%nodHard(ii)%punto%ze
+         amp = Nodal_Hx%nodHard(ii)%gridPoint%amplitude
+         do k=Nodal_Hx%nodHard(ii)%gridPoint%zi,Nodal_Hx%nodHard(ii)%gridPoint%ze
             k_m = k - b%Hx%ZI
-            do j=Nodal_Hx%nodHard(ii)%punto%yi,Nodal_Hx%nodHard(ii)%punto%ye
+            do j=Nodal_Hx%nodHard(ii)%gridPoint%yi,Nodal_Hx%nodHard(ii)%gridPoint%ye
                j_m = j - b%Hx%YI
-               do i=Nodal_Hx%nodHard(ii)%punto%xi,Nodal_Hx%nodHard(ii)%punto%xe
+               do i=Nodal_Hx%nodHard(ii)%gridPoint%xi,Nodal_Hx%nodHard(ii)%gridPoint%xe
                   i_m = i - b%Hx%XI
-                  medio = sggMiHx(i_m,j_m,k_m)
-                  if (.not.sgg%Med(medio)%Is%PMC) Hx(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Hx%nodHard(ii))
+                  medium = sggMiHx(i_m,j_m,k_m)
+                  if (.not.sgg%Med(medium)%Is%PMC) Hx(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Hx%nodHard(ii))
                end do
-            End do
+            end do
          end do
       end do barridonodalhardHx
       !
@@ -613,17 +613,17 @@ contains
               cycle barridonodalsoftHx
          end if
          !     
-         amp = Nodal_Hx%nodSoft(ii)%punto%amplitude
-         do k=Nodal_Hx%nodSoft(ii)%punto%zi,Nodal_Hx%nodSoft(ii)%punto%ze
+         amp = Nodal_Hx%nodSoft(ii)%gridPoint%amplitude
+         do k=Nodal_Hx%nodSoft(ii)%gridPoint%zi,Nodal_Hx%nodSoft(ii)%gridPoint%ze
             k_m = k - b%Hx%ZI
-            do j=Nodal_Hx%nodSoft(ii)%punto%yi,Nodal_Hx%nodSoft(ii)%punto%ye
+            do j=Nodal_Hx%nodSoft(ii)%gridPoint%yi,Nodal_Hx%nodSoft(ii)%gridPoint%ye
                j_m = j - b%Hx%YI
-               do i=Nodal_Hx%nodSoft(ii)%punto%xi,Nodal_Hx%nodSoft(ii)%punto%xe
+               do i=Nodal_Hx%nodSoft(ii)%gridPoint%xi,Nodal_Hx%nodSoft(ii)%gridPoint%xe
                   i_m = i - b%Hx%XI
-                  medio = sggMiHx(i_m,j_m,k_m)
-                  if (.not.sgg%Med(medio)%Is%PMC) Hx(i_m,j_m,k_m) = Hx(i_m,j_m,k_m)- Gm2(medio) * Idye(j_m) * Idze(k_m) * amp * evolucion(timei,Nodal_Hx%nodSoft(ii))
+                  medium = sggMiHx(i_m,j_m,k_m)
+                  if (.not.sgg%Med(medium)%Is%PMC) Hx(i_m,j_m,k_m) = Hx(i_m,j_m,k_m)- Gm2(medium) * Idye(j_m) * Idze(k_m) * amp * evolucion(timei,Nodal_Hx%nodSoft(ii))
                end do
-            End do
+            end do
          end do
       end do barridonodalsoftHx
       !
@@ -633,17 +633,17 @@ contains
               cycle barridonodalhardHy
          end if
          !
-         amp = Nodal_Hy%nodHard(ii)%punto%amplitude
-         do k=Nodal_Hy%nodHard(ii)%punto%zi,Nodal_Hy%nodHard(ii)%punto%ze
+         amp = Nodal_Hy%nodHard(ii)%gridPoint%amplitude
+         do k=Nodal_Hy%nodHard(ii)%gridPoint%zi,Nodal_Hy%nodHard(ii)%gridPoint%ze
             k_m = k - b%Hy%ZI
-            do j=Nodal_Hy%nodHard(ii)%punto%yi,Nodal_Hy%nodHard(ii)%punto%ye
+            do j=Nodal_Hy%nodHard(ii)%gridPoint%yi,Nodal_Hy%nodHard(ii)%gridPoint%ye
                j_m = j - b%Hy%YI
-               do i=Nodal_Hy%nodHard(ii)%punto%xi,Nodal_Hy%nodHard(ii)%punto%xe
+               do i=Nodal_Hy%nodHard(ii)%gridPoint%xi,Nodal_Hy%nodHard(ii)%gridPoint%xe
                   i_m = i - b%Hy%XI
-                  medio = sggMiHx(i_m,j_m,k_m)
-                  if (.not.sgg%Med(medio)%Is%PMC) Hy(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Hy%nodHard(ii))
+                  medium = sggMiHx(i_m,j_m,k_m)
+                  if (.not.sgg%Med(medium)%Is%PMC) Hy(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Hy%nodHard(ii))
                end do
-            End do
+            end do
          end do
       end do barridonodalhardHy
       !
@@ -652,17 +652,17 @@ contains
               cycle barridonodalsoftHy
          end if
          !     
-         amp = Nodal_Hy%nodSoft(ii)%punto%amplitude
-         do k=Nodal_Hy%nodSoft(ii)%punto%zi,Nodal_Hy%nodSoft(ii)%punto%ze
+         amp = Nodal_Hy%nodSoft(ii)%gridPoint%amplitude
+         do k=Nodal_Hy%nodSoft(ii)%gridPoint%zi,Nodal_Hy%nodSoft(ii)%gridPoint%ze
             k_m = k - b%Hy%ZI
-            do j=Nodal_Hy%nodSoft(ii)%punto%yi,Nodal_Hy%nodSoft(ii)%punto%ye
+            do j=Nodal_Hy%nodSoft(ii)%gridPoint%yi,Nodal_Hy%nodSoft(ii)%gridPoint%ye
                j_m = j - b%Hy%YI
-               do i=Nodal_Hy%nodSoft(ii)%punto%xi,Nodal_Hy%nodSoft(ii)%punto%xe
+               do i=Nodal_Hy%nodSoft(ii)%gridPoint%xi,Nodal_Hy%nodSoft(ii)%gridPoint%xe
                   i_m = i - b%Hy%XI
-                  medio = sggMiHy(i_m,j_m,k_m)
-                  if (.not.sgg%Med(medio)%Is%PMC) Hy(i_m,j_m,k_m) = Hy(i_m,j_m,k_m)- Gm2(medio) * Idxe(i_m) * Idze(k_m) * amp * evolucion(timei,Nodal_Hy%nodSoft(ii))
+                  medium = sggMiHy(i_m,j_m,k_m)
+                  if (.not.sgg%Med(medium)%Is%PMC) Hy(i_m,j_m,k_m) = Hy(i_m,j_m,k_m)- Gm2(medium) * Idxe(i_m) * Idze(k_m) * amp * evolucion(timei,Nodal_Hy%nodSoft(ii))
                end do
-            End do
+            end do
          end do
       end do barridonodalsoftHy
 
@@ -671,17 +671,17 @@ contains
               cycle barridonodalhardHz
          end if
          !
-         amp = Nodal_Hz%nodHard(ii)%punto%amplitude
-         do k=Nodal_Hz%nodHard(ii)%punto%zi,Nodal_Hz%nodHard(ii)%punto%ze
+         amp = Nodal_Hz%nodHard(ii)%gridPoint%amplitude
+         do k=Nodal_Hz%nodHard(ii)%gridPoint%zi,Nodal_Hz%nodHard(ii)%gridPoint%ze
             k_m = k - b%Hz%ZI
-            do j=Nodal_Hz%nodHard(ii)%punto%yi,Nodal_Hz%nodHard(ii)%punto%ye
+            do j=Nodal_Hz%nodHard(ii)%gridPoint%yi,Nodal_Hz%nodHard(ii)%gridPoint%ye
                j_m = j - b%Hz%YI
-               do i=Nodal_Hz%nodHard(ii)%punto%xi,Nodal_Hz%nodHard(ii)%punto%xe
+               do i=Nodal_Hz%nodHard(ii)%gridPoint%xi,Nodal_Hz%nodHard(ii)%gridPoint%xe
                   i_m = i - b%Hz%XI
-                  medio = sggMiHx(i_m,j_m,k_m)
-                  if (.not.sgg%Med(medio)%Is%PMC) Hz(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Hz%nodHard(ii))
+                  medium = sggMiHx(i_m,j_m,k_m)
+                  if (.not.sgg%Med(medium)%Is%PMC) Hz(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Hz%nodHard(ii))
                end do
-            End do
+            end do
          end do
       end do barridonodalhardHz
       !
@@ -690,17 +690,17 @@ contains
               cycle barridonodalsoftHz
          end if
          !     
-         amp = Nodal_Hz%nodSoft(ii)%punto%amplitude
-         do k=Nodal_Hz%nodSoft(ii)%punto%zi,Nodal_Hz%nodSoft(ii)%punto%ze
+         amp = Nodal_Hz%nodSoft(ii)%gridPoint%amplitude
+         do k=Nodal_Hz%nodSoft(ii)%gridPoint%zi,Nodal_Hz%nodSoft(ii)%gridPoint%ze
             k_m = k - b%Hz%ZI
-            do j=Nodal_Hz%nodSoft(ii)%punto%yi,Nodal_Hz%nodSoft(ii)%punto%ye
+            do j=Nodal_Hz%nodSoft(ii)%gridPoint%yi,Nodal_Hz%nodSoft(ii)%gridPoint%ye
                j_m = j - b%Hz%YI
-               do i=Nodal_Hz%nodSoft(ii)%punto%xi,Nodal_Hz%nodSoft(ii)%punto%xe
+               do i=Nodal_Hz%nodSoft(ii)%gridPoint%xi,Nodal_Hz%nodSoft(ii)%gridPoint%xe
                   i_m = i - b%Hz%XI
-                  medio = sggMiHz(i_m,j_m,k_m)
-                  if (.not.sgg%Med(medio)%Is%PMC) Hz(i_m,j_m,k_m) = Hz(i_m,j_m,k_m)- Gm2(medio) * Idye(j_m) * Idxe(i_m) * amp * evolucion(timei,Nodal_Hz%nodSoft(ii))
+                  medium = sggMiHz(i_m,j_m,k_m)
+                  if (.not.sgg%Med(medium)%Is%PMC) Hz(i_m,j_m,k_m) = Hz(i_m,j_m,k_m)- Gm2(medium) * Idye(j_m) * Idxe(i_m) * amp * evolucion(timei,Nodal_Hz%nodSoft(ii))
                end do
-            End do
+            end do
          end do
       end do barridonodalsoftHz
 
@@ -708,7 +708,7 @@ contains
 
 
       return
-   endsubroutine AdvancenodalH
+   end subroutine AdvancenodalH
 
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!

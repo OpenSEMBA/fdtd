@@ -1,10 +1,10 @@
 integer function test_read_towelhanger() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'towelHanger.fdtd.json'
+   character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'towelHanger.fdtd.json'
    type(Parseador_t) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
@@ -51,8 +51,8 @@ contains
       expected%despl%mz2 = 60
 
       ! Expected boundaries.
-      expected%front%tipoFrontera(:) = F_PML
-      expected%front%propiedadesPML(:)%numCapas = 6
+      expected%front%boundaryType(:) = F_PML
+      expected%front%propiedadesPML(:)%numLayers = 6
       expected%front%propiedadesPML(:)%orden = 2.0_RKIND
       expected%front%propiedadesPML(:)%refl = 0.001_RKIND
 
@@ -127,19 +127,19 @@ contains
       deallocate(expected%mtln%probes)
       allocate(expected%mtln%probes(3))
       expected%mtln%probes(1)%attached_to_cable => expected%mtln%cables(1)%ptr
-      expected%mtln%probes(1)%index = 1
+      expected%mtln%probes(1)%elementIndex = 1
       expected%mtln%probes(1)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(1)%probe_name = "wire_start"
       expected%mtln%probes(1)%probe_position = [27,25,30]
       
       expected%mtln%probes(2)%attached_to_cable => expected%mtln%cables(1)%ptr
-      expected%mtln%probes(2)%index = 21
+      expected%mtln%probes(2)%elementIndex = 21
       expected%mtln%probes(2)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(2)%probe_name = "wire_end"
       expected%mtln%probes(2)%probe_position = [43, 25, 30]
 
       expected%mtln%probes(3)%attached_to_cable => expected%mtln%cables(1)%ptr
-      expected%mtln%probes(3)%index = 11
+      expected%mtln%probes(3)%elementIndex = 11
       expected%mtln%probes(3)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(3)%probe_name = "wire_mid"
       expected%mtln%probes(3)%probe_position = [35, 25, 32]

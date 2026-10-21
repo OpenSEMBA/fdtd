@@ -1,10 +1,10 @@
 integer function test_termination_resistive() bind(C) result(error_cnt)
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: square_excitation = PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
+    character(len=*), parameter :: SQUARE_EXCITATION = PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
 
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left, node_right
@@ -41,7 +41,7 @@ integer function test_termination_resistive() bind(C) result(error_cnt)
     node_left%conductor_in_cable = 1
     node_left%side = TERMINAL_NODE_SIDE_INI
 
-    node_left%termination%path_to_excitation=square_excitation
+    node_left%termination%path_to_excitation=SQUARE_EXCITATION
     node_left%termination%termination_type = TERMINATION_SERIES
     node_left%termination%resistance = 150
     node_left%termination%inductance = 0.0 
@@ -63,15 +63,15 @@ integer function test_termination_resistive() bind(C) result(error_cnt)
     network_right%connections = [connection_right]
 
     probe_v%attached_to_cable => cable
-    probe_v%index = 1 
+    probe_v%elementIndex = 1 
     probe_v%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i%attached_to_cable => cable
-    probe_i%index = 50
+    probe_i%elementIndex = 50
     probe_i%probe_type = PROBE_TYPE_CURRENT
 
     probe_v_r%attached_to_cable => cable
-    probe_v_r%index = 50
+    probe_v_r%elementIndex = 50
     probe_v_r%probe_type = PROBE_TYPE_VOLTAGE
 
 
@@ -102,11 +102,11 @@ end function
 
 integer function test_termination_resistive_inductive() bind(C) result(error_cnt)
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: square_excitation = PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
+    character(len=*), parameter :: SQUARE_EXCITATION = PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
 
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left, node_right
@@ -144,7 +144,7 @@ integer function test_termination_resistive_inductive() bind(C) result(error_cnt
     node_left%conductor_in_cable = 1
     node_left%side = TERMINAL_NODE_SIDE_INI
 
-    node_left%termination%path_to_excitation=square_excitation
+    node_left%termination%path_to_excitation=SQUARE_EXCITATION
     node_left%termination%termination_type = TERMINATION_SERIES
     node_left%termination%resistance = 150
     node_left%termination%inductance = 0.0
@@ -166,15 +166,15 @@ integer function test_termination_resistive_inductive() bind(C) result(error_cnt
     network_right%connections = [connection_right]
 
     probe_v%attached_to_cable => cable
-    probe_v%index = 1 
+    probe_v%elementIndex = 1 
     probe_v%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i%attached_to_cable => cable
-    probe_i%index = 50
+    probe_i%elementIndex = 50
     probe_i%probe_type = PROBE_TYPE_CURRENT
 
     probe_v_R%attached_to_cable => cable
-    probe_v_R%index = 50
+    probe_v_R%elementIndex = 50
     probe_v_R%probe_type = PROBE_TYPE_VOLTAGE
 
 
@@ -205,11 +205,11 @@ end function
 
 integer function test_termination_resistive_capacitive_parallel() bind(C) result(error_cnt)
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: square_excitation = &
+    character(len=*), parameter :: SQUARE_EXCITATION = &
         PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
 
     type(cable_t), target :: cable
@@ -248,7 +248,7 @@ integer function test_termination_resistive_capacitive_parallel() bind(C) result
     node_left%conductor_in_cable = 1
     node_left%side = TERMINAL_NODE_SIDE_INI
 
-    node_left%termination%path_to_excitation=square_excitation 
+    node_left%termination%path_to_excitation=SQUARE_EXCITATION 
     node_left%termination%termination_type = TERMINATION_SERIES
     node_left%termination%resistance = 150
     node_left%termination%inductance = 0.0 
@@ -259,7 +259,7 @@ integer function test_termination_resistive_capacitive_parallel() bind(C) result
     node_right%belongs_to_cable => cable
     node_right%conductor_in_cable = 1
     node_right%side = TERMINAL_NODE_SIDE_END
-    node_right%termination%termination_type = TERMINATION_RLsCp
+    node_right%termination%termination_type = TERMINATION_RLSCP
     node_right%termination%resistance = 0.1 
     node_right%termination%inductance = 0.0 
     node_right%termination%capacitance = 100e-12
@@ -270,15 +270,15 @@ integer function test_termination_resistive_capacitive_parallel() bind(C) result
     network_right%connections = [connection_right]
 
     probe_v%attached_to_cable => cable
-    probe_v%index = 1 
+    probe_v%elementIndex = 1 
     probe_v%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i%attached_to_cable => cable
-    probe_i%index = 50
+    probe_i%elementIndex = 50
     probe_i%probe_type = PROBE_TYPE_CURRENT
 
     probe_v_r%attached_to_cable => cable
-    probe_v_r%index = 50
+    probe_v_r%elementIndex = 50
     probe_v_r%probe_type = PROBE_TYPE_VOLTAGE
 
 
@@ -309,11 +309,11 @@ end function
 
 integer function test_termination_rls_cp() bind(C) result(error_cnt)
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: square_excitation = &
+    character(len=*), parameter :: SQUARE_EXCITATION = &
         PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
 
     type(cable_t), target :: cable
@@ -352,7 +352,7 @@ integer function test_termination_rls_cp() bind(C) result(error_cnt)
     node_left%conductor_in_cable = 1
     node_left%side = TERMINAL_NODE_SIDE_INI
 
-    node_left%termination%path_to_excitation=square_excitation
+    node_left%termination%path_to_excitation=SQUARE_EXCITATION
     node_left%termination%termination_type = TERMINATION_SERIES
     node_left%termination%resistance = 150
     node_left%termination%inductance = 0.0 
@@ -363,7 +363,7 @@ integer function test_termination_rls_cp() bind(C) result(error_cnt)
     node_right%belongs_to_cable => cable
     node_right%conductor_in_cable = 1
     node_right%side = TERMINAL_NODE_SIDE_END
-    node_right%termination%termination_type = TERMINATION_RLsCP
+    node_right%termination%termination_type = TERMINATION_RLSCP
     node_right%termination%resistance = 10
     node_right%termination%inductance = 10e-6
     node_right%termination%capacitance = 100e-12
@@ -374,15 +374,15 @@ integer function test_termination_rls_cp() bind(C) result(error_cnt)
     network_right%connections = [connection_right]
 
     probe_v%attached_to_cable => cable
-    probe_v%index = 1 
+    probe_v%elementIndex = 1 
     probe_v%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i%attached_to_cable => cable
-    probe_i%index = 50
+    probe_i%elementIndex = 50
     probe_i%probe_type = PROBE_TYPE_CURRENT
 
     probe_v_r%attached_to_cable => cable
-    probe_v_r%index = 50
+    probe_v_r%elementIndex = 50
     probe_v_r%probe_type = PROBE_TYPE_VOLTAGE
 
 
@@ -413,11 +413,11 @@ end function
 
 integer function test_termination_rls_cp_ns() bind(C) result(error_cnt)
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_6_gauss.exc'
+    character(len=*), parameter :: PULSE_EXCITATION = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_6_gauss.exc'
 
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left, node_right
@@ -461,7 +461,7 @@ integer function test_termination_rls_cp_ns() bind(C) result(error_cnt)
     node_left%conductor_in_cable = 1
     node_left%side = TERMINAL_NODE_SIDE_INI
 
-    node_left%termination%path_to_excitation=pulse_excitation 
+    node_left%termination%path_to_excitation=PULSE_EXCITATION 
     node_left%termination%termination_type = TERMINATION_SERIES
     node_left%termination%resistance = 150
     node_left%termination%inductance = 0.0 
@@ -472,7 +472,7 @@ integer function test_termination_rls_cp_ns() bind(C) result(error_cnt)
     node_right%belongs_to_cable => cable
     node_right%conductor_in_cable = 1
     node_right%side = TERMINAL_NODE_SIDE_END
-    node_right%termination%termination_type = TERMINATION_RLsCP
+    node_right%termination%termination_type = TERMINATION_RLSCP
     node_right%termination%resistance = 10
     node_right%termination%inductance = 10e-6
     node_right%termination%capacitance = 100e-12
@@ -483,15 +483,15 @@ integer function test_termination_rls_cp_ns() bind(C) result(error_cnt)
     network_right%connections = [connection_right]
 
     probe_v%attached_to_cable => cable
-    probe_v%index = 1 
+    probe_v%elementIndex = 1 
     probe_v%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i%attached_to_cable => cable
-    probe_i%index = 50
+    probe_i%elementIndex = 50
     probe_i%probe_type = PROBE_TYPE_CURRENT
 
     probe_v_r%attached_to_cable => cable
-    probe_v_r%index = 50
+    probe_v_r%elementIndex = 50
     probe_v_r%probe_type = PROBE_TYPE_VOLTAGE
 
 
@@ -522,11 +522,11 @@ end function
 
 integer function test_termination_rcp() bind(C) result(error_cnt)
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: square_excitation = &
+    character(len=*), parameter :: SQUARE_EXCITATION = &
         PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
 
     type(cable_t), target :: cable
@@ -565,7 +565,7 @@ integer function test_termination_rcp() bind(C) result(error_cnt)
     node_left%conductor_in_cable = 1
     node_left%side = TERMINAL_NODE_SIDE_INI
 
-    node_left%termination%path_to_excitation=square_excitation
+    node_left%termination%path_to_excitation=SQUARE_EXCITATION
     node_left%termination%termination_type = TERMINATION_SERIES
     node_left%termination%resistance = 150
     node_left%termination%inductance = 0.0 
@@ -576,7 +576,7 @@ integer function test_termination_rcp() bind(C) result(error_cnt)
     node_right%belongs_to_cable => cable
     node_right%conductor_in_cable = 1
     node_right%side = TERMINAL_NODE_SIDE_END
-    node_right%termination%termination_type = TERMINATION_RLsCp
+    node_right%termination%termination_type = TERMINATION_RLSCP
     node_right%termination%resistance = 10
     node_right%termination%inductance = 0.0
     node_right%termination%capacitance = 100e-12
@@ -587,15 +587,15 @@ integer function test_termination_rcp() bind(C) result(error_cnt)
     network_right%connections = [connection_right]
 
     probe_v%attached_to_cable => cable
-    probe_v%index = 1 
+    probe_v%elementIndex = 1 
     probe_v%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i%attached_to_cable => cable
-    probe_i%index = 50
+    probe_i%elementIndex = 50
     probe_i%probe_type = PROBE_TYPE_CURRENT
 
     probe_v_r%attached_to_cable => cable
-    probe_v_r%index = 50
+    probe_v_r%elementIndex = 50
     probe_v_r%probe_type = PROBE_TYPE_VOLTAGE
 
 
@@ -626,12 +626,12 @@ end function
 
 integer function test_termination_resistive_capacitive() bind(C) result(error_cnt)
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
     ! character(len=*), parameter :: square_excitation = PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
-    character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/5u_1u_gauss.exc'
+    character(len=*), parameter :: PULSE_EXCITATION = PATH_TO_TEST_DATA//'excitations/5u_1u_gauss.exc'
 
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left, node_right
@@ -669,7 +669,7 @@ integer function test_termination_resistive_capacitive() bind(C) result(error_cn
     node_left%conductor_in_cable = 1
     node_left%side = TERMINAL_NODE_SIDE_INI
 
-    node_left%termination%path_to_excitation=pulse_excitation
+    node_left%termination%path_to_excitation=PULSE_EXCITATION
     node_left%termination%termination_type = TERMINATION_SERIES
     node_left%termination%resistance = 150
     node_left%termination%inductance = 0.0
@@ -691,15 +691,15 @@ integer function test_termination_resistive_capacitive() bind(C) result(error_cn
     network_right%connections = [connection_right]
 
     probe_v%attached_to_cable => cable
-    probe_v%index = 1 
+    probe_v%elementIndex = 1 
     probe_v%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i%attached_to_cable => cable
-    probe_i%index = 50
+    probe_i%elementIndex = 50
     probe_i%probe_type = PROBE_TYPE_CURRENT
 
     probe_v_r%attached_to_cable => cable
-    probe_v_r%index = 50
+    probe_v_r%elementIndex = 50
     probe_v_r%probe_type = PROBE_TYPE_VOLTAGE
 
 
@@ -730,12 +730,12 @@ end function
 
 integer function test_coaxial_line_paul_8_6_square() bind(C) result(error_cnt)    
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
     ! character(len=*), parameter :: filename = PATH_TO_TEST_DATA//'excitations/coaxial_line_paul_8_6_0.5_square.smb.json'
-    character(len=*), parameter :: square_excitation = PATH_TO_TEST_DATA//'excitations/coaxial_line_paul_8_6_0.25_square.exc'
+    character(len=*), parameter :: SQUARE_EXCITATION = PATH_TO_TEST_DATA//'excitations/coaxial_line_paul_8_6_0.25_square.exc'
     
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left, node_right
@@ -778,7 +778,7 @@ integer function test_coaxial_line_paul_8_6_square() bind(C) result(error_cnt)
     node_left%conductor_in_cable = 1
     node_left%side = TERMINAL_NODE_SIDE_INI
 
-    node_left%termination%path_to_excitation=square_excitation
+    node_left%termination%path_to_excitation=SQUARE_EXCITATION
     node_left%termination%termination_type = TERMINATION_SERIES
     node_left%termination%resistance = 150
     node_left%termination%inductance = 0.0
@@ -803,11 +803,11 @@ integer function test_coaxial_line_paul_8_6_square() bind(C) result(error_cnt)
     network_right%connections = [connection_right]
 
     probe_v%attached_to_cable => cable
-    probe_v%index = 1 
+    probe_v%elementIndex = 1 
     probe_v%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i%attached_to_cable => cable
-    probe_i%index = 100
+    probe_i%elementIndex = 100
     probe_i%probe_type = PROBE_TYPE_CURRENT
 
     allocate(parsed%networks(2))
@@ -825,7 +825,7 @@ integer function test_coaxial_line_paul_8_6_square() bind(C) result(error_cnt)
     block
         integer :: i
         real, dimension(:), allocatable :: start_times, end_times, expected_voltages, aux_times
-        integer :: j, start, end, idx
+        integer :: j, idx
 
         ! open(unit = 1, file =  'testData/outputs/paul/paul_8.6_square.txt')
         ! do i = 1, size(solver%bundles(1)%probes(1)%t)
@@ -855,11 +855,11 @@ end function
 
 integer function test_coaxial_line_paul_8_6_triangle() bind(C) result(error_cnt)    
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: square_excitation = PATH_TO_TEST_DATA//'excitations/coaxial_line_paul_8_6_0.05_triangle.exc'
+    character(len=*), parameter :: SQUARE_EXCITATION = PATH_TO_TEST_DATA//'excitations/coaxial_line_paul_8_6_0.05_triangle.exc'
     
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left, node_right
@@ -905,7 +905,7 @@ integer function test_coaxial_line_paul_8_6_triangle() bind(C) result(error_cnt)
     node_left%conductor_in_cable = 1
     node_left%side = TERMINAL_NODE_SIDE_INI
 
-    node_left%termination%path_to_excitation=square_excitation
+    node_left%termination%path_to_excitation=SQUARE_EXCITATION
     node_left%termination%termination_type = TERMINATION_SERIES
     node_left%termination%resistance = 150
     node_left%termination%inductance = 0.0
@@ -927,11 +927,11 @@ integer function test_coaxial_line_paul_8_6_triangle() bind(C) result(error_cnt)
     network_right%connections = [connection_right]
 
     probe_v%attached_to_cable => cable
-    probe_v%index = 1 
+    probe_v%elementIndex = 1 
     probe_v%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i%attached_to_cable => cable
-    probe_i%index = 100
+    probe_i%elementIndex = 100
     probe_i%probe_type = PROBE_TYPE_CURRENT
 
     allocate(parsed%networks(2))
@@ -949,7 +949,7 @@ integer function test_coaxial_line_paul_8_6_triangle() bind(C) result(error_cnt)
     block
         integer :: i
         real, dimension(:), allocatable :: times, expected_voltages, aux_times
-        integer :: j, start, end, idx
+        integer :: j, idx
 
         ! open(unit = 1, file =  'testData/outputs/paul/paul_8.6_triangle.txt')
         ! do i = 1, size(solver%bundles(1)%probes(1)%t)
@@ -978,13 +978,13 @@ end function
 
 integer function test_2_conductor_line_paul_9_6_1c() bind(C) result(error_cnt)    
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
     ! character(len=*), parameter :: filename = PATH_TO_TEST_DATA//'excitations/coaxial_line_paul_8_6_square.smb.json'
     ! character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_6_pulse.exc'
-    character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_6_gauss.exc'
+    character(len=*), parameter :: PULSE_EXCITATION = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_6_gauss.exc'
     
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left_1, node_right_1
@@ -1028,7 +1028,7 @@ integer function test_2_conductor_line_paul_9_6_1c() bind(C) result(error_cnt)
     node_left_1%belongs_to_cable => cable
     node_left_1%conductor_in_cable = 1
     node_left_1%side = TERMINAL_NODE_SIDE_INI
-    node_left_1%termination%path_to_excitation=pulse_excitation
+    node_left_1%termination%path_to_excitation=PULSE_EXCITATION
     node_left_1%termination%termination_type = TERMINATION_SERIES
     node_left_1%termination%resistance = 50
     node_left_1%termination%inductance = 0.0
@@ -1038,7 +1038,7 @@ integer function test_2_conductor_line_paul_9_6_1c() bind(C) result(error_cnt)
     node_right_1%belongs_to_cable => cable
     node_right_1%conductor_in_cable = 1
     node_right_1%side = TERMINAL_NODE_SIDE_END
-    node_right_1%termination%termination_type = TERMINATION_RLsCp
+    node_right_1%termination%termination_type = TERMINATION_RLSCP
     node_right_1%termination%resistance = 50
     node_right_1%termination%inductance = 0.0
     node_right_1%termination%capacitance = 50e-12
@@ -1060,19 +1060,19 @@ integer function test_2_conductor_line_paul_9_6_1c() bind(C) result(error_cnt)
     network_right%connections = [connection_right_1]
 
     probe_v_left%attached_to_cable => cable
-    probe_v_left%index = 1 
+    probe_v_left%elementIndex = 1 
     probe_v_left%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_v_right%attached_to_cable => cable
-    probe_v_right%index = 796
+    probe_v_right%elementIndex = 796
     probe_v_right%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i_left%attached_to_cable => cable
-    probe_i_left%index = 1 
+    probe_i_left%elementIndex = 1 
     probe_i_left%probe_type = PROBE_TYPE_CURRENT
 
     probe_i_right%attached_to_cable => cable
-    probe_i_right%index = 795
+    probe_i_right%elementIndex = 795
     probe_i_right%probe_type = PROBE_TYPE_CURRENT
 
     
@@ -1108,11 +1108,11 @@ end function
 
 integer function test_2_conductor_line_paul_9_6() bind(C) result(error_cnt)    
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_6_pulse.exc'
+    character(len=*), parameter :: PULSE_EXCITATION = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_6_pulse.exc'
     
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left_1, node_right_1, node_left_2, node_right_2
@@ -1124,10 +1124,10 @@ integer function test_2_conductor_line_paul_9_6() bind(C) result(error_cnt)
     type(parsed_probe_t) :: probe_v_left, probe_v_right, probe_v_mid, probe_i_left, probe_i_right, probe_i_mid
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real(kind=rkind), dimension(2,2) :: lpul = reshape( source = [0.805756e-6_rkind, 0.538771e-6_rkind, 0.538771e-6_rkind, 1.07754e-6_rkind], shape = [2,2])
-    real(kind=rkind), dimension(2,2) :: gpul = reshape( source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
-    real(kind=rkind), dimension(2,2) :: rpul = reshape( source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
-    real(kind=rkind), dimension(2,2) :: cpul = reshape( source = [117.791e-12_rkind, -58.8956e-12_rkind, -58.8956e-12_rkind, 71.8544e-12_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: lpul = reshape(source = [0.805756e-6_rkind, 0.538771e-6_rkind, 0.538771e-6_rkind, 1.07754e-6_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: gpul = reshape(source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: rpul = reshape(source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: cpul = reshape(source = [117.791e-12_rkind, -58.8956e-12_rkind, -58.8956e-12_rkind, 71.8544e-12_rkind], shape = [2,2])
 
 
     character(20) :: charR, charL, charC, lineC
@@ -1173,7 +1173,7 @@ integer function test_2_conductor_line_paul_9_6() bind(C) result(error_cnt)
     node_left_2%belongs_to_cable => cable
     node_left_2%conductor_in_cable = 2
     node_left_2%side = TERMINAL_NODE_SIDE_INI
-    node_left_2%termination%path_to_excitation=pulse_excitation
+    node_left_2%termination%path_to_excitation=PULSE_EXCITATION
     node_left_2%termination%termination_type = TERMINATION_SERIES
     node_left_2%termination%resistance = 50
     node_left_2%termination%inductance = 0.0
@@ -1187,7 +1187,7 @@ integer function test_2_conductor_line_paul_9_6() bind(C) result(error_cnt)
     !                                          resistance = 50, &
     !                                          inductance = 0, &
     !                                          capacitance = 1e22)
-    node_right_1%termination%termination_type = TERMINATION_RLsCP
+    node_right_1%termination%termination_type = TERMINATION_RLSCP
     node_right_1%termination%resistance = 10
     node_right_1%termination%inductance = 1e-6
     node_right_1%termination%capacitance = 100e-12
@@ -1217,27 +1217,27 @@ integer function test_2_conductor_line_paul_9_6() bind(C) result(error_cnt)
     network_right%connections = [connection_right_1, connection_right_2]
 
     probe_v_left%attached_to_cable => cable
-    probe_v_left%index = 1 
+    probe_v_left%elementIndex = 1 
     probe_v_left%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_v_mid%attached_to_cable => cable
-    probe_v_mid%index = 398
+    probe_v_mid%elementIndex = 398
     probe_v_mid%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_v_right%attached_to_cable => cable
-    probe_v_right%index = 796
+    probe_v_right%elementIndex = 796
     probe_v_right%probe_type = PROBE_TYPE_VOLTAGE
 
     probe_i_left%attached_to_cable => cable
-    probe_i_left%index = 1 
+    probe_i_left%elementIndex = 1 
     probe_i_left%probe_type = PROBE_TYPE_CURRENT
 
     probe_i_mid%attached_to_cable => cable
-    probe_i_mid%index = 398
+    probe_i_mid%elementIndex = 398
     probe_i_mid%probe_type = PROBE_TYPE_CURRENT
 
     probe_i_right%attached_to_cable => cable
-    probe_i_right%index = 795
+    probe_i_right%elementIndex = 795
     probe_i_right%probe_type = PROBE_TYPE_CURRENT
 
 
@@ -1284,11 +1284,11 @@ end function
 
 integer function test_2_conductor_line_paul_9_11_20ns() bind(C) result(error_cnt)    
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_11_20ns.exc'
+    character(len=*), parameter :: PULSE_EXCITATION = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_11_20ns.exc'
     
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left_1, node_right_1, node_left_2, node_right_2
@@ -1300,10 +1300,10 @@ integer function test_2_conductor_line_paul_9_11_20ns() bind(C) result(error_cnt
     type(parsed_probe_t) :: probe_v_101, probe_v_201
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real(kind=rkind), dimension(2,2) :: lpul = reshape( source = [0.7485e-6_rkind, 0.5077e-6_rkind, 0.5077e-6_rkind, 1.0154e-6_rkind], shape = [2,2])
-    real(kind=rkind), dimension(2,2) :: gpul = reshape( source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
-    real(kind=rkind), dimension(2,2) :: rpul = reshape( source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
-    real(kind=rkind), dimension(2,2) :: cpul = reshape( source = [37.432e-12_rkind, -18.716e-12_rkind, -18.716e-12_rkind, 24.982e-12_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: lpul = reshape(source = [0.7485e-6_rkind, 0.5077e-6_rkind, 0.5077e-6_rkind, 1.0154e-6_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: gpul = reshape(source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: rpul = reshape(source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: cpul = reshape(source = [37.432e-12_rkind, -18.716e-12_rkind, -18.716e-12_rkind, 24.982e-12_rkind], shape = [2,2])
 
     real :: final_time
 
@@ -1338,7 +1338,7 @@ integer function test_2_conductor_line_paul_9_11_20ns() bind(C) result(error_cnt
     node_left_2%belongs_to_cable => cable
     node_left_2%conductor_in_cable = 2
     node_left_2%side = TERMINAL_NODE_SIDE_INI
-    node_left_2%termination%path_to_excitation=pulse_excitation
+    node_left_2%termination%path_to_excitation=PULSE_EXCITATION
     node_left_2%termination%termination_type = TERMINATION_SERIES
     node_left_2%termination%resistance = 50
     node_left_2%termination%inductance = 0.0
@@ -1372,7 +1372,7 @@ integer function test_2_conductor_line_paul_9_11_20ns() bind(C) result(error_cnt
     network_right%connections = [connection_right_1, connection_right_2]
 
     probe_v_101%attached_to_cable => cable
-    probe_v_101%index = 1 
+    probe_v_101%elementIndex = 1 
     probe_v_101%probe_type = PROBE_TYPE_VOLTAGE
 
     parsed%networks = [network_left, network_right]
@@ -1400,11 +1400,11 @@ end function
 
 integer function test_2_conductor_line_paul_9_11_1ns() bind(C) result(error_cnt)    
     use mtln_solver_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtln_preprocess_m
     implicit none
 
-    character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_11_1ns.exc'
+    character(len=*), parameter :: PULSE_EXCITATION = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_11_1ns.exc'
     
     type(cable_t), target :: cable
     type(terminal_node_t) :: node_left_1, node_right_1, node_left_2, node_right_2
@@ -1416,10 +1416,10 @@ integer function test_2_conductor_line_paul_9_11_1ns() bind(C) result(error_cnt)
     type(parsed_probe_t) :: probe_v_101, probe_v_201
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real(kind=rkind), dimension(2,2) :: lpul = reshape( source = [0.7485e-6_rkind, 0.5077e-6_rkind, 0.5077e-6_rkind, 1.0154e-6_rkind], shape = [2,2])
-    real(kind=rkind), dimension(2,2) :: gpul = reshape( source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
-    real(kind=rkind), dimension(2,2) :: rpul = reshape( source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
-    real(kind=rkind), dimension(2,2) :: cpul = reshape( source = [37.432e-12_rkind, -18.716e-12_rkind, -18.716e-12_rkind, 24.982e-12_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: lpul = reshape(source = [0.7485e-6_rkind, 0.5077e-6_rkind, 0.5077e-6_rkind, 1.0154e-6_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: gpul = reshape(source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: rpul = reshape(source = [0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: cpul = reshape(source = [37.432e-12_rkind, -18.716e-12_rkind, -18.716e-12_rkind, 24.982e-12_rkind], shape = [2,2])
 
     real :: final_time
 
@@ -1454,7 +1454,7 @@ integer function test_2_conductor_line_paul_9_11_1ns() bind(C) result(error_cnt)
     node_left_2%belongs_to_cable => cable
     node_left_2%conductor_in_cable = 2
     node_left_2%side = TERMINAL_NODE_SIDE_INI
-    node_left_2%termination%path_to_excitation=pulse_excitation
+    node_left_2%termination%path_to_excitation=PULSE_EXCITATION
     node_left_2%termination%termination_type = TERMINATION_SERIES
     node_left_2%termination%resistance = 50 
     node_left_2%termination%inductance = 0.0
@@ -1488,7 +1488,7 @@ integer function test_2_conductor_line_paul_9_11_1ns() bind(C) result(error_cnt)
     network_right%connections = [connection_right_1, connection_right_2]
 
     probe_v_101%attached_to_cable => cable
-    probe_v_101%index = 1 
+    probe_v_101%elementIndex = 1 
     probe_v_101%probe_type = PROBE_TYPE_VOLTAGE
 
     parsed%networks = [network_left, network_right]

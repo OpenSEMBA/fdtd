@@ -1,7 +1,7 @@
 integer function test_rotate_generate_plane_waves() bind(C) result(err)
     use smbjson_m
     use nfde_rotate_m
-    use rotate_testingTools    
+    use rotate_testingTools_m    
     type(Parseador_t) :: this
     integer(kind=4) :: mpidir
     real(kind=RKIND) :: theta, phi, alpha, beta

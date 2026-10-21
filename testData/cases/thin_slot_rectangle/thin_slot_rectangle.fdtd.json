@@ -1,0 +1,72 @@
+{
+  "_format": "FDTD Input file",
+  "__comments": "Discontinuous thin-slot rectangle on a PEC face (regression for issue #435).",
+  "general": {
+    "timeStep": 1e-11,
+    "numberOfSteps": 1
+  },
+  "boundary": {
+    "all": { "type": "pml", "layers": 4 }
+  },
+  "materials": [
+    { "name": "PEC", "id": 1, "type": "pec" },
+    { "name": "slot", "id": 2, "type": "thinSlot", "width": 1e-4 }
+  ],
+  "materialAssociations": [
+    { "materialId": 1, "elementIds": [1] },
+    { "materialId": 2, "type": "thinSlot", "elementIds": [2, 3, 4, 5] }
+  ],
+  "sources": [
+    {
+      "type": "planewave",
+      "magnitudeFile": "gauss_1ghz.exc",
+      "elementIds": [6],
+      "direction": { "theta": 1.5707963267948966, "phi": 1.5707963267948966 },
+      "polarization": { "theta": 0.0, "phi": 0.0 }
+    }
+  ],
+  "probes": [],
+  "mesh": {
+    "grid": {
+      "numberOfCells": [40, 20, 40],
+      "steps": { "x": [0.01], "y": [0.01], "z": [0.01] },
+      "origin": [0.0, 0.0, 0.0]
+    },
+    "coordinates": [
+      { "id": 1, "relativePosition": [10, 10, 10] },
+      { "id": 2, "relativePosition": [30, 10, 30] },
+      { "id": 3, "relativePosition": [14, 10, 26] },
+      { "id": 4, "relativePosition": [26, 10, 26] },
+      { "id": 5, "relativePosition": [26, 10, 14] },
+      { "id": 6, "relativePosition": [14, 10, 14] },
+      { "id": 7, "relativePosition": [2, 2, 2] },
+      { "id": 8, "relativePosition": [38, 18, 38] }
+    ],
+    "elements": [
+      {
+        "id": 1, "name": "pec-face", "type": "cell",
+        "intervals": [ [[10, 10, 10], [30, 10, 30]] ]
+      },
+      {
+        "id": 2, "name": "DiscontinuousSlot.top", "type": "cell",
+        "intervals": [ [[14, 10, 26], [26, 10, 26]] ]
+      },
+      {
+        "id": 3, "name": "DiscontinuousSlot.right", "type": "cell",
+        "intervals": [ [[26, 10, 26], [26, 10, 14]] ]
+      },
+      {
+        "id": 4, "name": "DiscontinuousSlot.bottom", "type": "cell",
+        "intervals": [ [[26, 10, 14], [14, 10, 14]] ]
+      },
+      {
+        "id": 5, "name": "DiscontinuousSlot.left", "type": "cell",
+        "intervals": [ [[14, 10, 14], [14, 10, 26]] ]
+      },
+      {
+        "id": 6, "name": "planewave", "type": "cell",
+        "intervals": [ [[2, 2, 2], [38, 18, 38]] ]
+      }
+    ]
+  }
+}

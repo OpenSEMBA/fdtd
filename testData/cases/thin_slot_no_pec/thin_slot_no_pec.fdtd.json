@@ -1,0 +1,23 @@
+{
+  "_format": "FDTD Input file",
+  "general": { "timeStep": 1e-11, "numberOfSteps": 1 },
+  "boundary": { "all": { "type": "pml", "layers": 4 } },
+  "materials": [
+    { "name": "slot", "id": 2, "type": "thinSlot", "width": 1e-4 }
+  ],
+  "materialAssociations": [
+    { "materialId": 2, "type": "thinSlot", "elementIds": [1] }
+  ],
+  "probes": [],
+  "mesh": {
+    "grid": {
+      "numberOfCells": [20, 20, 20],
+      "steps": { "x": [0.01], "y": [0.01], "z": [0.01] },
+      "origin": [0.0, 0.0, 0.0]
+    },
+    "elements": [
+      { "id": 1, "name": "unsupported-slot", "type": "cell",
+        "intervals": [ [[6, 10, 10], [14, 10, 10]] ] }
+    ]
+  }
+}

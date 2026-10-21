@@ -143,27 +143,20 @@ def test_shieldedPair(tmp_path):
         )
 
     for i in [0, 3]:
-        solved = np.interp(
-            p_expected[i]["time"].to_numpy(),
-            p_solved[i]["time"].to_numpy(),
-            p_solved[i]["voltage_0"].to_numpy(),
-        )
-        check_values_are_comparable(solved)
-        assert np.corrcoef(solved, p_expected[i]["voltage_0"])[0, 1] > 0.999
-        solved = np.interp(
-            p_expected[i]["time"].to_numpy(),
-            p_solved[i]["time"].to_numpy(),
-            p_solved[i]["voltage_1"].to_numpy(),
-        )
-        check_values_are_comparable(solved)
-        assert np.corrcoef(solved, p_expected[i]["voltage_1"])[0, 1] > 0.999
-        solved = np.interp(
-            p_expected[i]["time"].to_numpy(),
-            p_solved[i]["time"].to_numpy(),
-            p_solved[i]["voltage_2"].to_numpy(),
-        )
-        check_values_are_comparable(solved)
-        assert np.corrcoef(solved, p_expected[i]["voltage_2"])[0, 1] > 0.999
+        # In full-wave problems the shield of the inner cable has no
+        # surrounding shield, so only the two inner conductors are reported.
+        voltage_components = [
+            column for column in p_solved[i].data.columns if column.startswith("voltage_")
+        ]
+        assert voltage_components == ["voltage_0", "voltage_1"]
+        for component in range(2):
+            solved = np.interp(
+                p_expected[i]["time"].to_numpy(),
+                p_solved[i]["time"].to_numpy(),
+                p_solved[i][f"voltage_{component}"].to_numpy(),
+            )
+            check_values_are_comparable(solved)
+            assert np.corrcoef(solved, p_expected[i][f"voltage_{component}"])[0, 1] > 0.999
     for i in [1, 2]:
         solved = np.interp(
             p_expected[i]["time"].to_numpy(),
@@ -750,14 +743,15 @@ def test_central_dipole_frequency_slice(tmp_path):
 @pytest.mark.planewave
 @pytest.mark.probes
 def test_planewave_in_box(tmp_path):
-    """Verify a plane wave is incident only within the simulation box."""
+    """Verify plane-wave confinement and point-probe time/frequency equivalence."""
     fn = CASES_FOLDER + "planewave/pw-in-box.fdtd.json"
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     solver.run()
 
     before = Probe(_get_solved_probe_folder(solver, "before"))
-    inbox = Probe(_get_solved_probe_folder(solver, "inbox"))
+    inbox = Probe(_get_solved_probe_folder(solver, "inbox", contains="_tm"))
+    inbox_frequency = Probe(_get_solved_probe_folder(solver, "inbox", contains="_fq"))
     after = Probe(_get_solved_probe_folder(solver, "after"))
 
     assert (
@@ -766,6 +760,38 @@ def test_planewave_in_box(tmp_path):
         ]
         > 0.999
     )
+
+    frequency = inbox_frequency.data["frequency"].to_numpy()
+    time = inbox.data["time"].to_numpy()
+    dt = time[1] - time[0]
+    np.testing.assert_allclose(np.diff(time), dt, rtol=1e-8, atol=0.0)
+
+    def discrete_transform(samples):
+        return dt * np.sum(
+            samples[np.newaxis, :]
+            * np.exp(-2j * np.pi * frequency[:, np.newaxis] * time[np.newaxis, :]),
+            axis=1,
+        )
+
+    reported_field = inbox_frequency.data["magnitude"].to_numpy() * np.exp(
+        1j * inbox_frequency.data["phase"].to_numpy()
+    )
+    reported_incident = inbox_frequency.data["incident_magnitude"].to_numpy() * np.exp(
+        1j * inbox_frequency.data["incident_phase"].to_numpy()
+    )
+    np.testing.assert_allclose(
+        reported_field,
+        discrete_transform(inbox.data["field"].to_numpy()),
+        rtol=1e-5,
+        atol=1e-12,
+    )
+    np.testing.assert_allclose(
+        reported_incident,
+        discrete_transform(inbox.data["incident"].to_numpy()),
+        rtol=1e-5,
+        atol=1e-12,
+    )
+
     zeros = np.zeros_like(before.data["field"])
     assert np.allclose(before.data["field"].to_numpy(), zeros, atol=5e-4)
     assert np.allclose(after.data["field"].to_numpy(), zeros, atol=5e-4)
@@ -2494,13 +2520,19 @@ def test_voltage_generators(tmp_path):
 
     assert np.allclose(Iend["current_0"][-100:-1], 0.0, rtol=0.005)
     assert np.allclose(Istart["current_0"][-100:-1], 0.0, rtol=0.005)
-    assert np.allclose(Vend["voltage_0"][-100:-1], 0.0, rtol=0.005)
-    assert np.allclose(Vstart["voltage_0"][-100:-1], 0.0, rtol=0.005)
+    # The outer conductor is the shield of the inner cable, so no voltage
+    # is reported for it in full-wave problems.
+    assert [
+        column for column in Vend.data.columns if column.startswith("voltage_")
+    ] == ["voltage_0"]
+    assert [
+        column for column in Vstart.data.columns if column.startswith("voltage_")
+    ] == ["voltage_0"]
+    assert np.allclose(Vend["voltage_0"][-100:-1], -16.666, rtol=0.005)
+    assert np.allclose(Vstart["voltage_0"][-100:-1], -16.666, rtol=0.005)
 
     assert np.allclose(Iend["current_1"][-100:-1], 1.0 / 3.0, rtol=0.005)
     assert np.allclose(Istart["current_1"][-100:-1], 1.0 / 3.0, rtol=0.005)
-    assert np.allclose(Vend["voltage_1"][-100:-1], -16.666, rtol=0.005)
-    assert np.allclose(Vstart["voltage_1"][-100:-1], -16.666, rtol=0.005)
 
 
 @pytest.mark.probes

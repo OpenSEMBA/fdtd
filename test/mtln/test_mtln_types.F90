@@ -8,7 +8,7 @@ integer function test_derived_type_submodule() bind(C) result(err)
    type(terminal_connection_t) :: connection
    type(terminal_network_t) :: network
    type(parsed_mtln_t) :: parsed 
-   character(len=256), parameter :: square_excitation = trim('coaxial_line_paul_8_6_0.25_square.exc')
+   character(len=256), parameter :: SQUARE_EXCITATION = trim('coaxial_line_paul_8_6_0.25_square.exc')
    type(termination_t) :: t
    type(node_source_t) :: node_source
    err = 0 
@@ -16,7 +16,7 @@ integer function test_derived_type_submodule() bind(C) result(err)
    node%conductor_in_cable = 1
    node%side = TERMINAL_NODE_SIDE_INI
 
-   node_source%path_to_excitation = trim(square_excitation)
+   node_source%path_to_excitation = trim(SQUARE_EXCITATION)
    node_source%source_type = SOURCE_TYPE_VOLTAGE
    node%termination = termination_t(source = node_source, &
                                     termination_type = TERMINATION_SERIES, &
@@ -32,7 +32,7 @@ integer function test_derived_type_submodule() bind(C) result(err)
    parsed%networks(1) = network
 
    if (parsed%networks(1)%connections(1)%nodes(1)%termination%source%path_to_excitation &
-      /= trim(square_excitation)) then
+      /= trim(SQUARE_EXCITATION)) then
       err = err + 1
    end if
 

@@ -1,11 +1,11 @@
 integer function test_read_background_defaults() bind(C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
    use NFDETypes_m
 
    implicit none
 
-   character(len=*), parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'planewave.fdtd.json'
+   character(len=*), parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'planewave.fdtd.json'
    type(Parseador_t) :: pr
    type(parser_t) :: parser
    err = 0
@@ -22,12 +22,12 @@ end function
 
 integer function test_read_background_set() bind(C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
    use NFDETypes_m
 
    implicit none
 
-   character(len=*), parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'background.fdtd.json'
+   character(len=*), parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'background.fdtd.json'
    type(Parseador_t) :: pr
    type(parser_t) :: parser
    real :: eps, mu

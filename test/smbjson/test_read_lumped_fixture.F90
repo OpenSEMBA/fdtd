@@ -1,10 +1,10 @@
 integer function test_read_lumped_fixture() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'lumped_fixture.fdtd.json'
+   character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'lumped_fixture.fdtd.json'
    type(Parseador_t) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
@@ -51,7 +51,7 @@ contains
       expected%despl%mz2 = 9
 
       ! Expected boundaries
-      expected%front%tipoFrontera(:) = F_MUR
+      expected%front%boundaryType(:) = F_MUR
 
       ! Expected material regions
       expected%pecRegs%nVols = 0
@@ -65,7 +65,7 @@ contains
       allocate(expected%pecRegs%Lins(0))
 
       ! Left side - Surface 1
-      expected%pecRegs%Surfs(1)%Or = +iEx
+      expected%pecRegs%Surfs(1)%Or = +IEX
       expected%pecRegs%Surfs(1)%Xi = 2
       expected%pecRegs%Surfs(1)%Xe = 2
       expected%pecRegs%Surfs(1)%Yi = 2
@@ -75,7 +75,7 @@ contains
       expected%pecRegs%Surfs(1)%tag = 'pec@left_side'
 
       ! Left side - Surface 2
-      expected%pecRegs%Surfs(2)%Or = +iEz
+      expected%pecRegs%Surfs(2)%Or = +IEZ
       expected%pecRegs%Surfs(2)%Xi = 2
       expected%pecRegs%Surfs(2)%Xe = 8
       expected%pecRegs%Surfs(2)%Yi = 2
@@ -85,7 +85,7 @@ contains
       expected%pecRegs%Surfs(2)%tag = 'pec@left_side'
 
       ! Left side - Surface 3
-      expected%pecRegs%Surfs(3)%Or = +iEz
+      expected%pecRegs%Surfs(3)%Or = +IEZ
       expected%pecRegs%Surfs(3)%Xi = 2
       expected%pecRegs%Surfs(3)%Xe = 8
       expected%pecRegs%Surfs(3)%Yi = 2
@@ -95,7 +95,7 @@ contains
       expected%pecRegs%Surfs(3)%tag = 'pec@left_side'
 
       ! Right side - Surface 1
-      expected%pecRegs%Surfs(4)%Or = +iEz
+      expected%pecRegs%Surfs(4)%Or = +IEZ
       expected%pecRegs%Surfs(4)%Xi = 11
       expected%pecRegs%Surfs(4)%Xe = 17
       expected%pecRegs%Surfs(4)%Yi = 2
@@ -105,7 +105,7 @@ contains
       expected%pecRegs%Surfs(4)%tag = 'pec@right_side'
 
       ! Right side - Surface 2
-      expected%pecRegs%Surfs(5)%Or = +iEz
+      expected%pecRegs%Surfs(5)%Or = +IEZ
       expected%pecRegs%Surfs(5)%Xi = 11
       expected%pecRegs%Surfs(5)%Xe = 17
       expected%pecRegs%Surfs(5)%Yi = 2
@@ -115,7 +115,7 @@ contains
       expected%pecRegs%Surfs(5)%tag = 'pec@right_side'
 
       ! Right side - Surface 3
-      expected%pecRegs%Surfs(6)%Or = +iEx
+      expected%pecRegs%Surfs(6)%Or = +IEX
       expected%pecRegs%Surfs(6)%Xi = 18
       expected%pecRegs%Surfs(6)%Xe = 18
       expected%pecRegs%Surfs(6)%Yi = 2
@@ -140,7 +140,7 @@ contains
       allocate(expected%dielRegs%Lins(1)%c2P(1))
       expected%dielRegs%Lins(1)%n_C1P = 0
       expected%dielRegs%Lins(1)%n_C2P = 1
-      expected%dielRegs%Lins(1)%c2P%Or = iEx
+      expected%dielRegs%Lins(1)%c2P%Or = IEX
       expected%dielRegs%Lins(1)%c2P%Xi = 9
       expected%dielRegs%Lins(1)%c2P%Xe = 10
       expected%dielRegs%Lins(1)%c2P%Yi = 4
@@ -160,7 +160,7 @@ contains
 
       expected%dielRegs%Lins(1)%resistor = .true.
       expected%dielRegs%Lins(1)%orient = 1
-      expected%dielRegs%Lins(1)%DiodOri = 1
+      expected%dielRegs%Lins(1)%diodeOrientation = 1
 
       
       ! Expected sources
@@ -175,7 +175,7 @@ contains
       expected%nodSrc%NodalSource(1)%isInitialValue = .false.
       allocate(expected%nodSrc%NodalSource(1)%c2P(1))
       expected%nodSrc%NodalSource(1)%n_C2P = 1
-      expected%nodSrc%NodalSource(1)%c2P(1)%Or = iEx
+      expected%nodSrc%NodalSource(1)%c2P(1)%Or = IEX
       expected%nodSrc%NodalSource(1)%c2P(1)%Xi = 9
       expected%nodSrc%NodalSource(1)%c2P(1)%Xe = 10
       expected%nodSrc%NodalSource(1)%c2P(1)%Yi = 4
@@ -236,8 +236,8 @@ contains
       expected%BloquePrb%bp(1)%k1 = 6
       expected%BloquePrb%bp(1)%k2 = 7
       expected%BloquePrb%bp(1)%skip = 1
-      expected%BloquePrb%bp(1)%nml = iEx
-      expected%BloquePrb%bp(1)%t = BcELECT
+      expected%BloquePrb%bp(1)%nml = IEX
+      expected%BloquePrb%bp(1)%t = BCELECT
       expected%BloquePrb%bp(1)%tag = "Bulk probe"
 
    end function

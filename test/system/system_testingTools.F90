@@ -1,4 +1,4 @@
-module system_testingTools_mod
+module system_testingTools_m
     use iso_c_binding
     use FDETYPES_m
     implicit none
@@ -6,4 +6,4 @@ module system_testingTools_mod
     character(len=*), parameter :: PATH_TO_TEST_DATA = 'testData/'
     character(len=*), parameter :: INPUT_EXAMPLES='input_examples/'
 
- end module system_testingTools_mod
+ end module system_testingTools_m

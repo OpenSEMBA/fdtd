@@ -3,17 +3,17 @@ integer function test_idchildtable_fhash() bind(C) result(error_cnt)
    implicit none
    type(fhash_tbl_t) :: tbl
    integer :: val
-   integer, parameter :: expectedValue=10
+   integer, parameter :: EXPECTEDVALUE=10
    error_cnt = 0
    
-   call tbl%set(key('my_key_1'), value=expectedValue)
+   call tbl%set(key('my_key_1'), value=EXPECTEDVALUE)
    call tbl%set(key('my_key_2'), value=1.0)
    call tbl%set(key(123456), value='a string value')
    call tbl%set(key([1,2,3,4,5]), value=.false.)
 
    call tbl%get(key('my_key_1'),val)
 
-   if (val /= expectedValue) then 
+   if (val /= EXPECTEDVALUE) then 
       error_cnt = error_cnt+1
       return
    end if
@@ -24,14 +24,14 @@ integer function test_idchildtable() bind(C) result(err)
    use idchildtable_m
    use smbjson_labels_m
    use parser_tools_m, only: json_value_ptr_t
-   use smbjson_testingTools
+   use smbjson_testingTools_m
    use json_module
 
    implicit none
 
    type(IdChildTable_t) :: tbl
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'holland1981.fdtd.json'
+   character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'holland1981.fdtd.json'
    type(json_file) :: jsonfile
    type(json_core) :: core
    type(json_value), pointer :: root => null()

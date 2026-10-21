@@ -60,17 +60,17 @@ contains
       this%mainCoords = coordinates
       this%component = field
       this%domain = domain
-      this%sign = 1
+      this%signValue = 1
 
       call find_current_segment(this, node, field, media, wiresflavor)
       this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
 
-      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
-      artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
+      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIME)
+      artifact_paths(1) = trim(this%path)//'_'//TIMEEXTENSION//DATFILEEXTENSION
       artifact_kinds = OUTPUT_ARTIFACT_TEXT
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
       this%filePathTime = this%artifacts(1)%relative_path
-      call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, &
+      call create_data_file(this%filePathTime, this%path, TIMEEXTENSION, DATFILEEXTENSION, &
                             't current delta_voltage plus_voltage minus_voltage voltage_difference')
 
    end subroutine init_wire_current_probe_output
@@ -88,18 +88,18 @@ contains
       this%mainCoords = coordinates
       this%component = field
       this%domain = domain
-      this%sign = 1
+      this%signValue = 1
 
       call find_charge_segment(this, node, field, wiresflavor)
       this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
 
-      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_tiempo)
+      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIME)
       call alloc_and_init(this%chargeValue, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND)
-      artifact_paths(1) = trim(this%path)//'_'//timeExtension//datFileExtension
+      artifact_paths(1) = trim(this%path)//'_'//TIMEEXTENSION//DATFILEEXTENSION
       artifact_kinds = OUTPUT_ARTIFACT_TEXT
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
       this%filePathTime = this%artifacts(1)%relative_path
-      call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension, 't charge')
+      call create_data_file(this%filePathTime, this%path, TIMEEXTENSION, DATFILEEXTENSION, 't charge')
 
    end subroutine init_wire_charge_probe_output
 
@@ -108,7 +108,7 @@ contains
    !======================================================================
    subroutine update_wire_current_probe_output(this, step, control, InvEps, InvMu)
       type(wire_current_probe_output_t), intent(inout) :: this
-      real(kind=RKIND_tiempo), intent(in) :: step
+      real(kind=RKIND_TIME), intent(in) :: step
       type(sim_control_t), intent(in)     :: control
       real(kind=RKIND), intent(in)        :: InvEps(0:), InvMu(0:)
 
@@ -131,7 +131,7 @@ contains
 
    subroutine update_wire_charge_probe_output(this, step)
       type(wire_charge_probe_output_t), intent(inout) :: this
-      real(kind=RKIND_tiempo), intent(in) :: step
+      real(kind=RKIND_TIME), intent(in) :: step
 
       this%nTime = this%nTime + 1
       this%timeStep(this%nTime) = step
@@ -149,7 +149,7 @@ contains
       if (ios /= 0) return
 
       do i = 1, this%nTime
-         write (unit, fmt, iostat=ios) this%timeStep(i), &
+         write (unit, FMT, iostat=ios) this%timeStep(i), &
             this%currentValues(i)%current, &
             this%currentValues(i)%deltaVoltage, &
             this%currentValues(i)%plusVoltage, &
@@ -171,7 +171,7 @@ contains
       if (ios /= 0) return
 
       do i = 1, this%nTime
-         write (unit, fmt, iostat=ios) this%timeStep(i), this%chargeValue(i)
+         write (unit, FMT, iostat=ios) this%timeStep(i), this%chargeValue(i)
          if (ios /= 0) exit
       end do
       close (unit, iostat=ios)
@@ -201,7 +201,7 @@ contains
       character(len=BUFSIZE) :: buff
 
       found = .false.
-      this%sign = 1
+      this%signValue = 1
       probe_i = this%mainCoords%x
       probe_j = this%mainCoords%y
       probe_k = this%mainCoords%z
@@ -215,10 +215,10 @@ contains
             seg => Hwireslocal%CurrentSegment(n)
             if (seg%origindex == node .and. &
                 seg%i == probe_i .and. seg%j == probe_j .and. seg%k == probe_k .and. &
-                seg%tipofield*10 == field) then
+                seg%fieldKind*10 == field) then
                found = .true.
                this%segment => seg
-               if (seg%orientadoalreves) this%sign = -1
+               if (seg%reversedOrientation) this%signValue = -1
                exit
             end if
          end do
@@ -230,7 +230,7 @@ contains
             if (Hwireslocal_B%Segments(n)%IndexSegment == node) then
                found = .true.
                this%segmentBerenger => Hwireslocal_B%Segments(n)
-               if (Hwireslocal_B%Segments(n)%orientadoalreves) this%sign = -1
+               if (Hwireslocal_B%Segments(n)%reversedOrientation) this%signValue = -1
                exit
             end if
          end do
@@ -252,17 +252,17 @@ contains
       ! --- multirabo fallback (Holland only)
       if (.not. found .and. trim(adjustl(wiresflavor)) /= 'berenger') then
          buscarabono: do iwi = 1, Hwireslocal%NumDifferentWires
-            do iwj = 1, media(Hwireslocal%WireTipoMedio(iwi))%wire(1)%numsegmentos
-               if (node == media(Hwireslocal%WireTipoMedio(iwi))%wire(1)%segm(iwj)%origindex .and. &
-                   media(Hwireslocal%WireTipoMedio(iwi))%wire(1)%segm(iwj)%multirabo) then
+            do iwj = 1, media(Hwireslocal%wireMediumType(iwi))%wire(1)%numsegmentos
+               if (node == media(Hwireslocal%wireMediumType(iwi))%wire(1)%segm(iwj)%origindex .and. &
+                   media(Hwireslocal%wireMediumType(iwi))%wire(1)%segm(iwj)%multirabo) then
 
-                  node2 = media(Hwireslocal%WireTipoMedio(iwi))%wire(1)%segm(iwj)%multiraboDE
+                  node2 = media(Hwireslocal%wireMediumType(iwi))%wire(1)%segm(iwj)%multiraboDE
                   do n = 1, Hwireslocal%NumCurrentSegments
                      seg => Hwireslocal%CurrentSegment(n)
                      if (seg%origindex == node2) then
                         found = .true.
                         this%segment => seg
-                        if (seg%orientadoalreves) this%sign = -1
+                        if (seg%reversedOrientation) this%signValue = -1
                         exit buscarabono
                      end if
                   end do
@@ -290,7 +290,7 @@ contains
       character(len=BUFSIZE) :: buff
 
       found = .false.
-      this%sign = 1
+      this%signValue = 1
       probe_i = this%mainCoords%x
       probe_j = this%mainCoords%y
       probe_k = this%mainCoords%z
@@ -307,10 +307,10 @@ contains
          seg => Hwireslocal%CurrentSegment(n)
          if (seg%origindex == node .and. &
              seg%i == probe_i .and. seg%j == probe_j .and. seg%k == probe_k .and. &
-             seg%tipofield*10000 == field) then
+             seg%fieldKind*10000 == field) then
             found = .true.
             this%segment => seg
-            if (seg%orientadoalreves) this%sign = -1
+            if (seg%reversedOrientation) this%signValue = -1
             exit
          end if
       end do
@@ -365,7 +365,7 @@ contains
    subroutine clear_current_time_data(this)
       type(wire_current_probe_output_t), intent(inout) :: this
 
-      this%timeStep = 0.0_RKIND_tiempo
+      this%timeStep = 0.0_RKIND_TIME
       this%currentValues%current = 0.0_RKIND
       this%currentValues%deltaVoltage = 0.0_RKIND
       this%currentValues%plusVoltage = 0.0_RKIND
@@ -377,7 +377,7 @@ contains
    subroutine clear_charge_time_data(this)
       type(wire_charge_probe_output_t), intent(inout) :: this
 
-      this%timeStep = 0.0_RKIND_tiempo
+      this%timeStep = 0.0_RKIND_TIME
       this%chargeValue = 0.0_RKIND
       this%nTime = 0
    end subroutine clear_charge_time_data
@@ -392,25 +392,25 @@ contains
       seg => this%segment
 
       this%currentValues(this%nTime)%current = &
-         this%sign*seg%currentpast
+         this%signValue*seg%currentpast
 
       this%currentValues(this%nTime)%deltaVoltage = &
          -seg%Efield_wire2main*seg%delta
 
       if (control%wirecrank) then
-         this%currentValues(this%nTime)%plusVoltage = this%sign* &
+         this%currentValues(this%nTime)%plusVoltage = this%signValue* &
                                                       (seg%ChargePlus%ChargePresent)*seg%Lind* &
                                                       (InvMu(seg%indexmed)*InvEps(seg%indexmed))
 
-         this%currentValues(this%nTime)%minusVoltage = this%sign* &
+         this%currentValues(this%nTime)%minusVoltage = this%signValue* &
                                                        (seg%ChargeMinus%ChargePresent)*seg%Lind* &
                                                        (InvMu(seg%indexmed)*InvEps(seg%indexmed))
       else
-         this%currentValues(this%nTime)%plusVoltage = this%sign* &
+         this%currentValues(this%nTime)%plusVoltage = this%signValue* &
                                                       ((seg%ChargePlus%ChargePresent + seg%ChargePlus%ChargePast)/2.0_RKIND)* &
                                                       seg%Lind*(InvMu(seg%indexmed)*InvEps(seg%indexmed))
 
-         this%currentValues(this%nTime)%minusVoltage = this%sign* &
+         this%currentValues(this%nTime)%minusVoltage = this%signValue* &
                                                        ((seg%ChargeMinus%ChargePresent + seg%ChargeMinus%ChargePast)/2.0_RKIND)* &
                                                        seg%Lind*(InvMu(seg%indexmed)*InvEps(seg%indexmed))
       end if
@@ -430,16 +430,16 @@ contains
       seg => this%segmentBerenger
 
       this%currentValues(this%nTime)%current = &
-         this%sign*seg%currentpast
+         this%signValue*seg%currentpast
 
       this%currentValues(this%nTime)%deltaVoltage = &
          -seg%field*seg%dl
 
-      this%currentValues(this%nTime)%plusVoltage = this%sign* &
+      this%currentValues(this%nTime)%plusVoltage = this%signValue* &
                                                    ((seg%ChargePlus + seg%ChargePlusPast)/2.0_RKIND)* &
                                                    seg%L*(InvMu(seg%imed)*InvEps(seg%imed))
 
-      this%currentValues(this%nTime)%minusVoltage = this%sign* &
+      this%currentValues(this%nTime)%minusVoltage = this%signValue* &
                                                     ((seg%ChargeMinus + seg%ChargeMinusPast)/2.0_RKIND)* &
                                                     seg%L*(InvMu(seg%imed)*InvEps(seg%imed))
 

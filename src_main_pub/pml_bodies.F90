@@ -4,9 +4,9 @@
 ! Module PMLbodies
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!17/08/15 update!!!!!!!!!!!
-!!!Elimino el tratamiento de los campos magneticos de PMLbody para programar un multiPMLbody 
-!!!solo teniendo en cuenta los parametros efectivos y sin actualizar los magneticos.
-!!!Mangento en el fichero PMLbody_pre170815_noupdateababienH.F90 la version antigua
+!!!I remove the treatment of the magnetic fields of PMLbody to program a multiPMLbody 
+!!!only taking into account the effective parameters and without updating the magnetics.
+!!!I keep the old version in the file PMLbody_pre170815_noupdateababienH.F90
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 module PMLbodies_m
@@ -32,13 +32,13 @@ module PMLbodies_m
       type(BerPML__t), allocatable, dimension(:) :: nodes
    end type berpml_t
 
-   !!!!!valiables locales
+   !!!!!local variables
    type(berpml_t), save, target   :: berpmlE,berpmlH
 
-   integer(kind=4), parameter :: PMLorden = 2
-   real(kind=RKIND), parameter :: CoeffReflPML=1e-4
+   integer(kind=4), parameter :: PMLORDEN = 2
+   real(kind=RKIND), parameter :: COEFFREFLPML=1e-4
 
-!!!variables globales del modulo
+!!!module global variables
    real(kind=RKIND), save           :: eps0,mu0
 !!!
    public AdvancePMLbodyE,AdvancePMLbodyH,InitPMLbodies,DestroyPMLbodies,StorefieldsPMLbodies,calc_pmlbodypar
@@ -52,20 +52,20 @@ contains
       real(kind=RKIND) :: eps00,mu00
       type(SGGFDTDINFO_t), intent(in) :: sgg
       type(media_matrices_t), intent(in) :: media
-      real(kind=RKIND)     , pointer, dimension( : ) :: g2,gm2
+      real(kind=RKIND)     , pointer, dimension(:) :: g2,gm2
       real(kind=RKIND)   , intent(in) , target     :: &
-      Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
-      Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
-      Ez(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE),&
-      Hx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE),&
-      Hy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE),&
-      Hz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-      real(kind=RKIND) , dimension(:)   , intent(in) :: Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
-                                                         &  Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
-                                                         &  Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE), &
-                                                            Idxe(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE), &
-                                                            Idye(sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE), &
-                                                            Idze(sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
+      Ex(sgg%alloc(IEX)%XI : sgg%alloc(IEX)%XE,sgg%alloc(IEX)%YI : sgg%alloc(IEX)%YE,sgg%alloc(IEX)%ZI : sgg%alloc(IEX)%ZE),&
+      Ey(sgg%alloc(IEY)%XI : sgg%alloc(IEY)%XE,sgg%alloc(IEY)%YI : sgg%alloc(IEY)%YE,sgg%alloc(IEY)%ZI : sgg%alloc(IEY)%ZE),&
+      Ez(sgg%alloc(IEZ)%XI : sgg%alloc(IEZ)%XE,sgg%alloc(IEZ)%YI : sgg%alloc(IEZ)%YE,sgg%alloc(IEZ)%ZI : sgg%alloc(IEZ)%ZE),&
+      Hx(sgg%alloc(IHX)%XI : sgg%alloc(IHX)%XE,sgg%alloc(IHX)%YI : sgg%alloc(IHX)%YE,sgg%alloc(IHX)%ZI : sgg%alloc(IHX)%ZE),&
+      Hy(sgg%alloc(IHY)%XI : sgg%alloc(IHY)%XE,sgg%alloc(IHY)%YI : sgg%alloc(IHY)%YE,sgg%alloc(IHY)%ZI : sgg%alloc(IHY)%ZE),&
+      Hz(sgg%alloc(IHZ)%XI : sgg%alloc(IHZ)%XE,sgg%alloc(IHZ)%YI : sgg%alloc(IHZ)%YE,sgg%alloc(IHZ)%ZI : sgg%alloc(IHZ)%ZE)
+      real(kind=RKIND) , dimension(:)   , intent(in) :: Idxh(sgg%ALLOC(IEX)%XI : sgg%ALLOC(IEX)%XE), &
+                                                         &  Idyh(sgg%ALLOC(IEY)%YI : sgg%ALLOC(IEY)%YE), &
+                                                         &  Idzh(sgg%ALLOC(IEZ)%ZI : sgg%ALLOC(IEZ)%ZE), &
+                                                            Idxe(sgg%alloc(IHX)%XI : sgg%alloc(IHX)%XE), &
+                                                            Idye(sgg%alloc(IHY)%YI : sgg%alloc(IHY)%YE), &
+                                                            Idze(sgg%alloc(IHZ)%ZI : sgg%alloc(IHZ)%ZE)
 
       real(kind=RKIND) :: sigma
       logical, intent(out) :: ThereArePMLbodies
@@ -77,7 +77,7 @@ contains
       type(BerPML__t), pointer :: PML_
       logical :: unstable
 !
-      eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+      eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
 !         
 !!!
       write(whoami,'(a,i5,a,i5,a)') '(',control%layoutnumber+1,'/',control%num_procs,') '
@@ -85,18 +85,18 @@ contains
 !
       ThereArePMLbodies=.FALSE.
 
-      !precontaje
+      !precount
 
 
       minx=2**20 ; miny=minx; minz=minx; maxx=-minx; maxy=-miny; maxz=-minz;
       conta=0
-      Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
-         Do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
-            Do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
+      do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
+         do j1=sgg%SINPMLSweep(IEX)%YI,sgg%SINPMLSweep(IEX)%YE
+            do i1=sgg%SINPMLSweep(IEX)%XI,sgg%SINPMLSweep(IEX)%XE
                jmed=media%sggMiEx(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                    orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
-                   if (orient/=iEx) then
+                   if (orient/=IEX) then
                        if (i1 < minx(jmed)) minx(jmed)=i1
                        if (j1 < miny(jmed)) miny(jmed)=j1
                        if (k1 < minz(jmed)) minz(jmed)=k1
@@ -109,13 +109,13 @@ contains
             end do
          end do
       end do
-      Do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
-         Do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
-            Do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
+      do k1=sgg%SINPMLSweep(IEY)%ZI,sgg%SINPMLSweep(IEY)%ZE
+         do j1=sgg%SINPMLSweep(IEY)%YI,sgg%SINPMLSweep(IEY)%YE
+            do i1=sgg%SINPMLSweep(IEY)%XI,sgg%SINPMLSweep(IEY)%XE
                jmed=media%sggMiEy(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                    orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
-                   if (orient/=iEy) then
+                   if (orient/=IEY) then
                        if (i1 < minx(jmed)) minx(jmed)=i1
                        if (j1 < miny(jmed)) miny(jmed)=j1
                        if (k1 < minz(jmed)) minz(jmed)=k1
@@ -129,13 +129,13 @@ contains
          end do
       end do
 
-      Do k1=sgg%SINPMLSweep(iEz)%ZI,sgg%SINPMLSweep(iEz)%ZE
-         Do j1=sgg%SINPMLSweep(iEz)%YI,sgg%SINPMLSweep(iEz)%YE
-            Do i1=sgg%SINPMLSweep(iEz)%XI,sgg%SINPMLSweep(iEz)%XE
+      do k1=sgg%SINPMLSweep(IEZ)%ZI,sgg%SINPMLSweep(IEZ)%ZE
+         do j1=sgg%SINPMLSweep(IEZ)%YI,sgg%SINPMLSweep(IEZ)%YE
+            do i1=sgg%SINPMLSweep(IEZ)%XI,sgg%SINPMLSweep(IEZ)%XE
                jmed=media%sggMiEz(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                    orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
-                   if (orient/=iEz) then
+                   if (orient/=IEZ) then
                        if (i1 < minx(jmed)) minx(jmed)=i1
                        if (j1 < miny(jmed)) miny(jmed)=j1
                        if (k1 < minz(jmed)) minz(jmed)=k1
@@ -159,26 +159,26 @@ contains
       allocate (berpmlE%Nodes(1 : berpmlE%NumNodes))
 
       conta=0
-      Do k1=sgg%SINPMLSweep(iHx)%ZI,sgg%SINPMLSweep(iHx)%ZE
-         Do j1=sgg%SINPMLSweep(iHx)%YI,sgg%SINPMLSweep(iHx)%YE
-            Do i1=sgg%SINPMLSweep(iHx)%XI,sgg%SINPMLSweep(iHx)%XE
+      do k1=sgg%SINPMLSweep(IHX)%ZI,sgg%SINPMLSweep(IHX)%ZE
+         do j1=sgg%SINPMLSweep(IHX)%YI,sgg%SINPMLSweep(IHX)%YE
+            do i1=sgg%SINPMLSweep(IHX)%XI,sgg%SINPMLSweep(IHX)%XE
                jmed=media%sggMiHx(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                    orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
-                   if (orient/=iEx) then
+                   if (orient/=IEX) then
                        conta=conta+1
                    end if
                end if
             end do
          end do
       end do
-      Do k1=sgg%SINPMLSweep(iHy)%ZI,sgg%SINPMLSweep(iHy)%ZE
-         Do j1=sgg%SINPMLSweep(iHy)%YI,sgg%SINPMLSweep(iHy)%YE
-            Do i1=sgg%SINPMLSweep(iHy)%XI,sgg%SINPMLSweep(iHy)%XE
+      do k1=sgg%SINPMLSweep(IHY)%ZI,sgg%SINPMLSweep(IHY)%ZE
+         do j1=sgg%SINPMLSweep(IHY)%YI,sgg%SINPMLSweep(IHY)%YE
+            do i1=sgg%SINPMLSweep(IHY)%XI,sgg%SINPMLSweep(IHY)%XE
                jmed=media%sggMiHy(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                    orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
-                   if (orient/=iEy) then
+                   if (orient/=IEY) then
                        conta=conta+1
                    end if
                end if
@@ -186,13 +186,13 @@ contains
          end do
       end do
 
-      Do k1=sgg%SINPMLSweep(iHz)%ZI,sgg%SINPMLSweep(iHz)%ZE
-         Do j1=sgg%SINPMLSweep(iHz)%YI,sgg%SINPMLSweep(iHz)%YE
-            Do i1=sgg%SINPMLSweep(iHz)%XI,sgg%SINPMLSweep(iHz)%XE
+      do k1=sgg%SINPMLSweep(IHZ)%ZI,sgg%SINPMLSweep(IHZ)%ZE
+         do j1=sgg%SINPMLSweep(IHZ)%YI,sgg%SINPMLSweep(IHZ)%YE
+            do i1=sgg%SINPMLSweep(IHZ)%XI,sgg%SINPMLSweep(IHZ)%XE
                jmed=media%sggMiHz(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                    orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
-                   if (orient/=iEz) then
+                   if (orient/=IEZ) then
                        conta=conta+1
                    end if
                end if
@@ -210,30 +210,30 @@ contains
 !!!!
       !!!!!!!!
       conta=0
-      Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
-         Do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
-            Do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
+      do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
+         do j1=sgg%SINPMLSweep(IEX)%YI,sgg%SINPMLSweep(IEX)%YE
+            do i1=sgg%SINPMLSweep(IEX)%XI,sgg%SINPMLSweep(IEX)%XE
                jmed=media%sggMiEx(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                 orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
-                if (orient/=iEx) then
+                if (orient/=IEX) then
                   conta=conta+1
                   PML_ => berpmlE%Nodes(conta)
-                  PML_%field    => Ex(i1,j1  ,k1  )
+                  PML_%field    => Ex(i1,j1  ,k1)
                   berpmlE%orient=orient
                   select case (orient)
-                  case (iEy)
-                     PML_%del               =    1.0_RKIND/IDye(   j1     )
-                     PML_%transversalDelta  =    1.0_RKIND/IDYh(   j1     )
+                  case (IEY)
+                     PML_%del               =    1.0_RKIND/IDye(j1)
+                     PML_%transversalDelta  =    1.0_RKIND/IDYh(j1)
                      PML_%Plus   => Hz(i1,j1  ,k1)
                      PML_%Minu   => Hz(i1,j1-1,k1)
                      PML_%gx2=G2(jmed)
                      PML_%minTotal=minY(jmed)
                      PML_%maxTotal=maxY(jmed)
                      PML_%posi=j1
-                  case (iEz)
-                     PML_%del               =   1.0_RKIND/IDze(   j1     )
-                     PML_%transversalDelta    = 1.0_RKIND/IDzh(      k1  )
+                  case (IEZ)
+                     PML_%del               =   1.0_RKIND/IDze(j1)
+                     PML_%transversalDelta    = 1.0_RKIND/IDzh(k1)
                      PML_%Plus   => Hy(i1,j1  ,k1)
                      PML_%Minu   => Hy(i1,j1  ,k1-1)
                      PML_%gx2=-G2(jmed)
@@ -251,32 +251,32 @@ contains
          end do
       end do
       !!!!!!!!!!
-      Do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
-         Do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
-            Do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
+      do k1=sgg%SINPMLSweep(IEY)%ZI,sgg%SINPMLSweep(IEY)%ZE
+         do j1=sgg%SINPMLSweep(IEY)%YI,sgg%SINPMLSweep(IEY)%YE
+            do i1=sgg%SINPMLSweep(IEY)%XI,sgg%SINPMLSweep(IEY)%XE
                jmed=media%sggMiEy(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                 orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
-                if (orient/=iEy) then
+                if (orient/=IEY) then
                   conta=conta+1
                   PML_ => berpmlE%Nodes(conta)
-                  PML_%field    => Ey(i1  ,j1  ,k1  )
+                  PML_%field    => Ey(i1  ,j1  ,k1)
                   berpmlE%orient=orient
                   select case (orient)
-                   case (iEz)
-                                  PML_%del = 1.0_RKIND/IDze(      k1  )
-                     PML_%transversalDelta = 1.0_RKIND/IDzh(      k1  )
-                     PML_%Plus   => Hx(i1  ,j1  ,k1  )
+                   case (IEZ)
+                                  PML_%del = 1.0_RKIND/IDze(k1)
+                     PML_%transversalDelta = 1.0_RKIND/IDzh(k1)
+                     PML_%Plus   => Hx(i1  ,j1  ,k1)
                      PML_%Minu   => Hx(i1  ,j1  ,k1-1)
                      PML_%minTotal=minZ(jmed)
                      PML_%maxTotal=maxZ(jmed)
                      PML_%gx2=G2(jmed)
                      PML_%posi=k1
-                   case (iEx)
-                                  PML_%del = 1.0_RKIND/IDxe(i1        )
-                     PML_%transversalDelta = 1.0_RKIND/IDxh(i1        )
-                     PML_%Plus   => Hz(i1  ,j1  ,k1  )
-                     PML_%Minu   => Hz(i1-1,j1  ,k1  )
+                   case (IEX)
+                                  PML_%del = 1.0_RKIND/IDxe(i1)
+                     PML_%transversalDelta = 1.0_RKIND/IDxh(i1)
+                     PML_%Plus   => Hz(i1  ,j1  ,k1)
+                     PML_%Minu   => Hz(i1-1,j1  ,k1)
                      PML_%gx2=-G2(jmed)
                      PML_%minTotal=minX(jmed)
                      PML_%maxTotal=maxX(jmed)
@@ -292,32 +292,32 @@ contains
          end do
       end do
 
-      Do k1=sgg%SINPMLSweep(iEz)%ZI,sgg%SINPMLSweep(iEz)%ZE
-         Do j1=sgg%SINPMLSweep(iEz)%YI,sgg%SINPMLSweep(iEz)%YE
-            Do i1=sgg%SINPMLSweep(iEz)%XI,sgg%SINPMLSweep(iEz)%XE
+      do k1=sgg%SINPMLSweep(IEZ)%ZI,sgg%SINPMLSweep(IEZ)%ZE
+         do j1=sgg%SINPMLSweep(IEZ)%YI,sgg%SINPMLSweep(IEZ)%YE
+            do i1=sgg%SINPMLSweep(IEZ)%XI,sgg%SINPMLSweep(IEZ)%XE
                jmed=media%sggMiEz(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                 orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
-                if (orient/=iEz) then
+                if (orient/=IEZ) then
                   conta=conta+1
                   PML_ => berpmlE%Nodes(conta)
-                  PML_%field  => Ez(i1  ,j1  ,k1  )
+                  PML_%field  => Ez(i1  ,j1  ,k1)
                   berpmlE%orient=orient
                   select case (orient)
-                   case (iEx)
-                                  PML_%del = 1.0_RKIND/IDxe(i1        )
-                     PML_%transversalDelta = 1.0_RKIND/IDxh(i1        )
-                     PML_%Plus => Hy(i1  ,j1  ,k1  )
+                   case (IEX)
+                                  PML_%del = 1.0_RKIND/IDxe(i1)
+                     PML_%transversalDelta = 1.0_RKIND/IDxh(i1)
+                     PML_%Plus => Hy(i1  ,j1  ,k1)
                      PML_%Minu => Hy(i1-1,j1  ,k1)
                      PML_%gx2=G2(jmed)
                      PML_%minTotal=minX(jmed)
                      PML_%maxTotal=maxX(jmed)
                      PML_%posi=i1
-                   case (iEy)
-                                  PML_%del = 1.0_RKIND/IDye(    j1     )
-                     PML_%transversalDelta = 1.0_RKIND/IDyh(    j1     )
-                     PML_%Plus => Hx(i1  ,j1  ,k1  )
-                     PML_%Minu => Hx(i1  ,j1-1,k1  )
+                   case (IEY)
+                                  PML_%del = 1.0_RKIND/IDye(j1)
+                     PML_%transversalDelta = 1.0_RKIND/IDyh(j1)
+                     PML_%Plus => Hx(i1  ,j1  ,k1)
+                     PML_%Minu => Hx(i1  ,j1-1,k1)
                      PML_%gx2=-G2(jmed)
                      PML_%minTotal=minY(jmed)
                      PML_%maxTotal=maxY(jmed)
@@ -333,37 +333,37 @@ contains
          end do
       end do
 
-!magneticos
+!magnetics
 
 
       !!!!!!!!
       conta=0
-      Do k1=sgg%SINPMLSweep(iHx)%ZI,sgg%SINPMLSweep(iHx)%ZE
-         Do j1=sgg%SINPMLSweep(iHx)%YI,sgg%SINPMLSweep(iHx)%YE
-            Do i1=sgg%SINPMLSweep(iHx)%XI,sgg%SINPMLSweep(iHx)%XE
+      do k1=sgg%SINPMLSweep(IHX)%ZI,sgg%SINPMLSweep(IHX)%ZE
+         do j1=sgg%SINPMLSweep(IHX)%YI,sgg%SINPMLSweep(IHX)%YE
+            do i1=sgg%SINPMLSweep(IHX)%XI,sgg%SINPMLSweep(IHX)%XE
                jmed=media%sggMiHx(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                 orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
-                if (orient/=iEx) then
+                if (orient/=IEX) then
                   conta=conta+1
                   PML_ => berpmlH%Nodes(conta)
-                  PML_%field    => Hx(i1,j1  ,k1  )
+                  PML_%field    => Hx(i1,j1  ,k1)
                   berpmlE%orient=orient
                   select case (orient)
-                  case (iEy)
-                                   PML_%del = 1.0_RKIND/IDYe(   j1     )
-                     PML_%transversalDelta  = 1.0_RKIND/IDYe(   j1     )
+                  case (IEY)
+                                   PML_%del = 1.0_RKIND/IDYe(j1)
+                     PML_%transversalDelta  = 1.0_RKIND/IDYe(j1)
                      PML_%Plus   => Ez(i1,j1+1,k1)
                      PML_%Minu   => Ez(i1,j1  ,k1)
                      PML_%gx2=GM2(jmed)
                      PML_%minTotal=minY(jmed)
                      PML_%maxTotal=maxY(jmed)
                      PML_%posi=j1+0.5
-                  case (iEz)
-                                     PML_%del = 1.0_RKIND/IDze(      k1  )
-                     PML_%transversalDelta    = 1.0_RKIND/IDze(      k1  )
+                  case (IEZ)
+                                     PML_%del = 1.0_RKIND/IDze(k1)
+                     PML_%transversalDelta    = 1.0_RKIND/IDze(k1)
                      PML_%Plus   => Ey(i1,j1  ,k1+1)
-                     PML_%Minu   => Ey(i1,j1  ,k1  )
+                     PML_%Minu   => Ey(i1,j1  ,k1)
                      PML_%gx2=-GM2(jmed)
                      PML_%minTotal=minZ(jmed)
                      PML_%maxTotal=maxZ(jmed)
@@ -379,32 +379,32 @@ contains
          end do
       end do
       !!!!!!!!!!
-      Do k1=sgg%SINPMLSweep(iHy)%ZI,sgg%SINPMLSweep(iHy)%ZE
-         Do j1=sgg%SINPMLSweep(iHy)%YI,sgg%SINPMLSweep(iHy)%YE
-            Do i1=sgg%SINPMLSweep(iHy)%XI,sgg%SINPMLSweep(iHy)%XE
+      do k1=sgg%SINPMLSweep(IHY)%ZI,sgg%SINPMLSweep(IHY)%ZE
+         do j1=sgg%SINPMLSweep(IHY)%YI,sgg%SINPMLSweep(IHY)%YE
+            do i1=sgg%SINPMLSweep(IHY)%XI,sgg%SINPMLSweep(IHY)%XE
                jmed=media%sggMiHy(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                 orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
-                if (orient/=iEy) then
+                if (orient/=IEY) then
                   conta=conta+1
                   PML_ => berpmlH%Nodes(conta)
-                  PML_%field    => Hy(i1  ,j1  ,k1  )
+                  PML_%field    => Hy(i1  ,j1  ,k1)
                   berpmlE%orient=orient
                   select case (orient)
-                   case (iEz)
-                                  PML_%del = 1.0_RKIND/IDze(      k1  )
-                     PML_%transversalDelta = 1.0_RKIND/IDze(      k1  )
+                   case (IEZ)
+                                  PML_%del = 1.0_RKIND/IDze(k1)
+                     PML_%transversalDelta = 1.0_RKIND/IDze(k1)
                      PML_%Plus   => Ex(i1  ,j1  ,k1+1)
-                     PML_%Minu   => Ex(i1  ,j1  ,k1  )
+                     PML_%Minu   => Ex(i1  ,j1  ,k1)
                      PML_%gx2=GM2(jmed)
                      PML_%minTotal=minZ(jmed)
                      PML_%maxTotal=maxZ(jmed)
                      PML_%posi=k1+0.5
-                   case (iEx)
-                                  PML_%del =  1.0_RKIND/IDxe(i1        )
-                     PML_%transversalDelta = 1.0_RKIND/IDxe(i1        )
-                     PML_%Plus   => Ez(i1+1,j1  ,k1  )
-                     PML_%Minu   => Ez(i1  ,j1  ,k1  )
+                   case (IEX)
+                                  PML_%del =  1.0_RKIND/IDxe(i1)
+                     PML_%transversalDelta = 1.0_RKIND/IDxe(i1)
+                     PML_%Plus   => Ez(i1+1,j1  ,k1)
+                     PML_%Minu   => Ez(i1  ,j1  ,k1)
                      PML_%gx2=-GM2(jmed)
                      PML_%minTotal=minX(jmed)
                      PML_%maxTotal=maxX(jmed)
@@ -420,32 +420,32 @@ contains
          end do
       end do
 
-      Do k1=sgg%SINPMLSweep(iHz)%ZI,sgg%SINPMLSweep(iHz)%ZE
-         Do j1=sgg%SINPMLSweep(iHz)%YI,sgg%SINPMLSweep(iHz)%YE
-            Do i1=sgg%SINPMLSweep(iHz)%XI,sgg%SINPMLSweep(iHz)%XE
+      do k1=sgg%SINPMLSweep(IHZ)%ZI,sgg%SINPMLSweep(IHZ)%ZE
+         do j1=sgg%SINPMLSweep(IHZ)%YI,sgg%SINPMLSweep(IHZ)%YE
+            do i1=sgg%SINPMLSweep(IHZ)%XI,sgg%SINPMLSweep(IHZ)%XE
                jmed=media%sggMiHz(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                 orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
-                if (orient/=iEz) then
+                if (orient/=IEZ) then
                   conta=conta+1
                   PML_ => berpmlH%Nodes(conta)
-                  PML_%field  => Hz(i1  ,j1  ,k1  )
+                  PML_%field  => Hz(i1  ,j1  ,k1)
                   berpmlE%orient=orient
                   select case (orient)
-                   case (iEx)
-                                  PML_%del = 1.0_RKIND/IDxe(i1        )
-                     PML_%transversalDelta = 1.0_RKIND/IDxe(i1        )
-                     PML_%Plus => Ey(i1+1  ,j1  ,k1  )
+                   case (IEX)
+                                  PML_%del = 1.0_RKIND/IDxe(i1)
+                     PML_%transversalDelta = 1.0_RKIND/IDxe(i1)
+                     PML_%Plus => Ey(i1+1  ,j1  ,k1)
                      PML_%Minu => Ey(i1    ,j1  ,k1)
                      PML_%gx2=GM2(jmed)
                      PML_%minTotal=minX(jmed)
                      PML_%maxTotal=maxX(jmed)
                      PML_%posi=i1+0.5
-                   case (iEy)
-                                  PML_%del = 1.0_RKIND/IDye(    j1     )
-                     PML_%transversalDelta = 1.0_RKIND/IDye(    j1     )
-                     PML_%Plus => Ex(i1  ,j1+1  ,k1  )
-                     PML_%Minu => Ex(i1  ,j1    ,k1  )
+                   case (IEY)
+                                  PML_%del = 1.0_RKIND/IDye(j1)
+                     PML_%transversalDelta = 1.0_RKIND/IDye(j1)
+                     PML_%Plus => Ex(i1  ,j1+1  ,k1)
+                     PML_%Minu => Ex(i1  ,j1    ,k1)
                      PML_%gx2=-GM2(jmed)
                      PML_%minTotal=minY(jmed)
                      PML_%maxTotal=maxY(jmed)
@@ -460,7 +460,7 @@ contains
             end do
          end do
       end do
-!!!inicializa las constantes
+!!!initializes the constants
       call calc_pmlbodypar(sgg,eps00,mu00)
 !!!
 
@@ -475,8 +475,8 @@ contains
             PML_%Psi=0.0_RKIND
          end do
       else  
-            READ (14) (berpmlE%Nodes(conta)%Psi,conta=1,berpmlE%numnodes)
-            READ (14) (berpmlH%Nodes(conta)%Psi,conta=1,berpmlH%numnodes)
+            read (14) (berpmlE%Nodes(conta)%Psi,conta=1,berpmlE%numnodes)
+            read (14) (berpmlH%Nodes(conta)%Psi,conta=1,berpmlH%numnodes)
       end if
       return
 
@@ -493,16 +493,16 @@ contains
         integer(kind=4) :: nn
         real(kind=RKIND) :: sigmamax,sigma
 !
-        eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+        eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
 !         
         do conta=1,berpmlE%numnodes
                 PML_ => berpmlE%Nodes(conta) 
-                sigmamax = -((log(CoeffReflPML)*(PMLorden+1))/ &
+                sigmamax = -((log(CoeffReflPML)*(PMLORDEN+1))/ &
                             (2*sqrt(Mu0/eps0)*(PML_%del*(PML_%maxTotal-PML_%minTotal)/2.0_RKIND)))
                 if (PML_%posi <= (PML_%maxTotal+PML_%minTotal)/2.0_RKIND) then
-                sigma=Sigmamax * (abs(PML_%posi-1.0*PML_%minTotal) /((1.0*PML_%maxTotal-1.0*PML_%minTotal)/2.0_RKIND))**PMLorden 
+                sigma=Sigmamax * (abs(PML_%posi-1.0*PML_%minTotal) /((1.0*PML_%maxTotal-1.0*PML_%minTotal)/2.0_RKIND))**PMLORDEN 
                 else
-                sigma=Sigmamax * (abs(1.0*PML_%maxTotal-PML_%posi) /((1.0*PML_%maxTotal-1.0*PML_%minTotal)/2.0_RKIND))**PMLorden
+                sigma=Sigmamax * (abs(1.0*PML_%maxTotal-PML_%posi) /((1.0*PML_%maxTotal-1.0*PML_%minTotal)/2.0_RKIND))**PMLORDEN
                 end if
                 PML_%P_be=Exp(-(sigma)*sgg%dt/Eps0)
                 PML_%P_ce=  (PML_%P_be-1.0_RKIND)/PML_%transversalDelta
@@ -510,12 +510,12 @@ contains
         end do
         do conta=1,berpmlH%numnodes
                 PML_ => berpmlH%Nodes(conta) 
-                sigmamax = -((log(CoeffReflPML)*(PMLorden+1))/ &
+                sigmamax = -((log(CoeffReflPML)*(PMLORDEN+1))/ &
                             (2*sqrt(Mu0/eps0)*(PML_%del*(PML_%maxTotal-PML_%minTotal)/2.0_RKIND)))
                 if (PML_%posi <= (PML_%maxTotal+PML_%minTotal)/2.0_RKIND) then
-                sigma=Sigmamax * (abs(PML_%posi-1.0*PML_%minTotal) /((1.0*PML_%maxTotal-1.0*PML_%minTotal)/2.0_RKIND))**PMLorden 
+                sigma=Sigmamax * (abs(PML_%posi-1.0*PML_%minTotal) /((1.0*PML_%maxTotal-1.0*PML_%minTotal)/2.0_RKIND))**PMLORDEN 
                 else
-                sigma=Sigmamax * (abs(1.0*PML_%maxTotal-PML_%posi) /((1.0*PML_%maxTotal-1.0*PML_%minTotal)/2.0_RKIND))**PMLorden
+                sigma=Sigmamax * (abs(1.0*PML_%maxTotal-PML_%posi) /((1.0*PML_%maxTotal-1.0*PML_%minTotal)/2.0_RKIND))**PMLORDEN
                 end if
                 PML_%P_be=Exp(-(sigma)*sgg%dt/Eps0)
                 PML_%P_ce=  (PML_%P_be-1.0_RKIND)/PML_%transversalDelta
@@ -574,7 +574,7 @@ contains
 
    subroutine DestroyPMLbodies(sgg)
 
-      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
       integer(kind=4) :: i
 
       !free up memory

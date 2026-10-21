@@ -10,7 +10,7 @@ contains
    !subroutine dmma_thin_Slot (incx,incy,incz,dir,orientacion,direccion,&
    !                           thickness,efm,ufm,epr,mur,epse,mue)
    !
-   subroutine dmma_thin_Slot (incx, incy, incz, dir, orientacion, direccion, thickness, efm, ufm, epse, mue,eps0,mu0)
+   subroutine dmma_thin_Slot (incx, incy, incz, dir, orientationIndex, direccion, thickness, efm, ufm, epse, mue,eps0,mu0)
       !
       !
       !----------------------------------------------------------------------------------------------------
@@ -21,8 +21,8 @@ contains
       !   incy        -> Cell size in y direction (meters)
       !   incz        -> Cell size in z direction (meters)
       !   dir         -> Coordinates of the direction of incidence of the plane wave (meters)
-      !   orientacion       -> orientacion ('XY','XZ','YZ') that contains the Slot line
-      !   direccion   -> direccion ('X','Y','Z') of the Slot line
+      !   orientation       -> orientation ('XY','XZ','YZ') that contains the Slot line
+      !   direction   -> direction ('X','Y','Z') of the Slot line
       !   thickness   -> Lower size of the Slot (meters)
       !   efm         -> Relative epsilon of the filling media
       !   ufm         -> Relative mu of the filling media
@@ -37,7 +37,7 @@ contains
       !
       real(kind=RKIND) :: eps0,mu0
       real(kind=RKIND), intent(in) :: incx, incy, incz
-      integer(kind=4), intent(in) :: orientacion, direccion
+      integer(kind=4), intent(in) :: orientationIndex, direccion
       real(kind=RKIND), intent(in) :: thickness
       real(kind=RKIND), intent(in) :: efm, ufm
       real(kind=RKIND), intent(in), dimension(3) :: dir
@@ -71,9 +71,9 @@ contains
       mue (2, 2) = ufm
       mue (3, 3) = ufm
       !
-      cfm = 1.0_RKIND /  Sqrt (eabs*uabs) !si lo tomo relativo a la direccion de incidencia puede ser cfm=0.0_RKIND y se jode el logaritmo.
-      !asi que lo tomo fijo !2012 bug articulo1_tgap_sgg_stair
-      if (orientacion == iEz) then
+      cfm = 1.0_RKIND /  Sqrt (eabs*uabs) !if I take it relative to the incidence direction cfm could be 0.0_RKIND and the logarithm breaks.
+      !so I take it as fixed !2012 bug article1_tgap_sgg_stair
+      if (orientationIndex == IEZ) then
          !        cfm = Abs (dir(3)) / Sqrt (eabs*uabs)
          maxfreq = cfm / (incz*10.0)
          omega = 2.0_RKIND * pi * maxfreq
@@ -81,17 +81,17 @@ contains
          !  cap=(4.232*eabs)/pi-(2.0_RKIND *eabs*thickness)/(pi*cfm)*(log(omega*thickness/cfm)-1.0_RKIND)
          !2011 mathem
          cap = eabs * (0.9918536053486919-0.3183098861837907*Log((omega*thickness)/cfm))
-         if (direccion == iEx) then
+         if (direccion == IEX) then
             epse (2, 2) = (incy/incz) * (cap/eabs)
             mue (3, 3) = 1.0_RKIND / epse (2, 2)
          end if
-         if (direccion == iEy) then
+         if (direccion == IEY) then
             epse (1, 1) = (incx/incz) * (cap/eabs)
             mue (3, 3) = 1.0_RKIND / epse (1, 1)
          end if
       end if
       !
-      if (orientacion == iEy) then
+      if (orientationIndex == IEY) then
          !        cfm = Abs (dir(2)) / Sqrt (eabs*uabs)
          maxfreq = cfm / (incy*10.0)
          omega = 2.0_RKIND * pi * maxfreq
@@ -99,17 +99,17 @@ contains
          !
          !2011 mathem
          cap = eabs * (0.9918536053486919-0.3183098861837907*Log((omega*thickness)/cfm))
-         if (direccion == iEx) then
+         if (direccion == IEX) then
             epse (3, 3) = (incz/incy) * (cap/eabs)
             mue (2, 2) = 1.0_RKIND / epse (3, 3)
          end if
-         if (direccion == iEz) then
+         if (direccion == IEZ) then
             epse (1, 1) = (incx/incy) * (cap/eabs)
             mue (2, 2) = 1.0_RKIND / epse (1, 1)
          end if
       end if
       !
-      if (orientacion == iEx) then
+      if (orientationIndex == IEX) then
          !        cfm = Abs (dir(1)) / Sqrt (eabs*uabs)
          maxfreq = cfm / (incx*10.0)
          omega = 2.0_RKIND * pi * maxfreq
@@ -117,11 +117,11 @@ contains
          !
          !2011 mathem
          cap = eabs * (0.9918536053486919-0.3183098861837907*Log((omega*thickness)/cfm))
-         if (direccion == iEy) then
+         if (direccion == IEY) then
             epse (3, 3) = (incz/incx) * (cap/eabs)
             mue (1, 1) = 1.0_RKIND / epse (3, 3)
          end if
-         if (direccion == iEz) then
+         if (direccion == IEZ) then
             epse (2, 2) = (incy/incx) * (cap/eabs)
             mue (1, 1) = 1.0_RKIND / epse (2, 2)
          end if

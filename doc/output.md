@@ -27,6 +27,13 @@ Point probes configured for both domains produce one `_tm.dat` file and one
 Far-field probes are always frequency-domain results, despite not using the
 `_fq` suffix.
 
+For MTLN voltage probes, each column corresponds to a bundle conductor referred
+to its surrounding shield. In full-wave problems the conductor acting as the
+shield of a `shieldedMultiwire` contained within another cable is omitted,
+since it has no reference of its own. In standalone MTLN problems
+(`mtlnProblem`), every conductor is reported, with the outermost ones referred
+to the reference/ground conductor.
+
 ## Volumetric Output
 
 `movie` probes write their files in a directory whose basename is
@@ -49,9 +56,11 @@ The `.xdmf` files describe the corresponding data and geometry stored in HDF5.
 
 The `-mapvtk` option creates a geometry map rather than a JSON
 probe.
-Without MPI, it writes one `.vtu` file.
-With MPI, it writes one `.vtu` piece for every participating rank and a
-root-level `.pvtu` descriptor that references all pieces.
+All `.vtu` pieces are collected in a single directory whose basename is
+`R__MAP`.
+Without MPI, that directory contains one `.vtu` piece.
+With MPI, it contains one `.vtu` piece for every participating rank, and a
+root-level `.pvtu` descriptor beside the input references all pieces.
 Geometry maps do not publish text sidecars.
 
 Probe outputs do not create JSON descriptors or a run output manifest.

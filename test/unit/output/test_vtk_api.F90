@@ -9,8 +9,8 @@ integer function test_vtkAPI_points_allocation() bind(C) result(error_cnt)
    ! Verifies structured-grid points are allocated with the expected shape.
    use vtkAPI_m
    implicit none
-   type(vtk_structured_grid), target :: grid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_structured_grid_t), target :: grid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: points(:, :)
    integer :: nx, ny, nz
 
@@ -35,8 +35,8 @@ integer function test_vtkAPI_point_scalar() bind(C) result(error_cnt)
    ! Verifies scalar point data is stored in a structured grid.
    use vtkAPI_m
    implicit none
-   type(vtk_structured_grid), target :: grid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_structured_grid_t), target :: grid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: scalars(:)
    integer :: nx=2, ny=2, nz=2, i
 
@@ -51,7 +51,7 @@ integer function test_vtkAPI_point_scalar() bind(C) result(error_cnt)
    call grid_base%add_scalar('Density', scalars)
 
    if (.not. allocated(grid%scalars)) error_cnt = error_cnt + 1
-   if (grid%scalars(1)%data(1) /= 1.0) error_cnt = error_cnt + 1
+   if (grid%scalars(1)%dataValues(1) /= 1.0) error_cnt = error_cnt + 1
 end function
 
 !==============================
@@ -61,8 +61,8 @@ integer function test_vtkAPI_point_vector() bind(C) result(error_cnt)
    ! Verifies vector point data is stored in a structured grid.
    use vtkAPI_m
    implicit none
-   type(vtk_structured_grid), target :: grid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_structured_grid_t), target :: grid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: vec(:)
    integer :: nx=2, ny=2, nz=2, i
 
@@ -79,7 +79,7 @@ integer function test_vtkAPI_point_vector() bind(C) result(error_cnt)
    call grid_base%add_vector('Momentum', vec)
 
    if (.not. allocated(grid%vectors)) error_cnt = error_cnt + 1
-   if (grid%vectors(1)%data(2) /= 10.0) error_cnt = error_cnt + 1
+   if (grid%vectors(1)%dataValues(2) /= 10.0) error_cnt = error_cnt + 1
 end function
 
 !==============================
@@ -89,8 +89,8 @@ integer function test_vtkAPI_cell_scalar() bind(C) result(error_cnt)
    ! Verifies scalar cell data is stored in a structured grid.
    use vtkAPI_m
    implicit none
-   type(vtk_structured_grid), target :: grid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_structured_grid_t), target :: grid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: cell_data(:)
    integer :: nx=2, ny=2, nz=2, n
 
@@ -105,7 +105,7 @@ integer function test_vtkAPI_cell_scalar() bind(C) result(error_cnt)
    call grid_base%add_cell_scalar('Pressure', cell_data)
 
    if (.not. allocated(grid%cell_scalars)) error_cnt = error_cnt + 1
-   if (grid%cell_scalars(1)%data(1) /= 1.0) error_cnt = error_cnt + 1
+   if (grid%cell_scalars(1)%dataValues(1) /= 1.0) error_cnt = error_cnt + 1
 end function
 
 !==============================
@@ -115,8 +115,8 @@ integer function test_vtkAPI_cell_vector() bind(C) result(error_cnt)
    ! Verifies vector cell data is stored in a structured grid.
    use vtkAPI_m
    implicit none
-   type(vtk_structured_grid), target :: grid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_structured_grid_t), target :: grid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: vec(:)
    integer :: nx=2, ny=2, nz=2, n
 
@@ -133,7 +133,7 @@ integer function test_vtkAPI_cell_vector() bind(C) result(error_cnt)
    call grid_base%add_cell_vector('Flux', vec)
 
    if (.not. allocated(grid%cell_vectors)) error_cnt = error_cnt + 1
-   if (grid%cell_vectors(1)%data(3) /= 100.0) error_cnt = error_cnt + 1
+   if (grid%cell_vectors(1)%dataValues(3) /= 100.0) error_cnt = error_cnt + 1
 end function
 
 !==============================
@@ -144,12 +144,12 @@ integer function test_vtkAPI_vts_file_creation() bind(C) result(error_cnt)
    use vtkAPI_m
    use directoryUtils_m
    implicit none
-   type(vtk_structured_grid), target :: grid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_structured_grid_t), target :: grid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: points(:, :), scalars(:)
    integer :: nx=2, ny=2, nz=2
    integer :: ierr
-   character(len=14), parameter :: folder='testing_folder'
+   character(len=14), parameter :: FOLDER='testing_folder'
    character(len=1024) :: file
 
    error_cnt = 0
@@ -183,12 +183,12 @@ integer function test_vtkAPI_vtu_file_creation() bind(C) result(error_cnt)
    use vtkAPI_m
    use directoryUtils_m
    implicit none
-   type(vtk_unstructured_grid), target :: ugrid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_unstructured_grid_t), target :: ugrid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: points(:, :), scalars(:)
    integer, allocatable :: conn(:), offsets(:), types(:)
    integer :: ierr
-   character(len=14), parameter :: folder='testing_folder'
+   character(len=14), parameter :: FOLDER='testing_folder'
    character(len=1024) :: file
 
    error_cnt = 0
@@ -233,8 +233,8 @@ integer function test_vtkAPI_vtu_cell_data() bind(C) result(error_cnt)
    ! Verifies scalar and vector data is stored for unstructured-grid cells.
    use vtkAPI_m
    implicit none
-   type(vtk_unstructured_grid), target :: ugrid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_unstructured_grid_t), target :: ugrid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: cell_scalars(:), cell_vectors(:)
    integer, allocatable :: conn(:), offsets(:), types(:)
 
@@ -251,12 +251,12 @@ integer function test_vtkAPI_vtu_cell_data() bind(C) result(error_cnt)
    ! Cell scalar
    allocate(cell_scalars(1)); cell_scalars(1) = 5.0
    call grid_base%add_cell_scalar('Pressure', cell_scalars)
-   if (ugrid%cell_scalars(1)%data(1) /= 5.0) error_cnt = error_cnt + 1
+   if (ugrid%cell_scalars(1)%dataValues(1) /= 5.0) error_cnt = error_cnt + 1
 
    ! Cell vector
    allocate(cell_vectors(3*1)); cell_vectors = (/1.0,2.0,3.0/)
    call grid_base%add_cell_vector('Flux', cell_vectors)
-   if (ugrid%cell_vectors(1)%data(3) /= 3.0) error_cnt = error_cnt + 1
+   if (ugrid%cell_vectors(1)%dataValues(3) /= 3.0) error_cnt = error_cnt + 1
 end function
 
 !==============================
@@ -267,12 +267,12 @@ integer function test_vtkAPI_vts_content() bind(C) result(error_cnt)
    use vtkAPI_m
    use directoryUtils_m
    implicit none
-   type(vtk_structured_grid), target :: grid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_structured_grid_t), target :: grid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: points(:, :), scalars(:), vectors(:)
    integer :: nx=2, ny=2, nz=2
    integer :: ierr, i
-   character(len=14), parameter :: folder='testing_folder'
+   character(len=14), parameter :: FOLDER='testing_folder'
    character(len=1024) :: file
    character(len=256) :: line
    logical :: found_scalar, found_vector
@@ -337,12 +337,12 @@ integer function test_vtkAPI_vtu_content() bind(C) result(error_cnt)
    use vtkAPI_m
    use directoryUtils_m
    implicit none
-   type(vtk_unstructured_grid), target :: ugrid
-   class(vtk_grid), pointer :: grid_base
+   type(vtk_unstructured_grid_t), target :: ugrid
+   class(vtk_grid_t), pointer :: grid_base
    real, allocatable :: points(:, :), scalars(:), cell_scalars(:)
    integer, allocatable :: conn(:), offsets(:), types(:)
    integer :: ierr
-   character(len=14), parameter :: folder='testing_folder'
+   character(len=14), parameter :: FOLDER='testing_folder'
    character(len=1024) :: file
    character(len=256) :: line
    logical :: found_point_scalar, found_cell_scalar, found_cells, found_points
@@ -414,7 +414,7 @@ integer function test_vtkAPI_pvtu_content() bind(C) result(error_cnt)
    implicit none
    character(len=64) :: piece_paths(2)
    character(len=10) :: scalar_names(2)
-   character(len=14), parameter :: folder = 'testing_folder'
+   character(len=14), parameter :: FOLDER = 'testing_folder'
    character(len=1024) :: file
    character(len=256) :: line
    integer :: ierr

@@ -6,7 +6,7 @@ module sggMethods_m
 
    public :: sgg_init
 
-   public :: sgg_set_tiempo
+   public :: sggSetTime
    public :: sgg_set_dt
    public :: sgg_set_extraswitches
 
@@ -53,28 +53,28 @@ module sggMethods_m
    public :: sgg_set_thereAreMagneticMedia
    public :: sgg_set_thereArePMLMagneticMedia
 
-   public :: sgg_set_nEntradaRoot
-   public :: sgg_set_Punto
+   public :: sggSetNInputRoot
+   public :: sggSetPoint
 
    public :: sgg_add_observation
 contains
    subroutine sgg_init(obj, &
-      tiempo, dt, extraswitches, &
+      time, dt, extraSwitches, &
       NumMedia, AllocMed, &
       IniPMLMedia, EndPMLMedia, &
       NumPlaneWaves, TimeSteps, InitialTimeStep, &
       NumNodalSources, NumberRequest, &
       thereAreMagneticMedia, thereArePMLMagneticMedia, &
-      nEntradaRoot)
+      nInputRoot)
 
       implicit none
 
       type(SGGFDTDINFO_t), intent(inout) :: obj
 
       ! ===== Optional arguments =====
-      real(kind=RKIND_tiempo), pointer, optional :: tiempo(:)
-      real(kind=RKIND_tiempo), optional          :: dt
-      character(len=*), optional          :: extraswitches
+      real(kind=RKIND_TIME), pointer, optional :: time(:)
+      real(kind=RKIND_TIME), optional          :: dt
+      character(len=*), optional          :: extraSwitches
 
       integer(kind=SINGLE), optional :: NumMedia, AllocMed
       integer(kind=SINGLE), optional :: IniPMLMedia, EndPMLMedia
@@ -84,13 +84,13 @@ contains
       logical, optional :: thereAreMagneticMedia
       logical, optional :: thereArePMLMagneticMedia
 
-      character(len=*), optional :: nEntradaRoot
+      character(len=*), optional :: nInputRoot
 
       ! ===== Defaults =====
 
-      nullify (obj%tiempo)
-      obj%dt = 0.0_RKIND_tiempo
-      obj%extraswitches = ""
+      nullify (obj%time)
+      obj%dt = 0.0_RKIND_TIME
+      obj%extraSwitches = ""
 
       obj%NumMedia = 0_SINGLE
       obj%AllocMed = 0_SINGLE
@@ -120,7 +120,7 @@ contains
       obj%thereAreMagneticMedia = .false.
       obj%thereArePMLMagneticMedia = .false.
 
-      obj%nEntradaRoot = ""
+      obj%nInputRoot = ""
 
       ! NOTE:
       ! Derived-type components (Border, PML, Shared_t, XYZlimit_t, Punto)
@@ -128,9 +128,9 @@ contains
 
       ! ===== Overrides from arguments =====
 
-      if (present(tiempo)) obj%tiempo => tiempo
+      if (present(time)) obj%time => time
       if (present(dt)) obj%dt = dt
-      if (present(extraswitches)) obj%extraswitches = extraswitches
+      if (present(extraSwitches)) obj%extraSwitches = extraSwitches
 
       if (present(NumMedia)) obj%NumMedia = NumMedia
       if (present(AllocMed)) obj%AllocMed = AllocMed
@@ -148,26 +148,26 @@ contains
       if (present(thereArePMLMagneticMedia)) &
          obj%thereArePMLMagneticMedia = thereArePMLMagneticMedia
 
-      if (present(nEntradaRoot)) obj%nEntradaRoot = nEntradaRoot
+      if (present(nInputRoot)) obj%nInputRoot = nInputRoot
 
    end subroutine sgg_init
 
-   subroutine sgg_set_tiempo(sgg, tiempo)
+   subroutine sggSetTime(sgg, time)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
-      real(kind=RKIND_tiempo), pointer :: tiempo(:)
-      sgg%tiempo => tiempo
+      real(kind=RKIND_TIME), pointer :: time(:)
+      sgg%time => time
    end subroutine
 
    subroutine sgg_set_dt(sgg, dt)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
-      real(kind=RKIND_tiempo), intent(in) :: dt
+      real(kind=RKIND_TIME), intent(in) :: dt
       sgg%dt = dt
    end subroutine
 
-   subroutine sgg_set_extraswitches(sgg, extraswitches)
+   subroutine sgg_set_extraswitches(sgg, extraSwitches)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
-      character(len=*), intent(in) :: extraswitches
-      sgg%extraswitches = extraswitches
+      character(len=*), intent(in) :: extraSwitches
+      sgg%extraSwitches = extraSwitches
    end subroutine
 
    subroutine sgg_set_NumMedia(sgg, newValue)
@@ -362,28 +362,28 @@ contains
       sgg%SINPMLSweep = newValue
    end subroutine
 
-   subroutine sgg_set_thereAreMagneticMedia(sgg, value)
+   subroutine sgg_set_thereAreMagneticMedia(sgg, scalarValue)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
-      logical, intent(in) :: value
-      sgg%thereAreMagneticMedia = value
+      logical, intent(in) :: scalarValue
+      sgg%thereAreMagneticMedia = scalarValue
    end subroutine
 
-   subroutine sgg_set_thereArePMLMagneticMedia(sgg, value)
+   subroutine sgg_set_thereArePMLMagneticMedia(sgg, scalarValue)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
-      logical, intent(in) :: value
-      sgg%thereArePMLMagneticMedia = value
+      logical, intent(in) :: scalarValue
+      sgg%thereArePMLMagneticMedia = scalarValue
    end subroutine
 
-   subroutine sgg_set_nEntradaRoot(sgg, value)
+   subroutine sggSetNInputRoot(sgg, scalarValue)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
-      character(len=*), intent(in) :: value
-      sgg%nEntradaRoot = value
+      character(len=*), intent(in) :: scalarValue
+      sgg%nInputRoot = scalarValue
    end subroutine
 
-   subroutine sgg_set_Punto(sgg, value)
+   subroutine sggSetPoint(sgg, scalarValue)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
-      type(coorsxyzP_t), intent(in) :: value
-      sgg%Punto = value
+      type(coorsxyzP_t), intent(in) :: scalarValue
+      sgg%gridPoint = scalarValue
    end subroutine
 
    subroutine sgg_add_observation(sgg, new_observation)

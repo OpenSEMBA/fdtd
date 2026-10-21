@@ -293,7 +293,7 @@ add_library(semba-main
 	"src_main_pub/preprocess_geom.F90"
 	"src_main_pub/storegeom.F90"
 	"src_main_pub/version.F90"
-	"src_main_pub/interpreta_switches.F90"
+	"src_main_pub/interpret_switches.F90"
 	"src_main_pub/resuming.F90"
 	"src_main_pub/timestepping.F90"
 )

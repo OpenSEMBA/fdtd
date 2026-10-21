@@ -1,9 +1,9 @@
 integer function test_read_shieldedpair() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'shieldedPair.fdtd.json'
+   character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'shieldedPair.fdtd.json'
    type(Parseador_t) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
@@ -49,8 +49,8 @@ contains
       expected%despl%mz2 = 150
 
       ! Expected boundaries.
-      expected%front%tipoFrontera(:) = F_PML
-      expected%front%propiedadesPML(:)%numCapas = 6
+      expected%front%boundaryType(:) = F_PML
+      expected%front%propiedadesPML(:)%numLayers = 6
       expected%front%propiedadesPML(:)%orden = 2.0_RKIND
       expected%front%propiedadesPML(:)%refl = 0.0001_RKIND
 
@@ -76,7 +76,7 @@ contains
    
       ! Expected sources.
       allocate(expected%plnSrc%collection(1))
-      expected%plnSrc%collection(1)%nombre_fichero = "shielded_pair.exc"
+      expected%plnSrc%collection(1)%sourceFileName = "shielded_pair.exc"
       expected%plnSrc%collection(1)%atributo = "LOCKED"
       expected%plnSrc%collection(1)%coor1 = [10, 10, 10]
       expected%plnSrc%collection(1)%coor2 = [139, 139, 139]
@@ -141,9 +141,9 @@ contains
          ptr%name = "line_1"
 
          ptr%inductance_per_meter = & 
-            reshape( source = [ 3.13182309e-07_RKIND, 7.45674981e-08_RKIND, 7.45674981e-08_RKIND, 3.13182309e-07_RKIND ], shape = [ 2,2 ] )
+            reshape(source = [ 3.13182309e-07_RKIND, 7.45674981e-08_RKIND, 7.45674981e-08_RKIND, 3.13182309e-07_RKIND ], shape = [ 2,2 ])
          ptr%capacitance_per_meter = &
-            reshape( source = [85.0e-12_RKIND, -20.5e-12_RKIND, -20.5e-12_RKIND, 85.0e-12_RKIND ], shape = [ 2,2 ] )
+            reshape(source = [85.0e-12_RKIND, -20.5e-12_RKIND, -20.5e-12_RKIND, 85.0e-12_RKIND ], shape = [ 2,2 ])
          
          allocate(ptr%step_size(5))
          ptr%step_size(1) =  0.0504_RKIND
@@ -181,25 +181,25 @@ contains
       deallocate(expected%mtln%probes)
       allocate(expected%mtln%probes(4))
       expected%mtln%probes(1)%attached_to_cable => expected%mtln%cables(1)%ptr ! to which cable is the probe attached in mtln?
-      expected%mtln%probes(1)%index = 1
+      expected%mtln%probes(1)%elementIndex = 1
       expected%mtln%probes(1)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(1)%probe_name = "wire_end"
       expected%mtln%probes(1)%probe_position = [75,71,74]
       
       expected%mtln%probes(2)%attached_to_cable => expected%mtln%cables(1)%ptr
-      expected%mtln%probes(2)%index = 1
+      expected%mtln%probes(2)%elementIndex = 1
       expected%mtln%probes(2)%probe_type = PROBE_TYPE_VOLTAGE
       expected%mtln%probes(2)%probe_name = "wire_end"
       expected%mtln%probes(2)%probe_position = [75,71,74]
       
       expected%mtln%probes(3)%attached_to_cable => expected%mtln%cables(1)%ptr ! to which cable is the probe attached in mtln?
-      expected%mtln%probes(3)%index = 6
+      expected%mtln%probes(3)%elementIndex = 6
       expected%mtln%probes(3)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(3)%probe_name = "wire_start"
       expected%mtln%probes(3)%probe_position = [75,74,74]
       
       expected%mtln%probes(4)%attached_to_cable => expected%mtln%cables(1)%ptr
-      expected%mtln%probes(4)%index = 6
+      expected%mtln%probes(4)%elementIndex = 6
       expected%mtln%probes(4)%probe_type = PROBE_TYPE_VOLTAGE
       expected%mtln%probes(4)%probe_name = "wire_start"
       expected%mtln%probes(4)%probe_position = [75,74,74]

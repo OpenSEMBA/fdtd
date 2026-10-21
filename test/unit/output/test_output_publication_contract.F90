@@ -10,7 +10,7 @@ integer function test_output_publication_contract() bind(c) result(err)
    type(probe_metadata_t) :: metadata
 
    err = 0
-   artifact%kind = OUTPUT_ARTIFACT_BINARY
+   artifact%kindTag = OUTPUT_ARTIFACT_BINARY
    err = err + assert_true(output_artifact_identity_is_valid(artifact), &
                            'Canonical artifact identity is invalid')
 
@@ -50,7 +50,7 @@ integer function test_output_metadata_contract_edges() bind(c) result(err)
    metadata%quantity = 'Ex'
    metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
    allocate(metadata%artifacts(1))
-   metadata%artifacts(1)%kind = OUTPUT_ARTIFACT_TEXT
+   metadata%artifacts(1)%kindTag = OUTPUT_ARTIFACT_TEXT
    metadata%artifacts(1)%relative_path = 'point.dat'
    err = err + assert_true(probe_metadata_is_complete(metadata), &
                            'Valid zero-sample metadata is incomplete')

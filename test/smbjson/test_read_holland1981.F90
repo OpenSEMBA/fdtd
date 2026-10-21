@@ -1,10 +1,10 @@
 integer function test_read_holland1981() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'holland1981.fdtd.json'
+   character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'holland1981.fdtd.json'
    type(Parseador_t) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
@@ -50,14 +50,14 @@ contains
       ex%despl%mz2 = 22
 
       ! Expected boundaries.
-      ex%front%tipoFrontera(:) = F_PML
-      ex%front%propiedadesPML(:)%numCapas = 6
+      ex%front%boundaryType(:) = F_PML
+      ex%front%propiedadesPML(:)%numLayers = 6
       ex%front%propiedadesPML(:)%orden = 2.0_RKIND
       ex%front%propiedadesPML(:)%refl = 0.001_RKIND
 
       ! Expected sources.
       allocate(ex%plnSrc%collection(1))
-      ex%plnSrc%collection(1)%nombre_fichero = "holland.exc"
+      ex%plnSrc%collection(1)%sourceFileName = "holland.exc"
       ex%plnSrc%collection(1)%atributo = "LOCKED"
       ex%plnSrc%collection(1)%coor1 = [1, 1, 1]
       ex%plnSrc%collection(1)%coor2 = [18, 18, 20]

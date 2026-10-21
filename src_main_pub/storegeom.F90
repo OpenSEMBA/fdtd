@@ -20,7 +20,7 @@ contains
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: INTJ
       type(media_matrices_t), intent(in) :: media
       type(SGGFDTDINFO_t), intent(in) :: sgg
-      integer(kind=4) :: i, j, k, campo, q
+      integer(kind=4) :: i, j, k, fieldIndex, q
       character(len=*), intent(in) :: fileFDE
       !Writes an ASCII map of the media matrix for each field component
       open(20, FILE=trim(adjustl(fileFDE))//'_MapEx.txt')
@@ -29,9 +29,9 @@ contains
       open(23, FILE=trim(adjustl(fileFDE))//'_MapHx.txt')
       open(24, FILE=trim(adjustl(fileFDE))//'_MapHy.txt')
       open(25, FILE=trim(adjustl(fileFDE))//'_MapHz.txt')
-      do campo = 1, 6
-         i = 19 + campo
-         q = 19 + campo
+      do fieldIndex = 1, 6
+         i = 19 + fieldIndex
+         q = 19 + fieldIndex
          write(q,*) '____ 1-Sustrato, -n PML_______'
          do j = 0, sgg%NumMedia
             INTJ=J
@@ -54,7 +54,7 @@ contains
             write(q,*) 'Is Multiport ', sgg%Med(j)%Is%multiport
             write(q,*) 'Is AnisMultiport ', sgg%Med(j)%Is%anismultiport
             write(q,*) 'Is MultiportPadding ', sgg%Med(j)%Is%multiportpadding
-            write(q,*) 'Is Dielectric ', sgg%Med(j)%Is%dielectric
+            write(q,*) 'Is Dielectric ', sgg%Med(j)%Is%DIELECTRIC
             write(q,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
             write(q,*) 'Is Anisotropic ', sgg%Med(j)%Is%Anisotropic
             write(q,*) 'Is Needed ', sgg%Med(j)%Is%Needed
@@ -65,45 +65,45 @@ contains
             write(q,*) 'Is Line ', sgg%Med(j)%Is%Line
          end do
          !
-         write(i,*) campo, ' con PML IINIC, IFIN ', sgg%sweep(campo)%XI, sgg%sweep(campo)%XE
-         write(i,*) campo, ' con PML JINIC, JFIN ', sgg%sweep(campo)%YI, sgg%sweep(campo)%YE
-         write(i,*) campo, ' con PML KINIC, KFIN ', sgg%sweep(campo)%ZI, sgg%sweep(campo)%ZE
-         write(i,*) campo, ' sin PML IINIC, IFIN ', sgg%SINPMLsweep(campo)%XI, sgg%SINPMLsweep(campo)%XE
-         write(i,*) campo, ' sin PML JINIC, JFIN ', sgg%SINPMLsweep(campo)%YI, sgg%SINPMLsweep(campo)%YE
-         write(i,*) campo, ' sin PML KINIC, KFIN ', sgg%SINPMLsweep(campo)%ZI, sgg%SINPMLsweep(campo)%ZE
+         write(i,*) fieldIndex, ' con PML IINIC, IFIN ', sgg%sweep(fieldIndex)%XI, sgg%sweep(fieldIndex)%XE
+         write(i,*) fieldIndex, ' con PML JINIC, JFIN ', sgg%sweep(fieldIndex)%YI, sgg%sweep(fieldIndex)%YE
+         write(i,*) fieldIndex, ' con PML KINIC, KFIN ', sgg%sweep(fieldIndex)%ZI, sgg%sweep(fieldIndex)%ZE
+         write(i,*) fieldIndex, ' sin PML IINIC, IFIN ', sgg%SINPMLsweep(fieldIndex)%XI, sgg%SINPMLsweep(fieldIndex)%XE
+         write(i,*) fieldIndex, ' sin PML JINIC, JFIN ', sgg%SINPMLsweep(fieldIndex)%YI, sgg%SINPMLsweep(fieldIndex)%YE
+         write(i,*) fieldIndex, ' sin PML KINIC, KFIN ', sgg%SINPMLsweep(fieldIndex)%ZI, sgg%SINPMLsweep(fieldIndex)%ZE
          !
-         do k = sgg%sweep(campo)%ZI, sgg%sweep(campo)%ZE
-            i = 19 + campo
+         do k = sgg%sweep(fieldIndex)%ZI, sgg%sweep(fieldIndex)%ZE
+            i = 19 + fieldIndex
             write(i, '(A)') '_______________________________________________________________________'
             write(i,*) '!!!!!!** k=', k
-            write(19+campo, '(A,400a)') 'I=  |', ('0123456789', i=sgg%Alloc(campo)%XI, sgg%Alloc(campo)%XE+10, 10)
-            write(19+campo, '(A)') 'J______________________________________________________________________'
-            do j = sgg%sweep(campo)%YE, sgg%sweep(campo)%YI, - 1
-               SELECT CASE (campo)
-                CASE (iEx)
-                  write(19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiEx(i, j, k)), i=sgg%sweep(campo)%XI, &
-                  & sgg%sweep(campo)%XE)
-                CASE (iEy)
-                  write(19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiEy(i, j, k)), i=sgg%sweep(campo)%XI, &
-                  & sgg%sweep(campo)%XE)
-                CASE (iEz)
-                  write(19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiEz(i, j, k)), i=sgg%sweep(campo)%XI, &
-                  & sgg%sweep(campo)%XE)
-                CASE (iHx)
-                  write(19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiHx(i, j, k)), i=sgg%sweep(campo)%XI, &
-                  & sgg%sweep(campo)%XE)
-                CASE (iHy)
-                  write(19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiHy(i, j, k)), i=sgg%sweep(campo)%XI, &
-                  & sgg%sweep(campo)%XE)
-                CASE (iHz)
-                  write(19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiHz(i, j, k)), i=sgg%sweep(campo)%XI, &
-                  & sgg%sweep(campo)%XE)
+            write(19+fieldIndex, '(A,400a)') 'I=  |', ('0123456789', i=sgg%Alloc(fieldIndex)%XI, sgg%Alloc(fieldIndex)%XE+10, 10)
+            write(19+fieldIndex, '(A)') 'J______________________________________________________________________'
+            do j = sgg%sweep(fieldIndex)%YE, sgg%sweep(fieldIndex)%YI, - 1
+               select case (fieldIndex)
+                case (IEX)
+                  write(19+fieldIndex, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiEx(i, j, k)), i=sgg%sweep(fieldIndex)%XI, &
+                  & sgg%sweep(fieldIndex)%XE)
+                case (IEY)
+                  write(19+fieldIndex, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiEy(i, j, k)), i=sgg%sweep(fieldIndex)%XI, &
+                  & sgg%sweep(fieldIndex)%XE)
+                case (IEZ)
+                  write(19+fieldIndex, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiEz(i, j, k)), i=sgg%sweep(fieldIndex)%XI, &
+                  & sgg%sweep(fieldIndex)%XE)
+                case (IHX)
+                  write(19+fieldIndex, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiHx(i, j, k)), i=sgg%sweep(fieldIndex)%XI, &
+                  & sgg%sweep(fieldIndex)%XE)
+                case (IHY)
+                  write(19+fieldIndex, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiHy(i, j, k)), i=sgg%sweep(fieldIndex)%XI, &
+                  & sgg%sweep(fieldIndex)%XE)
+                case (IHZ)
+                  write(19+fieldIndex, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiHz(i, j, k)), i=sgg%sweep(fieldIndex)%XI, &
+                  & sgg%sweep(fieldIndex)%XE)
                end select
             end do
          end do
       end do
       do i = 20, 25
-         CLOSE (i)
+         close (i)
       end do
       !
       return
@@ -112,16 +112,16 @@ contains
       !
       !Function to translate media indexes into characters for the mapping files
       !
-      function chartranslate (entero) RESULT (chara)
+      function chartranslate (entero) result (chara)
          integer(kind=INTEGERSIZEOFMEDIAMATRICES) entero
          character(len=1) chara
          if (entero == 1) then
             chara = '_'
-         ELSE if (entero == 0) then
+         else if (entero == 0) then
             chara = '0'
-         ELSE if (entero ==-1) then
+         else if (entero ==-1) then
             chara = '#'
-         ELSE
+         else
             chara = char (48+Abs(entero))
          end if
          return

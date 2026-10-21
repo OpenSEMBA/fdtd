@@ -1,0 +1,289 @@
+{
+  "_format": "FDTD Input file",
+  "__comments": "Six lumped resistors in a single association (regression: one lumped element per elementId).",
+  "general": {
+    "timeStep": 7.703332806185882e-12,
+    "numberOfSteps": 3894,
+    "additionalArguments": ""
+  },
+  "boundary": {
+    "all": {
+      "type": "pml"
+    }
+  },
+  "materials": [
+    { "name": "PEC", "id": 1,
+      "type": "pec"
+    },
+    { "name": "slot", "id": 2,
+      "width": 0.00001,
+      "type": "thinSlot"
+    },
+    { "name": "lumpedResistor", "id": 3,
+      "model": "resistor",
+      "resistance": 1.0,
+      "type": "lumped"
+    }
+  ],
+  "materialAssociations": [
+    { "materialId": 1,
+      "elementIds": [1]
+    },
+    { "materialId": 2,
+      "type": "thinSlot",
+      "elementIds": [2, 3, 4, 5, 6, 7]
+    },
+    { "materialId": 3,
+      "elementIds": [8, 9, 10, 11, 12, 13]
+    }
+  ],
+  "sources": [
+    {
+      "type": "planewave",
+      "magnitudeFile": "gauss_1ghz.exc",
+      "elementIds": [17],
+      "direction": {
+        "theta": 1.5707963268,
+        "phi": 1.5707963268
+      },
+      "polarization": {
+        "theta": 1.5707963268,
+        "phi": 0.0
+      }
+    }
+  ],
+  "probes": [
+    { "name": "E1",
+      "type": "point",
+      "field": "electric",
+      "elementIds": [14],
+      "directions": ["x", "y", "z"],
+      "domain": {
+        "type": "time"
+      }
+    },
+    { "name": "E2",
+      "type": "point",
+      "field": "electric",
+      "elementIds": [15],
+      "directions": ["x", "y", "z"],
+      "domain": {
+        "type": "time"
+      }
+    },
+    { "name": "E3",
+      "type": "point",
+      "field": "electric",
+      "elementIds": [16],
+      "directions": ["x", "y", "z"],
+      "domain": {
+        "type": "time"
+      }
+    }
+  ],
+  "mesh": {
+    "grid": {
+      "numberOfCells": [100, 30, 70],
+      "steps": {
+        "x": [0.005],
+        "y": [0.005],
+        "z": [0.005]
+      },
+      "origin": [-0.15, -0.05, -0.1]
+    },
+    "coordinates": [
+      { "id": 1, "relativePosition": [30, 10, 20] },
+      { "id": 2, "relativePosition": [35, 10, 52] },
+      { "id": 3, "relativePosition": [35, 10, 20] },
+      { "id": 4, "relativePosition": [44, 10, 34] },
+      { "id": 5, "relativePosition": [44, 10, 20] },
+      { "id": 6, "relativePosition": [60, 10, 25] },
+      { "id": 7, "relativePosition": [60, 10, 20] },
+      { "id": 8, "relativePosition": [69, 10, 34] },
+      { "id": 9, "relativePosition": [69, 10, 20] },
+      { "id": 10, "relativePosition": [74, 10, 52] },
+      { "id": 11, "relativePosition": [48, 10, 25] },
+      { "id": 12, "relativePosition": [56, 10, 27] },
+      { "id": 13, "relativePosition": [44, 10, 27] },
+      { "id": 14, "relativePosition": [60, 10, 34] },
+      { "id": 15, "relativePosition": [37, 10, 34] },
+      { "id": 16, "relativePosition": [67, 10, 38] },
+      { "id": 17, "relativePosition": [35, 10, 38] },
+      { "id": 18, "relativePosition": [44, 10, 52] },
+      { "id": 19, "relativePosition": [44, 10, 38] },
+      { "id": 20, "relativePosition": [60, 10, 45] },
+      { "id": 21, "relativePosition": [60, 10, 38] },
+      { "id": 22, "relativePosition": [69, 10, 52] },
+      { "id": 23, "relativePosition": [48, 10, 45] },
+      { "id": 24, "relativePosition": [56, 10, 47] },
+      { "id": 25, "relativePosition": [44, 10, 47] },
+      { "id": 26, "relativePosition": [60, 10, 52] },
+      { "id": 27, "relativePosition": [74, 20, 52] },
+      { "id": 28, "relativePosition": [30, 20, 20] },
+      { "id": 29, "relativePosition": [74, 20, 20] },
+      { "id": 30, "relativePosition": [30, 10, 20] },
+      { "id": 31, "relativePosition": [30, 20, 52] },
+      { "id": 32, "relativePosition": [30, 10, 20] },
+      { "id": 33, "relativePosition": [74, 20, 52] },
+      { "id": 34, "relativePosition": [30, 10, 52] },
+      { "id": 35, "relativePosition": [74, 20, 52] },
+      { "id": 36, "relativePosition": [74, 10, 20] },
+      { "id": 37, "relativePosition": [48, 10, 46] },
+      { "id": 38, "relativePosition": [56, 10, 46] },
+      { "id": 39, "relativePosition": [56, 10, 26] },
+      { "id": 40, "relativePosition": [48, 10, 26] },
+      { "id": 41, "relativePosition": [36, 10, 38] },
+      { "id": 42, "relativePosition": [36, 10, 46] },
+      { "id": 43, "relativePosition": [36, 10, 46] },
+      { "id": 44, "relativePosition": [44, 10, 46] },
+      { "id": 45, "relativePosition": [60, 10, 46] },
+      { "id": 46, "relativePosition": [68, 10, 46] },
+      { "id": 47, "relativePosition": [68, 10, 46] },
+      { "id": 48, "relativePosition": [68, 10, 38] },
+      { "id": 49, "relativePosition": [68, 10, 34] },
+      { "id": 50, "relativePosition": [68, 10, 26] },
+      { "id": 51, "relativePosition": [68, 10, 26] },
+      { "id": 52, "relativePosition": [60, 10, 26] },
+      { "id": 53, "relativePosition": [44, 10, 26] },
+      { "id": 54, "relativePosition": [36, 10, 26] },
+      { "id": 55, "relativePosition": [36, 10, 26] },
+      { "id": 56, "relativePosition": [36, 10, 34] },
+      { "id": 57, "relativePosition": [46, 10, 27] },
+      { "id": 58, "relativePosition": [46, 10, 25] },
+      { "id": 59, "relativePosition": [58, 10, 27] },
+      { "id": 60, "relativePosition": [58, 10, 25] },
+      { "id": 61, "relativePosition": [67, 10, 36] },
+      { "id": 62, "relativePosition": [69, 10, 36] },
+      { "id": 63, "relativePosition": [58, 10, 47] },
+      { "id": 64, "relativePosition": [58, 10, 45] },
+      { "id": 65, "relativePosition": [46, 10, 47] },
+      { "id": 66, "relativePosition": [46, 10, 45] },
+      { "id": 67, "relativePosition": [35, 10, 36] },
+      { "id": 68, "relativePosition": [37, 10, 36] },
+      { "id": 69, "relativePosition": [38, 14, 26] },
+      { "id": 70, "relativePosition": [46, 14, 26] },
+      { "id": 71, "relativePosition": [52, 14, 26] },
+      { "id": 72, "relativePosition": [12, 6, 6] },
+      { "id": 73, "relativePosition": [90, 24, 64] }
+    ],
+    "elements": [
+      { "id": 1, "name": "BoxWithHoles",
+        "type": "cell",
+        "intervals": [
+          [[30, 10, 20], [35, 10, 52]],
+          [[35, 10, 20], [44, 10, 34]],
+          [[44, 10, 20], [60, 10, 25]],
+          [[60, 10, 20], [69, 10, 34]],
+          [[69, 10, 20], [74, 10, 52]],
+          [[48, 10, 25], [56, 10, 27]],
+          [[44, 10, 27], [60, 10, 34]],
+          [[37, 10, 34], [67, 10, 38]],
+          [[35, 10, 38], [44, 10, 52]],
+          [[44, 10, 38], [60, 10, 45]],
+          [[60, 10, 38], [69, 10, 52]],
+          [[48, 10, 45], [56, 10, 47]],
+          [[44, 10, 47], [60, 10, 52]],
+          [[74, 20, 52], [30, 20, 20]],
+          [[74, 20, 20], [30, 10, 20]],
+          [[30, 20, 52], [30, 10, 20]],
+          [[74, 20, 52], [30, 10, 52]],
+          [[74, 20, 52], [74, 10, 20]]
+        ]
+      },
+      { "id": 2, "name": "DiscontinuousSlot.0",
+        "type": "cell",
+        "intervals": [
+          [[48, 10, 46], [56, 10, 46]]
+        ]
+      },
+      { "id": 3, "name": "DiscontinuousSlot.1",
+        "type": "cell",
+        "intervals": [
+          [[56, 10, 26], [48, 10, 26]]
+        ]
+      },
+      { "id": 4, "name": "DiscontinuousSlot.2",
+        "type": "cell",
+        "intervals": [
+          [[36, 10, 38], [36, 10, 46]],
+          [[36, 10, 46], [44, 10, 46]]
+        ]
+      },
+      { "id": 5, "name": "DiscontinuousSlot.3",
+        "type": "cell",
+        "intervals": [
+          [[60, 10, 46], [68, 10, 46]],
+          [[68, 10, 46], [68, 10, 38]]
+        ]
+      },
+      { "id": 6, "name": "DiscontinuousSlot.4",
+        "type": "cell",
+        "intervals": [
+          [[68, 10, 34], [68, 10, 26]],
+          [[68, 10, 26], [60, 10, 26]]
+        ]
+      },
+      { "id": 7, "name": "DiscontinuousSlot.5",
+        "type": "cell",
+        "intervals": [
+          [[44, 10, 26], [36, 10, 26]],
+          [[36, 10, 26], [36, 10, 34]]
+        ]
+      },
+      { "id": 8, "name": "LumpedElements.0",
+        "type": "cell",
+        "intervals": [
+          [[46, 10, 27], [46, 10, 25]]
+        ]
+      },
+      { "id": 9, "name": "LumpedElements.1",
+        "type": "cell",
+        "intervals": [
+          [[58, 10, 27], [58, 10, 25]]
+        ]
+      },
+      { "id": 10, "name": "LumpedElements.2",
+        "type": "cell",
+        "intervals": [
+          [[67, 10, 36], [69, 10, 36]]
+        ]
+      },
+      { "id": 11, "name": "LumpedElements.3",
+        "type": "cell",
+        "intervals": [
+          [[58, 10, 47], [58, 10, 45]]
+        ]
+      },
+      { "id": 12, "name": "LumpedElements.4",
+        "type": "cell",
+        "intervals": [
+          [[46, 10, 47], [46, 10, 45]]
+        ]
+      },
+      { "id": 13, "name": "LumpedElements.5",
+        "type": "cell",
+        "intervals": [
+          [[35, 10, 36], [37, 10, 36]]
+        ]
+      },
+      { "id": 14, "name": "E1",
+        "type": "node",
+        "coordinateIds": [69]
+      },
+      { "id": 15, "name": "E2",
+        "type": "node",
+        "coordinateIds": [70]
+      },
+      { "id": 16, "name": "E3",
+        "type": "node",
+        "coordinateIds": [71]
+      },
+      { "id": 17, "name": "planewave",
+        "type": "cell",
+        "intervals": [
+          [[12, 6, 6], [90, 24, 64]]
+        ]
+      }
+    ]
+  }
+}

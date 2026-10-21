@@ -1,4 +1,4 @@
-module FDETYPES_TOOLS
+module fdetypes_tools_m
    use FDETYPES_m
     use utils_m
     use NFDETypes_m
@@ -60,7 +60,7 @@ module FDETYPES_TOOLS
       logical :: FreqDomain = .FALSE.
       logical :: TimeDomain = .FALSE.
       logical :: Saveall = .FALSE.
-      logical :: TransFer = .FALSE.
+      logical :: transferFlag = .FALSE.
       logical :: Volumic = .FALSE.
    end type observation_domain_t
 
@@ -95,12 +95,12 @@ contains
       type(XYZlimit_t), dimension(6), intent(in) :: sggAlloc
       type(taglist_t) :: r
 
-      allocate (r%edge%x(sggAlloc(iEx)%XI:sggAlloc(iEx)%XE, sggAlloc(iEx)%YI:sggAlloc(iEx)%YE, sggAlloc(iEx)%ZI:sggAlloc(iEx)%ZE))
-      allocate (r%edge%y(sggAlloc(iEy)%XI:sggAlloc(iEy)%XE, sggAlloc(iEy)%YI:sggAlloc(iEy)%YE, sggAlloc(iEy)%ZI:sggAlloc(iEy)%ZE))
-      allocate (r%edge%z(sggAlloc(iEz)%XI:sggAlloc(iEz)%XE, sggAlloc(iEz)%YI:sggAlloc(iEz)%YE, sggAlloc(iEz)%ZI:sggAlloc(iEz)%ZE))
-      allocate (r%face%x(sggAlloc(iHx)%XI:sggAlloc(iHx)%XE, sggAlloc(iHx)%YI:sggAlloc(iHx)%YE, sggAlloc(iHx)%ZI:sggAlloc(iHx)%ZE))
-      allocate (r%face%y(sggAlloc(iHy)%XI:sggAlloc(iHy)%XE, sggAlloc(iHy)%YI:sggAlloc(iHy)%YE, sggAlloc(iHy)%ZI:sggAlloc(iHy)%ZE))
-      allocate (r%face%z(sggAlloc(iHz)%XI:sggAlloc(iHz)%XE, sggAlloc(iHz)%YI:sggAlloc(iHz)%YE, sggAlloc(iHz)%ZI:sggAlloc(iHz)%ZE))
+      allocate (r%edge%x(sggAlloc(IEX)%XI:sggAlloc(IEX)%XE, sggAlloc(IEX)%YI:sggAlloc(IEX)%YE, sggAlloc(IEX)%ZI:sggAlloc(IEX)%ZE))
+      allocate (r%edge%y(sggAlloc(IEY)%XI:sggAlloc(IEY)%XE, sggAlloc(IEY)%YI:sggAlloc(IEY)%YE, sggAlloc(IEY)%ZI:sggAlloc(IEY)%ZE))
+      allocate (r%edge%z(sggAlloc(IEZ)%XI:sggAlloc(IEZ)%XE, sggAlloc(IEZ)%YI:sggAlloc(IEZ)%YE, sggAlloc(IEZ)%ZI:sggAlloc(IEZ)%ZE))
+      allocate (r%face%x(sggAlloc(IHX)%XI:sggAlloc(IHX)%XE, sggAlloc(IHX)%YI:sggAlloc(IHX)%YE, sggAlloc(IHX)%ZI:sggAlloc(IHX)%ZE))
+      allocate (r%face%y(sggAlloc(IHY)%XI:sggAlloc(IHY)%XE, sggAlloc(IHY)%YI:sggAlloc(IHY)%YE, sggAlloc(IHY)%ZI:sggAlloc(IHY)%ZE))
+      allocate (r%face%z(sggAlloc(IHZ)%XI:sggAlloc(IHZ)%XE, sggAlloc(IHZ)%YI:sggAlloc(IHZ)%YE, sggAlloc(IHZ)%ZI:sggAlloc(IHZ)%ZE))
 
       r%edge%x(:, :, :) = 0
       r%edge%y(:, :, :) = 0
@@ -129,16 +129,16 @@ contains
       type(XYZlimit_t), dimension(6), intent(in) :: sggAlloc
       type(media_matrices_t) :: r
 
-      allocate (r%sggMtag(sggAlloc(iHx)%XI:sggAlloc(iHx)%XE, sggAlloc(iHy)%YI:sggAlloc(iHy)%YE, sggAlloc(iHz)%ZI:sggAlloc(iHz)%ZE))
-      allocate (r%sggMiNo(sggAlloc(iHx)%XI:sggAlloc(iHx)%XE, sggAlloc(iHy)%YI:sggAlloc(iHy)%YE, sggAlloc(iHz)%ZI:sggAlloc(iHz)%ZE))
+      allocate (r%sggMtag(sggAlloc(IHX)%XI:sggAlloc(IHX)%XE, sggAlloc(IHY)%YI:sggAlloc(IHY)%YE, sggAlloc(IHZ)%ZI:sggAlloc(IHZ)%ZE))
+      allocate (r%sggMiNo(sggAlloc(IHX)%XI:sggAlloc(IHX)%XE, sggAlloc(IHY)%YI:sggAlloc(IHY)%YE, sggAlloc(IHZ)%ZI:sggAlloc(IHZ)%ZE))
 
-      allocate (r%sggMiEx(sggAlloc(iEx)%XI:sggAlloc(iEx)%XE, sggAlloc(iEx)%YI:sggAlloc(iEx)%YE, sggAlloc(iEx)%ZI:sggAlloc(iEx)%ZE))
-      allocate (r%sggMiEy(sggAlloc(iEy)%XI:sggAlloc(iEy)%XE, sggAlloc(iEy)%YI:sggAlloc(iEy)%YE, sggAlloc(iEy)%ZI:sggAlloc(iEy)%ZE))
-      allocate (r%sggMiEz(sggAlloc(iEz)%XI:sggAlloc(iEz)%XE, sggAlloc(iEz)%YI:sggAlloc(iEz)%YE, sggAlloc(iEz)%ZI:sggAlloc(iEz)%ZE))
+      allocate (r%sggMiEx(sggAlloc(IEX)%XI:sggAlloc(IEX)%XE, sggAlloc(IEX)%YI:sggAlloc(IEX)%YE, sggAlloc(IEX)%ZI:sggAlloc(IEX)%ZE))
+      allocate (r%sggMiEy(sggAlloc(IEY)%XI:sggAlloc(IEY)%XE, sggAlloc(IEY)%YI:sggAlloc(IEY)%YE, sggAlloc(IEY)%ZI:sggAlloc(IEY)%ZE))
+      allocate (r%sggMiEz(sggAlloc(IEZ)%XI:sggAlloc(IEZ)%XE, sggAlloc(IEZ)%YI:sggAlloc(IEZ)%YE, sggAlloc(IEZ)%ZI:sggAlloc(IEZ)%ZE))
 
-      allocate (r%sggMiHx(sggAlloc(iHx)%XI:sggAlloc(iHx)%XE, sggAlloc(iHx)%YI:sggAlloc(iHx)%YE, sggAlloc(iHx)%ZI:sggAlloc(iHx)%ZE))
-      allocate (r%sggMiHy(sggAlloc(iHy)%XI:sggAlloc(iHy)%XE, sggAlloc(iHy)%YI:sggAlloc(iHy)%YE, sggAlloc(iHy)%ZI:sggAlloc(iHy)%ZE))
-      allocate (r%sggMiHz(sggAlloc(iHz)%XI:sggAlloc(iHz)%XE, sggAlloc(iHz)%YI:sggAlloc(iHz)%YE, sggAlloc(iHz)%ZI:sggAlloc(iHz)%ZE))
+      allocate (r%sggMiHx(sggAlloc(IHX)%XI:sggAlloc(IHX)%XE, sggAlloc(IHX)%YI:sggAlloc(IHX)%YE, sggAlloc(IHX)%ZI:sggAlloc(IHX)%ZE))
+      allocate (r%sggMiHy(sggAlloc(IHY)%XI:sggAlloc(IHY)%XE, sggAlloc(IHY)%YI:sggAlloc(IHY)%YE, sggAlloc(IHY)%ZI:sggAlloc(IHY)%ZE))
+      allocate (r%sggMiHz(sggAlloc(IHZ)%XI:sggAlloc(IHZ)%XE, sggAlloc(IHZ)%YI:sggAlloc(IHZ)%YE, sggAlloc(IHZ)%ZI:sggAlloc(IHZ)%ZE))
 
       r%sggMtag(:, :, :) = 1
       r%sggMiNo(:, :, :) = 1
@@ -150,15 +150,15 @@ contains
       r%sggMiHz(:, :, :) = 1
    end function create_geometry_media_from_sggAlloc
 
-   function create_control_flags(layoutnumber, size, mpidir, finaltimestep, &
-                                 nEntradaRoot, wiresflavor, wirecrank, &
+   function create_control_flags(layoutnumber, sizeValue, mpidir, finaltimestep, &
+                                 nInputRoot, wiresflavor, wirecrank, &
                                  resume, saveall, NF2FFDecim, simu_devia, singlefilewrite, &
                                  facesNF2FF) result(control)
 
       type(sim_control_t) :: control
 
-      integer(kind=SINGLE), intent(in), optional :: layoutnumber, size, mpidir, finaltimestep
-      character(len=*), intent(in), optional :: nEntradaRoot, wiresflavor
+      integer(kind=SINGLE), intent(in), optional :: layoutnumber, sizeValue, mpidir, finaltimestep
+      character(len=*), intent(in), optional :: nInputRoot, wiresflavor
       logical, intent(in), optional :: wirecrank, resume, saveall, NF2FFDecim, simu_devia, singlefilewrite
       type(nf2ff_t), intent(in), optional :: facesNF2FF
 
@@ -167,7 +167,7 @@ contains
       control%num_procs = 0
       control%mpidir = 3
       control%finaltimestep = 0
-      control%nEntradaRoot = ""
+      control%nInputRoot = ""
       control%wiresflavor = ""
       control%wirecrank = .false.
       control%resume = .false.
@@ -179,10 +179,10 @@ contains
 
       ! 2. Overwrite defaults only if the optional argument is present
       if (present(layoutnumber)) control%layoutnumber = layoutnumber
-      if (present(size)) control%num_procs = size
+      if (present(sizeValue)) control%num_procs = sizeValue
       if (present(mpidir)) control%mpidir = mpidir
       if (present(finaltimestep)) control%finaltimestep = finaltimestep
-      if (present(nEntradaRoot)) control%nEntradaRoot = nEntradaRoot
+      if (present(nInputRoot)) control%nInputRoot = nInputRoot
       if (present(wiresflavor)) control%wiresflavor = wiresflavor
       if (present(wirecrank)) control%wirecrank = wirecrank
       if (present(resume)) control%resume = resume
@@ -207,19 +207,19 @@ contains
 
    subroutine init_time_array(arr, array_size, interval)
       integer, intent(in), optional :: array_size
-      real(kind=RKIND_tiempo), intent(in), optional :: interval
+      real(kind=RKIND_TIME), intent(in), optional :: interval
       integer(kind=4) :: i
       integer :: size_val
-      real(kind=RKIND_tiempo) :: interval_val
-      real(kind=RKIND_tiempo), pointer, dimension(:), intent(out) :: arr
+      real(kind=RKIND_TIME) :: interval_val
+      real(kind=RKIND_TIME), pointer, dimension(:), intent(out) :: arr
 
       size_val = merge(array_size, 100, present(array_size))
-      interval_val = merge(interval, 1.0_RKIND_tiempo, present(interval))
+      interval_val = merge(interval, 1.0_RKIND_TIME, present(interval))
 
       allocate (arr(size_val))
-      DO i = 1, size_val
+      do i = 1, size_val
          arr(i) = (i - 1)*interval_val
-      END DO
+      end do
    end subroutine init_time_array
 
    function create_xyz_limit_array(XI, YI, ZI, XE, YE, ZE) result(arr)
@@ -270,11 +270,11 @@ contains
 
       obs%nP = 1
       allocate (obs%P(obs%nP))
-      obs%P(1) = create_observable(1_SINGLE, 1_SINGLE, 1_SINGLE, 1_SINGLE, 1_SINGLE, 1_SINGLE, iEx)
+      obs%P(1) = create_observable(1_SINGLE, 1_SINGLE, 1_SINGLE, 1_SINGLE, 1_SINGLE, 1_SINGLE, IEX)
 
-      obs%InitialTime = 0.0_RKIND_tiempo
-      obs%FinalTime = 1.0_RKIND_tiempo
-      obs%TimeStep = 0.1_RKIND_tiempo
+      obs%InitialTime = 0.0_RKIND_TIME
+      obs%FinalTime = 1.0_RKIND_TIME
+      obs%TimeStep = 0.1_RKIND_TIME
 
       obs%InitialFreq = 0.0_RKIND
       obs%FinalFreq = 0.0_RKIND
@@ -285,7 +285,7 @@ contains
       obs%FreqDomain = .false.
       obs%TimeDomain = .true.
       obs%Saveall = .false.
-      obs%TransFer = .false.
+      obs%transferFlag = .false.
       obs%Volumic = .false.
       obs%Done = .false.
       obs%Begun = .false.
@@ -298,11 +298,11 @@ contains
 
       obs%nP = 1
       allocate (obs%P(obs%nP))
-      obs%P(1) = create_observable(3_SINGLE, 3_SINGLE, 3_SINGLE, 3_SINGLE, 3_SINGLE, 3_SINGLE, iJx)
+      obs%P(1) = create_observable(3_SINGLE, 3_SINGLE, 3_SINGLE, 3_SINGLE, 3_SINGLE, 3_SINGLE, IJX)
 
-      obs%InitialTime = 0.0_RKIND_tiempo
-      obs%FinalTime = 1.0_RKIND_tiempo
-      obs%TimeStep = 0.1_RKIND_tiempo
+      obs%InitialTime = 0.0_RKIND_TIME
+      obs%FinalTime = 1.0_RKIND_TIME
+      obs%TimeStep = 0.1_RKIND_TIME
 
       obs%InitialFreq = 0.0_RKIND
       obs%FinalFreq = 0.0_RKIND
@@ -313,7 +313,7 @@ contains
       obs%FreqDomain = .false.
       obs%TimeDomain = .true.
       obs%Saveall = .false.
-      obs%TransFer = .false.
+      obs%transferFlag = .false.
       obs%Volumic = .false.
       obs%Done = .false.
       obs%Begun = .false.
@@ -325,11 +325,11 @@ contains
 
       obs%nP = 1
       allocate (obs%P(obs%nP))
-      obs%P(1) = create_observable(3_SINGLE, 3_SINGLE, 3_SINGLE, 3_SINGLE, 3_SINGLE, 3_SINGLE, iQx)
+      obs%P(1) = create_observable(3_SINGLE, 3_SINGLE, 3_SINGLE, 3_SINGLE, 3_SINGLE, 3_SINGLE, IQX)
 
-      obs%InitialTime = 0.0_RKIND_tiempo
-      obs%FinalTime = 1.0_RKIND_tiempo
-      obs%TimeStep = 0.1_RKIND_tiempo
+      obs%InitialTime = 0.0_RKIND_TIME
+      obs%FinalTime = 1.0_RKIND_TIME
+      obs%TimeStep = 0.1_RKIND_TIME
 
       obs%InitialFreq = 0.0_RKIND
       obs%FinalFreq = 0.0_RKIND
@@ -340,7 +340,7 @@ contains
       obs%FreqDomain = .false.
       obs%TimeDomain = .true.
       obs%Saveall = .false.
-      obs%TransFer = .false.
+      obs%transferFlag = .false.
       obs%Volumic = .false.
       obs%Done = .false.
       obs%Begun = .false.
@@ -436,12 +436,12 @@ contains
       type(media_matrices_t), intent(inout) :: media
       integer(kind=SINGLE), intent(in) :: fieldComponent, i, j, k, materialId
       selectcase (fieldComponent)
-      case (iEx); media%sggMiEx(i, j, k) = materialId
-      case (iEy); media%sggMiEy(i, j, k) = materialId
-      case (iEz); media%sggMiEz(i, j, k) = materialId
-      case (iHx); media%sggMiHx(i, j, k) = materialId
-      case (iHy); media%sggMiHy(i, j, k) = materialId
-      case (iHz); media%sggMiHz(i, j, k) = materialId
+      case (IEX); media%sggMiEx(i, j, k) = materialId
+      case (IEY); media%sggMiEy(i, j, k) = materialId
+      case (IEZ); media%sggMiEz(i, j, k) = materialId
+      case (IHX); media%sggMiHx(i, j, k) = materialId
+      case (IHY); media%sggMiHy(i, j, k) = materialId
+      case (IHZ); media%sggMiHz(i, j, k) = materialId
       end select
 
    end subroutine assign_material_id_to_media_matrix_coordinate
@@ -482,7 +482,7 @@ contains
       res%Is%AnisMultiport = .false.
       res%Is%Multiport = .false.
       res%Is%MultiportPadding = .false.
-      res%Is%Dielectric = .false.
+      res%Is%DIELECTRIC = .false.
       res%Is%Anisotropic = .false.
       res%Is%Volume = .false.
       res%Is%Line = .false.
@@ -638,17 +638,17 @@ contains
       implicit none
       type(Wires_t) :: wire
 
-      wire%Radius = 0.0_RKIND_wires
-      wire%R = 0.0_RKIND_wires
-      wire%L = 0.0_RKIND_wires
-      wire%C = 0.0_RKIND_wires
-      wire%P_R = 0.0_RKIND_wires
-      wire%P_L = 0.0_RKIND_wires
-      wire%P_C = 0.0_RKIND_wires
-      wire%Radius_devia = 0.0_RKIND_wires
-      wire%R_devia = 0.0_RKIND_wires
-      wire%L_devia = 0.0_RKIND_wires
-      wire%C_devia = 0.0_RKIND_wires
+      wire%Radius = 0.0_RKIND_WIRES
+      wire%R = 0.0_RKIND_WIRES
+      wire%L = 0.0_RKIND_WIRES
+      wire%C = 0.0_RKIND_WIRES
+      wire%P_R = 0.0_RKIND_WIRES
+      wire%P_L = 0.0_RKIND_WIRES
+      wire%P_C = 0.0_RKIND_WIRES
+      wire%Radius_devia = 0.0_RKIND_WIRES
+      wire%R_devia = 0.0_RKIND_WIRES
+      wire%L_devia = 0.0_RKIND_WIRES
+      wire%C_devia = 0.0_RKIND_WIRES
 
       wire%numsegmentos = 0
       wire%NUMVOLTAGESOURCES = 0
@@ -667,31 +667,31 @@ contains
       wire%HasAbsorbing_LeftEnd = .false.
       wire%HasAbsorbing_RightEnd = .false.
 
-      wire%Parallel_R_RightEnd = 0.0_RKIND_wires
-      wire%Parallel_R_LeftEnd = 0.0_RKIND_wires
-      wire%Series_R_RightEnd = 0.0_RKIND_wires
-      wire%Series_R_LeftEnd = 0.0_RKIND_wires
-      wire%Parallel_L_RightEnd = 0.0_RKIND_wires
-      wire%Parallel_L_LeftEnd = 0.0_RKIND_wires
-      wire%Series_L_RightEnd = 0.0_RKIND_wires
-      wire%Series_L_LeftEnd = 0.0_RKIND_wires
-      wire%Parallel_C_RightEnd = 0.0_RKIND_wires
-      wire%Parallel_C_LeftEnd = 0.0_RKIND_wires
-      wire%Series_C_RightEnd = 2.0e7_RKIND ! Valor por defecto de corto
-      wire%Series_C_LeftEnd = 2.0e7_RKIND ! Valor por defecto de corto
+      wire%Parallel_R_RightEnd = 0.0_RKIND_WIRES
+      wire%Parallel_R_LeftEnd = 0.0_RKIND_WIRES
+      wire%Series_R_RightEnd = 0.0_RKIND_WIRES
+      wire%Series_R_LeftEnd = 0.0_RKIND_WIRES
+      wire%Parallel_L_RightEnd = 0.0_RKIND_WIRES
+      wire%Parallel_L_LeftEnd = 0.0_RKIND_WIRES
+      wire%Series_L_RightEnd = 0.0_RKIND_WIRES
+      wire%Series_L_LeftEnd = 0.0_RKIND_WIRES
+      wire%Parallel_C_RightEnd = 0.0_RKIND_WIRES
+      wire%Parallel_C_LeftEnd = 0.0_RKIND_WIRES
+      wire%Series_C_RightEnd = 2.0e7_RKIND ! Default value for short circuit
+      wire%Series_C_LeftEnd = 2.0e7_RKIND ! Default value for short circuit
 
-      wire%Parallel_R_RightEnd_devia = 0.0_RKIND_wires
-      wire%Parallel_R_LeftEnd_devia = 0.0_RKIND_wires
-      wire%Series_R_RightEnd_devia = 0.0_RKIND_wires
-      wire%Series_R_LeftEnd_devia = 0.0_RKIND_wires
-      wire%Parallel_L_RightEnd_devia = 0.0_RKIND_wires
-      wire%Parallel_L_LeftEnd_devia = 0.0_RKIND_wires
-      wire%Series_L_RightEnd_devia = 0.0_RKIND_wires
-      wire%Series_L_LeftEnd_devia = 0.0_RKIND_wires
-      wire%Parallel_C_RightEnd_devia = 0.0_RKIND_wires
-      wire%Parallel_C_LeftEnd_devia = 0.0_RKIND_wires
-      wire%Series_C_RightEnd_devia = 0.0_RKIND_wires
-      wire%Series_C_LeftEnd_devia = 0.0_RKIND_wires
+      wire%Parallel_R_RightEnd_devia = 0.0_RKIND_WIRES
+      wire%Parallel_R_LeftEnd_devia = 0.0_RKIND_WIRES
+      wire%Series_R_RightEnd_devia = 0.0_RKIND_WIRES
+      wire%Series_R_LeftEnd_devia = 0.0_RKIND_WIRES
+      wire%Parallel_L_RightEnd_devia = 0.0_RKIND_WIRES
+      wire%Parallel_L_LeftEnd_devia = 0.0_RKIND_WIRES
+      wire%Series_L_RightEnd_devia = 0.0_RKIND_WIRES
+      wire%Series_L_LeftEnd_devia = 0.0_RKIND_WIRES
+      wire%Parallel_C_RightEnd_devia = 0.0_RKIND_WIRES
+      wire%Parallel_C_LeftEnd_devia = 0.0_RKIND_WIRES
+      wire%Series_C_RightEnd_devia = 0.0_RKIND_WIRES
+      wire%Series_C_LeftEnd_devia = 0.0_RKIND_WIRES
 
       wire%LeftEnd = 0
       wire%RightEnd = 0
@@ -736,7 +736,7 @@ contains
       obs%FreqDomain = domain_params%FreqDomain
       obs%TimeDomain = domain_params%TimeDomain
       obs%Saveall = domain_params%Saveall
-      obs%TransFer = domain_params%TransFer
+      obs%transferFlag = domain_params%transferFlag
       obs%Volumic = domain_params%Volumic
 
    end subroutine set_observation
@@ -800,9 +800,9 @@ contains
       logical, intent(in) :: Saveall_flag, TransFer_flag, Volumic_flag
 
       domain%Saveall = Saveall_flag
-      domain%TransFer = TransFer_flag
+      domain%transferFlag = TransFer_flag
       domain%Volumic = Volumic_flag
 
    end subroutine initialize_observation_domain_logical_flags
 
-end module FDETYPES_TOOLS
+end module fdetypes_tools_m

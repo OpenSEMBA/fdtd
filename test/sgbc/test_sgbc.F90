@@ -10,12 +10,12 @@ integer function test_solve_tridiag_3x3_poisson() bind(C, name="test_solve_tridi
     use SGBC_nostoch_m, only: solve_tridiag_iguales
     use FDETYPES_m, only: RKIND
     implicit none
-    integer, parameter :: n = 3
+    integer, parameter :: N = 3
     real(kind=RKIND) :: d(n), x(n)
     real(kind=RKIND) :: aa, bb, cc       ! interior row values (sub, main, super)
     real(kind=RKIND) :: a1, b1, c1      ! first row
     real(kind=RKIND) :: an, bn, cn      ! last row
-    real(kind=RKIND), parameter :: tol = 1.0e-5_RKIND
+    real(kind=RKIND), parameter :: TOL = 1.0e-5_RKIND
     integer :: i
 
     status = 0
@@ -41,12 +41,12 @@ integer function test_solve_tridiag_5x5_poisson() bind(C, name="test_solve_tridi
     use SGBC_nostoch_m, only: solve_tridiag_iguales
     use FDETYPES_m, only: RKIND
     implicit none
-    integer, parameter :: n = 5
+    integer, parameter :: N = 5
     real(kind=RKIND) :: d(n), x(n)
     real(kind=RKIND) :: aa, bb, cc
     real(kind=RKIND) :: a1, b1, c1
     real(kind=RKIND) :: an, bn, cn
-    real(kind=RKIND), parameter :: tol = 1.0e-5_RKIND
+    real(kind=RKIND), parameter :: TOL = 1.0e-5_RKIND
     integer :: i
 
     status = 0
@@ -71,13 +71,13 @@ integer function test_solve_tridiag_diagonal_system() bind(C, name="test_solve_t
     use SGBC_nostoch_m, only: solve_tridiag_iguales
     use FDETYPES_m, only: RKIND
     implicit none
-    integer, parameter :: n = 4
+    integer, parameter :: N = 4
     real(kind=RKIND) :: d(n), x(n)
     real(kind=RKIND) :: aa, bb, cc
     real(kind=RKIND) :: a1, b1, c1
     real(kind=RKIND) :: an, bn, cn
-    real(kind=RKIND), parameter :: tol = 1.0e-5_RKIND
-    real(kind=RKIND), dimension(n), parameter :: expected = [2.0_RKIND, 3.0_RKIND, -1.0_RKIND, 4.0_RKIND]
+    real(kind=RKIND), parameter :: TOL = 1.0e-5_RKIND
+    real(kind=RKIND), dimension(n), parameter :: EXPECTED = [2.0_RKIND, 3.0_RKIND, -1.0_RKIND, 4.0_RKIND]
     integer :: i
 
     status = 0

@@ -12,7 +12,7 @@ integer function test_count_required_coords() bind(c) result(err)
 
    type(cell_coordinate_t) :: lowerBound, upperBound
    type(problem_info_t)    :: problemInfo
-   integer(kind=SINGLE)    :: count
+   integer(kind=SINGLE)    :: countValue
    integer                 :: test_err = 0
    integer, allocatable    :: dummy_coords(:,:)
 
@@ -23,10 +23,10 @@ integer function test_count_required_coords() bind(c) result(err)
    call setup_dummy_problem_info(problemInfo)
 
    ! Test Case 1: Field Request (iExC)
-   call find_and_store_important_coords(lowerBound, upperBound, iExC, problemInfo, count, dummy_coords)
+   call find_and_store_important_coords(lowerBound, upperBound, IEXC, problemInfo, countValue, dummy_coords)
 
    ! Expected: 3*3*3 = 27 points
-   test_err = test_err + assert_integer_equal(count, 27_SINGLE, "Failed count for iExC")
+   test_err = test_err + assert_integer_equal(countValue, 27_SINGLE, "Failed count for iExC")
 
    if (allocated(dummy_coords)) deallocate(dummy_coords)
    call clean_dummy_problem_info(problemInfo)
@@ -56,7 +56,7 @@ integer function test_store_required_coords() bind(c) result(err)
    upperBound = new_cell_coordinate(2, 2, 2)
    call setup_dummy_problem_info(problemInfo)
 
-   call find_and_store_important_coords(lowerBound, upperBound, iHyC, problemInfo, nPoints, stored_coords)
+   call find_and_store_important_coords(lowerBound, upperBound, IHYC, problemInfo, nPoints, stored_coords)
 
    test_err = test_err + assert_integer_equal(nPoints, 8_SINGLE, "Failed nPoints for iHyC")
 
@@ -95,7 +95,7 @@ integer function test_is_valid_point_current() bind(c) result(err)
 
    ! By default, our dummy setup has NO PEC and NO Wires.
    ! So isValidPointForCurrent should be FALSE (as it requires PEC or Wire)
-   valid = isValidPointForCurrent(iCur, 1, 1, 1, problemInfo)
+   valid = isValidPointForCurrent(ICUR, 1, 1, 1, problemInfo)
 
    if (valid) then
        print *, "Expected False for empty space current probe (no PEC/Wire)"
@@ -124,14 +124,14 @@ integer function test_is_valid_point_field() bind(c) result(err)
      call setup_dummy_problem_info(problemInfo)
 
      ! Point inside boundary
-     valid = isValidPointForField(iEx, 5, 5, 5, problemInfo)
+     valid = isValidPointForField(IEX, 5, 5, 5, problemInfo)
      if (.not. valid) then
          print *, "Expected True for field probe in bounds"
          test_err = test_err + 1
      end if
 
      ! Point outside boundary (-1)
-     valid = isValidPointForField(iEx, -1, 5, 5, problemInfo)
+     valid = isValidPointForField(IEX, -1, 5, 5, problemInfo)
      if (valid) then
           print *, "Expected False for field probe out of bounds"
           test_err = test_err + 1

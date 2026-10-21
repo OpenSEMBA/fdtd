@@ -1,10 +1,10 @@
 integer function test_read_sgbc() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
-   character(len=*), parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'sgbc.fdtd.json'
+   character(len=*), parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'sgbc.fdtd.json'
    type(Parseador_t) :: pr, ex
    type(parser_t) :: parser
    logical :: areSame
@@ -49,7 +49,7 @@ contains
       expected%despl%mz2 = 10
 
       ! Expected boundaries.
-      expected%front%tipoFrontera(:) = F_MUR
+      expected%front%boundaryType(:) = F_MUR
 
       ! Expected materials
       !! PECs
@@ -62,7 +62,7 @@ contains
       allocate(expected%pecRegs%Surfs(1))
       
       !!! 2x2 PEC square
-      expected%pecRegs%Surfs(1)%Or = +iEz
+      expected%pecRegs%Surfs(1)%Or = +IEZ
       expected%pecRegs%Surfs(1)%Xi = 3
       expected%pecRegs%Surfs(1)%Xe = 4
       expected%pecRegs%Surfs(1)%Yi = 3
@@ -82,14 +82,14 @@ contains
       expected%lossyThinSurfs%cs(1)%nc = 1
       expected%lossyThinSurfs%cs(1)%files = '2-layers-composite'
       expected%lossyThinSurfs%cs(1)%c(1)%tag = '2-layers-composite@layer2'
-      expected%lossyThinSurfs%cs(1)%c(1)%Or = +iEy
+      expected%lossyThinSurfs%cs(1)%c(1)%Or = +IEY
       expected%lossyThinSurfs%cs(1)%c(1)%Xi = 3
       expected%lossyThinSurfs%cs(1)%c(1)%Xe = 4
       expected%lossyThinSurfs%cs(1)%c(1)%Yi = 3
       expected%lossyThinSurfs%cs(1)%c(1)%Ye = 3
       expected%lossyThinSurfs%cs(1)%c(1)%Zi = 3
       expected%lossyThinSurfs%cs(1)%c(1)%Ze = 4
-      expected%lossyThinSurfs%cs(1)%numcapas = 2
+      expected%lossyThinSurfs%cs(1)%numLayers = 2
       allocate(expected%lossyThinSurfs%cs(1)%thk(2))
       allocate(expected%lossyThinSurfs%cs(1)%sigma(2))
       allocate(expected%lossyThinSurfs%cs(1)%eps(2))
@@ -116,14 +116,14 @@ contains
       expected%lossyThinSurfs%cs(2)%nc = 1
       expected%lossyThinSurfs%cs(2)%files = '3-layers-composite'
       expected%lossyThinSurfs%cs(2)%c(1)%tag = '3-layers-composite@layer3'
-      expected%lossyThinSurfs%cs(2)%c(1)%Or = +iEx
+      expected%lossyThinSurfs%cs(2)%c(1)%Or = +IEX
       expected%lossyThinSurfs%cs(2)%c(1)%Xi = 3
       expected%lossyThinSurfs%cs(2)%c(1)%Xe = 3
       expected%lossyThinSurfs%cs(2)%c(1)%Yi = 3
       expected%lossyThinSurfs%cs(2)%c(1)%Ye = 4
       expected%lossyThinSurfs%cs(2)%c(1)%Zi = 3
       expected%lossyThinSurfs%cs(2)%c(1)%Ze = 4
-      expected%lossyThinSurfs%cs(2)%numcapas = 3
+      expected%lossyThinSurfs%cs(2)%numLayers = 3
       allocate(expected%lossyThinSurfs%cs(2)%thk(3))
       allocate(expected%lossyThinSurfs%cs(2)%sigma(3))
       allocate(expected%lossyThinSurfs%cs(2)%eps(3))

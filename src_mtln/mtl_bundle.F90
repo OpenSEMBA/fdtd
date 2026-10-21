@@ -9,7 +9,7 @@ module mtl_bundle_m
     use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
 #endif
     use mtln_types_m, only: SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
-    use FDETYPES_m, only: RKIND, RKIND_TIEMPO
+    use FDETYPES_m, only: RKIND, RKIND_TIME
     implicit none
 
     type, public :: mtl_bundle_t
@@ -20,7 +20,7 @@ module mtl_bundle_m
         real(kind=RKIND), pointer, dimension(:,:) :: v, i, i_prev
         real(kind=RKIND), allocatable, dimension(:,:) :: v_source, i_source, e_L
         real(kind=RKIND), allocatable, dimension(:,:,:) :: du(:,:,:)
-        real(kind=RKIND_TIEMPO) :: time = 0.0, dt = 1e10
+        real(kind=RKIND_TIME) :: time = 0.0, dt = 1e10
 
         ! type homogen
         type(generator_t), allocatable, dimension(:) :: generators
@@ -28,6 +28,10 @@ module mtl_bundle_m
         type(probe_t), allocatable, dimension(:) :: probes
         type(transfer_impedance_t) :: transfer_impedance
         integer(kind=4), dimension(:), allocatable :: conductors_in_level
+        ! Conductors acting as the shield of a shieldedMultiwire contained
+        ! within another cable. In full-wave problems these have no
+        ! surrounding shield and their voltage is not reported.
+        logical, allocatable, dimension(:) :: conductor_is_shield
         
         real(kind=rkind), dimension(:,:,:), allocatable :: v_term, i_term
         real(kind=rkind), dimension(:,:,:), allocatable :: v_diff, i_diff
@@ -127,6 +131,8 @@ contains
         allocate(this%v_term(this%number_of_divisions + 1,this%number_of_conductors,this%number_of_conductors), source = 0.0_rkind)
         allocate(this%i_diff(this%number_of_divisions + 1,this%number_of_conductors,this%number_of_conductors), source = 0.0_rkind)
 
+        allocate(this%conductor_is_shield(this%number_of_conductors), source = .false.)
+
     end subroutine
 
     function countNumberOfConductors(levels) result(res)
@@ -223,9 +229,9 @@ contains
         end do
     end function
 
-    subroutine addProbe(this, index, probe_type, name, position, layer_indices)
+    subroutine addProbe(this, elementIndex, probe_type, name, position, layer_indices)
         class(mtl_bundle_t) :: this
-        integer(kind=4), intent(in) :: index
+        integer(kind=4), intent(in) :: elementIndex
         integer(kind=4), intent(in) :: probe_type
         real(kind=rkind), dimension(3) :: position
         character(len=:), allocatable :: name
@@ -238,17 +244,17 @@ contains
         allocate(this%probes(size(aux_probes)+1))
 
 #ifdef CompileWithMPI
-        new_probe = probeCtor(index, probe_type, this%dt, name, position, layer_indices = layer_indices)
+        new_probe = probeCtor(elementIndex, probe_type, this%dt, name, position, layer_indices = layer_indices)
 #else
-        new_probe = probeCtor(index, probe_type, this%dt, name, position)
+        new_probe = probeCtor(elementIndex, probe_type, this%dt, name, position)
 #endif
         this%probes(1:size(this%probes)-1) = aux_probes
         this%probes(size(aux_probes)+1) = new_probe
     end subroutine
 
-    subroutine addGenerator(this, index, conductor, gen_type, resistance, path, layer_indices)
+    subroutine addGenerator(this, elementIndex, conductor, gen_type, resistance, path, layer_indices)
         class(mtl_bundle_t) :: this
-        integer(kind=4), intent(in) :: index, conductor, gen_type
+        integer(kind=4), intent(in) :: elementIndex, conductor, gen_type
         real(kind=rkind) :: resistance
         character(*), intent(in) :: path
         integer(kind=4), dimension(:,:), intent(in), optional :: layer_indices
@@ -257,9 +263,9 @@ contains
         type(generator_t) :: new_generator
         aux_generators = this%generators
 #ifdef CompileWithMPI
-        new_generator = generatorCtor(index, conductor, gen_type, resistance, path, layer_indices = layer_indices)
+        new_generator = generatorCtor(elementIndex, conductor, gen_type, resistance, path, layer_indices = layer_indices)
 #else
-        new_generator = generatorCtor(index, conductor, gen_type, resistance, path)
+        new_generator = generatorCtor(elementIndex, conductor, gen_type, resistance, path)
 #endif
         ! Non-owning MPI ranks have no local PUL divisions to update.
         if (.not. new_generator%in_layer) return
@@ -270,26 +276,26 @@ contains
         this%generators(size(aux_generators)+1) = new_generator
 
         if (gen_type == SOURCE_TYPE_VOLTAGE) then
-            this%rpul(new_generator%index, conductor, conductor) = &
-                this%rpul(new_generator%index, conductor, conductor) + &
-                resistance/this%du(new_generator%index, conductor, conductor)
+            this%rpul(new_generator%elementIndex, conductor, conductor) = &
+                this%rpul(new_generator%elementIndex, conductor, conductor) + &
+                resistance/this%du(new_generator%elementIndex, conductor, conductor)
         else if (new_generator%source_type == SOURCE_TYPE_CURRENT) then
-            this%rpul(new_generator%index, conductor, conductor) = &
-                this%rpul(new_generator%index, conductor, conductor) + &
-                resistance/this%du(new_generator%index, conductor, conductor)
+            this%rpul(new_generator%elementIndex, conductor, conductor) = &
+                this%rpul(new_generator%elementIndex, conductor, conductor) + &
+                resistance/this%du(new_generator%elementIndex, conductor, conductor)
 
         end if
 
     end subroutine
 
-    subroutine bundle_setConnectorTransferImpedance(this, index, conductor_out, range_in, transfer_impedance)
+    subroutine bundle_setConnectorTransferImpedance(this, elementIndex, conductor_out, range_in, transfer_impedance)
         class(mtl_bundle_t) :: this
-        integer(kind=4), intent(in) :: index
+        integer(kind=4), intent(in) :: elementIndex
         integer(kind=4), intent(in) :: conductor_out
         integer(kind=4), dimension(:), intent(in) :: range_in
         type(transfer_impedance_per_meter_t) :: transfer_impedance
 
-        call this%transfer_impedance%setTransferImpedance(index, conductor_out, range_in, transfer_impedance)
+        call this%transfer_impedance%setTransferImpedance(elementIndex, conductor_out, range_in, transfer_impedance)
 
     end subroutine
 
@@ -382,19 +388,19 @@ contains
 
     subroutine bundle_updateGenerators(this, time, dt)
         class(mtl_bundle_t) ::this
-        real(kind=RKIND_TIEMPO), intent(in) :: time, dt
+        real(kind=RKIND_TIME), intent(in) :: time, dt
         real(kind=rkind) :: val
         integer(kind=4) :: i
         do i = 1, size(this%generators)
             if (this%generators(i)%in_layer) then 
                 if (this%generators(i)%source_type == SOURCE_TYPE_VOLTAGE) then
                     val = 0.5*(this%generators(i)%interpolate(time+dt)+this%generators(i)%interpolate(time))
-                    this%v_source(this%generators(i)%conductor, this%generators(i)%index) = & 
-                        val/this%du(this%generators(i)%index, this%generators(i)%conductor, this%generators(i)%conductor)
+                    this%v_source(this%generators(i)%conductor, this%generators(i)%elementIndex) = & 
+                        val/this%du(this%generators(i)%elementIndex, this%generators(i)%conductor, this%generators(i)%conductor)
                 else if (this%generators(i)%source_type == SOURCE_TYPE_CURRENT) then
                     val = 0.5*(this%generators(i)%interpolate(time+dt)+this%generators(i)%interpolate(time))
-                    this%v_source(this%generators(i)%conductor, this%generators(i)%index) = & 
-                        val*this%generators(i)%resistance/this%du(this%generators(i)%index, this%generators(i)%conductor, this%generators(i)%conductor)
+                    this%v_source(this%generators(i)%conductor, this%generators(i)%elementIndex) = & 
+                        val*this%generators(i)%resistance/this%du(this%generators(i)%elementIndex, this%generators(i)%conductor, this%generators(i)%conductor)
                 end if
             end if
         end do
@@ -433,7 +439,7 @@ contains
                                                       this%e_L(:,i) * this%step_size(i) - &
                                                       matmul(this%du(i,:,:),this%v_source(:,i))) - &
                           matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
-        enddo
+        end do
         call this%transfer_impedance%updatePhi(this%i_prev, this%i)
     end subroutine
 

@@ -1,10 +1,10 @@
 integer function test_read_sphere() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'sphere.fdtd.json'
+   character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'sphere.fdtd.json'
    type(Parseador_t) :: pr, ex
    type(parser_t) :: parser
    logical :: areSame
@@ -52,8 +52,8 @@ contains
       ex%despl%mz2 = 80
 
       ! Expected boundaries.
-      ex%front%tipoFrontera(:) = F_PML
-      ex%front%propiedadesPML(:)%numCapas = 10
+      ex%front%boundaryType(:) = F_PML
+      ex%front%propiedadesPML(:)%numLayers = 10
       ex%front%propiedadesPML(:)%orden = 2
       ex%front%propiedadesPML(:)%refl = 0.001_RKIND
 
@@ -65,7 +65,7 @@ contains
 
       ! Expected sources.
       allocate(ex%plnSrc%collection(1))
-      ex%plnSrc%collection(1)%nombre_fichero = "gauss.exc"
+      ex%plnSrc%collection(1)%sourceFileName = "gauss.exc"
       ex%plnSrc%collection(1)%atributo = "LOCKED"
       ex%plnSrc%collection(1)%coor1 = [0, 0, 0]
       ex%plnSrc%collection(1)%coor2 = [79, 79, 79]
@@ -125,7 +125,7 @@ contains
       ex%VolPrb%collection(1)%cordinates(1)%Ye = 77
       ex%VolPrb%collection(1)%cordinates(1)%Zi = 2
       ex%VolPrb%collection(1)%cordinates(1)%Ze = 77
-      ex%VolPrb%collection(1)%cordinates(1)%or = iExC
+      ex%VolPrb%collection(1)%cordinates(1)%or = IEXC
       ex%VolPrb%collection(1)%cordinates(1)%xtrancos = 1
       ex%VolPrb%collection(1)%cordinates(1)%ytrancos = 1
       ex%VolPrb%collection(1)%cordinates(1)%ztrancos = 1

@@ -24,7 +24,7 @@ contains
       integer(kind=8) :: scalar_bytes
 
       status = BINARY_WRITER_INVALID_LAYOUT
-      if (artifact%kind /= OUTPUT_ARTIFACT_BINARY) return
+      if (artifact%kindTag /= OUTPUT_ARTIFACT_BINARY) return
       if (.not. output_artifact_identity_is_valid(artifact)) return
       if (len_trim(artifact%component_order) == 0) return
       if (artifact%byte_order /= BINARY_ENDIAN_LITTLE) return
@@ -77,7 +77,7 @@ contains
       type(output_artifact_t), intent(in) :: artifact
       real(real64), intent(in) :: values(:)
       integer, intent(out) :: status
-      integer :: index, ios, unit, write_ios
+      integer :: elementIndex, ios, unit, write_ios
 
       call validate_binary_layout(artifact, status)
       if (status /= BINARY_WRITER_SUCCESS) return
@@ -90,8 +90,8 @@ contains
       call open_binary_append(path, artifact, unit, status)
       if (status /= BINARY_WRITER_SUCCESS) return
       ios = 0
-      do index = 1, size(values)
-         call write_int64_little_endian(unit, transfer(values(index), 0_int64), ios)
+      do elementIndex = 1, size(values)
+         call write_int64_little_endian(unit, transfer(values(elementIndex), 0_int64), ios)
          if (ios /= 0) exit
       end do
       write_ios = ios
@@ -165,14 +165,14 @@ contains
       if (ios /= 0) status = BINARY_WRITER_IO_ERROR
    end subroutine prepare_write
 
-   subroutine write_int64_little_endian(unit, value, ios)
+   subroutine write_int64_little_endian(unit, scalarValue, ios)
       integer, intent(in) :: unit
-      integer(int64), intent(in) :: value
+      integer(int64), intent(in) :: scalarValue
       integer, intent(inout) :: ios
       integer :: byte_index
 
       do byte_index = 0, BINARY_BYTES_REAL64 - 1
-         write (unit, iostat=ios) achar(ibits(value, 8*byte_index, 8))
+         write (unit, iostat=ios) achar(ibits(scalarValue, 8*byte_index, 8))
          if (ios /= 0) return
       end do
    end subroutine write_int64_little_endian

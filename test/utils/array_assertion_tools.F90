@@ -1,7 +1,7 @@
 module arrayAssertionTools_m
    use FDETYPES_m
    implicit none
-   real(RKIND), parameter :: tol = 1.0e-12_RKIND
+   real(RKIND), parameter :: TOL = 1.0e-12_RKIND
    private
    !-----------------------------
    ! Public assertion procedures

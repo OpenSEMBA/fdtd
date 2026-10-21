@@ -1,0 +1,67 @@
+{
+    "format": "FDTD Input file",
+
+    "general": {
+        "timeStep": 10e-12,
+        "numberOfSteps": 10
+    },
+
+    "boundary": {
+        "all": {"type": "mur"}
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [10, 10, 10],
+            "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
+        },
+        "coordinates": [
+            {"id": 1, "relativePosition": [3, 3, 3]},
+            {"id": 2, "relativePosition": [3, 3, 5]}
+        ],
+        "elements": [
+            {"id": 1, "type": "polyline", "coordinateIds": [1, 2]},
+            {"id": 2, "type": "node", "coordinateIds": [1]}
+        ]
+    },
+
+    "materials": [
+        {
+            "name": "Wire",
+            "id": 1,
+            "type": "wire",
+            "radius": 0.0001,
+            "resistancePerMeter": 0.0,
+            "inductancePerMeter": 0.0
+        },
+        {
+            "name": "Open",
+            "id": 2,
+            "type": "terminal",
+            "terminations": [
+                {
+                    "type": "open"
+                }
+            ]
+        }
+    ],
+
+    "probes": [
+        {
+            "name": "no_field_probe",
+            "type": "wire",
+            "elementIds": [2],
+            "domain": { "type": "time" }
+        }
+    ],
+
+    "materialAssociations": [
+        {
+            "name": "cable",
+            "materialId": 1,
+            "elementIds": [1],
+            "initialTerminalId": 2,
+            "endTerminalId": 2
+        }
+    ]
+}

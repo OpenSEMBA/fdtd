@@ -1,6 +1,6 @@
 integer function test_init_solver() bind (C) result(err)
    use SEMBA_FDTD_m
-   use system_testingTools_mod   
+   use system_testingTools_m   
    implicit none
    type(semba_fdtd_t) :: semba
    type(solver_t) :: solver
@@ -11,10 +11,10 @@ integer function test_init_solver() bind (C) result(err)
    call semba%init("-i init_solver.fdtd.json")
    solver = semba%create_solver()
    call solver%init()
-   call solver%set_field_value(iEx, [2,4], [2,2], [2,2], field_value)
+   call solver%set_field_value(IEX, [2,4], [2,2], [2,2], field_value)
    call solver%step()
-   if (solver%get_field_value(iHy, 2,2,2) == 0) err = err + 1
-   if (solver%get_field_value(iHz, 2,2,2) == 0) err = err + 1
+   if (solver%get_field_value(IHY, 2,2,2) == 0) err = err + 1
+   if (solver%get_field_value(IHZ, 2,2,2) == 0) err = err + 1
 
    call solver%destroy_and_deallocate()
    call chdir("../../")
@@ -23,7 +23,7 @@ end function
 
 integer function test_rank_remapping() bind (C) result(err)
    use SEMBA_FDTD_m
-   use system_testingTools_mod   
+   use system_testingTools_m   
    implicit none
 
    type(semba_fdtd_t) :: semba
@@ -36,10 +36,10 @@ integer function test_rank_remapping() bind (C) result(err)
    call semba%init("-i init_solver.fdtd.json")
    solver = semba%create_solver()
    call solver%init()
-   call solver%set_field_value(iHy, [2,2], [2,2], [2,2], field_value)
+   call solver%set_field_value(IHY, [2,2], [2,2], [2,2], field_value)
    call solver%advanceEx(solver%media%sggMiEx)
-   if (solver%get_field_value(iEx, 2,2,2) /= -33.8822708) err = err + 1
-   if (solver%get_field_value(iEx, 2,2,3) /= 33.8822708) err = err + 1
+   if (solver%get_field_value(IEX, 2,2,2) /= -33.8822708) err = err + 1
+   if (solver%get_field_value(IEX, 2,2,3) /= 33.8822708) err = err + 1
 
    call solver%destroy_and_deallocate()
 

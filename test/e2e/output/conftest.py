@@ -94,7 +94,9 @@ def run_output_case(
         probes: list[dict],
         additional_arguments: str = "",
     ) -> tuple[subprocess.CompletedProcess, Path]:
-        input_path = stage_output_case("common_geometry.fdtd.json")
+        requested_case = OUTPUT_CASES / f"{case_name}.fdtd.json"
+        case_file = requested_case.name if requested_case.is_file() else "common_geometry.fdtd.json"
+        input_path = stage_output_case(case_file)
         with input_path.open(encoding="utf-8") as input_file:
             case = json.load(input_file)
         case["probes"] = probes

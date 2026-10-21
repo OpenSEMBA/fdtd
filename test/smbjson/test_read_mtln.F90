@@ -1,10 +1,10 @@
 integer function test_read_mtln() bind (C) result(err)
    use smbjson_m
-   use smbjson_testingTools
+   use smbjson_testingTools_m
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'mtln.fdtd.json'
+   character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'mtln.fdtd.json'
    type(Parseador_t) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
@@ -50,7 +50,7 @@ contains
       expected%despl%mz2 = 2
 
       ! Expected boundaries.
-      expected%front%tipoFrontera(:) = F_MUR
+      expected%front%boundaryType(:) = F_MUR
 
       ! Expected sources.
       allocate(expected%nodSrc%NodalSource(1))
@@ -131,8 +131,8 @@ contains
       select type(ptr)
       type is (unshielded_multiwire_t)
          ptr%name = "line_0_0"
-         ptr%cell_inductance_per_meter = reshape( source = [5.481553487168089e-07_RKIND], shape = [ 1,1 ] )
-         ptr%cell_capacitance_per_meter = reshape( source = [2.0270004E-11_RKIND], shape = [ 1,1 ] )
+         ptr%cell_inductance_per_meter = reshape(source = [5.481553487168089e-07_RKIND], shape = [ 1,1 ])
+         ptr%cell_capacitance_per_meter = reshape(source = [2.0270004E-11_RKIND], shape = [ 1,1 ])
          ptr%resistance_per_meter =  reshape(source=[22.9e-3_RKIND], shape=[1,1])
          
          deallocate(ptr%multipolar_expansion)
@@ -247,8 +247,8 @@ contains
       type is (unshielded_multiwire_t)
          ptr%name = "line_0_1"
 
-         ptr%cell_inductance_per_meter = reshape( source = [6.482560773828984e-07_RKIND], shape = [ 1,1 ] )
-         ptr%cell_capacitance_per_meter = reshape( source = [1.7140003E-11_RKIND], shape = [ 1,1 ] )
+         ptr%cell_inductance_per_meter = reshape(source = [6.482560773828984e-07_RKIND], shape = [ 1,1 ])
+         ptr%cell_capacitance_per_meter = reshape(source = [1.7140003E-11_RKIND], shape = [ 1,1 ])
          ptr%resistance_per_meter =  reshape(source=[11.8e-3_RKIND], shape=[1,1])
          
          deallocate(ptr%multipolar_expansion)
@@ -348,8 +348,8 @@ contains
       select type(ptr)
       type is (unshielded_multiwire_t)
          ptr%name = "line_0_2"
-         ptr%cell_inductance_per_meter = reshape( source = [5.802145885361537e-07_RKIND], shape = [ 1,1 ] )
-         ptr%cell_capacitance_per_meter = reshape( source = [1.9150003E-11_RKIND], shape = [ 1,1 ] )
+         ptr%cell_inductance_per_meter = reshape(source = [5.802145885361537e-07_RKIND], shape = [ 1,1 ])
+         ptr%cell_capacitance_per_meter = reshape(source = [1.9150003E-11_RKIND], shape = [ 1,1 ])
          ptr%resistance_per_meter =  reshape(source=[17.3e-3_RKIND], shape=[1,1])
          
          deallocate(ptr%multipolar_expansion)
@@ -454,43 +454,43 @@ contains
       deallocate(expected%mtln%probes)
       allocate(expected%mtln%probes(7))
       expected%mtln%probes(1)%attached_to_cable => expected%mtln%cables(1)%ptr ! to which cable is the probe attached in mtln?
-      expected%mtln%probes(1)%index = 1
+      expected%mtln%probes(1)%elementIndex = 1
       expected%mtln%probes(1)%probe_type = PROBE_TYPE_VOLTAGE
       expected%mtln%probes(1)%probe_name = "b1_terminal_voltage"
       expected%mtln%probes(1)%probe_position = [1,7,1]
 
       expected%mtln%probes(2)%attached_to_cable => expected%mtln%cables(1)%ptr
-      expected%mtln%probes(2)%index = 1
+      expected%mtln%probes(2)%elementIndex = 1
       expected%mtln%probes(2)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(2)%probe_name = "b1_terminal_current"
       expected%mtln%probes(2)%probe_position = [1,7,1]
 
       expected%mtln%probes(3)%attached_to_cable => expected%mtln%cables(1)%ptr
-      expected%mtln%probes(3)%index = 10
+      expected%mtln%probes(3)%elementIndex = 10
       expected%mtln%probes(3)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(3)%probe_name = "junction_current"
       expected%mtln%probes(3)%probe_position = [10, 7, 1]
 
       expected%mtln%probes(4)%attached_to_cable => expected%mtln%cables(4)%ptr
-      expected%mtln%probes(4)%index = 1
+      expected%mtln%probes(4)%elementIndex = 1
       expected%mtln%probes(4)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(4)%probe_name = "junction_current"
       expected%mtln%probes(4)%probe_position = [10, 7, 1]
 
       expected%mtln%probes(5)%attached_to_cable => expected%mtln%cables(7)%ptr
-      expected%mtln%probes(5)%index = 1
+      expected%mtln%probes(5)%elementIndex = 1
       expected%mtln%probes(5)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(5)%probe_name = "junction_current"
       expected%mtln%probes(5)%probe_position = [10, 7, 1]
 
       expected%mtln%probes(6)%attached_to_cable => expected%mtln%cables(4)%ptr
-      expected%mtln%probes(6)%index = 9
+      expected%mtln%probes(6)%elementIndex = 9
       expected%mtln%probes(6)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(6)%probe_name = "b2_terminal_current"
       expected%mtln%probes(6)%probe_position = [ 18, 7, 1]
 
       expected%mtln%probes(7)%attached_to_cable => expected%mtln%cables(7)%ptr
-      expected%mtln%probes(7)%index = 8
+      expected%mtln%probes(7)%elementIndex = 8
       expected%mtln%probes(7)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(7)%probe_name = "b3_terminal_current"
       expected%mtln%probes(7)%probe_position = [10, 0, 1]
@@ -534,22 +534,22 @@ contains
       expected%mtln%networks(1)%connections(10)%nodes(1)%termination%termination_type = TERMINATION_SERIES
       expected%mtln%networks(1)%connections(10)%nodes(1)%termination%resistance = 1e10_RKIND
 
-      expected%mtln%networks(1)%connections(3)%nodes(1)%termination%termination_type = TERMINATION_RsLCp
+      expected%mtln%networks(1)%connections(3)%nodes(1)%termination%termination_type = TERMINATION_RSLCP
       expected%mtln%networks(1)%connections(3)%nodes(1)%termination%resistance = 50.0_RKIND
       expected%mtln%networks(1)%connections(3)%nodes(1)%termination%inductance = 30e-12_RKIND
       expected%mtln%networks(1)%connections(3)%nodes(1)%termination%capacitance = 60e-9_RKIND
 
-      expected%mtln%networks(1)%connections(5)%nodes(1)%termination%termination_type = TERMINATION_RsLCp
+      expected%mtln%networks(1)%connections(5)%nodes(1)%termination%termination_type = TERMINATION_RSLCP
       expected%mtln%networks(1)%connections(5)%nodes(1)%termination%resistance = 50.0_RKIND
       expected%mtln%networks(1)%connections(5)%nodes(1)%termination%inductance = 30e-12_RKIND
       expected%mtln%networks(1)%connections(5)%nodes(1)%termination%capacitance = 60e-9_RKIND
 
-      expected%mtln%networks(1)%connections(7)%nodes(1)%termination%termination_type = TERMINATION_RsLCp
+      expected%mtln%networks(1)%connections(7)%nodes(1)%termination%termination_type = TERMINATION_RSLCP
       expected%mtln%networks(1)%connections(7)%nodes(1)%termination%resistance = 50.0_RKIND
       expected%mtln%networks(1)%connections(7)%nodes(1)%termination%inductance = 30e-12_RKIND
       expected%mtln%networks(1)%connections(7)%nodes(1)%termination%capacitance = 60e-9_RKIND
 
-      expected%mtln%networks(1)%connections(9)%nodes(1)%termination%termination_type = TERMINATION_RsLCp
+      expected%mtln%networks(1)%connections(9)%nodes(1)%termination%termination_type = TERMINATION_RSLCP
       expected%mtln%networks(1)%connections(9)%nodes(1)%termination%resistance = 50.0_RKIND
       expected%mtln%networks(1)%connections(9)%nodes(1)%termination%inductance = 30e-12_RKIND
       expected%mtln%networks(1)%connections(9)%nodes(1)%termination%capacitance = 60e-9_RKIND

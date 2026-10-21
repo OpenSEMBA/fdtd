@@ -170,18 +170,18 @@ contains
       call convert_status(writer_status, status, diagnostic)
    end subroutine write_visualisation_attribute
 
-   subroutine write_visualisation_attribute_hyperslab(visualisation, attribute_index, values, offset, shape, &
+   subroutine write_visualisation_attribute_hyperslab(visualisation, attribute_index, values, offset, shapeValue, &
                                                       status, diagnostic)
       type(visualisation_writer_t), intent(inout) :: visualisation
       integer, intent(in) :: attribute_index
       real(real64), intent(in) :: values(:)
-      integer(int64), intent(in) :: offset(:), shape(:)
+      integer(int64), intent(in) :: offset(:), shapeValue(:)
       integer, intent(out) :: status
       character(len=BUFSIZE), intent(out) :: diagnostic
       type(xdmf_status_t) :: writer_status
 
       call visualisation%writer%write_attribute_hyperslab(visualisation%attributes(attribute_index), values, &
-                                                          offset, shape, writer_status)
+                                                          offset, shapeValue, writer_status)
       call convert_status(writer_status, status, diagnostic)
    end subroutine write_visualisation_attribute_hyperslab
 

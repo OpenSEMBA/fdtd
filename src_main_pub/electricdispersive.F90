@@ -1,7 +1,7 @@
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Module EDispersives !ojo los polos conjugados DEBEN APARECER explicitamente
+! Module EDispersives !note the conjugate poles MUST APPEAR explicitly
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Beware in Dutton's model BOTH pair OF complex conjugate poles/residues
 ! in input from .nfde MUST APPEAR (this is why the factor /2 in the algorithm part
@@ -25,21 +25,21 @@ module EDispersives_m
       integer(kind=4) :: i,j,k
       integer(kind=4) :: WhatField
 
-      real(kind=RKIND), pointer                 :: FieldPresent !apunta al campo del background
+      real(kind=RKIND), pointer                 :: FieldPresent !points to the background field
       real(kind=RKIND)                          :: FieldPrevious
-      complex(Kind=CKIND), pointer, dimension( : ) :: Current
+      complex(kind=CKIND), pointer, dimension(:) :: Current
    end type
 
    type EDispersive_t
       integer(kind=4) :: indexmed,numnodesEx,numnodesEy,numnodesEz,numpolres11
-      complex(Kind=CKIND), pointer, dimension( : ) :: Beta,Kappa,G3
-      type(field_t), pointer, dimension( : ) :: NodesEx,NodesEy,NodesEz
+      complex(kind=CKIND), pointer, dimension(:) :: Beta,Kappa,G3
+      type(field_t), pointer, dimension(:) :: NodesEx,NodesEy,NodesEz
    end type EDispersive_t
 
 
    type  EDispersive2_t
       integer(kind=4) :: NumEDispersives
-      type(EDispersive_t), pointer, dimension( : ) :: Medium
+      type(EDispersive_t), pointer, dimension(:) :: Medium
    end type
    type(EDispersive2_t) , save , target :: Dutton
 
@@ -57,13 +57,13 @@ contains
       real(kind=RKIND)     , intent(inout) :: &
       G1(0 : sgg%NumMedia),G2(0 : sgg%NumMedia)
       real(kind=RKIND)   , intent(inout), target      :: &
-      Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE),&
-      Ey(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE),&
-      Ez(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE)
+      Ex(sgg%Alloc(IEX)%XI : sgg%Alloc(IEX)%XE,sgg%Alloc(IEX)%YI : sgg%Alloc(IEX)%YE,sgg%Alloc(IEX)%ZI : sgg%Alloc(IEX)%ZE),&
+      Ey(sgg%Alloc(IEY)%XI : sgg%Alloc(IEY)%XE,sgg%Alloc(IEY)%YI : sgg%Alloc(IEY)%YE,sgg%Alloc(IEY)%ZI : sgg%Alloc(IEY)%ZE),&
+      Ez(sgg%Alloc(IEZ)%XI : sgg%Alloc(IEZ)%XE,sgg%Alloc(IEZ)%YI : sgg%Alloc(IEZ)%YE,sgg%Alloc(IEZ)%ZI : sgg%Alloc(IEZ)%ZE)
 
-      !habria que ir deprecando lo de pasar el EDispersive, etc.. porque hay acceso directo a sgg%Med%Dispersiv
+      !passing the EDispersive should be gradually deprecated, etc.. because there is direct access to sgg%Med%Dispersiv
       logical, intent(out) :: ThereAreEDispersives
-      logical, INTENT(in) :: resume
+      logical, intent(in) :: resume
       integer(kind=4) :: jmed,j1,conta,k1,i1,tempindex
       real(kind=RKIND) :: tempo
       integer(kind=4) :: numpolres
@@ -83,7 +83,7 @@ contains
       do jmed=1,sgg%NumMedia
          if ((sgg%Med(jmed)%Is%EDispersive).and.(.not.sgg%Med(jmed)%Is%EDispersiveAnis)) then
             conta=conta+1
-            Dutton%Medium(conta)%indexmed=jmed !correspondencia con el medio principal
+            Dutton%Medium(conta)%indexmed=jmed !correspondence with the main medium
             Dutton%Medium(conta)%numpolres11=sgg%Med(jmed)%EDispersive(1)%numpolres11
             allocate (Dutton%Medium(conta)%Beta (1 : sgg%Med(jmed)%EDispersive(1)%numpolres11),&
             Dutton%Medium(conta)%Kappa(1 : sgg%Med(jmed)%EDispersive(1)%numpolres11), &
@@ -105,13 +105,13 @@ contains
          tempindex=Dutton%Medium(jmed)%indexmed
          numpolres=sgg%Med(tempindex)%EDispersive(1)%numpolres11
          tempo=0.0_RKIND
-         Do i1=1,NumPolRes
+         do i1=1,NumPolRes
             tempo=tempo+real(Dutton%Medium(jmed)%Beta(i1))
          end do
          G1(tempindex)=        (2.0_RKIND * sgg%Med(tempindex)%Edispersive(1)%eps11+tempo-sgg%Med(tempindex)%Edispersive(1)%Sigma11*sgg%dt)/ &
          (2.0_RKIND * sgg%Med(tempindex)%Edispersive(1)%eps11+tempo+sgg%Med(tempindex)%Edispersive(1)%Sigma11*sgg%dt)
          G2(tempindex)= 2.0_RKIND * sgg%dt/ (2.0_RKIND * sgg%Med(tempindex)%Edispersive(1)%eps11+tempo+sgg%Med(tempindex)%Edispersive(1)%Sigma11*sgg%dt)
-         Do i1=1,NumPolRes
+         do i1=1,NumPolRes
             Dutton%Medium(jmed)%G3(i1)=G2(tempindex)/2.0_RKIND * (1.0_RKIND+Dutton%Medium(jmed)%Kappa(i1))
          end do
       end do
@@ -120,9 +120,9 @@ contains
          tempindex=Dutton%Medium(jmed)%indexmed
          !!!Ex
          conta=0
-         Do k1=sgg%Sweep(iEx)%ZI,sgg%Sweep(iEx)%ZE
-            Do j1=sgg%Sweep(iEx)%YI,sgg%Sweep(iEx)%YE
-               Do i1=sgg%Sweep(iEx)%XI,sgg%Sweep(iEx)%XE
+         do k1=sgg%Sweep(IEX)%ZI,sgg%Sweep(IEX)%ZE
+            do j1=sgg%Sweep(IEX)%YI,sgg%Sweep(IEX)%YE
+               do i1=sgg%Sweep(IEX)%XI,sgg%Sweep(IEX)%XE
                   if ((media%sggMiEx(i1,j1,k1)) == tempindex)  conta=conta+1
                end do
             end do
@@ -135,15 +135,15 @@ contains
             allocate (Dutton%Medium(jmed)%NodesEx(i1)%Current(1 : sgg%Med(tempindex)%EDispersive(1)%numpolres11))
          end do
          conta=0
-         Do k1=sgg%Sweep(iEx)%ZI,sgg%Sweep(iEx)%ZE
-            Do j1=sgg%Sweep(iEx)%YI,sgg%Sweep(iEx)%YE
-               Do i1=sgg%Sweep(iEx)%XI,sgg%Sweep(iEx)%XE
+         do k1=sgg%Sweep(IEX)%ZI,sgg%Sweep(IEX)%ZE
+            do j1=sgg%Sweep(IEX)%YI,sgg%Sweep(IEX)%YE
+               do i1=sgg%Sweep(IEX)%XI,sgg%Sweep(IEX)%XE
                   if ((media%sggMiEx(i1,j1,k1))==tempindex)  then
                      conta=conta+1
                      Dutton%Medium(jmed)%NodesEx(conta)%i=i1
                      Dutton%Medium(jmed)%NodesEx(conta)%j=j1
                      Dutton%Medium(jmed)%NodesEx(conta)%k=k1
-                     Dutton%Medium(jmed)%NodesEx(conta)%WhatField=iEx
+                     Dutton%Medium(jmed)%NodesEx(conta)%WhatField=IEX
                      Dutton%Medium(jmed)%NodesEx(conta)%FieldPresent=>Ex(i1,j1,k1)
                   end if
                end do
@@ -151,9 +151,9 @@ contains
          end do
          !!!Ey
          conta=0
-         Do k1=sgg%Sweep(iEy)%ZI,sgg%Sweep(iEy)%ZE
-            Do j1=sgg%Sweep(iEy)%YI,sgg%Sweep(iEy)%YE
-               Do i1=sgg%Sweep(iEy)%XI,sgg%Sweep(iEy)%XE
+         do k1=sgg%Sweep(IEY)%ZI,sgg%Sweep(IEY)%ZE
+            do j1=sgg%Sweep(IEY)%YI,sgg%Sweep(IEY)%YE
+               do i1=sgg%Sweep(IEY)%XI,sgg%Sweep(IEY)%XE
                   if ((media%sggMiEy(i1,j1,k1)) == tempindex)  conta=conta+1
                end do
             end do
@@ -166,15 +166,15 @@ contains
             allocate (Dutton%Medium(jmed)%NodesEy(i1)%Current(1 : sgg%Med(tempindex)%EDispersive(1)%numpolres11))
          end do
          conta=0
-         Do k1=sgg%Sweep(iEy)%ZI,sgg%Sweep(iEy)%ZE
-            Do j1=sgg%Sweep(iEy)%YI,sgg%Sweep(iEy)%YE
-               Do i1=sgg%Sweep(iEy)%XI,sgg%Sweep(iEy)%XE
+         do k1=sgg%Sweep(IEY)%ZI,sgg%Sweep(IEY)%ZE
+            do j1=sgg%Sweep(IEY)%YI,sgg%Sweep(IEY)%YE
+               do i1=sgg%Sweep(IEY)%XI,sgg%Sweep(IEY)%XE
                   if ((media%sggMiEy(i1,j1,k1))==tempindex)  then
                      conta=conta+1
                      Dutton%Medium(jmed)%NodesEy(conta)%i=i1
                      Dutton%Medium(jmed)%NodesEy(conta)%j=j1
                      Dutton%Medium(jmed)%NodesEy(conta)%k=k1
-                     Dutton%Medium(jmed)%NodesEy(conta)%WhatField=iEy
+                     Dutton%Medium(jmed)%NodesEy(conta)%WhatField=IEY
                      Dutton%Medium(jmed)%NodesEy(conta)%FieldPresent=>Ey(i1,j1,k1)
                   end if
                end do
@@ -182,9 +182,9 @@ contains
          end do
          !!!Ez
          conta=0
-         Do k1=sgg%Sweep(iEz)%ZI,sgg%Sweep(iEz)%ZE
-            Do j1=sgg%Sweep(iEz)%YI,sgg%Sweep(iEz)%YE
-               Do i1=sgg%Sweep(iEz)%XI,sgg%Sweep(iEz)%XE
+         do k1=sgg%Sweep(IEZ)%ZI,sgg%Sweep(IEZ)%ZE
+            do j1=sgg%Sweep(IEZ)%YI,sgg%Sweep(IEZ)%YE
+               do i1=sgg%Sweep(IEZ)%XI,sgg%Sweep(IEZ)%XE
                   if ((media%sggMiEz(i1,j1,k1)) == tempindex)  conta=conta+1
                end do
             end do
@@ -198,15 +198,15 @@ contains
             allocate (Dutton%Medium(jmed)%NodesEz(i1)%Current(1 : sgg%Med(tempindex)%EDispersive(1)%numpolres11))
          end do
          conta=0
-         Do k1=sgg%Sweep(iEz)%ZI,sgg%Sweep(iEz)%ZE
-            Do j1=sgg%Sweep(iEz)%YI,sgg%Sweep(iEz)%YE
-               Do i1=sgg%Sweep(iEz)%XI,sgg%Sweep(iEz)%XE
+         do k1=sgg%Sweep(IEZ)%ZI,sgg%Sweep(IEZ)%ZE
+            do j1=sgg%Sweep(IEZ)%YI,sgg%Sweep(IEZ)%YE
+               do i1=sgg%Sweep(IEZ)%XI,sgg%Sweep(IEZ)%XE
                   if ((media%sggMiEz(i1,j1,k1))==tempindex)  then
                      conta=conta+1
                      Dutton%Medium(jmed)%NodesEz(conta)%i=i1
                      Dutton%Medium(jmed)%NodesEz(conta)%j=j1
                      Dutton%Medium(jmed)%NodesEz(conta)%k=k1
-                     Dutton%Medium(jmed)%NodesEz(conta)%WhatField=iEz
+                     Dutton%Medium(jmed)%NodesEz(conta)%WhatField=IEZ
                      Dutton%Medium(jmed)%NodesEz(conta)%FieldPresent=>Ez(i1,j1,k1)
                   end if
                end do
@@ -221,14 +221,14 @@ contains
             !Ex,Jx
             do i1=1,Dutton%Medium(jmed)%NumNodesEx
                Dutton%Medium(jmed)%NodesEx(i1)%fieldPrevious=0.0_RKIND
-               Do k1=1,NumPolRes
+               do k1=1,NumPolRes
                   Dutton%Medium(jmed)%NodesEx(i1)%current(k1)=0.0_RKIND
                end do
             end do
             !Ey,Jy
             do i1=1,Dutton%Medium(jmed)%NumNodesEy
                Dutton%Medium(jmed)%NodesEy(i1)%fieldPrevious=0.0_RKIND
-               Do k1=1,NumPolRes
+               do k1=1,NumPolRes
                   Dutton%Medium(jmed)%NodesEy(i1)%current(k1)=0.0_RKIND
                end do
             end do
@@ -236,31 +236,31 @@ contains
             !Ez,Jz
             do i1=1,Dutton%Medium(jmed)%NumNodesEz
                Dutton%Medium(jmed)%NodesEz(i1)%fieldPrevious=0.0_RKIND
-               Do k1=1,NumPolRes
+               do k1=1,NumPolRes
                   Dutton%Medium(jmed)%NodesEz(i1)%current(k1)=0.0_RKIND
                end do
             end do
          else
             !Ex,Jx
             do i1=1,Dutton%Medium(jmed)%NumNodesEx
-               READ (14) Dutton%Medium(jmed)%NodesEx(i1)%fieldPrevious
-               Do k1=1,NumPolRes
-                  READ (14) Dutton%Medium(jmed)%NodesEx(i1)%current(k1)
+               read (14) Dutton%Medium(jmed)%NodesEx(i1)%fieldPrevious
+               do k1=1,NumPolRes
+                  read (14) Dutton%Medium(jmed)%NodesEx(i1)%current(k1)
                end do
             end do
             !Ey,Jy
             do i1=1,Dutton%Medium(jmed)%NumNodesEy
-               READ (14) Dutton%Medium(jmed)%NodesEy(i1)%fieldPrevious
-               Do k1=1,NumPolRes
-                  READ (14) Dutton%Medium(jmed)%NodesEy(i1)%current(k1)
+               read (14) Dutton%Medium(jmed)%NodesEy(i1)%fieldPrevious
+               do k1=1,NumPolRes
+                  read (14) Dutton%Medium(jmed)%NodesEy(i1)%current(k1)
                end do
             end do
 
             !Ez,Jz
             do i1=1,Dutton%Medium(jmed)%NumNodesEz
-               READ (14) Dutton%Medium(jmed)%NodesEz(i1)%fieldPrevious
-               Do k1=1,NumPolRes
-                  READ (14) Dutton%Medium(jmed)%NodesEz(i1)%current(k1)
+               read (14) Dutton%Medium(jmed)%NodesEz(i1)%fieldPrevious
+               do k1=1,NumPolRes
+                  read (14) Dutton%Medium(jmed)%NodesEz(i1)%current(k1)
                end do
             end do
          end if
@@ -287,26 +287,26 @@ contains
          !Ex,Jx
          do i1=1,Dutton%Medium(jmed)%NumNodesEx
             tempnode=>Dutton%Medium(jmed)%NodesEx(i1)
-            Do k1=1,NumPolRes
-               tempnode%fieldPresent=tempnode%FieldPresent-real(Dutton%Medium(jmed)%G3(k1)*tempnode%current(k1) )
+            do k1=1,NumPolRes
+               tempnode%fieldPresent=tempnode%FieldPresent-real(Dutton%Medium(jmed)%G3(k1)*tempnode%current(k1))
             end do
-            Do k1=1,NumPolRes
+            do k1=1,NumPolRes
                tempnode%current(k1)=Dutton%Medium(jmed)%Kappa(k1)  *tempnode%current(k1) + &
                Dutton%Medium(jmed)%Beta(k1)*(tempnode%fieldPresent-tempnode%fieldPrevious) /sgg%dt
             end do
             tempnode%fieldPrevious=tempnode%fieldPresent
-            !stores previous field (cuidado no es un apuntamiento sino una igualdad de valores)
-            !antes de que re-empieze a calcularlo el algoritmo del background
+            !stores previous field (careful, it is not a pointer but a value assignment)
+            !before the background algorithm starts recomputing it
          end do
          !Ey,Jy
          do i1=1,Dutton%Medium(jmed)%NumNodesEy
             tempnode=>Dutton%Medium(jmed)%NodesEy(i1)
-            Do k1=1,NumPolRes
+            do k1=1,NumPolRes
                tempnode%FieldPresent=tempnode%FieldPresent-real(Dutton%Medium(jmed)%G3(k1)*tempnode%current(k1))
             end do
 
 
-            Do k1=1,NumPolRes
+            do k1=1,NumPolRes
                tempnode%current(k1)=Dutton%Medium(jmed)%Kappa(k1)  *tempnode%current(k1)+ &
                Dutton%Medium(jmed)%Beta(k1)*(tempnode%fieldPresent-tempnode%fieldPrevious) /sgg%dt
             end do
@@ -316,10 +316,10 @@ contains
          !Ez,Jz
          do i1=1,Dutton%Medium(jmed)%NumNodesEz
             tempnode=>Dutton%Medium(jmed)%NodesEz(i1)
-            Do k1=1,NumPolRes
+            do k1=1,NumPolRes
                tempnode%FieldPresent=tempnode%FieldPresent-real(Dutton%Medium(jmed)%G3(k1)*tempnode%current(k1))
             end do
-            Do k1=1,NumPolRes
+            do k1=1,NumPolRes
                tempnode%current(k1)=Dutton%Medium(jmed)%Kappa(k1)   *tempnode%current(k1)+ &
                Dutton%Medium(jmed)%Beta(k1)*(tempnode%fieldPresent-tempnode%fieldPrevious)  /sgg%dt
             end do
@@ -343,14 +343,14 @@ contains
          !Ex,Jx
          do i1=1,Dutton%Medium(jmed)%NumNodesEx
             write(14,err=634) Dutton%Medium(jmed)%NodesEx(i1)%fieldPrevious
-            Do k1=1,NumPolRes
+            do k1=1,NumPolRes
                write(14,err=634) Dutton%Medium(jmed)%NodesEx(i1)%current(k1)
             end do
          end do
          !Ey,Jy
          do i1=1,Dutton%Medium(jmed)%NumNodesEy
             write(14,err=634) Dutton%Medium(jmed)%NodesEy(i1)%fieldPrevious
-            Do k1=1,NumPolRes
+            do k1=1,NumPolRes
                write(14,err=634) Dutton%Medium(jmed)%NodesEy(i1)%current(k1)
             end do
          end do
@@ -358,7 +358,7 @@ contains
          !Ez,Jz
          do i1=1,Dutton%Medium(jmed)%NumNodesEz
             write(14,err=634) Dutton%Medium(jmed)%NodesEz(i1)%fieldPrevious
-            Do k1=1,NumPolRes
+            do k1=1,NumPolRes
                write(14,err=634) Dutton%Medium(jmed)%NodesEz(i1)%current(k1)
             end do
          end do
@@ -372,7 +372,7 @@ contains
    end subroutine StoreFieldsEDispersives
 
    subroutine DestroyEDispersives(sgg)
-      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
 
       integer(kind=4) :: jmed,i1,i
 

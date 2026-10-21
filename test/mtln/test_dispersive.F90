@@ -1,6 +1,6 @@
 integer function test_dispersive_init_1_pole() bind(C) result(error_cnt)    
     use dispersive_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtl_bundle_m
 
     implicit none
@@ -34,8 +34,8 @@ integer function test_dispersive_init_1_pole() bind(C) result(error_cnt)
     zt%residues = residues
     
     
-    line_out = buildLineWithNConductors(1, 'line_out', type = "unshielded")
-    line_in = buildLineWithNConductors(1, 'line_in', parent_name = "line_out", conductor_in_parent = 1, type = "shielded")
+    line_out = buildLineWithNConductors(1, 'line_out', typeName = "unshielded")
+    line_in = buildLineWithNConductors(1, 'line_in', parent_name = "line_out", conductor_in_parent = 1, typeName = "shielded")
     level1%lines = [line_out]
     level2%lines = [line_in]
     levels = [level1, level2]
@@ -93,7 +93,7 @@ end function
 
 integer function test_dispersive_init_1_pole_lines_with_lumped() bind(C) result(error_cnt)    
     use dispersive_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtl_bundle_m
 
     implicit none
@@ -129,8 +129,8 @@ integer function test_dispersive_init_1_pole_lines_with_lumped() bind(C) result(
     zt%residues = residues
     
     
-    line_out = buildLineWithNConductors(1, 'line_out', type = "unshielded")
-    line_in = buildLineWithNConductors(1, 'line_in', parent_name = "line_out", conductor_in_parent = 1, type = "shielded")
+    line_out = buildLineWithNConductors(1, 'line_out', typeName = "unshielded")
+    line_in = buildLineWithNConductors(1, 'line_in', parent_name = "line_out", conductor_in_parent = 1, typeName = "shielded")
 
     call line_out%lumped_elements%addDispersiveLumped(1, 1, zt)
     call line_in%lumped_elements%addDispersiveLumped(5, 1, zt)
@@ -209,7 +209,7 @@ end function
 
 integer function test_dispersive_init_2_poles() bind(C) result(error_cnt)    
     use dispersive_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtl_bundle_m
 
     implicit none
@@ -243,8 +243,8 @@ integer function test_dispersive_init_2_poles() bind(C) result(error_cnt)
     zt%residues = residues
     
     
-    line_out = buildLineWithNConductors(1, 'line_out', type = "unshielded")
-    line_in = buildLineWithNConductors(3, 'line_in', parent_name = "line_out", conductor_in_parent = 1, type = "shielded")
+    line_out = buildLineWithNConductors(1, 'line_out', typeName = "unshielded")
+    line_in = buildLineWithNConductors(3, 'line_in', parent_name = "line_out", conductor_in_parent = 1, typeName = "shielded")
     level1%lines = [line_out]
     level2%lines = [line_in]
     levels = [level1, level2]
@@ -302,7 +302,7 @@ end function
 
 integer function test_dispersive_init_1_pole_3_levels() bind(C) result(error_cnt)    
     use dispersive_m
-    use mtln_testingTools_mod
+    use mtln_testingTools_m
     use mtl_bundle_m
 
     implicit none
@@ -330,9 +330,9 @@ integer function test_dispersive_init_1_pole_3_levels() bind(C) result(error_cnt
     zt%residues = residues
     
     
-    line_out = buildLineWithNConductors(1, 'line_out', type = "unshielded")
-    line_in = buildLineWithNConductors(2, 'line_in', parent_name = "line_out", conductor_in_parent = 1, type = "shielded")
-    line_in_2 = buildLineWithNConductors(2, 'line_in_2', parent_name = "line_in", conductor_in_parent = 1, type = "shielded")
+    line_out = buildLineWithNConductors(1, 'line_out', typeName = "unshielded")
+    line_in = buildLineWithNConductors(2, 'line_in', parent_name = "line_out", conductor_in_parent = 1, typeName = "shielded")
+    line_in_2 = buildLineWithNConductors(2, 'line_in_2', parent_name = "line_in", conductor_in_parent = 1, typeName = "shielded")
     level1%lines = [line_out]
     level2%lines = [line_in]
     level3%lines = [line_in_2]
