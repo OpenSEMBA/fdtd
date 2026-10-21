@@ -154,65 +154,13 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !---------------------------------------------------->
    subroutine get_secnds(time_out2)
-      integer(kind=4), dimension(0:11) :: diasen, diasenbisiesto
-      data diasen /31,59 ,90 ,120,151,181,212,243,273,304,334,365/
-      data diasenbisiesto /31,60 ,91 ,121,152,182,213,244,274,305,335,366/
       type(time_t), intent(out) :: time_out2
+      integer(kind=8) :: clockCount, clockRate
 
-      real(kind = 8) :: time_out
-
-      !--->
-      real(kind = 8) :: s
-      real(kind = 8), save  :: t_0 = 0.0_RKIND
-      !--->
-      integer(kind=4) :: h, m,month,day,year,cent
-      !integer(kind=4) :: cent,year
-
-      !--->
-
-      !--->
-      character(LEN=BUFSIZE) :: caux
-      character(LEN=BUFSIZE) :: caux2
-      character(5) :: zone
-      integer(kind=4) ,dimension(8) :: values
-      !------------------------------------------------->
-      !   if( esprimeravez) then
-      !        call date_and_time( time = caux,date=caux2)
-      !        read( caux2( 7: 8), '(i2)') day
-      !!        read( caux2( 3: 4), '(i2)') year
-      !        read( caux2( 5: 6), '(i2)') month
-      !   if ((mod(year,4)==0).and.(year/=00)) then
-      !        t_0 = (month-1) * diasenbisiesto(month-1) * 86400 + day * 86400 ! + (year-2000.) * 365 * 86400
-      !   else
-      !        t_0 = (month-1) * diasen(month-1) * 86400 + day * 86400 ! + (year-2000.) * 365 * 86400
-      !   end if
-      !        esprimeravez = .FALSE.
-      !   end if
-      call date_and_time(date=caux2,time = caux,zone=zone,values=values)
-      read(caux(1: 2), '(i2)') h
-      read(caux(3: 4), '(i2)') m
-      read(caux(5: 10), '(f6.3)') s
-      read(caux2(1: 2), '(i2)') cent
-      read(caux2(3: 4), '(i2)') year
-      read(caux2(5: 6), '(i2)') month
-      read(caux2(7: 8), '(i2)') day 
-
-      if ((mod(year,4)==0).and.(year/=00)) then
-         time_out = diasenbisiesto(month-1) * 86400 + (day-1) * 86400 + 3600.0 * h + 60.0 * m + s - t_0  + &
-                    (year-2000.) * 365 * 86400.
-      else
-         time_out = diasen(month-1) * 86400 + (day-1) * 86400 + 3600.0 * h + 60.0 * m + s - t_0  + (year-2000.) * 365 * 86400.
-      end if
-      time_out2%segundos=time_out !seconds from year 2000
-      time_out2%hora=caux !hour
-      time_out2%fecha=caux2 !date
-
-
-      !!if ((month >=4 ).and.(month <= 10)) then
-      !!   h=h+1 !dst approximate
-      !!   write( time_out2%hora( 1: 2), '(i2)') h
-      !!end if
-      return
+      ! monotonic clock: callers only use differences of segundos, and wall-clock dates jump at month/DST changes
+      call system_clock(clockCount, clockRate)
+      time_out2%segundos = real(clockCount, 8) / real(clockRate, 8)
+      call date_and_time(date=time_out2%fecha, time=time_out2%hora)
    end subroutine get_secnds
 
 
