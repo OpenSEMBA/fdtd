@@ -94,7 +94,7 @@ plt.legend()
 t = back['time']
 
 plt.figure()
-plt.plot(t, back['incident'], label="incident")
+plt.plot(t, front['incident'], label="incident")
 plt.plot(t, back['field'], label="transmitted")
 plt.plot(t, front['field'], label="reflected")
 plt.grid(which='both')

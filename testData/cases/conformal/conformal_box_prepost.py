@@ -52,28 +52,36 @@ solver["mesh"]["elements"][3]["subtype"] = "volume"
 solver.cleanUp()
 solver.run()
 
-back_volume = Probe(solver.getSolvedProbeFolders("back")[0])
-front_volume = Probe(solver.getSolvedProbeFolders("front")[0])
+inside_volume = Probe(solver.getSolvedProbeFolders("back")[0])
+outside_volume = Probe(solver.getSolvedProbeFolders("front")[0])
 
 # %%
 solver["mesh"]["elements"][3]["subtype"] = "surface"
 solver.cleanUp()
 solver.run()
 
-back_surface = Probe(solver.getSolvedProbeFolders("back")[0])
-front_surface = Probe(solver.getSolvedProbeFolders("front")[0])
+inside_surface = Probe(solver.getSolvedProbeFolders("back")[0])
+outside_surface = Probe(solver.getSolvedProbeFolders("front")[0])
 
-t = back_surface['time']
+t = inside_surface['time']
 
 # %% Postprocess
 
 plt.figure()
-plt.plot(t, back_surface['incident'], label="incident")
-plt.plot(t, back_surface['field'], label="transmitted S")
-plt.plot(t, back_volume['field'], '--', label="transmitted V")
-plt.plot(t, front_surface['field'], label="reflected S")
-plt.plot(t, front_volume['field'], '--', label="reflected V")
+plt.plot(t, inside_surface['incident'], label="incident")
+plt.plot(t, inside_surface['field'], label="transmitted S")
+plt.plot(t, inside_volume['field'], '--', label="transmitted V")
+plt.plot(t, outside_surface['field'], label="reflected S")
+plt.plot(t, outside_volume['field'], '--', label="reflected V")
 plt.grid(which='both')
 plt.legend()
+
+# %%
+# %%
+#transmitted
+assert np.all(inside_surface['field'] == 0.0)
+assert np.all(inside_volume['field'] == 0.0)
+#reflected
+assert np.corrcoef(outside_surface['field'], outside_volume['field'])[0, 1] > 0.99
 
 # %%

@@ -35,96 +35,72 @@ module conformal_timestepping_m
 
 contains
 
-    subroutine addNewEdge(edge, edge_map, conformal_edges, n)
-        type(edge_t), intent(in) :: edge
-        type(edge_map_t), intent(inout) :: edge_map
-        type(edge_t), dimension(:), allocatable, intent(inout) :: conformal_edges
-        integer(kind=4), intent(in) :: n
-        type(edge_t), dimension(:), allocatable :: aux_edges
-        conformal_edges(n) = edge
-        call edge_map%addEdge(conformal_edges(n))
-    end subroutine
-
     subroutine addAdditionalConformalFeatures(conf_maps, conformal_edges)
         type(conformal_maps_t), intent(inout) :: conf_maps
-        type(edge_map_t) :: aux_edge_map
         type(edge_t), dimension(:), allocatable, intent(inout) :: conformal_edges
+        type(edge_map_t) :: empty_map
+        type(fhash_tbl_t) :: seen
         type(edge_t), dimension(:), allocatable :: aux_conformal_edges
         type(face_t), pointer :: face
-        type(edge_t), pointer :: edge
-        type(edge_t), target :: new_edge
         type(map_key_t), dimension(4) :: edges_on_face
-        real(kind=RKIND) :: ratio
-        integer(kind=4) :: i, j, k, additional_edges = 0, prev_size
-        
+        integer(kind=4), dimension(:,:), allocatable :: missing_keys
+        logical, dimension(:), allocatable :: missing_in_region_II
+        integer(kind=4) :: i, j, n_missing, prev_size, stat
+
+        allocate(missing_keys(4, 4*size(conf_maps%face_map%keys)))
+        allocate(missing_in_region_II(4*size(conf_maps%face_map%keys)))
+        n_missing = 0
         do i = 1, size(conf_maps%face_map%keys)
             face => conf_maps%face_map%getFace(conf_maps%face_map%keys(i)%key)
             if (.not. face%is_two_sided) cycle
             edges_on_face = buildEdgesOnFace(face%cell, face%direction)
-            do j = 1, size(edges_on_face) 
-                if (.not. conf_maps%edge_map%hasKey(edges_on_face(j)%key)) then
-                    new_edge = edge_t(cell=edges_on_face(j)%key(1:3), direction=edges_on_face(j)%key(4))
-                    call conf_maps%edge_map%addEdge(new_edge)
-                    additional_edges = additional_edges + 1
-                end if
+            do j = 1, size(edges_on_face)
+                if (conf_maps%edge_map%hasKey(edges_on_face(j)%key)) cycle
+                call seen%check_key(key(edges_on_face(j)%key), stat)
+                if (stat == 0) cycle
+                call seen%set(key(edges_on_face(j)%key), 1)
+                n_missing = n_missing + 1
+                missing_keys(:, n_missing) = edges_on_face(j)%key
+                missing_in_region_II(n_missing) = isInRegionII(face, edges_on_face(j))
             end do
         end do
+
         prev_size = size(conformal_edges)
-
-        
-        allocate(aux_conformal_edges(size(conformal_edges) + additional_edges))
-        do i = 1, size(conformal_edges)
-            aux_conformal_edges(i) = conformal_edges(i)
+        allocate(aux_conformal_edges(prev_size + n_missing))
+        aux_conformal_edges(1:prev_size) = conformal_edges
+        do i = 1, n_missing
+            call initAdditionalEdge(aux_conformal_edges(prev_size + i), &
+                                    missing_keys(:, i), missing_in_region_II(i))
         end do
-        deallocate(conformal_edges)
-        allocate(conformal_edges(size(aux_conformal_edges)))
-        conformal_edges = aux_conformal_edges
-        
-        additional_edges = 0
+        call move_alloc(aux_conformal_edges, conformal_edges)
 
-        call aux_edge_map%allocateEdges(500*size(conf_maps%edge_map%keys))
+        ! Replaces the table, the finalizer frees the previous nodes. 
+        ! The map must be rebuilt because conformal_edges has been reallocated. 
+        conf_maps%edge_map = empty_map
+        call conf_maps%edge_map%allocateEdges(4*size(conformal_edges) + 16)
+        call buildConformalEdgeMap(conf_maps%edge_map, conformal_edges)
+    end subroutine
 
-        call buildConformalEdgeMap(aux_edge_map, conformal_edges)
-        
-        do i = 1, size(conf_maps%face_map%keys)
-            face => conf_maps%face_map%getFace(conf_maps%face_map%keys(i)%key)
-            if (.not. face%is_two_sided) cycle
-            edges_on_face = buildEdgesOnFace(face%cell, face%direction)
-            do j = 1, size(edges_on_face) 
-                if (.not. aux_edge_map%hasKey(edges_on_face(j)%key)) then
-                    additional_edges = additional_edges + 1
-                    if (.not. isInRegionII(face, edges_on_face(j)))  then 
-                        ratio = 1.0
-                        new_edge = edge_t(cell=edges_on_face(j)%key(1:3), & 
-                            ratio=ratio, & 
-                            direction=edges_on_face(j)%key(4), &
-                            material_coords = [0.0,1.0], &
-                            edge_region= EDGE_REGION_I)
-                        
-                        allocate(new_edge%region_I_fields%E)
-                        new_edge%region_I_fields%E = 0.0
-                        ! other region fields do not matter
-                        allocate(new_edge%region_II_fields%E)
-                        new_edge%region_II_fields%E => null()
-
-                    else if (isInRegionII(face, edges_on_face(j))) then 
-                        ratio = 0.0
-                        new_edge = edge_t(cell=edges_on_face(j)%key(1:3), & 
-                            ratio=ratio, & 
-                            direction=edges_on_face(j)%key(4), &
-                            material_coords = [0.0,1.0],&
-                            edge_region= EDGE_REGION_II)
-                        ! other region fields do not matter
-                        allocate(new_edge%region_I_fields%E)
-                        new_edge%region_I_fields%E => null()
-                        allocate(new_edge%region_II_fields%E)
-                        new_edge%region_II_fields%E = 0.0
-                    end if                
-                    call addNewEdge(new_edge, aux_edge_map, conformal_edges, prev_size + additional_edges)
-                end if
-            end do
-        end do
-        conf_maps%edge_map = aux_edge_map
+    subroutine initAdditionalEdge(edge, edge_key, in_region_II)
+        type(edge_t), intent(out) :: edge
+        integer(kind=4), dimension(4), intent(in) :: edge_key
+        logical, intent(in) :: in_region_II
+        edge%cell = edge_key(1:3)
+        edge%direction = edge_key(4)
+        edge%material_coords = [0.0, 1.0]
+        allocate(edge%region_I_fields%E)
+        allocate(edge%region_II_fields%E)
+        if (in_region_II) then
+            edge%ratio = 0.0
+            edge%edge_region = EDGE_REGION_II
+            edge%region_I_fields%E => null()
+            edge%region_II_fields%E = 0.0
+        else
+            edge%ratio = 1.0
+            edge%edge_region = EDGE_REGION_I
+            edge%region_I_fields%E = 0.0
+            edge%region_II_fields%E => null()
+        end if
     end subroutine
 
     logical function isInRegionII(face, edge_on_face)
@@ -389,6 +365,7 @@ contains
         type(edge_t), dimension(:), allocatable :: edges
         integer :: i,j
         call buildConformalFaceMap(face_map, faces)
+        call allocateConformalEdgeFields(edges)
         call buildConformalEdgeMap(edge_map, edges)
     end subroutine
 
@@ -409,15 +386,22 @@ contains
     subroutine buildConformalEdgeMap(edge_map, edges)
         type(edge_map_t), intent(inout) :: edge_map
         type(edge_t), dimension(:), allocatable :: edges
-        integer :: i,j
+        integer :: i
         if (.not. allocated(edge_map%keys)) allocate(edge_map%keys(0))
         do i = 1, size(edges)
-            if (ratio /= -1) then 
+            if (edges(i)%ratio /= -1) call edge_map%addEdge(edges(i))
+        end do
+    end subroutine
+
+    subroutine allocateConformalEdgeFields(edges)
+        type(edge_t), dimension(:), allocatable :: edges
+        integer :: i
+        do i = 1, size(edges)
+            if (edges(i)%ratio /= -1) then
                 allocate(edges(i)%region_I_fields%E)
                 edges(i)%region_I_fields%E = 0.0
                 allocate(edges(i)%region_II_fields%E)
                 edges(i)%region_II_fields%E = 0.0
-                call edge_map%addEdge(edges(i))
             end if
         end do
     end subroutine
