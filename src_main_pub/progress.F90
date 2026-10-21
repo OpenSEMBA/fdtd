@@ -1,3 +1,6 @@
+! Periodic progress reporting during time-stepping: prints speed, energy and
+! max-field info, writes on-demand snapshots, and checks the signal files
+! (stop, flush, flushdata, unpack, postprocess, ...) to decide what to perform.
 module progress_m
    use FDETYPES_m
    use snapxdmf_m
@@ -9,9 +12,8 @@ module progress_m
 
    integer(kind=4), parameter  :: REPORTINGSECONDS=60
 
-   !For timing
-   real(kind=8), save :: time_begin, time_end, time_begin2,time_begin3,time_begin_absoluto, time_end2,time_desdelanzamiento
-   real(kind=RKIND), save :: megaceldas,megaceldastotales,speedInst, speedGlobInst,speedAvg,speedGlobAvg
+   real(kind=8), save :: time_begin, time_end, time_begin2,time_begin3,time_begin_absolute, time_end2,time_launch
+   real(kind=RKIND), save :: mega_cells,total_mega_cells,speedInst, speedGlobInst,speedAvg,speedGlobAvg
    real(kind=RKIND), save  :: energy,energyTotal,oldenergyTotal,snapLevel
    type(time_t), save  :: time_out2
    integer(kind=4), save   :: reportedinstant,snapStep,snapHowMany,countersnap
@@ -35,12 +37,9 @@ contains
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
 
-      !
-      gridPoint=createPoints(sgg) !creates physical coordinates
+      gridPoint=createPoints(sgg)
 
-      !
-
-      if (c%layoutnumber == 0) then  !only the master
+      if (c%layoutnumber == 0) then
          if (c%resume) then
             open (10,file=trim(adjustl(c%nInputRoot))//'_Energy.dat',form='formatted',position='append')
          else
@@ -56,13 +55,11 @@ contains
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
-      call print11(c%layoutnumber,SEPARADOR//separador//separador)
-
+      call print11(c%layoutnumber,SEPARADOR//SEPARADOR//SEPARADOR)
 
 #ifndef CompileWithInt4
 #define CompileWithInt4
 #endif
-      !
 
       if (c%resume) then
          errnofile=.false.
@@ -90,11 +87,9 @@ contains
          call print11(c%layoutnumber,SEPARADOR//SEPARADOR//SEPARADOR)
       end if
 
-
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
-
 
    end subroutine InitReporting
 
@@ -104,34 +99,32 @@ contains
       real(kind=8), intent(in) :: t
       integer(kind=4), intent(in) :: initialtimestep
       real(kind=RKIND), intent(in) :: maxSourceValue
-      type(time_t) :: time_out2,time_comienzo
+      type(time_t) :: time_out2
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
       character(len=BUFSIZE) :: whoami
       character(len=BUFSIZE) :: dubuf
       write(whoami,'(a,i5,a,i5,a)') '(',c%layoutnumber+1,'/',c%num_procs,') '
-      
-      time_desdelanzamiento=t
-      snapLevel=1.0e25_RKIND !*maxSourceValue
+
+      time_launch=t
+      snapLevel=1.0e25_RKIND
       snapStep=1
       snapHowMany=1
       countersnap=0
 
-      megaceldas = (1.0_RKIND*sgg%sweep(IEX)%ZE-1.0_RKIND*sgg%sweep(IEX)%ZI)* &
+      mega_cells = (1.0_RKIND*sgg%sweep(IEX)%ZE-1.0_RKIND*sgg%sweep(IEX)%ZI)* &
                    (1.0_RKIND*sgg%sweep(IEX)%YE-1.0_RKIND*sgg%sweep(IEX)%YI)* &
                    (1.0_RKIND*sgg%sweep(IEY)%XE-1.0_RKIND*sgg%sweep(IEY)%XI)/1.0e6_RKIND
 
-
 #ifdef CompileWithMPI
       call MPI_BARRIER(SUBCOMM_MPI,ierr)
-      call MPI_AllReduce(megaceldas, megaceldastotales, 1_4, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
+      call MPI_AllReduce(mega_cells, total_mega_cells, 1_4, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
 #else
-      megaceldastotales=megaceldas
+      total_mega_cells=mega_cells
 #endif
 
-
-      write(dubuf,*)  'Total Mcells: ',megaceldastotales
+      write(dubuf,*)  'Total Mcells: ',total_mega_cells
       call print11(c%layoutnumber,dubuf)
 
       if (c%flushsecondsFIELDS/=0) then
@@ -159,17 +152,17 @@ contains
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
       call get_secnds(time_out2)
-      call print11(c%layoutnumber,SEPARADOR//separador//separador)
+      call print11(c%layoutnumber,SEPARADOR//SEPARADOR//SEPARADOR)
       write(dubuf,'(a,i7,a,e19.9e3,a,i9,a,e19.9e3)')  'Simulation from n=',initialtimestep,', t=',sgg%time(initialtimestep),&
                                                       ' to n=',c%finaltimestep,', t=',sgg%time(c%finaltimestep)
       call print11(c%layoutnumber,dubuf)
       write(dubuf,*)  'Date/time ', time_out2%fecha(7: 8),'/',time_out2%fecha(5: 6),'/',time_out2%fecha(1:4),'   ', &
                                     time_out2%hora(1: 2), ':',time_out2%hora(3: 4),':',time_out2%hora(5: 6)
       call print11(c%layoutnumber,dubuf)
-      time_begin_absoluto = time_out2%segundos
-      time_begin = time_begin_absoluto
-      time_begin2 = time_begin_absoluto
-      time_begin3 = time_begin_absoluto
+      time_begin_absolute = time_out2%segundos
+      time_begin = time_begin_absolute
+      time_begin2 = time_begin_absolute
+      time_begin3 = time_begin_absolute
 
       reportedinstant=initialtimestep
 
@@ -181,47 +174,33 @@ contains
 
    subroutine Timing(sgg, b, n, n_info, layoutnumber, num_procs, maxCPUtime,flushsecondsFields, flushsecondsData, initialtimestep, &
    finaltimestep, perform, &
-   parar, forcetiming,Ex,Ey,Ez,everflushed, nInputRoot,maxSourceValue,opcionestotales,simu_devia,dontwritevtk,permitscaling)
-   ! subroutine Timing(sgg, b, n, n_info, layoutnumber, num_procs, maxCPUtime,flushsecondsFields, flushsecondsData, initialtimestep, &
-   ! finaltimestep, &
-   ! parar, forcetiming,Ex,Ey,Ez,everflushed, nentradaroot,maxSourceValue,opcionestotales,simu_devia,dontwritevtk,permitscaling)
-   
+   stop_flag, forcetiming,Ex,Ey,Ez,everflushed, nInputRoot,maxSourceValue,all_options,simu_devia,dontwritevtk,permitscaling)
+
       logical :: simu_devia,dontwritevtk,stopdontwritevtk,stopflushingdontwritevtk,flushdontwritevtk,stoponlydontwritevtk
-      !---------------------------> inputs <----------------------------------------------------------
-      type(SGGFDTDINFO_t), intent(in)              :: sgg              ! Simulation data.
+      type(SGGFDTDINFO_t), intent(in)              :: sgg
       type(bounds_t), intent(in) :: b
-      character(len=BUFSIZE), intent(in) :: opcionestotales
+      character(len=BUFSIZE), intent(in) :: all_options
       integer(kind = 4), intent(in) :: layoutnumber, num_procs, n,maxCPUtime
       integer(kind = 4), intent(in) :: flushsecondsFields, flushsecondsData, initialtimestep, finaltimestep
-      !--->
       real(kind = RKIND), dimension(0: b%Ex%NX-1, 0: b%Ex%NY-1, 0: b%Ex%NZ-1), intent(in) :: Ex
       real(kind = RKIND), dimension(0: b%Ey%NX-1, 0: b%Ey%NY-1, 0: b%Ey%NZ-1), intent(in) :: Ey
       real(kind = RKIND), dimension(0: b%Ez%NX-1, 0: b%Ez%NY-1, 0: b%Ez%NZ-1), intent(in) :: Ez
-      !--->
-      !!!
       integer :: my_iostat
-      !--->
       logical, intent(in) :: forcetiming, everflushed,permitscaling
-      !
-      character(len=BUFSIZE) :: fichsnap,minmax,quien_es
+      character(len=BUFSIZE) :: snap_file,minmax,target_name
       character(len = *), intent(in) :: nInputRoot
-      !---------------------------> input/output <----------------------------------------------------
       integer(kind=4), intent(inout) :: n_info
-      logical, intent(inout) :: parar
-      !---------------------------> outputS <---------------------------------------------------------
+      logical, intent(inout) :: stop_flag
       type(perform_t), intent(out) :: perform
-      ! logical, intent( OUT) :: performflushFIELDS, performflushDATA,performUnpack,performpostprocess,&
-                                 ! performflushXdmf,performflushVTK
-      !---------------------------> variables locales <-----------------------------------------------
       real(kind=rKIND) :: valueField,maxSourceValue,LA,LV,LB
-      logical  :: hay_timing, l_aux, hay_flushFIELDS, hay_flushDATA, mustflushFIELDS, mustflushDATA,mustUnpack, &
+      logical  :: do_timing, l_aux, do_flushFIELDS, do_flushDATA, mustflushFIELDS, mustflushDATA,mustUnpack, &
                    mustPostprocess,mustflushXdmf , mustflushVTK ,   &
-      pararflushing, pararNOflushing, stoponNaN , stoponNaN_aux,mustSnap,stop_only,stopflushing_only,flush_only,flushdata_only
+      stopFlushing, stopNoFlushing, stoponNaN , stoponNaN_aux,mustSnap,stop_only,stopflushing_only,flush_only,flushdata_only
       logical :: stopflushingonlydontwritevtk,flushonlydontwritevtk,flushdataonlydontwritevtk,flushdatadontwritevtk
       integer(kind = 4) :: in_aux, ini_i, fin_i, ini_j, fin_j, ini_k, fin_k, i, j, k
       character(LEN=BUFSIZE) :: whoamishort,whoami,chinstant
       character(len=BUFSIZE) :: dubuf
-      character(len=BUFSIZE) :: dondex,dondey,dondez
+      character(len=BUFSIZE) :: where_x,where_y,where_z
       real(kind=rKIND), dimension(1:num_procs) :: NEWlmaxval,NEWlmaxval_x,NEWlmaxval_y,NEWlmaxval_z
       integer(kind = 4), dimension(1:num_procs) :: NEWlmaxval_i,NEWlmaxval_j,NEWlmaxval_k
       real(kind=rKIND), dimension(1:num_procs) :: lmaxval,lmaxval_x,lmaxval_y,lmaxval_z
@@ -233,7 +212,7 @@ contains
       real(kind=rKIND), dimension(1:num_procs) :: lminval,lminval_x,lminval_y,lminval_z
       integer(kind = 4), dimension(1:num_procs) :: lminval_i,lminval_j,lminval_k
       real(kind=rKIND) :: qminval , qminval_x,qminval_y,qminval_z
-      integer(kind = 4) :: qminval_i,qminval_j,qminval_k,dimxsnap,dimysnap,dimzsnap,veces,i1,j1,k1
+      integer(kind = 4) :: qminval_i,qminval_j,qminval_k,dimxsnap,dimysnap,dimzsnap,n_samples,i1,j1,k1
       integer(kind = 4) :: ini_ibox,fin_ibox,ini_jbox,fin_jbox,ini_kbox,fin_kbox
       integer(kind = 4) :: ini_iboxsin,fin_iboxsin,ini_jboxsin,fin_jboxsin,ini_kboxsin,fin_kboxsin
 
@@ -241,40 +220,24 @@ contains
 
       real(kind=4), dimension(:,:,:,:), allocatable  :: snap
 
-
-!!#ifdef PreventCrayBug
-!!#ifdef CompileWithReal4
-!!      logical IsNaNf
-!!#else
-!!      logical IsNaNd
-!!#endif
-!!#endif
-
-
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
-      !!!
       write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
       write(whoamishort,'(i5)') layoutnumber+1
 
-      !---------------------------> begins Timing <--------------------------------------------------
 #ifdef CompileWithMPI
       call MPI_Barrier(MPI_COMM_WORLD,ierr)
 #endif
       call get_secnds(time_out2)
       time_end = time_out2%segundos
-      !--->
       l_aux = (time_end - time_begin  >  REPORTINGSECONDS) .or. forcetiming
 #ifdef CompileWithMPI
-      !print *,'layoutnumber+1,l_aux, hay_timing pre',layoutnumber+1,l_aux, hay_timing
-      call MPI_AllReduce(l_aux, hay_timing, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr) !ALL STOCH AND NON-STOCH 050619
-      !print *,'layoutnumber+1,l_aux, hay_timing post',layoutnumber+1,l_aux, hay_timing
+      call MPI_AllReduce(l_aux, do_timing, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #else
-      hay_timing = l_aux
+      do_timing = l_aux
 #endif
-      n_info = n + 5 !after replaced depending on the speed
-      !--->
+      n_info = n + 5
       call perform%reset()
       mustflushFIELDS = .FALSE.
       mustflushDATA = .FALSE.
@@ -283,47 +246,39 @@ contains
       mustflushXdmf=.false.
       mustflushVTK=.false.
       energy=0.0_RKIND
-      !--->
-      if (hay_timing) then !no calculation of time until at least 300 seconds lapse
+      if (do_timing) then
          perform%flushFIELDS = .FALSE.
          perform%flushDATA = .FALSE.
-         if (abs(time_end - time_begin_absoluto) < 1.0_RKIND) time_end = 60.0_RKIND+time_begin_absoluto
+         if (abs(time_end - time_begin_absolute) < 1.0_RKIND) time_end = 60.0_RKIND+time_begin_absolute
          if (abs(time_end - time_begin) < 1.0_RKIND) time_end = 60.0_RKIND+time_begin
-         speedInst = ((N - reportedinstant + 1) * megaceldas / (time_end - time_begin))
-         speedAvg = ((N - INITIALtimeSTEP + 1) * megaceldas / (time_end - time_begin_absoluto))
+         speedInst = ((N - reportedinstant + 1) * mega_cells / (time_end - time_begin))
+         speedAvg = ((N - INITIALtimeSTEP + 1) * mega_cells / (time_end - time_begin_absolute))
          if (speedAvg == 0) speedAvg=100.0_RKIND
          if (speedInst == 0) speedInst=speedAvg
 #ifdef CompileWithMPI
-         !print *,'layoutnumber+1,speedInst, speedGlobInst,speedAvg, speedGlobAvg pre', &
-         !         layoutnumber+1,speedInst, speedGlobInst,speedAvg, speedGlobAvg
          call MPI_AllReduce(speedInst, speedGlobInst, 1_4, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
          call MPI_Barrier(SUBCOMM_MPI,ierr)
          call MPI_AllReduce(speedAvg, speedGlobAvg, 1_4, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
          call MPI_Barrier(SUBCOMM_MPI,ierr)
-         !print *,'layoutnumber+1,speedInst, speedGlobInst,speedAvg, speedGlobAvg post', &
-         !         layoutnumber+1,speedInst, speedGlobInst,speedAvg, speedGlobAvg
 #else
          speedGlobInst = speedInst
          speedGlobAvg = speedAvg
 #endif
-         !
-         in_aux = n + max(int((REPORTINGSECONDS / (megaceldastotales / speedGlobInst))) + 1,1)
+         in_aux = n + max(int((REPORTINGSECONDS / (total_mega_cells / speedGlobInst))) + 1,1)
 #ifdef CompileWithMPI
-         !print *,'layoutnumber+1,in_aux, n_info pre',layoutnumber+1,in_aux, n_info
          call MPI_AllReduce(in_aux, n_info, 1_4, MPI_INTEGER, MPI_MIN, MPI_COMM_WORLD, ierr)
-         !print *,'layoutnumber+1,in_aux, n_info post',layoutnumber+1,in_aux, n_info
 #else
          n_info = in_aux
 #endif
-         inquire(FILE = 'stop', EXIST = pararNOflushing)
+         inquire(FILE = 'stop', EXIST = stopNoFlushing)
          inquire(FILE = 'stop_only', EXIST = stop_only)
          inquire(FILE = 'stop_dontwritevtk', EXIST = stopdontwritevtk)
          inquire(FILE = 'stop_only_dontwritevtk', EXIST = stoponlydontwritevtk)
-         if (pararnoflushing) then
+         if (stopNoFlushing) then
              dontwritevtk=.false.
          end if
          if (stopdontwritevtk) then
-             pararnoflushing=.true.
+             stopNoFlushing=.true.
              dontwritevtk=.true.
          end if
          if (stoponlydontwritevtk) then
@@ -332,24 +287,23 @@ contains
          end if
          if (stop_only) then
              open(newunit=thefilenoflu,FILE = 'stop_only',action="read")
-             read(thefilenoflu,*) quien_es
-             if (trim(adjustl(quien_es))==trim(adjustl(nInputRoot))) then
-                 pararNOflushing=.true.
+             read(thefilenoflu,*) target_name
+             if (trim(adjustl(target_name))==trim(adjustl(nInputRoot))) then
+                 stopNoFlushing=.true.
              else
-                 pararNOflushing=.false.
+                 stopNoFlushing=.false.
              end if
              close(thefilenoflu)
          end if
-         !
-         inquire(FILE = 'stopflushing', EXIST = pararflushing)
+         inquire(FILE = 'stopflushing', EXIST = stopFlushing)
          inquire(FILE = 'stopflushing_only', EXIST = stopflushing_only)
          inquire(FILE = 'stopflushing_dontwritevtk', EXIST = stopflushingdontwritevtk)
          inquire(FILE = 'stopflushing_only_dontwritevtk', EXIST = stopflushingonlydontwritevtk)
-         if (pararflushing) then
+         if (stopFlushing) then
              dontwritevtk=.false.
          end if
          if (stopflushingdontwritevtk) then
-             pararflushing=.true.
+             stopFlushing=.true.
              dontwritevtk=.true.
          end if
          if (stopflushingonlydontwritevtk) then
@@ -358,15 +312,14 @@ contains
          end if
          if (stopflushing_only) then
              open(newunit=thefilenoflu,FILE = 'stopflushing_only',action="read")
-             read(thefilenoflu,*) quien_es
-             if (trim(adjustl(quien_es))==trim(adjustl(nInputRoot))) then
-                 pararflushing=.true.
+             read(thefilenoflu,*) target_name
+             if (trim(adjustl(target_name))==trim(adjustl(nInputRoot))) then
+                 stopFlushing=.true.
              else
-                 pararflushing=.false.
+                 stopFlushing=.false.
              end if
              close(thefilenoflu)
          end if
-         !        
          inquire(FILE = 'flush', EXIST = mustflushFIELDS)
          inquire(FILE = 'flush_only', EXIST = flush_only)
          inquire(FILE = 'flush_dontwritevtk', EXIST = flushdontwritevtk)
@@ -378,21 +331,20 @@ contains
              mustflushFIELDS=.true.
              dontwritevtk=.true.
          end if
-         if (flushdontwritevtk) then
+         if (flushonlydontwritevtk) then
              flush_only=.true.
              dontwritevtk=.true.
          end if
          if (flush_only) then
              open(newunit=thefilenoflu,FILE = 'flush_only',action="read")
-             read(thefilenoflu,*) quien_es
-             if (trim(adjustl(quien_es))==trim(adjustl(nInputRoot))) then
+             read(thefilenoflu,*) target_name
+             if (trim(adjustl(target_name))==trim(adjustl(nInputRoot))) then
                  mustflushFIELDS=.true.
              else
                  mustflushFIELDS=.false.
              end if
              close(thefilenoflu)
          end if
-         !
          inquire(FILE = 'flushdata', EXIST = mustflushdata)
          inquire(FILE = 'flushdata_only', EXIST = flushdata_only)
          inquire(FILE = 'flushdata_dontwritevtk', EXIST = flushdatadontwritevtk)
@@ -410,56 +362,44 @@ contains
          end if
          if (flushdata_only) then
              open(newunit=thefilenoflu,FILE = 'flushdata_only',action="read")
-             read(thefilenoflu,*) quien_es
-             if (trim(adjustl(quien_es))==trim(adjustl(nInputRoot))) then
+             read(thefilenoflu,*) target_name
+             if (trim(adjustl(target_name))==trim(adjustl(nInputRoot))) then
                  mustflushdata=.true.
              else
                  mustflushdata=.false.
              end if
              close(thefilenoflu)
          end if
-         !
          inquire(FILE = 'unpack', EXIST = mustUnpack)
          inquire(FILE = 'postprocess', EXIST = mustPostprocess)
          inquire(FILE = 'flushxdmf', EXIST = mustflushXdmf)
          inquire(FILE = 'flushvtk', EXIST = mustflushVTK)
-         pararflushing = pararflushing .or.  &
-         (ceiling((time_end-time_desdelanzamiento)/60.0_RKIND) >= maxCPUtime)
+         stopFlushing = stopFlushing .or.  &
+         (ceiling((time_end-time_launch)/60.0_RKIND) >= maxCPUtime)
 #ifdef CompileWithMPI
          l_aux=dontwritevtk
          call MPI_AllReduce(l_aux, dontwritevtk, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-         !
-         l_aux=pararnoflushing
-         call MPI_AllReduce(l_aux, pararnoflushing, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-         !
-         l_aux=pararflushing
-         call MPI_AllReduce(l_aux, pararflushing, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-         !
+         l_aux=stopNoFlushing
+         call MPI_AllReduce(l_aux, stopNoFlushing, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+         l_aux=stopFlushing
+         call MPI_AllReduce(l_aux, stopFlushing, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
          l_aux=mustUnpack
          call MPI_AllReduce(l_aux, mustUnpack, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-         !
          l_aux=mustPostprocess
          call MPI_AllReduce(l_aux, mustPostprocess, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-         !
          l_aux=mustflushXdmf
          call MPI_AllReduce(l_aux, mustflushXdmf, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-         !
          l_aux=mustflushVTK
          call MPI_AllReduce(l_aux, mustflushVTK, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-         !
          l_aux=mustflushFIELDS
          call MPI_AllReduce(l_aux, mustflushFIELDS, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-         !
          l_aux=mustflushdata
          call MPI_AllReduce(l_aux, mustflushdata, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-         call MPI_Barrier(MPI_COMM_WORLD,ierr) !050619 changed subcomm to mpi_comm_world
+         call MPI_Barrier(MPI_COMM_WORLD,ierr)
 #endif
-         mustflushfields = pararflushing .or. mustflushfields
-         parar = pararNOflushing .or. pararflushing
-         mustflushdata = mustflushdata .or. mustflushfields.or.parar !data is enforced to flush if fields are flushed
-         !
-         !to prevent duplicate writes on resuming
-         !--->
+         mustflushfields = stopFlushing .or. mustflushfields
+         stop_flag = stopNoFlushing .or. stopFlushing
+         mustflushdata = mustflushdata .or. mustflushfields.or.stop_flag
          lmaxval  (1:num_procs) =  0.0_RKIND
          lmaxval_i(1:num_procs) =  0
          lmaxval_j(1:num_procs) =  0
@@ -474,10 +414,8 @@ contains
          lminval_x(1:num_procs) =  1e+20
          lminval_y(1:num_procs) =  1e+20
          lminval_z(1:num_procs) =  1e+20
-         !
 
          valueField = 0.0_RKIND
-         !--->
          ini_i = b%sweepSINPMLEx%XI - b%Ex%XI
          fin_i = b%sweepSINPMLEx%XE - b%Ex%XI
          ini_j = b%sweepSINPMLEx%YI - b%Ex%YI
@@ -492,7 +430,6 @@ contains
                end do
             end do
          end do
-         !--->
          ini_i = b%sweepSINPMLEy%XI - b%Ey%XI
          fin_i = b%sweepSINPMLEy%XE - b%Ey%XI
          ini_j = b%sweepSINPMLEy%YI - b%Ey%YI
@@ -506,7 +443,6 @@ contains
                end do
             end do
          end do
-         !--->
          ini_i = b%sweepSINPMLEz%XI - b%Ez%XI
          fin_i = b%sweepSINPMLEz%XE - b%Ez%XI
          ini_j = b%sweepSINPMLEz%YI - b%Ez%YI
@@ -520,15 +456,10 @@ contains
                end do
             end do
          end do
-         !
-         !--->
-         energy = valueField !!! removed 241018 to avoid passing eps0----> 0.5_RKIND * Eps0 * valor
-         !--->
+         energy = valueField
          energytotal = energy
 #ifdef CompileWithMPI
-         !print *,'layoutnumber+1,energy,energytotal pre',layoutnumber+1,energy,energytotal
          call MPI_AllReduce(energy, energyTotal, 1_4, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
-         !print *,'layoutnumber+1,energy,energytotal post ',layoutnumber+1,energy,energytotal
 #else
          energytotal = energy
 #endif
@@ -571,7 +502,6 @@ contains
             end do
          end do
 
-         !
          NEWlmaxval  (1:num_procs) =0.0_RKIND
          NEWlmaxval_i(1:num_procs) =0
          NEWlmaxval_j(1:num_procs) =0
@@ -615,7 +545,6 @@ contains
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
-         !
          NEWlminval  (1:num_procs) =0.0_RKIND
          NEWlminval_i(1:num_procs) =0
          NEWlminval_j(1:num_procs) =0
@@ -660,12 +589,9 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
 
-         !!!!!!!!!!!!!!!!!!!!!!!
-         !writing of the snap file on demand or when a threshold is exceeded, every minute
-         if (layoutnumber == 0) then 
+         if (layoutnumber == 0) then
             inquire(FILE = 'snap', EXIST = mustSnap)
             if (mustsnap) then
-               !  Clear the flushing signaling file
                open (35,FILE='snap')
                read(35,*,end=1153,err=1153) snapLevel
                read(35,*,end=1153,err=1153) snapStep
@@ -675,7 +601,7 @@ contains
             end if
          end if
 #ifdef CompileWithMPI
-         call MPI_Barrier(MPI_COMM_WORLD,ierr) 
+         call MPI_Barrier(MPI_COMM_WORLD,ierr)
          call MPI_BCast(mustSnap, 1_4, MPI_LOGICAL, 0_4, MPI_COMM_WORLD, ierr)
          call MPI_BCast(snapLevel, 1_4, REALSIZE, 0_4, MPI_COMM_WORLD, ierr)
          call MPI_BCast(snapStep, 1_4, MPI_INTEGER, 0_4, MPI_COMM_WORLD, ierr)
@@ -685,47 +611,17 @@ contains
 
          if ((mustsnap.and.(lmaxval  (layoutnumber+1)> snapLevel)).or.(countersnap > 0)) then
             countersnap=countersnap + 1
-            !
             dimxsnap=int((fin_ibox-ini_ibox)/snapstep) + 1
             dimysnap=int((fin_jbox-ini_jbox)/snapstep) + 1
             dimzsnap=int((fin_kbox-ini_kbox)/snapstep) + 1
             if (.not.allocated(snap)) allocate (snap(ini_ibox:ini_ibox+dimxsnap, &
                                                      ini_jbox:ini_jbox+dimysnap,ini_kbox:ini_kbox+dimzsnap,1))
             snap=0.0_RKIND
-            !
-            !!!!             k = ini_kbox - snapStep
-            !!!!             do while (k < fin_kbox )
-            !!!!                k = min (k  + snapStep , fin_kbox)
-            !!!!                j = ini_jbox - snapStep
-            !!!!                do while (j < fin_jbox )
-            !!!!                    j = min(j  + snapStep , fin_jbox)
-            !!!!                    i = ini_ibox - snapStep
-            !!!!                    do while (i < fin_ibox )
-            !!!!                        i = min (i  + snapStep , fin_ibox)
-            !!!!                        veces=0
-            !!!!                        valor=0.0_RKIND
-            !!!!                        do k1=0,snapstep-1
-            !!!!                        do j1=0,snapstep-1
-            !!!!                        do i1=0,snapstep-1
-            !!!!                        if ((i+i1 <= fin_ibox).and.(j+j1 <= fin_jbox).and.(k+k1 <= fin_kbox)) then
-            !!!!                            valor = valor+sqrt(Ex(i+i1, j+j1, k+k1) * Ex( i+i1, j+j1, k+k1) + &
-            !!!!                                               Ey( i+i1, j+j1, k+k1) * Ey(i+i1, j+j1, k+k1)+ &
-            !!!!                                            Ez(i+i1, j+j1, k+k1) * Ez( i+i1, j+j1, k+k1))
-            !!!!                            veces=veces+1
-            !!!!                        end if
-            !!!!                        end do
-            !!!!                        end do
-            !!!!                        end do
-            !!!!                        snap(ini_ibox+int((i-ini_ibox)/snapstep),ini_jbox+int((j-ini_jbox)/snapstep), &
-            !!!!                            ini_kbox+int((k-ini_kbox)/snapstep),1) = valor/veces
-            !!!!                    end do
-            !!!!                end do
-            !!!!             end do
 
             do k = ini_kbox, fin_kbox , snapStep
                do  j = ini_jbox, fin_jbox , snapStep
                   do i = ini_ibox, fin_ibox , snapStep
-                     veces=0
+                     n_samples=0
                      valueField=0.0_RKIND
                      do k1=0,snapstep-1
                         do j1=0,snapstep-1
@@ -734,46 +630,28 @@ contains
                                  valueField = valueField+sqrt(Ex(i+i1, j+j1, k+k1) * Ex(i+i1, j+j1, k+k1) + &
                                                     Ey(i+i1, j+j1, k+k1) * Ey(i+i1, j+j1, k+k1)+ &
                                  Ez(i+i1, j+j1, k+k1) * Ez(i+i1, j+j1, k+k1))
-                                 veces=veces+1
+                                 n_samples=n_samples+1
                               end if
                            end do
                         end do
                      end do
                      snap(ini_ibox+int((i-ini_ibox)/snapstep),ini_jbox+int((j-ini_jbox)/snapstep), &
-                          ini_kbox+int((k-ini_kbox)/snapstep),1) = valueField/veces
+                          ini_kbox+int((k-ini_kbox)/snapstep),1) = valueField/n_samples
                   end do
                end do
             end do
 
-
             write(chinstant,'(i8)') n
             write(minmax,'(a,e15.4e3,a,e15.4e3,a)')  '_',lminval(layoutnumber+1),'_',lmaxval(layoutnumber+1),'_'
-            fichsnap=trim(adjustl(nInputRoot))//'_snap_'//trim(adjustl(chinstant))//'_'// &
+            snap_file=trim(adjustl(nInputRoot))//'_snap_'//trim(adjustl(chinstant))//'_'// &
             trim(adjustl(whoamishort))
 
-            lockFile=trim(adjustl(fichsnap))//'.h5' 
+            lockFile=trim(adjustl(snap_file))//'.h5'
             call openclosedelete(lockFile)
-            
-            call write_xdmfsnap(n,fichsnap,ini_ibox + b%Ex%XI , ini_ibox + dimxsnap + b%Ex%XI , &
+
+            call write_xdmfsnap(n,snap_file,ini_ibox + b%Ex%XI , ini_ibox + dimxsnap + b%Ex%XI , &
             ini_jbox + b%Ex%YI , ini_jbox + dimysnap + b%Ex%YI , &
             ini_kbox + b%Ex%ZI , ini_kbox + dimzsnap + b%Ex%ZI , snap)
-            
-            !             open (35,file=trim(adjustl(fichsnap))//'.bin')
-            !             write (35,*) '!END'
-            !             close (35,status='delete')
-            !             open (35,file=trim(adjustl(fichsnap))//'.bin',form='unformatted',status='new',action='write')
-            !             write (35) n,lminval  (layoutnumber+1),lmaxval  (layoutnumber+1)
-            !             write (35) ini_ibox,fin_ibox,ini_jbox,fin_jbox,ini_kbox,fin_kbox
-            !             write (35) ini_iboxsin,fin_iboxsin,ini_jboxsin,fin_jboxsin,ini_kboxsin,fin_kboxsin
-            !             write (35) (Punto%PhysCoor(iHx)%x(i+b%Hx%XI),i = ini_iboxsin, fin_iboxsin)
-            !             write (35) (Punto%PhysCoor(iHy)%y(j+b%Hy%YI),j = ini_jboxsin, fin_jboxsin)
-            !             write (35) (Punto%PhysCoor(iHz)%z(k+b%Hz%ZI),k = ini_kboxsin, fin_kboxsin)
-            !             do k = ini_kbox, fin_kbox
-            !                do j = ini_jbox, fin_jbox
-            !                       write (35) (snap(i,j,k,1),i = ini_ibox, fin_ibox)
-            !                end do
-            !             end do
-            !             close (35)
 
             write(dubuf,*)     trim(adjustl(whoami))//' Written Snap file at n= ',n,' max field over ',maxval(snap),'>',snapLevel
             deallocate(snap)
@@ -785,32 +663,23 @@ contains
          end if
 
 #ifdef CompileWithMPI
-         call MPI_Barrier(MPI_COMM_WORLD,ierr) !ALL STOCH OR NOT 060619
+         call MPI_Barrier(MPI_COMM_WORLD,ierr)
 #endif
-         !!!!!!!!!!!!!!!!!!!!!!!
 
-         !
-         !
          if (layoutnumber == 0) then
-            !
-            write(dubuf,*) SEPARADOR,trim(adjustl(nInputRoot)),separador
+            write(dubuf,*) SEPARADOR,trim(adjustl(nInputRoot)),SEPARADOR
             call print11(layoutnumber,dubuf)
-            write(dubuf,*) 'Switches: '//trim(adjustl(opcionestotales))
+            write(dubuf,*) 'Switches: '//trim(adjustl(all_options))
             call print11(layoutnumber,dubuf)
-            !if (num_procs/=1) then
                 write(dubuf,*) 'MPI Processes: ',num_procs
                 call print11(layoutnumber,dubuf)
-            !end if
-            !
             write(dubuf,*) 'Date/Time ', time_out2%fecha(7: 8),'/', &
             time_out2%fecha(5: 6),'/', &
             &               time_out2%fecha(1:4),'   ',time_out2%hora(1: 2), &
             ':',time_out2%hora(3: 4),':',time_out2%hora(5: 6)
             call print11(layoutnumber,dubuf)
-            !
             write(dubuf,*) 'Simulated:',n         ,'/',finaltimestep,' steps'
             call print11(layoutnumber,dubuf)
-            !
             if (permitscaling) then
                 write(dubuf,'(a,e19.9e3,a,e19.9e3,a,e19.9e3)') 'Time= ',sgg%time(n),', dt0 (original)= ',dt0, &
                                                                ', dt(pscaled)= ',sgg%dt
@@ -818,7 +687,6 @@ contains
                 write(dubuf,'(a,e19.9e3,a,e19.9e3,a,e19.9e3)') 'Time= ',sgg%time(n),', dt0 = ',sgg%dt
             end if
             call print11(layoutnumber,dubuf)
-            !
             if (energytotal > oldenergytotal) then
                write(dubuf,*)     'Total Energy (inc) :',energytotal
                if (simu_devia) dubuf=trim(adjustl(dubuf))//' (Stoch)'
@@ -829,61 +697,55 @@ contains
                oldenergytotal=energytotal
             end if
             call print11(layoutnumber,dubuf)
-            !
             if (qmaxval_x<-1e19) then
-               write (dondex,'(a)') ' PML '
+               write (where_x,'(a)') ' PML '
             else
-               write (dondex,'(e15.4e3)') qmaxval_x
+               write (where_x,'(e15.4e3)') qmaxval_x
             end if
             if (qmaxval_y<-1e19) then
-               write (dondey,'(a)') ' PML '
+               write (where_y,'(a)') ' PML '
             else
-               write (dondey,'(e15.4e3)') qmaxval_y
+               write (where_y,'(e15.4e3)') qmaxval_y
             end if
             if (qmaxval_z<-1e19) then
-               write (dondez,'(a)') ' PML '
+               write (where_z,'(a)') ' PML '
             else
-               write (dondez,'(e15.4e3)') qmaxval_z
+               write (where_z,'(e15.4e3)') qmaxval_z
             end if
 
             write(dubuf,'(a,e13.4e3,a,3i5,a)')     'Max field: ',qmaxval,' at (',qmaxval_i,qmaxval_j,qmaxval_k,')=('// &
-            ' '//trim(adjustl(dondex))//','//' '//trim(adjustl(dondey))//','//' '//trim(adjustl(dondez))//')'
+            ' '//trim(adjustl(where_x))//','//' '//trim(adjustl(where_y))//','//' '//trim(adjustl(where_z))//')'
 
             if (simu_devia) dubuf=trim(adjustl(dubuf))//' (Stoch)'
             call print11(layoutnumber,dubuf)
             do i=1,num_procs
                if (newlmaxval_x(i)<-1e19) then
-                  write (dondex,'(a)') ' PML '
+                  write (where_x,'(a)') ' PML '
                else
-                  write (dondex,'(e15.4e3)') newlmaxval_x(i)
+                  write (where_x,'(e15.4e3)') newlmaxval_x(i)
                end if
                if (newlmaxval_y(i)<-1e19) then
-                  write (dondey,'(a)') ' PML '
+                  write (where_y,'(a)') ' PML '
                else
-                  write (dondey,'(e15.4e3)') newlmaxval_y(i)
+                  write (where_y,'(e15.4e3)') newlmaxval_y(i)
                end if
                if (newlmaxval_z(i)<-1e19) then
-                  write (dondez,'(a)') ' PML '
+                  write (where_z,'(a)') ' PML '
                else
-                  write (dondez,'(e15.4e3)') newlmaxval_z(i)
+                  write (where_z,'(e15.4e3)') newlmaxval_z(i)
                end if
 
                write(dubuf,'(a,i5,e15.4e3,a,e15.4e3,a,3i5,a)')  'Max field slice: ',i,NEWlmaxval(i),'/',maxSourceValue, &
                ' at (',newlmaxval_i(i),newlmaxval_j(i),newlmaxval_k(i),')=('// &
-            ' '//trim(adjustl(dondex))//','//' '//trim(adjustl(dondey))//','//' '//trim(adjustl(dondez))//')'
-               ! call print11(layoutnumber,dubuf) !commented out so that the output is less verbose
+            ' '//trim(adjustl(where_x))//','//' '//trim(adjustl(where_y))//','//' '//trim(adjustl(where_z))//')'
             end do
-            !
 
-            !
-            write(dubuf,*)     'Mins. since start  :',ceiling((time_end-time_desdelanzamiento)/60.0_RKIND)
+            write(dubuf,*)     'Mins. since start  :',ceiling((time_end-time_launch)/60.0_RKIND)
             call print11(layoutnumber,dubuf)
-            !
             write(dubuf,*)     'Mins. until end    :', &
-            min(ceiling(((finaltimestep-n)*megaceldastotales)/speedGlobAvg/60.0_RKIND), &
-            maxCPUtime-ceiling((time_end-time_desdelanzamiento)/60.0_RKIND))
+            min(ceiling(((finaltimestep-n)*total_mega_cells)/speedGlobAvg/60.0_RKIND), &
+            maxCPUtime-ceiling((time_end-time_launch)/60.0_RKIND))
             call print11(layoutnumber,dubuf)
-            !
             if (everflushed) then
                write(dubuf,*) 'Mins. past flushing:',ceiling((time_end-time_begin2)/60.0_RKIND)
                call print11(layoutnumber,dubuf)
@@ -893,7 +755,7 @@ contains
             end if
             if (flushsecondsFields /= 0) then
                write(dubuf,*) 'Mins. next flushing:',min(ceiling((flushsecondsFIELDS-(time_end-time_begin2))/60.0_RKIND), &
-               ceiling(((finaltimestep-n)*megaceldastotales)/speedGlobAvg/60.0_RKIND))
+               ceiling(((finaltimestep-n)*total_mega_cells)/speedGlobAvg/60.0_RKIND))
                call print11(layoutnumber,dubuf)
             else
                if (maxCPUtime == TOPCPUTIME) then
@@ -904,63 +766,33 @@ contains
                   call print11(layoutnumber,dubuf)
                end if
             end if
-            !
             write(dubuf,*) 'Next info at step: ',n_info
             call print11(layoutnumber,dubuf)
-            !
-            write(dubuf,*) 'Total Mcells:',megaceldastotales
+            write(dubuf,*) 'Total Mcells:',total_mega_cells
             call print11(layoutnumber,dubuf)
-            !
             if (reportedinstant < n) then
                write(dubuf,*) 'Mcells/sec  :',speedGlobInst,'(',reportedinstant, ' to ',N,')'
                if (simu_devia) dubuf=trim(adjustl(dubuf))//' (Stoch)'
                call print11(layoutnumber,dubuf)
             end if
-            !
             write(dubuf,*) 'Mcells/sec  :',speedGlobAvg ,'(',INITIALtimeSTEP, ' to ',N,')'
             if (simu_devia) dubuf=trim(adjustl(dubuf))//' (Stoch)'
             call print11(layoutnumber,dubuf)
-            !
-            write(dubuf,*) SEPARADOR//separador//separador
+            write(dubuf,*) SEPARADOR//SEPARADOR//SEPARADOR
             call print11(layoutnumber,dubuf)
-            !
             write (10,*)      sgg%time(n),energytotal
-            !write(67,'(i5)') nint(100.0_RKIND * n/finaltimestep) !percentage
             call flush(11)
             call flush(10)
          end if
-         !
 #ifdef CompileWithMPI
       call MPI_Barrier(MPI_COMM_WORLD,ierr)
 #endif
          call get_secnds(time_out2)
-         time_begin = time_out2%segundos !restart timing
+         time_begin = time_out2%segundos
          reportedinstant=n+1
-      end if !every reporting seconds
-      !
+      end if
 
-      !stop if this probe blows up
       stoponNaN_aux=.false.
-!!!#ifdef ARCHITECTURE_SUN
-!!#ifdef CompileWithReal4
-!!      if (.false.) then
-!!#else
-!!      if (.false.) then
-!!#endif
-!!!#else
-!!!#ifdef PreventCrayBug
-!!#ifdef CompileWithReal4
-!!      if (IsNaNf(energy)) then
-!!#else
-!!      if (IsNaNd(energy)) then
-!!#endif
-!!!#else
-     !! if (IsNaN (energy)) then !removed by hand so that PGI does not complain on 150623 !fm
-!!!#endif
-!!!#endif
-         !
-     !!    stoponNaN_aux=.true.
-     !! end if
 #ifdef CompileWithMPI
       call MPI_AllReduce(stoponNaN_aux, stoponNaN, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #else
@@ -978,31 +810,25 @@ contains
 #ifdef CompileWithMPI
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
 #endif
-         parar=.true.
-         !            call StopOnError(layoutnumber,num_procs,' Aborting')
+         stop_flag=.true.
       end if
-      !
       l_aux = ( ((time_end-time_begin2) > flushsecondsFIELDS).AND. &
       (flushsecondsFIELDS/=0                       )).or. &
       mustflushFIELDS
 #ifdef CompileWithMPI
-      !print *,'layoutnumber+1,l_aux, hay_flushFIELDSl pre',layoutnumber+1,l_aux, hay_flushFIELDS
-      call MPI_AllReduce(l_aux, hay_flushFIELDS, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-      !print *,'layoutnumber+1,l_aux, hay_flushFIELDSl post',layoutnumber+1,l_aux, hay_flushFIELDS
+      call MPI_AllReduce(l_aux, do_flushFIELDS, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #else
-      hay_flushFIELDS = l_aux
+      do_flushFIELDS = l_aux
 #endif
       l_aux = ( ((time_end-time_begin3) > flushsecondsDATA).AND. &
       (flushsecondsDATA/=0                       )).or. &
       mustflushDATA
 #ifdef CompileWithMPI
-      !print *,'layoutnumber+1,l_aux, hay_flushDATA pre',layoutnumber+1,l_aux, hay_flushDATA
-      call MPI_AllReduce(l_aux, hay_flushDATA, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-      !print *,'layoutnumber+1,l_aux, hay_flushDATA post',layoutnumber+1,l_aux, hay_flushDATA
+      call MPI_AllReduce(l_aux, do_flushDATA, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #else
-      hay_flushDATA = l_aux
+      do_flushDATA = l_aux
 #endif
-      if (hay_flushFIELDS) then
+      if (do_flushFIELDS) then
          mustflushFIELDS=.false.
 #ifdef CompileWithMPI
       call MPI_Barrier(MPI_COMM_WORLD,ierr)
@@ -1010,13 +836,11 @@ contains
          call get_secnds(time_out2)
          time_begin2=time_out2%segundos
          perform%flushFIELDS=.true.
-         !  Clear the flushing signaling file
-         if (layoutnumber == 0) then !only the master proc mush erase this
+         if (layoutnumber == 0) then
              call erasesignalingfiles(simu_devia)
          end if
       end if
-      if (hay_flushDATA) then
-         !
+      if (do_flushDATA) then
          mustflushDATA=.false.
 #ifdef CompileWithMPI
       call MPI_Barrier(MPI_COMM_WORLD,ierr)
@@ -1024,56 +848,45 @@ contains
          call get_secnds(time_out2)
          time_begin3=time_out2%segundos
          perform%flushDATA=.true.
-         !  Clear the flushing signaling file
-         if (layoutnumber == 0) then !only the master proc mush erase this
+         if (layoutnumber == 0) then
              call erasesignalingfiles(simu_devia)
          end if
       end if
       if (mustunpack) then
-         !
          mustunpack=.false.
          perform%unpackFlag=.true.
-         !  Clear the flushing signaling file
-         if (layoutnumber == 0) then !only the master proc mush erase this
+         if (layoutnumber == 0) then
              call erasesignalingfiles(simu_devia)
          end if
       end if
       if (mustpostprocess) then
-         !
          mustpostprocess=.false.
          perform%postprocess=.true.
-         !  Clear the flushing signaling file
-         if (layoutnumber == 0) then !only the master proc mush erase this
+         if (layoutnumber == 0) then
              call erasesignalingfiles(simu_devia)
          end if
       end if
       if (mustflushXdmf) then
-         !
          mustflushXdmf=.false.
          perform%flushXdmf=.true.
-         !  Clear the flushing signaling file
-         if (layoutnumber == 0) then !only the master proc mush erase this
+         if (layoutnumber == 0) then
              call erasesignalingfiles(simu_devia)
          end if
       end if
       if (mustflushVTK) then
-         !
          mustflushVTK=.false.
          perform%flushVTK=.true.
-         if (layoutnumber == 0) then !only the master proc mush erase this
+         if (layoutnumber == 0) then
              call erasesignalingfiles(simu_devia)
          end if
       end if
-      !---------------------------> ends Timing <----------------------------------------------------
       return
    end subroutine Timing
 
-   function createPoints(sgg)  result(gridPoint) !creates physical coordinates
-      !
+   function createPoints(sgg)  result(gridPoint)
       type(SGGFDTDINFO_t), intent(inout) :: sgg
       type(coorsxyzP_t) :: gridPoint
       integer(kind=4) :: i,j,k,field
-
 
       do field=IEX,IHZ
          allocate (gridPoint%PhysCoor(field)%x(sgg%Sweep(field)%XI-1 : sgg%Sweep(field)%XE+1), &
@@ -1084,9 +897,6 @@ contains
          gridPoint%PhysCoor(field)%z(sgg%Sweep(field)%ZI-1 : sgg%Sweep(field)%ZE+1) = -1e20
       end do
 
-      !
-
-      !
       field=IEX
       do i=sgg%SINPMLSweep(field)%XI-1,sgg%SINPMLSweep(field)%XE+1
          gridPoint%PhysCoor(field)%x(i)=(sgg%LineX(i)+sgg%LineX(i+1))*0.5_RKIND
@@ -1147,7 +957,6 @@ contains
       do k=sgg%SINPMLSweep(field)%ZI-1,sgg%SINPMLSweep(field)%ZE+1
          gridPoint%PhysCoor(field)%z(k)=sgg%LineZ(k)
       end do
-      !
       sgg%gridPoint = gridPoint
       return
    end function
