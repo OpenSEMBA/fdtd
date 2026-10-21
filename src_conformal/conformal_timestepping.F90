@@ -103,9 +103,9 @@ contains
                         
                         allocate(new_edge%region_I_fields%E)
                         new_edge%region_I_fields%E = 0.0
-                        ! allocate(new_edge%region_II_fields%E)
-                        ! new_edge%region_II_fields%E = 0.0
-                        ! new_edge%region_II_fields%E => null()
+                        ! other region fields do not matter
+                        allocate(new_edge%region_II_fields%E)
+                        new_edge%region_II_fields%E => null()
 
                     else if (isInRegionII(face, edges_on_face(j))) then 
                         ratio = 0.0
@@ -114,9 +114,9 @@ contains
                             direction=edges_on_face(j)%key(4), &
                             material_coords = [0.0,1.0],&
                             edge_region= EDGE_REGION_II)
-                        ! new_edge%region_II_fields%E => null()
-                        ! allocate(new_edge%region_I_fields%E)
-                        ! new_edge%region_I_fields%E = 0.0
+                        ! other region fields do not matter
+                        allocate(new_edge%region_I_fields%E)
+                        new_edge%region_I_fields%E => null()
                         allocate(new_edge%region_II_fields%E)
                         new_edge%region_II_fields%E = 0.0
                     end if                
@@ -174,7 +174,6 @@ contains
         end if
         end select
 
-        ! if (j==2 .or. j==3) c(dir) = c(dir) + 1
         if (isInRegionII(face,edge_on_face)) then 
             if (j == 1) then 
                 allocate(face%region_I_fields%E1)

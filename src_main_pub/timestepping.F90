@@ -2490,7 +2490,6 @@ contains
          E4 => this%conformal_fields%faces(n)%region_I_fields%E4
 
          H = this%g%gm1(med)*H + this%g%gm2(med)*((E2 - E4)*id1 - (E3 - E1)*id2)
-         ! this%conformal_fields%faces(n)%region_I_fields%H = H
          !region 2
          H  => this%conformal_fields%faces(n)%region_II_fields%H
          E1 => this%conformal_fields%faces(n)%region_II_fields%E1
@@ -2500,12 +2499,6 @@ contains
 
          corr = computeFaceRegionIICorrection(this%conformal_fields%faces(n))
          H = this%g%gm1(med)*H + this%g%gm2(med)*corr*((E2 - E4)*id1 - (E3 - E1)*id2)
-         ! this%conformal_fields%faces(n)%region_II_fields%H = H
-         ! select case (this%conformal_fields%faces(n)%direction)
-         ! case (FACE_X); this%Hx(i,j,k) = 0.0
-         ! case (FACE_Y); this%Hy(i,j,k) = 0.0
-         ! case (FACE_Z); this%Hz(i,j,k) = 0.0
-         ! end select
 
       end do
    end subroutine
@@ -2537,7 +2530,6 @@ contains
             H3 => this%conformal_fields%edges(n)%region_I_fields%H3
             H4 => this%conformal_fields%edges(n)%region_I_fields%H4
             E = this%g%g1(med)*E + this%g%g2(med)*((H1 - H3)*id2 - (H4-H2)*id1)
-            ! this%conformal_fields%edges(n)%region_I_fields%E = E
             E_eff = E
 
          end if
@@ -2552,11 +2544,9 @@ contains
 
             corr = computeEdgeRegionIICorrection(this%conformal_fields%edges(n))
             E = this%g%g1(med)*E + this%g%g2(med)*corr*((H1 - H3)*id2 - (H4-H2)*id1)
-            ! this%conformal_fields%edges(n)%region_II_fields%E = E
             E_eff = E_eff + E
 
          end if
-         ! E_eff = this%conformal_fields%edges(n)%region_I_fields%E + this%conformal_fields%edges(n)%region_II_fields%E
          select case (this%conformal_fields%edges(n)%direction)
          case (EDGE_X); this%Ex(i,j,k) = E_eff
          case (EDGE_Y); this%Ey(i,j,k) = E_eff
@@ -2610,24 +2600,24 @@ contains
    !    end do
    ! end subroutine solver_advanceConformalE
 
-   subroutine addConformalElectricCorrection(this, direction, i, j, k, correction)
-      class(solver_t) :: this
-      integer, intent(in) :: direction, i, j, k
-      real(kind=rkind), intent(in) :: correction
-      integer :: medium
+   ! subroutine addConformalElectricCorrection(this, direction, i, j, k, correction)
+   !    class(solver_t) :: this
+   !    integer, intent(in) :: direction, i, j, k
+   !    real(kind=rkind), intent(in) :: correction
+   !    integer :: medium
 
-      select case (direction)
-      case (1)
-         medium = this%media%sggMiEx(i,j,k)
-         this%Ex(i,j,k) = this%Ex(i,j,k)+this%g%g2(medium)*correction
-      case (2)
-         medium = this%media%sggMiEy(i,j,k)
-         this%Ey(i,j,k) = this%Ey(i,j,k)+this%g%g2(medium)*correction
-      case (3)
-         medium = this%media%sggMiEz(i,j,k)
-         this%Ez(i,j,k) = this%Ez(i,j,k)+this%g%g2(medium)*correction
-      end select
-   end subroutine addConformalElectricCorrection
+   !    select case (direction)
+   !    case (1)
+   !       medium = this%media%sggMiEx(i,j,k)
+   !       this%Ex(i,j,k) = this%Ex(i,j,k)+this%g%g2(medium)*correction
+   !    case (2)
+   !       medium = this%media%sggMiEy(i,j,k)
+   !       this%Ey(i,j,k) = this%Ey(i,j,k)+this%g%g2(medium)*correction
+   !    case (3)
+   !       medium = this%media%sggMiEz(i,j,k)
+   !       this%Ez(i,j,k) = this%Ez(i,j,k)+this%g%g2(medium)*correction
+   !    end select
+   ! end subroutine addConformalElectricCorrection
 
    ! subroutine solver_advanceConformalH(this)
    !    class(solver_t) :: this
@@ -2676,33 +2666,33 @@ contains
    !    end do
    ! end subroutine solver_advanceConformalH
 
-   subroutine getConformalElectricPair(this, field_direction, offset_direction, i, j, k, &
-                                       lower_e, upper_e, inverse_step)
-      class(solver_t) :: this
-      integer, intent(in) :: field_direction, offset_direction, i, j, k
-      real(kind=rkind), intent(out) :: lower_e, upper_e, inverse_step
-      integer :: upper_i, upper_j, upper_k
+   ! subroutine getConformalElectricPair(this, field_direction, offset_direction, i, j, k, &
+   !                                     lower_e, upper_e, inverse_step)
+   !    class(solver_t) :: this
+   !    integer, intent(in) :: field_direction, offset_direction, i, j, k
+   !    real(kind=rkind), intent(out) :: lower_e, upper_e, inverse_step
+   !    integer :: upper_i, upper_j, upper_k
 
-      upper_i = i
-      upper_j = j
-      upper_k = k
-      select case (offset_direction)
-      case (1); upper_i = upper_i+1; inverse_step = this%Idxe(i)
-      case (2); upper_j = upper_j+1; inverse_step = this%Idye(j)
-      case (3); upper_k = upper_k+1; inverse_step = this%Idze(k)
-      end select
-      select case (field_direction)
-      case (1)
-         lower_e = this%Ex(i,j,k)
-         upper_e = this%Ex(upper_i,upper_j,upper_k)
-      case (2)
-         lower_e = this%Ey(i,j,k)
-         upper_e = this%Ey(upper_i,upper_j,upper_k)
-      case (3)
-         lower_e = this%Ez(i,j,k)
-         upper_e = this%Ez(upper_i,upper_j,upper_k)
-      end select
-   end subroutine getConformalElectricPair
+   !    upper_i = i
+   !    upper_j = j
+   !    upper_k = k
+   !    select case (offset_direction)
+   !    case (1); upper_i = upper_i+1; inverse_step = this%Idxe(i)
+   !    case (2); upper_j = upper_j+1; inverse_step = this%Idye(j)
+   !    case (3); upper_k = upper_k+1; inverse_step = this%Idze(k)
+   !    end select
+   !    select case (field_direction)
+   !    case (1)
+   !       lower_e = this%Ex(i,j,k)
+   !       upper_e = this%Ex(upper_i,upper_j,upper_k)
+   !    case (2)
+   !       lower_e = this%Ey(i,j,k)
+   !       upper_e = this%Ey(upper_i,upper_j,upper_k)
+   !    case (3)
+   !       lower_e = this%Ez(i,j,k)
+   !       upper_e = this%Ez(upper_i,upper_j,upper_k)
+   !    end select
+   ! end subroutine getConformalElectricPair
 
 
    subroutine initializeConformalFields(this)
