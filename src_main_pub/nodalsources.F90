@@ -238,9 +238,9 @@ contains
             !Read the time evolution
             dummy%nodHard(dummy%numHard)%deltaevol=sggdummy%sourceFile%deltaSamples
             if (dummy%nodHard(dummy%numHard)%deltaevol > sgg%dt) then
-               write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sggdummy%sourceFile%Name))// &
+               write (buff,'(a,e12.2e3)')  ''//trim(adjustl(sggdummy%sourceFile%Name))// &
                ' undersampled by a factor ',dummy%nodHard(dummy%numHard)%deltaevol/sgg%dt
-               call WarnErrReport(buff)
+               call log_msg(LOG_WARN, 'SOURCES', buff)
             end if
             dummy%nodHard(dummy%numHard)%numus =  sggdummy%sourceFile%NumSamples
             dummy%nodHard(dummy%numHard)%evol  => sggdummy%sourceFile%Samples
@@ -259,9 +259,9 @@ contains
             !Read the time evolution
             dummy%nodSoft(dummy%numSoft)%deltaevol=sggdummy%sourceFile%deltaSamples
             if (dummy%nodSoft(dummy%numSoft)%deltaevol > sgg%dt) then
-               write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sggdummy%sourceFile%Name))// &
+               write (buff,'(a,e12.2e3)')  ''//trim(adjustl(sggdummy%sourceFile%Name))// &
                ' undersampled by a factor ',dummy%nodSoft(dummy%numSoft)%deltaevol/sgg%dt
-               call WarnErrReport(buff)
+               call log_msg(LOG_WARN, 'SOURCES', buff)
             end if
             dummy%nodSoft(dummy%numSoft)%numus =  sggdummy%sourceFile%NumSamples
             dummy%nodSoft(dummy%numSoft)%evol  => sggdummy%sourceFile%Samples
@@ -293,8 +293,7 @@ contains
       if (dummy%IsInitialValue) then
         !!!evolucion=1.0_RKIND
         if (int(t/dummy%deltaevol)/=0) then
-            print *,'error en initial values. '
-            stop
+            call log_msg(LOG_FATAL, 'SOURCES', 'error en initial values.')
         end if
         evolucion=dummy%evol(0) !should be 1 always
         return
@@ -578,8 +577,7 @@ contains
       real(kind = RKIND) :: GM2_1
       !!!
       if (simu_devia) then
-          print *,'Devia H nodal/field sources untested. Aborting'
-          stop
+          call log_msg(LOG_FATAL, 'SOURCES', 'Devia H nodal/field sources untested. Aborting')
       end if
       GM2_1=GM2(1)
       !---------------------------> starts AdvancenodalH <---------------------------------------

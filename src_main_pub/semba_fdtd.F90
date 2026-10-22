@@ -116,6 +116,7 @@ contains
       this%l%layoutnumber = 0
 #endif
       call setglobal(this%l%layoutnumber,this%l%num_procs) !to create global variables with MPI info
+      call set_log_rank(this%l%layoutnumber, this%l%num_procs)
          
       write(this%whoamishort, '(i5)') this%l%layoutnumber + 1
       write(this%whoami, '(a,i5,a,i5,a)') '(', this%l%layoutnumber + 1, '/', this%l%num_procs, ') '
@@ -259,7 +260,7 @@ contains
       ! look at the command_line and the launch file 251022
          call get_command (this%l%chain2, this%l%length, status)
          if (status /= 0) then
-            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'General error',.true.); goto 652
+            call log_msg(LOG_FATAL, 'MAIN', 'General error'); goto 652
          end if
       end if
 
@@ -271,7 +272,7 @@ contains
          read (9, '(a)') chain3
          chain3=trim(adjustl(chain3))
          close (9)               
-         print *,'----> launch input file '//trim(adjustl(chain3))
+         call log_msg(LOG_INFO, 'MAIN', 'launch input file '//trim(adjustl(chain3)))
       end if
 #ifdef CompileWithMPI
       call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
@@ -284,7 +285,7 @@ contains
       
 
    if (status /= 0) then
-       call stoponerror (this%l%layoutnumber, this%l%num_procs, 'Error in searching input file. Correct and remove pause file',.true.); goto 652
+       call log_msg(LOG_FATAL, 'MAIN', 'Error in searching input file. Correct and remove pause file'); goto 652
    end if
 !!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!
@@ -298,7 +299,7 @@ contains
 #ifndef CompileWithMTLN
       NFDE_FILE => cargar_NFDE_FILE (this%l%filefde)
 #else
-      call WarnErrReport(".nfde files are not supported when compiling with MTLN.", .true.)
+      call log_msg(LOG_ERROR, 'MAIN', ".nfde files are not supported when compiling with MTLN.")
 #endif
    else
       allocate (NFDE_FILE)
@@ -363,7 +364,7 @@ contains
          !release memory created by newPARSER
          if (this%l%fatalerror) then
             if (allocated(this%media%sggMiEx)) deallocate(this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz,this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz,this%media%sggMiNo,this%media%sggMtag)
-            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'Error in .nfde file syntax. Check all *Warnings* and *tmpWarnings* files, correct and remove pause file if any',.true.); goto 652
+            call log_msg(LOG_FATAL, 'MAIN', 'Error in .nfde file syntax. Check all *Warnings* and *tmpWarnings* files, correct and remove pause file if any'); goto 652
          end if
 
          if (allocated(this%media%sggMiEx)) then !for this%l%skindepthpre nothing is allocated
@@ -414,12 +415,12 @@ contains
          if (this%sgg%Med(i)%Is%ThinWire) then
 #ifndef CompileWithBerengerWires
       if  ((this%l%wiresflavor=='berenger')) then
-            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'Berenger Wires without support. Recompile!')
+            call log_msg(LOG_FATAL, 'MAIN', 'Berenger Wires without support. Recompile!')
       end if
 #endif
 #ifndef CompileWithSlantedWires
       if  ((this%l%wiresflavor=='slanted').or.(this%l%wiresflavor=='semistructured')) then
-            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'slanted Wires without support. Recompile!')
+            call log_msg(LOG_FATAL, 'MAIN', 'slanted Wires without support. Recompile!')
       end if
 #endif
             continue
@@ -427,14 +428,14 @@ contains
          !
          if ((this%sgg%Med(i)%Is%AnisMultiport) .OR. (this%sgg%Med(i)%Is%multiport).OR. (this%sgg%Med(i)%Is%SGBC)) then
 #ifndef CompileWithNIBC
-            if (this%l%mibc) call stoponerror (this%l%layoutnumber, this%l%num_procs, 'this%l%mibc Multiports without support. Recompile!')
+            if (this%l%mibc) call log_msg(LOG_FATAL, 'MAIN', 'this%l%mibc Multiports without support. Recompile!')
 #endif
             continue
          end if
    !altair non-conformal sgbc 201119
 #ifdef NoConformalSGBC
          if (this%sgg%Med(i)%Is%sgbc .and. this%l%input_conformal_flag) then
-            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'Conformal sgbc not allowed. ')
+            call log_msg(LOG_FATAL, 'MAIN', 'Conformal sgbc not allowed. ')
          end if
 #endif
    !    
@@ -442,15 +443,15 @@ contains
       
       
       if (this%l%thereare_stoch.and.(.not.this%l%chosenyesornostochastic)) then
-         call stoponerror (this%l%layoutnumber, this%l%num_procs, '!STOCH found in .nfde. Specify either -stoch or -nostoch')
+         call log_msg(LOG_FATAL, 'MAIN', '!STOCH found in .nfde. Specify either -stoch or -nostoch')
       end if
 #ifndef CompileWithSlantedWires
       if (this%l%hay_slanted_wires) then
-         call stoponerror (this%l%layoutnumber, this%l%num_procs, 'slanted wires without slanted support. Recompile ()')
+         call log_msg(LOG_FATAL, 'MAIN', 'slanted wires without slanted support. Recompile ()')
       end if
 #endif   
       if (this%l%hay_slanted_wires .AND. ((trim(adjustl(this%l%wiresflavor))/='slanted').AND.(trim(adjustl(this%l%wiresflavor))/='semistructured'))) then
-         call stoponerror (this%l%layoutnumber, this%l%num_procs, 'slanted wires require -this%l%wiresflavor Slanted/semistructured')
+         call log_msg(LOG_FATAL, 'MAIN', 'slanted wires require -this%l%wiresflavor Slanted/semistructured')
       end if
 
       
@@ -460,7 +461,7 @@ contains
          if (this%sgg%Med(jmed)%Is%ThinSlot) ThereArethinslots=.true.
       end do
       if (this%l%resume.and.this%l%run_with_abrezanjas.and.ThereArethinslots) then   
-            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'this%l%resume -r currently unsupported by conformal solver',.true.); statuse=-1; !return
+            call log_msg(LOG_FATAL, 'MAIN', 'this%l%resume -r currently unsupported by conformal solver'); statuse=-1; !return
       end if
       !
    !!!SOME FINAL REPORTING
@@ -735,7 +736,7 @@ contains
             if (this%l%resume .AND. (slices /= this%l%slicesoriginales)) then
                buff='Different resumed/original MPI slices: '//trim(adjustl(slices))//' '//&
                & trim(adjustl(this%l%slicesoriginales))
-               call stoponerror (this%l%layoutnumber, this%l%num_procs, buff)
+               call log_msg(LOG_FATAL, 'MAIN', buff)
             end if
             call print11 (this%l%layoutnumber, trim(adjustl(slices)))
             !end writing
@@ -746,7 +747,7 @@ contains
 #ifdef CompileWithStochastic
             if (this%l%stochastic) then
                buff='this%l%stochastic uncompatible with MPI this%l%num_procs smaller than 2'
-               call stoponerror (this%l%layoutnumber, this%l%num_procs, buff)
+               call log_msg(LOG_FATAL, 'MAIN', buff)
             end if
 #endif
 #endif
@@ -756,6 +757,8 @@ contains
 #ifdef CompileWithStochastic
             if (this%l%stochastic) then
                call HalvesStochasticMPI(this%l%layoutnumber,this%l%num_procs,this%l%simu_devia)
+               ! each half has its own rank 0, which owns the signal files
+               call set_log_rank(this%l%layoutnumber, this%l%num_procs)
             end if
 #endif
                      
@@ -852,8 +855,8 @@ contains
 #ifdef CompilePrivateVersion
          if (trim(adjustl(extension))=='.nfde') then 
 #ifdef CompileWithMTLN
-            call stoponerror(this%l%layoutnumber, this%l%num_procs, &
-               'NFDE files are not supported when compiling with MTLN', .true.)
+            call log_msg(LOG_FATAL, 'MAIN', &
+               'NFDE files are not supported when compiling with MTLN')
 #endif
             NFDE_FILE => cargar_NFDE_FILE (filename)
          else
@@ -891,8 +894,8 @@ contains
                   longitud8=min(rawInfoBuffer, numberOfLinesInFile - i8 + 1)
             call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
             if ((longitud8>huge(1_4)).or.(longitud8>MAXMPIBYTES)) then
-               print *,'Stop. Buggy error: MPI longitud greater that greatest integer*4'
-               stop
+               call log_msg(LOG_FATAL, 'MAIN', &
+                                'MPI broadcast length greater than the largest integer*4')
             else
                longitud4=int(longitud8,4)
             end if
@@ -917,8 +920,7 @@ contains
          ! this%l%mpidir = NFDE_FILE%mpidir
          this%l%thereare_stoch=NFDE_FILE%thereare_stoch
 #else
-         print *,'Not compiled with cargaNFDEINDEX'
-         stop
+         call log_msg(LOG_FATAL, 'MAIN', 'Not compiled with cargaNFDEINDEX')
 #endif
       
 #ifdef CompileWithSMBJSON
@@ -929,8 +931,8 @@ contains
 #endif
 
       else
-         print *, 'Neither .nfde nor .json files used as input after -i'
-         stop
+         call log_msg(LOG_FATAL, 'MAIN', &
+                          'Neither .nfde nor .json files used as input after -i')
       end if
 
       write(dubuf,*) '[OK] '//trim(adjustl(this%whoami))//' Parser still working ';  call print11(this%l%layoutnumber,dubuf)       
@@ -973,7 +975,7 @@ contains
          read (unit, '(A)', end=2010) l_aux
          if (len_trim (adjustl(l_aux))>=BUFSIZE) then
             write(buffer,*) 'Line in .nfde larger than ',BUFSIZE,'Recompile '
-            call warnerrreport(buffer,.TRUE.) !ABORTA
+            call log_msg(LOG_ERROR, 'MAIN', buffer) !ABORTA
          end if
          rInfo%numberValue = rInfo%numberValue + 1
          line => rInfo%lines (rInfo%numberValue)

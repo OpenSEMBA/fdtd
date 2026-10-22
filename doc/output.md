@@ -5,6 +5,11 @@ In the filename patterns below, `R` is the root of the input filename, `N` is
 the probe name, `F` is the sampled field or component, `C` is the coordinate,
 and `B` is the probe bounding box.
 
+Time-domain probes buffer samples in memory and are flushed to disk every 128
+steps (`OUTPUT_TIME_BUFFER_SIZE`); `-flushdata <minutes>` adds a time-based
+flush. The estimated buffer memory per probe type is printed at `Init Timing`
+(see [init_timing.md](init_timing.md)).
+
 ## Scalar Text Output
 
 Point, wire, bulk-current, line, and far-field probes publish formatted `.dat`

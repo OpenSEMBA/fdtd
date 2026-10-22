@@ -18,6 +18,7 @@ module Solver_m
    use logUtils_m
    use FDETYPES_m
    use Report_m
+   use progress_m
    use ilumina_m
    use output_m
    use outputTypes_m
@@ -461,9 +462,9 @@ module Solver_m
       J=this%sgg%Alloc(IEX)%YI
       K=this%sgg%Alloc(IEX)%ZI
       do field=IEY,6
-         if (this%sgg%Alloc(field)%XI /= I) call stoponerror(this%control%layoutnumber,this%control%num_procs,'OFFSETS IN INITIAL COORD NOT ALLOWED')
-         if (this%sgg%Alloc(field)%YI /= J) call stoponerror(this%control%layoutnumber,this%control%num_procs,'OFFSETS IN INITIAL COORD NOT ALLOWED')
-         if (this%sgg%Alloc(field)%ZI /= K) call stoponerror(this%control%layoutnumber,this%control%num_procs,'OFFSETS IN INITIAL COORD NOT ALLOWED')
+         if (this%sgg%Alloc(field)%XI /= I) call log_msg(LOG_FATAL, 'SOLVER', 'OFFSETS IN INITIAL COORD NOT ALLOWED')
+         if (this%sgg%Alloc(field)%YI /= J) call log_msg(LOG_FATAL, 'SOLVER', 'OFFSETS IN INITIAL COORD NOT ALLOWED')
+         if (this%sgg%Alloc(field)%ZI /= K) call log_msg(LOG_FATAL, 'SOLVER', 'OFFSETS IN INITIAL COORD NOT ALLOWED')
       end do
 
       write(whoami,'(a,i5,a,i5,a)') '(',this%control%layoutnumber+1,'/',this%control%num_procs,') '
@@ -523,7 +524,7 @@ module Solver_m
             if (this%control%resume_fromold) then
                close (14)
                write(dubuf,*) 'Incoherence between MPI saved steps for resuming.', dummyMin,dummyMax,this%lastexecutedtimesteP
-               call stoponerror (this%control%layoutnumber,this%control%num_procs,BUFF,.true.) !so that it returns
+               call log_msg(LOG_FATAL, 'SOLVER', BUFF) !so that it returns
                call this%destroy_and_deallocate()
                return
             else
@@ -538,7 +539,7 @@ module Solver_m
                call MPI_AllReduce(this%lastexecutedtimestep, dummyMax, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
                if ((dummyMax /= this%lastexecutedtimestep).or.(dummyMin /= this%lastexecutedtimestep)) then
                   write(DUbuf,*) 'NO success. fields.old MPI are also incoherent for resuming.', dummyMin,dummyMax,this%lastexecutedtimestep
-                  call stoponerror (this%control%layoutnumber,this%control%num_procs,DUBUF,.true.) !so that it returns
+                  call log_msg(LOG_FATAL, 'SOLVER', DUBUF) !so that it returns
                   call this%destroy_and_deallocate()
                   return
                else
@@ -550,7 +551,7 @@ module Solver_m
             close (14)
 
             write(dubuf,*) 'Incoherence between MPI saved steps for resuming.',dummyMin,dummyMax,this%lastexecutedtimestep
-            call stoponerror (this%control%layoutnumber,this%control%num_procs,dubuf,.true.) !so that it returns
+            call log_msg(LOG_FATAL, 'SOLVER', dubuf) !so that it returns
             call this%destroy_and_deallocate()
             return
 #endif
@@ -562,7 +563,7 @@ module Solver_m
       end if
 
       if (this%initialtimestep>this%control%finaltimestep) then
-          call stoponerror (this%control%layoutnumber,this%control%num_procs,'Initial time step greater than final one',.true.) !so that it returns
+          call log_msg(LOG_FATAL, 'SOLVER', 'Initial time step greater than final one') !so that it returns
           call this%destroy_and_deallocate()
           return
       end if
@@ -632,14 +633,16 @@ module Solver_m
       this%n_info = 5 + this%initialtimestep
 
       write(dubuf,*) 'Init Timing...';  call print11(this%control%layoutnumber,dubuf)
-      call InitTiming(this%sgg, this%control, this%control%time_desdelanzamiento, this%initialtimestep, this%control%maxSourceValue)
+      if (this%thereAre%Observation) call report_outputs_memory(this%control%layoutnumber)
+      call InitTiming(this%sgg, this%control, this%control%time_desdelanzamiento, this%initialtimestep, this%control%maxSourceValue, &
+                      merge(OUTPUT_TIME_BUFFER_SIZE, 0, this%thereAre%Observation))
 
 
       call CLOSEWARNINGFILE(this%control%layoutnumber,this%control%num_procs,this%control%fatalerror,.false.,this%control%simu_devia) !here the stochastic is already split and there are two this%control%layoutnumber=0
 
       if (this%control%fatalerror) then
          dubuf='FATAL ERRORS. Revise *Warnings.txt file. ABORTING...'
-         call stoponerror(this%control%layoutnumber,this%control%num_procs,dubuf,.true.) !so that it returns
+         call log_msg(LOG_FATAL, 'SOLVER', dubuf) !so that it returns
          call this%destroy_and_deallocate()
          return
       end if
@@ -970,7 +973,7 @@ contains
                   !!
                   write(buff,'(a,2e10.2e3)') ' Composites stabilization att. factor=',this%control%attfactorc,this%sgg%Med(i)%SigmaM
 
-                  call WarnErrReport(buff)
+                  call log_msg(LOG_INFO, 'SOLVER', buff)
                   !!
                   fmax=1.0_RKIND / (10.0_RKIND * this%sgg%dt)
                   skin_depth=1.0_RKIND / (Sqrt(2.0_RKIND)*fmax*Pi*(epr*this%eps0**2*(4*mur*this%mu0**2.0_RKIND + this%sgg%Med(i)%Sigmam**2/(fmax**2*Pi**2.0_RKIND )))**0.25_RKIND * &
@@ -979,14 +982,14 @@ contains
                   -(0.0001295712360834271997*AIMAG(fmax*Sqrt((epr*((0,-2.825225e7) + &
                   8.8757061047382236e6*mur + this%control%attfactorc*((0,2.825225e7) + 8.8757061047382236e6*mur)))/ &
                   (1.124121310242e12 + 1.124121310242e12*this%control%attfactorc))*min(deltaespmax,skin_depth)))
-                  if (this%control%layoutnumber == 0) call WarnErrReport(buff)
+                  if (this%control%layoutnumber == 0) call log_msg(LOG_INFO, 'SOLVER', buff)
                   if (fmax > 3e9) then
                      fmax=3e9
                      write(buff,'(a,e9.2e2,a,e10.2e3)') '             At f=',fmax,',Max Att(dB)=', &
                      -(0.0001295712360834271997*AIMAG(fmax*Sqrt((epr*((0,-2.825225e7) + &
                      8.8757061047382236e6*mur + this%control%attfactorc*((0,2.825225e7) + 8.8757061047382236e6*mur)))/ &
                      (1.124121310242e12 + 1.124121310242e12*this%control%attfactorc))*min(deltaespmax,skin_depth)))
-                     if (this%control%layoutnumber == 0) call WarnErrReport(buff)
+                     if (this%control%layoutnumber == 0) call log_msg(LOG_INFO, 'SOLVER', buff)
                   end if
                   att=.true.
                end if
@@ -1005,7 +1008,7 @@ contains
                   this%sgg%Med(i)%Sigma =(-2.0_RKIND * (-1.0_RKIND + this%control%attfactorw)*this%eps0)/((1 + this%control%attfactorw)*this%sgg%dt)
                   if (.not.att) then
                      write(buff,'(a,2e10.2e3)') ' WIREs stabilization att. factors=',this%control%attfactorw,this%sgg%Med(i)%Sigma
-                     if (this%control%layoutnumber == 0) call WarnErrReport(buff)
+                     if (this%control%layoutnumber == 0) call log_msg(LOG_INFO, 'SOLVER', buff)
                      att=.true.
                   end if
                end if
@@ -1028,29 +1031,29 @@ contains
          character(len=BUFSIZE) :: buff   
          if ((this%control%layoutnumber == 0).and.this%control%verbose) then
             write(buff,'(a,3e9.2e2)') 'CPML  alpha, alphaorder, kappa factors= ', this%control%alphamaxpar,this%control%alphaOrden,this%control%kappamaxpar
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             if (this%control%extraMedium%exists) then
                write(buff,'(a,i5,e9.2e2)') 'CPML correction size,factor to scale sigmamax = ', &
                this%control%extraMedium%pml_size,this%control%extraMedium%sigma
-               call WarnErrReport(buff)
+               call log_msg(LOG_INFO, 'SOLVER', buff)
             end if
             write(buff,*) 'saveall=',this%control%saveall,', flushsecondsFields=',this%control%flushsecondsFields,', flushsecondsData=',this%control%flushsecondsData,', maxCPUtime=',this%control%maxCPUtime,', singlefilewrite=',this%control%singlefilewrite
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'TAPARRABOS=',this%control%TAPARRABOS,', wiresflavor=',trim(adjustl(this%control%wiresflavor)),', mindistwires=',this%control%mindistwires,', wirecrank=',this%control%wirecrank , 'makeholes=',this%control%makeholes
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'connectendings=',this%control%connectendings,', isolategroupgroups=',this%control%isolategroupgroups
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'wirethickness ', this%control%wirethickness, 'stableradholland=',this%control%stableradholland,'mtlnberenger=',this%control%mtlnberenger,' inductance_model=',trim(adjustl(this%control%inductance_model)), &
                         ', inductance_order=',this%control%inductance_order,', groundwires=',this%control%groundwires,' ,fieldtotl=',this%control%fieldtotl,' noSlantedcrecepelo =',this%control%noSlantedcrecepelo 
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'sgbc=',this%control%sgbc,', mibc=',this%control%mibc,', attfactorc=',this%control%attfactorc,', attfactorw=',this%control%attfactorw
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'NOcompomur=',this%control%NOcompomur,', ADE=',this%control%ADE,', conformalskin=',this%control%conformalskin,', sgbcFreq=',this%control%sgbcFreq,', sgbcresol=',this%control%sgbcresol,', sgbccrank=',this%control%sgbccrank,', sgbcDepth=',this%control%sgbcdepth
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'mur_second=',this%control%mur_second,', murafterpml=',this%control%murafterpml,', facesNF2FF%tr=',this%control%facesNF2FF%tr,', facesNF2FF%fr=',this%control%facesNF2FF%fr,', facesNF2FF%iz=',this%control%facesNF2FF%iz
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'facesNF2FF%de=',this%control%facesNF2FF%de,', facesNF2FF%ab=',this%control%facesNF2FF%ab,', facesNF2FF%ar=',this%control%facesNF2FF%ar,', NF2FFDecim=',this%control%NF2FFDecim
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
          end if
       end subroutine
 
@@ -1264,19 +1267,19 @@ contains
          dtcritico=newdtcritico
 #endif
          if (this%sgg%dt <= dtcritico) then
-            write(buff,'(a,e10.2e3)')  'WIR_INFO: deltat for stability OK: ',dtcritico
-            if ((this%control%layoutnumber==0).and.this%control%verbose) call WarnErrReport(buff)
+            write(buff,'(a,e10.2e3)')  'deltat for stability OK: ',dtcritico
+            if ((this%control%layoutnumber==0).and.this%control%verbose) call log_msg(LOG_INFO, 'SOLVER', buff)
          else
             if (.not.(this%control%resume.and.this%control%permitscaling)) then !do not abort, only warn if permittivity scaling
 #ifdef CompileWithMTLN
-               write(buff,'(a,e10.2e3)')  'WIR_ERROR: Possibly UNSTABLE dt, make dt < ',dtcritico
+               write(buff,'(a,e10.2e3)')  'Possibly UNSTABLE dt, make dt < ',dtcritico
 #else
-               write(buff,'(a,e10.2e3)')  'WIR_ERROR: Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs, use -stableradholland or make dt < ',dtcritico
+               write(buff,'(a,e10.2e3)')  'Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs, use -stableradholland or make dt < ',dtcritico
 #endif
-               if (this%control%layoutnumber==0) call WarnErrReport(buff,.true.)
+               if (this%control%layoutnumber==0) call log_msg(LOG_ERROR, 'SOLVER', buff)
             else
-               write(buff,'(a,e10.2e3)')  'WIR_WARNING: Resume and Pscaling with wires. Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs: dt is over ',dtcritico
-               if (this%control%layoutnumber==0) call WarnErrReport(buff,.false.)
+               write(buff,'(a,e10.2e3)')  'Resume and Pscaling with wires. Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs: dt is over ',dtcritico
+               if (this%control%layoutnumber==0) call log_msg(LOG_WARN, 'SOLVER', buff)
             end if
          end if
       !!!
@@ -1792,7 +1795,7 @@ contains
       fieldReference%H%deltaz => this%dzh
 
       ciclo_temporal :  do while (this%n <= this%control%finaltimestep)
-      
+         call set_log_step(this%n)
          call this%step()
          call updateAndFlush()
 
@@ -1872,6 +1875,7 @@ contains
          ! write(*write(*,*) 'timestepping: ', n
          this%n=this%n+1 !increase iteration
       end do ciclo_temporal ! End of the time-stepping loop
+      call set_log_step(-1_4)
 
 
 contains
@@ -2779,7 +2783,78 @@ contains
       return
    end subroutine destroy_and_deallocate
 
-   
-   
+   subroutine reportmedia(sgg)
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      integer(kind=4) :: j
+      character(len=BUFSIZE) :: buff
+
+      do j = 0, sgg%NumMedia
+         write(buff,*) '_____________________________'
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'MEDIO :  ', j
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Priority ', sgg%Med(j)%Priority
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Epr ', sgg%Med(j)%Epr
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Sigma ', sgg%Med(j)%Sigma
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Mur ', sgg%Med(j)%Mur
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'SigmaM ', sgg%Med(j)%SigmaM
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is PML ', sgg%Med(j)%Is%PML
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is PEC ', sgg%Med(j)%Is%PEC
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is ThinWIRE ', sgg%Med(j)%Is%ThinWire
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is MULTIWIRE ', sgg%Med(j)%Is%Multiwire
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is SlantedWIRE ', sgg%Med(j)%Is%SlantedWire
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is EDispersive ', sgg%Med(j)%Is%EDispersive
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is EDispersiveaANIS', sgg%Med(j)%Is%EDispersiveANIS
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is MDispersive ', sgg%Med(j)%Is%MDispersive
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is MDispersiveANIS ', sgg%Med(j)%Is%MDispersiveANIS
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is SGBC ', sgg%Med(j)%Is%SGBC
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is Lossy ', sgg%Med(j)%Is%Lossy
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is Multiport ', sgg%Med(j)%Is%multiport
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is AnisMultiport ', sgg%Med(j)%Is%anismultiport
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is MultiportPadding ', sgg%Med(j)%Is%multiportpadding
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is Dielectric ', sgg%Med(j)%Is%DIELECTRIC
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is Anisotropic ', sgg%Med(j)%Is%Anisotropic
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is Needed ', sgg%Med(j)%Is%Needed
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is already_YEEadvanced_byconformal ', sgg%Med(j)%Is%already_YEEadvanced_byconformal
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Iss split_and_useless ', sgg%Med(j)%Is%split_and_useless
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is Volume ', sgg%Med(j)%Is%Volume
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is Surface ', sgg%Med(j)%Is%Surface
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is Line ', sgg%Med(j)%Is%Line
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) '_____________________________'
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+      end do
+      return
+   end subroutine reportmedia
 
 end module

@@ -6,6 +6,7 @@ module mtl_m
     use mtln_types_m, only: segment_t, multipolar_expansion_t
     use multipolar_expansion_m, only: getCellCapacitanceOnBox, getCellInductanceOnBox
     use FDETYPES_m, only: pi, mu_vacuum, C_VACUUM, RKIND_WIRES, RKIND, RKIND_TIME
+    use Report_m, only: log_msg, LOG_WARN
 #ifdef CompileWithMPI 
     use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE
 #endif
@@ -236,7 +237,11 @@ contains
                 max_dt = this%getMaxTimeStep() 
                 if (dt > max_dt .and. max_dt > 0) then
                     this%dt = max_dt
-                    write(*,*) 'dt larger than maximum permitted. Changed to dt = ', max_dt 
+                    block
+                        character(len=64) :: dtText
+                        write(dtText,*) max_dt
+                        call log_msg(LOG_WARN, 'MTLN', 'dt larger than maximum permitted. Changed to dt = '//trim(adjustl(dtText)))
+                    end block
                 else 
                     this%dt = dt
                 end if

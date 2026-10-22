@@ -89,6 +89,74 @@ integer function test_init_point_probe() bind(c) result(err)
    err = test_err
 end function
 
+integer function test_estimate_point_probe_memory() bind(c) result(err)
+   ! Verifies the memory estimate counts one time buffer of OUTPUT_TIME_BUFFER_SIZE samples.
+   use FDETYPES_m
+   use fdetypes_tools_m
+   use output_m
+   use outputTypes_m
+   use testOutputUtils_m
+   use sggMethods_m
+   use assertionTools_m
+   use directoryUtils_m
+   implicit none
+
+   character(len=*), parameter :: TEST_FOLDER = 'testing folder'
+   character(len=*), parameter :: TEST_NAME = 'estimatePointProbeMemory'
+
+   character(len=BUFSIZE) :: testPath, nInput
+   type(SGGFDTDINFO_t)              :: sgg
+   type(sim_control_t)            :: control
+   type(bounds_t)                 :: bounds
+   type(media_matrices_t)         :: media
+   type(limit_t), allocatable     :: sinpml(:)
+   type(XYZlimit_t)               :: sweep(6)
+   type(solver_output_t), pointer :: outputs(:)
+   type(MediaData_t), allocatable, target :: materials(:)
+   type(MediaData_t), pointer     :: materialsPtr(:)
+   type(taglist_t)                :: tagNumbers
+   real(kind=RKIND_TIME), pointer :: timeArray(:)
+   real(kind=RKIND_TIME)          :: dt = 0.1_RKIND_TIME
+   integer(kind=SINGLE)           :: nSteps = 100_SINGLE
+   integer(kind=8) :: bytes(0:MTLN_PROBE_ID), expectedBytes
+   integer(kind=4) :: counts(0:MTLN_PROBE_ID)
+   type(Obses_t) :: probe
+   logical :: outputRequested
+   logical :: hasWires = .false.
+   integer(kind=SINGLE) :: test_err = 0
+   integer :: ios
+
+   testPath = join_path(get_temp_folder(), TEST_FOLDER)
+   nInput = join_path(testPath, TEST_NAME)
+
+   call sgg_init(sgg)
+   call init_time_array(timeArray, nSteps, dt)
+   call sggSetTime(sgg, timeArray)
+   call sgg_set_dt(sgg, dt)
+   call init_simulation_material_list(materials)
+   materialsPtr => materials
+   call sgg_set_Med(sgg, materialsPtr)
+   sweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Sweep(sgg, sweep)
+   probe = create_point_probe_observation(4, 4, 4)
+   call sgg_add_observation(sgg, probe)
+   control = create_control_flags(mpidir=3, nInputRoot=trim(nInput), wiresflavor='holland')
+
+   call init_outputs(sgg, media, sinpml, tagNumbers, bounds, control, outputRequested, hasWires)
+   outputs => GetOutputs()
+   call estimate_outputs_memory(bytes, counts)
+
+   expectedBytes = int(OUTPUT_TIME_BUFFER_SIZE, 8)*(storage_size(0.0_RKIND_TIME) + storage_size(0.0_RKIND))/8
+   test_err = test_err + assert_integer_equal(counts(POINT_PROBE_ID), 1, 'Point probe not counted')
+   test_err = test_err + assert_integer_equal(sum(counts), 1, 'Unexpected outputs counted')
+   test_err = test_err + assert_true(bytes(POINT_PROBE_ID) == expectedBytes, 'Unexpected point probe buffer bytes')
+
+   call remove_folder(testPath, ios)
+   deallocate (sgg%Observation, outputs)
+
+   err = test_err
+end function test_estimate_point_probe_memory
+
 integer function test_init_point_probe_with_incident() bind(c) result(err)
    ! Verifies incident point probes preserve their text header without a binary sidecar.
    use FDETYPES_m

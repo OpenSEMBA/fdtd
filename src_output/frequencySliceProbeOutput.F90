@@ -115,7 +115,7 @@ contains
       this%filesPath = join_path(this%path, filename)
 
       call initialise_frequency_metadata(this, error, control%mpidir)
-      if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+      if (error /= 0) call log_msg(LOG_FATAL, 'OUTPUT', &
                                        'Unable to initialise frequency slice output metadata')
 
       if (.not. publication%local_participates) then
@@ -127,24 +127,24 @@ contains
 
       if (publication%local_is_owner) then
          call create_folder(this%path, error)
-         if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+         if (error /= 0) call log_msg(LOG_FATAL, 'OUTPUT', &
                                           'Unable to create frequency slice output directory')
       end if
 #ifdef CompileWithMPI
       call MPI_Barrier(this%publication%communicator, mpi_error)
-      if (mpi_error /= MPI_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
+      if (mpi_error /= MPI_SUCCESS) call log_msg(LOG_FATAL, 'OUTPUT', &
                                                      'Unable to synchronise frequency slice output participants')
 #endif
       call write_geometry_companion(this%filesPath, this%mainCoords, this%auxCoords, problemInfo, &
                                     this%publication%communicator, geometry_status, geometry_diagnostic)
       if (this%publication%local_is_owner .and. geometry_status /= VISUALISATION_SUCCESS) then
-          call StopOnError(control%layoutnumber, control%num_procs, &
+          call log_msg(LOG_FATAL, 'OUTPUT', &
                            'Unable to create frequency slice geometry: '//trim(geometry_diagnostic))
       end if
 
       if (publication%mode == OUTPUT_PUBLICATION_COLLECTIVE .or. publication%local_is_owner) then
          call create_frequency_writer(this, problemInfo, error)
-         if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+         if (error /= 0) call log_msg(LOG_FATAL, 'OUTPUT', &
                                           'Unable to initialise frequency slice HDF5 output')
       end if
 
@@ -179,7 +179,7 @@ contains
 #ifdef CompileWithMPI
       call MPI_Allgather(this%nPoints, 1, MPI_INTEGER, point_counts, 1, MPI_INTEGER, &
                          this%publication%communicator, mpi_error)
-      if (mpi_error /= MPI_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
+      if (mpi_error /= MPI_SUCCESS) call log_msg(LOG_FATAL, 'OUTPUT', &
                                                      'Unable to gather frequency slice point counts')
 #else
       point_counts(1) = this%nPoints
@@ -192,7 +192,7 @@ contains
       this%publication%global_point_count = sum(int(point_counts, int64))
       if (this%publication%global_point_count <= 0_int64 .or. &
           this%publication%global_point_count > int(huge(1), int64)) then
-         call StopOnError(control%layoutnumber, control%num_procs, &
+         call log_msg(LOG_FATAL, 'OUTPUT', &
                           'Invalid global frequency slice point count')
       end if
 
@@ -204,7 +204,7 @@ contains
       call MPI_Allgatherv(this%coords, 3*this%nPoints, MPI_INTEGER, this%globalCoords, &
                           coordinate_counts, coordinate_displacements, MPI_INTEGER, &
                           this%publication%communicator, mpi_error)
-      if (mpi_error /= MPI_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
+      if (mpi_error /= MPI_SUCCESS) call log_msg(LOG_FATAL, 'OUTPUT', &
                                                      'Unable to gather frequency slice coordinates')
 #else
       this%globalCoords = this%coords
@@ -268,7 +268,7 @@ contains
                                                     this%publication%communicator, status, diagnostic)
       if (status /= VISUALISATION_SUCCESS) then
          error = 1
-         print *, trim(diagnostic)
+         call log_msg(LOG_ERROR, 'OUTPUT', trim(diagnostic))
       end if
       deallocate (points)
    end subroutine create_frequency_writer
@@ -316,7 +316,7 @@ contains
       if (this%publication%mode == OUTPUT_PUBLICATION_ROOT_AGGREGATION) then
          call init_output_transport(transport, 0, transport_status, this%publication%communicator)
          if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
-            call StopOnError(0, 0, 'Unable to initialise frequency slice output transport')
+            call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to initialise frequency slice output transport')
          end if
       end if
       call write_classification_attributes(this, transport)
@@ -364,7 +364,7 @@ contains
                call require_visualisation_success(status, diagnostic)
             end if
          case default
-            call StopOnError(0, 0, 'Unsupported frequency slice publication mode')
+            call log_msg(LOG_FATAL, 'OUTPUT', 'Unsupported frequency slice publication mode')
          end select
       end do
       deallocate (xMagnitude, yMagnitude, zMagnitude, xPhase, yPhase, zPhase)
@@ -443,11 +443,11 @@ contains
 
       call transfer_flush_batch(transport, local_values, gathered_values, counts, displacements, transport_status)
       if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
-         call StopOnError(0, 0, 'Unable to gather frequency slice visualisation values')
+         call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to gather frequency slice visualisation values')
       end if
       if (.not. this%publication%local_is_owner) return
       if (size(gathered_values, kind=int64) /= this%publication%global_point_count) then
-         call StopOnError(0, 0, 'Invalid gathered frequency slice visualisation size')
+         call log_msg(LOG_FATAL, 'OUTPUT', 'Invalid gathered frequency slice visualisation size')
       end if
       call write_visualisation_attribute(this%visualisation, attribute, gathered_values, status, diagnostic)
       call require_visualisation_success(status, diagnostic)
@@ -458,7 +458,7 @@ contains
       character(len=*), intent(in) :: diagnostic
 
       if (status /= VISUALISATION_SUCCESS) then
-         call StopOnError(0, 0, 'Frequency slice HDF5 write failed: '//trim(diagnostic))
+         call log_msg(LOG_FATAL, 'OUTPUT', 'Frequency slice HDF5 write failed: '//trim(diagnostic))
       end if
    end subroutine require_visualisation_success
 
@@ -532,7 +532,7 @@ contains
          case (ICUR); call save_current_module(this, fieldsReference, step, problemInfo)
          case (IMEC); call save_field_module(this, fieldsReference%E, step, request, problemInfo)
          case (IMHC); call save_field_module(this, fieldsReference%H, step, request, problemInfo)
-         case default; call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
+         case default; call log_msg(LOG_FATAL, 'OUTPUT', "Volumic measure not supported")
          end select
 
       else if (any(VOLUMIC_X_MEASURE == request)) then
@@ -540,7 +540,7 @@ contains
          case (ICURX); call save_current_component(this, this%xValueForFreq, fieldsReference, problemInfo, IEX, this%auxExp_E, this%nFreq, step)
          case (IEXC); call save_field_component(this, this%xValueForFreq, fieldsReference%E%x, step, problemInfo, IEX)
          case (IHXC); call save_field_component(this, this%xValueForFreq, fieldsReference%H%x, step, problemInfo, IHX)
-         case default; call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
+         case default; call log_msg(LOG_FATAL, 'OUTPUT', "Volumic measure not supported")
          end select
 
       else if (any(VOLUMIC_Y_MEASURE == request)) then
@@ -548,7 +548,7 @@ contains
          case (ICURY); call save_current_component(this, this%yValueForFreq, fieldsReference, problemInfo, IEY, this%auxExp_E, this%nFreq, step)
          case (IEYC); call save_field_component(this, this%yValueForFreq, fieldsReference%E%y, step, problemInfo, IEY)
          case (IHYC); call save_field_component(this, this%yValueForFreq, fieldsReference%H%y, step, problemInfo, IHY)
-         case default; call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
+         case default; call log_msg(LOG_FATAL, 'OUTPUT', "Volumic measure not supported")
          end select
 
       else if (any(VOLUMIC_Z_MEASURE == request)) then
@@ -556,7 +556,7 @@ contains
          case (ICURZ); call save_current_component(this, this%zValueForFreq, fieldsReference, problemInfo, IEZ, this%auxExp_E, this%nFreq, step)
          case (IEZC); call save_field_component(this, this%zValueForFreq, fieldsReference%E%z, step, problemInfo, IEZ)
          case (IHZC); call save_field_component(this, this%zValueForFreq, fieldsReference%H%z, step, problemInfo, IHZ)
-         case default; call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
+         case default; call log_msg(LOG_FATAL, 'OUTPUT', "Volumic measure not supported")
          end select
       end if
    end subroutine update_frequency_slice_probe_output
@@ -743,12 +743,12 @@ contains
       end if
       call close_visualisation(this%visualisation, error, diagnostic)
       if (error /= VISUALISATION_SUCCESS) then
-         call StopOnError(0, 0, 'Unable to close frequency slice HDF5 output: '//trim(diagnostic))
+         call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to close frequency slice HDF5 output: '//trim(diagnostic))
       end if
 #ifdef CompileWithMPI
       call MPI_Barrier(this%publication%communicator, mpi_error)
       if (mpi_error /= MPI_SUCCESS) then
-         call StopOnError(0, 0, 'Unable to synchronise closing frequency slice participants')
+         call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to synchronise closing frequency slice participants')
       end if
 #endif
       if (this%publication%local_is_owner) then
@@ -763,7 +763,7 @@ contains
             this%metadata%lifecycle%diagnostic = 'Required frequency slice output artifacts are incomplete'
          end if
          if (this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) then
-            call StopOnError(0, 0, trim(this%metadata%lifecycle%diagnostic))
+            call log_msg(LOG_FATAL, 'OUTPUT', trim(this%metadata%lifecycle%diagnostic))
          end if
       else
          this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
@@ -772,12 +772,12 @@ contains
 #ifdef CompileWithMPI
       call MPI_Barrier(this%publication%communicator, mpi_error)
       if (mpi_error /= MPI_SUCCESS) then
-         call StopOnError(0, 0, 'Unable to complete frequency slice publication')
+         call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to complete frequency slice publication')
       end if
       if (this%publication%owns_communicator) then
          call MPI_Comm_free(this%publication%communicator, mpi_error)
          if (mpi_error /= MPI_SUCCESS) then
-            call StopOnError(0, 0, 'Unable to free frequency slice output communicator')
+            call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to free frequency slice output communicator')
          end if
          this%publication%owns_communicator = .false.
          this%publication%communicator = MPI_COMM_NULL
