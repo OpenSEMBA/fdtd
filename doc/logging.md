@@ -158,9 +158,9 @@ call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to initialise movie HDF5 output')
 
 Guidelines:
 
-- Do not put `WARNING:` or `ERROR:` in the message text: the level is already
-  printed. Older messages still carry tags such as `wir0_WARNING:`; remove
-  them when you edit those lines.
+- Do not put `WARNING:`, `ERROR:` or prefixes such as `wir0_WARNING:` in the
+  message text: the level and origin are already printed. For internal
+  consistency checks, start the message with `Internal bug:`.
 - Use `LOG_ERROR` only when the run has to stop. It sets the fatal flag and
   lets the rest of the input be checked. Use `LOG_FATAL` when it must stop now;
   do not follow a log call with `stop` or `error stop`.
