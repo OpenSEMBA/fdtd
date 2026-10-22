@@ -46,10 +46,5 @@ integer function test_log_msg_sets_fatal_error() bind(C, name="test_log_msg_sets
     end if
     call resetFatalError()
 
-    call WarnErrReport('legacy error', .true.)
-    if (.not. isFatalError()) then
-        print *, 'test_log_msg_sets_fatal_error FAILED: WarnErrReport(.true.) did not flag a fatal error'
-        status = 1
-    end if
     call resetFatalError()
 end function test_log_msg_sets_fatal_error

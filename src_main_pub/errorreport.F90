@@ -25,7 +25,7 @@ module Report_m
 
    public StopOnError,CloseReportingFiles, &
    print11,Onprint,Offprint,file10isopen,file11isopen
-   public WarnErrReport,INITWARNINGFILE,CLOSEWARNINGFILE,get_secnds, &
+   public INITWARNINGFILE,CLOSEWARNINGFILE,get_secnds, &
           erasesignalingfiles,openclosedelete,openclose
    public isFatalError, resetFatalError
    public log_msg, set_log_step, log_line
@@ -220,19 +220,6 @@ contains
 
    end subroutine INITWARNINGFILE
 
-
-   ! Kept for legacy callers: error=.true. maps to LOG_ERROR, anything else to LOG_WARN.
-   subroutine WarnErrReport(bufff,error)
-      character(len=*), intent(in) :: bufff
-      logical, intent(in), optional :: error
-      integer :: level
-
-      level = LOG_WARN
-      if (present(error)) then
-         if (error) level = LOG_ERROR
-      end if
-      call log_msg(level, '', bufff)
-   end subroutine WarnErrReport
 
    ! Writes '(rank/nprocs) [n=step] [ORIGIN] LEVEL: message' to the warnings file and stderr.
    subroutine log_msg(level, origin, message)
