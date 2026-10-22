@@ -1,7 +1,7 @@
 module circuit_m
 
     use ngspice_interface_m
-    use Report_m, only: log_msg, LOG_ERROR
+    use Report_m, only: log_msg, LOG_INFO, LOG_ERROR
     use FDETYPES_m, only: RKIND, RKIND_TIME, SINGLE
     implicit none
 
@@ -70,7 +70,7 @@ contains
 
         call start()
         if (present(netlist)) then
-            write(*,*) 'load netlist'
+            call log_msg(LOG_INFO, 'MTLN', 'Loading netlist '//netlist)
             call this%loadNetlist(netlist)
         end if
 
@@ -166,7 +166,7 @@ contains
         if (present(printInput)) then
             if (printInput .eqv. .true.) then 
                 do i = 1 , size(input)
-                    write(*,*) input(i)
+                    call log_msg(LOG_INFO, 'MTLN', input(i))
                 end do
             end if
         end if

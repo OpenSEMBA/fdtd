@@ -1,7 +1,7 @@
 module mesh_m
 
 #ifdef CompileWithSMBJSON   
-   use, intrinsic :: iso_fortran_env , only: error_unit
+   use Report_m, only: log_msg, LOG_ERROR
    
    use fhash, only: fhash_tbl_t, key=>fhash_key
    use cells_m
@@ -58,7 +58,6 @@ module mesh_m
       procedure :: polylineToLinels => mesh_polylineToLinels
       procedure :: nodeToPixel => mesh_nodeToPixel
 
-      procedure :: printHashInfo => mesh_printHashInfo
       procedure :: allocateCoordinates => mesh_allocateCoordinates
       procedure :: allocateElements => mesh_allocateElements
    end type
@@ -86,25 +85,6 @@ contains
    end subroutine
 
 
-   subroutine mesh_printHashInfo(this)
-      class(mesh_t) :: this
-      integer :: num_buckets, num_items, num_collisions, max_depth
-      
-      write(*,*) 'Coordinates hash info:'
-      call this%coordinates%stats(num_buckets,num_items,num_collisions,max_depth)
-      write(*,'(A,T40,I0)') '  Number of buckets allocated: ',num_buckets
-      write(*,'(A,T40,I0)') '  Number of key-value pairs stored: ',num_items
-      write(*,'(A,T40,I0)') '  Total number of hash-collisions: ',num_collisions
-      write(*,'(A,T40,I0)') '  The worst case bucket depth is ',max_depth
-      
-      write(*,*) 'Elements hash info:'
-      call this%elements%stats(num_buckets,num_items,num_collisions,max_depth)
-      write(*,'(A,T40,I0)') '  Number of buckets allocated: ',num_buckets
-      write(*,'(A,T40,I0)') '  Number of key-value pairs stored: ',num_items
-      write(*,'(A,T40,I0)') '  Total number of hash-collisions: ',num_collisions
-      write(*,'(A,T40,I0)') '  The worst case bucket depth is ',max_depth
-
-   end subroutine
 
    function mesh_checkCoordinateId(this, id) result(stat)
       class(mesh_t) :: this
@@ -416,7 +396,7 @@ contains
 
       c = this%getCoordinate(node%coordIds(1), found=coordFound)
       if (.not. coordFound) then
-         write(error_unit, *) "ERROR: converting node to pixel. Coordinate not found."
+         call log_msg(LOG_ERROR, 'SMBJSON', 'Converting node to pixel. Coordinate not found.')
          return
       end if
       res%cell = c%position

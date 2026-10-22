@@ -271,7 +271,7 @@ contains
          read (9, '(a)') chain3
          chain3=trim(adjustl(chain3))
          close (9)               
-         print *,'----> launch input file '//trim(adjustl(chain3))
+         call log_msg(LOG_INFO, 'MAIN', 'launch input file '//trim(adjustl(chain3)))
       end if
 #ifdef CompileWithMPI
       call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
@@ -891,8 +891,8 @@ contains
                   longitud8=min(rawInfoBuffer, numberOfLinesInFile - i8 + 1)
             call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
             if ((longitud8>huge(1_4)).or.(longitud8>MAXMPIBYTES)) then
-               print *,'Stop. Buggy error: MPI longitud greater that greatest integer*4'
-               stop
+               call StopOnError(this%l%layoutnumber, this%l%num_procs, &
+                                'MPI broadcast length greater than the largest integer*4')
             else
                longitud4=int(longitud8,4)
             end if
@@ -917,8 +917,7 @@ contains
          ! this%l%mpidir = NFDE_FILE%mpidir
          this%l%thereare_stoch=NFDE_FILE%thereare_stoch
 #else
-         print *,'Not compiled with cargaNFDEINDEX'
-         stop
+         call StopOnError(this%l%layoutnumber, this%l%num_procs, 'Not compiled with cargaNFDEINDEX')
 #endif
       
 #ifdef CompileWithSMBJSON
@@ -929,8 +928,8 @@ contains
 #endif
 
       else
-         print *, 'Neither .nfde nor .json files used as input after -i'
-         stop
+         call StopOnError(this%l%layoutnumber, this%l%num_procs, &
+                          'Neither .nfde nor .json files used as input after -i')
       end if
 
       write(dubuf,*) '[OK] '//trim(adjustl(this%whoami))//' Parser still working ';  call print11(this%l%layoutnumber,dubuf)       

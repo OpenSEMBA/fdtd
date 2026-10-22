@@ -1135,7 +1135,7 @@ contains
       !only the master
 
       if (((l%layoutnumber == 0) .or. ((l%layoutnumber == l%num_procs/2) .and. l%stochastic)) .and. (statuse /= -1)) then
-         print *, 'Opening _Report.txt file'
+         call log_msg(LOG_INFO, 'MAIN', 'Opening _Report.txt file')
          if (l%resume) then
             !the temporary
             close (11)
@@ -1768,7 +1768,7 @@ contains
                   block
                      character(len=255) :: cwd
                      call getcwd(cwd)
-                     write(*, *) TRIM(cwd)
+                     call log_msg(LOG_INFO, 'MAIN', 'Working directory: '//trim(cwd))
                   end block
                   inquire(file=trim(adjustl(l%fichin))//NFDEEXTENSION, EXIST=l%existeNFDE)
                   if (.NOT. l%existeNFDE) then

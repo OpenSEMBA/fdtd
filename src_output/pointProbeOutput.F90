@@ -6,7 +6,7 @@ module pointProbeOutput_m
    use domain_m
    use outputUtils_m
    use ilumina_m, only: Incid
-   use Report_m, only: StopOnError
+   use Report_m, only: StopOnError, log_msg, LOG_INFO, LOG_WARN
 
    implicit none
 
@@ -223,7 +223,7 @@ contains
 
          if (this%nTime <= 0) then
 #ifdef CompileWithDebug
-            print *, "No data to write."
+            call log_msg(LOG_INFO, 'OUTPUT', 'No data to write.')
 #endif
              return
          end if
@@ -247,13 +247,13 @@ contains
          complex(kind=CKIND) :: spectrum
 
          if (.not. allocated(this%frequencySlice) .or. .not. allocated(this%valueForFreq)) then
-            print *, "Error: arrays not allocated."
+            call log_msg(LOG_WARN, 'OUTPUT', 'Frequency arrays not allocated; skipping write.')
             return
          end if
 
          if (this%nFreq <= 0) then
 #ifdef CompileWithDebug
-            print *, "No data to write."
+            call log_msg(LOG_INFO, 'OUTPUT', 'No data to write.')
 #endif
              return
          end if

@@ -249,7 +249,7 @@ contains
                                           this%publication%communicator, status, diagnostic)
       if (status /= VISUALISATION_SUCCESS) then
          error = 1
-         print *, trim(diagnostic)
+         call log_msg(LOG_ERROR, 'OUTPUT', trim(diagnostic))
       end if
    end subroutine create_movie_files
 

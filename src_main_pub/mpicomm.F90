@@ -1780,7 +1780,7 @@ contains
     call MPI_Type_create_struct(number,block_lengths,displacements,&
                     typelist,mesg_mpi_t_line,ierr)
     if (ierr /= 0) then
-        print *, 'got an error in type create: ', ierr
+        call log_msg(LOG_ERROR, 'MPI', 'MPI_Type_create_struct failed for the message line type')
         call MPI_Abort(SUBCOMM_MPI, ierr, ierr)
     end if
 
@@ -1788,7 +1788,7 @@ contains
     ! for communication
     call MPI_TYPE_COMMIT(mesg_mpi_t_line,ierr)
     if (ierr /= 0) then
-        print *, 'got an error in type commit: ', ierr
+        call log_msg(LOG_ERROR, 'MPI', 'MPI_Type_commit failed for the message line type')
         call MPI_Abort(SUBCOMM_MPI, ierr, ierr)
     end if
 

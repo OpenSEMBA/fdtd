@@ -4,6 +4,7 @@ module bulkProbeOutput_m
    use allocationUtils_m, only: alloc_and_init
    use outputTypes_m
    use outputUtils_m
+   use Report_m, only: log_msg, LOG_INFO
 #ifdef CompileWithMPI
    use mpi
 #endif
@@ -214,7 +215,7 @@ contains
       integer :: unit
       if (this%nTime <= 0) then
 #ifdef CompileWithDebug
-         print *, "No data to write."
+         call log_msg(LOG_INFO, 'OUTPUT', 'No data to write.')
 #endif
           return
       end if
