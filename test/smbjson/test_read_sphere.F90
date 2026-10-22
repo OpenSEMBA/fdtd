@@ -131,7 +131,7 @@ contains
       ex%VolPrb%collection(1)%cordinates(1)%ztrancos = 1
       ex%VolPrb%collection(1)%cordinates(1)%tag = ""
       ex%VolPrb%collection(1)%tstart = 0.0_RKIND
-      ex%VolPrb%collection(1)%tstop = 0.0_RKIND
+      ex%VolPrb%collection(1)%tstop = huge(1.0_RKIND)
       ex%VolPrb%collection(1)%tstep = 1e-9_RKIND
       ex%VolPrb%collection(1)%fstart = 0.0_RKIND
       ex%VolPrb%collection(1)%fstop = 0.0_RKIND

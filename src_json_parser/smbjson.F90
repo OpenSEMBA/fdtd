@@ -2461,8 +2461,14 @@ contains
       res%type2 = getNPDomainType(domainType, transferFunctionFound)
 
       res%tstart = this%getRealAt(domain, J_PR_DOMAIN_TIME_START, default=0.0_RKIND)
-      res%tstop = this%getRealAt(domain, J_PR_DOMAIN_TIME_STOP, default=0.0_RKIND)
       res%tstep = this%getRealAt(domain, J_PR_DOMAIN_TIME_STEP, default=0.0_RKIND)
+      ! A missing finalTime means the end of the simulation; preprocess_domain clamps it.
+      ! A zero tstop would make the solver ignore samplingPeriod and save every step.
+      if (res%tstep > 0.0_RKIND) then
+         res%tstop = this%getRealAt(domain, J_PR_DOMAIN_TIME_STOP, default=huge(1.0_RKIND))
+      else
+         res%tstop = this%getRealAt(domain, J_PR_DOMAIN_TIME_STOP, default=0.0_RKIND)
+      end if
       if (res%tstart < 0 .or. res%tstop <0 .or. res%tstep < 0) then
          block 
             character(len=BUFSIZE) :: errorMsg
