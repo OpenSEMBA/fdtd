@@ -18,11 +18,17 @@ module Report_m
    logical, save :: ignoreerrors
    logical, save :: fatalerror=.false.
 
+   integer, parameter, public :: LOG_INFO = 1, LOG_WARN = 2, LOG_ERROR = 3
+   character(len=5), parameter :: LEVEL_NAMES(4) = ['INFO ', 'WARN ', 'ERROR', 'FATAL']
+   integer, parameter :: LOG_FATAL = 4
+   integer(kind=4), save :: logStep = -1
+
    public StopOnError,CloseReportingFiles, &
    print11,Onprint,Offprint,file10isopen,file11isopen
    public WarnErrReport,INITWARNINGFILE,CLOSEWARNINGFILE,get_secnds, &
           erasesignalingfiles,openclosedelete,openclose
    public isFatalError, resetFatalError
+   public log_msg, set_log_step, log_line
    public TRIMNULLCHAR,time_t
 
 
@@ -55,11 +61,15 @@ contains
       integer(kind=4) :: ierr
 #endif
       character(len=BUFSIZE) :: whoami
+      logical :: warningIsOpen
 
       write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
 
 
-      call print11(layoutnumber,trim(adjustl(whoami))//' ERROR: '//trim(adjustl(message)),.true.)
+      call print11(layoutnumber,trim(adjustl(whoami))//' '//log_line(LOG_FATAL, '', message),.true.)
+      inquire(unit=17, opened=warningIsOpen)
+      if (warningIsOpen) write (17,'(a)',err=153) trim(adjustl(whoami))//' '//trim(log_line(LOG_FATAL, '', message))
+153   continue
 
       !19/12/14 bug OLD1812. A stoponerror created by an embedded nodal source arrives here in MPI. The closewarn... does a barrier and prevents the process from dying.
 
@@ -211,40 +221,60 @@ contains
    end subroutine INITWARNINGFILE
 
 
+   ! Kept for legacy callers: error=.true. maps to LOG_ERROR, anything else to LOG_WARN.
    subroutine WarnErrReport(bufff,error)
-      use iso_fortran_env, only : error_unit
-      logical :: itsopen
-      logical, optional :: error
-#ifdef CompileWithMPI
-      integer(kind=4) :: ierr
-#endif
-
       character(len=*), intent(in) :: bufff
-      character(len=BUFSIZE) :: buff2,buff3
+      logical, intent(in), optional :: error
+      integer :: level
 
+      level = LOG_WARN
       if (present(error)) then
-         fatalerror = error .or. fatalerror
+         if (error) level = LOG_ERROR
       end if
+      call log_msg(level, '', bufff)
+   end subroutine WarnErrReport
 
-      !
+   ! Writes '(rank/nprocs) [n=step] [ORIGIN] LEVEL: message' to the warnings file and stderr.
+   subroutine log_msg(level, origin, message)
+      use iso_fortran_env, only : error_unit
+      integer, intent(in) :: level
+      character(len=*), intent(in) :: origin, message
+      character(len=BUFSIZE) :: line
+      logical :: itsopen
 
-      buff3=trim(adjustl(whoami))//' '//trim(adjustl(bufff))
-      call trimnullchar(buff3)
+      if (level >= LOG_ERROR) fatalerror = .true.
 
-      buff2=CHAR(13)//CHAR(10)//trim(adjustl(buff3))
-      call trimnullchar(buff2)
+      line = trim(adjustl(whoami))//' '//log_line(level, origin, message)
+      call trimnullchar(line)
 
       inquire(unit=17, opened=itsopen)
-      if (itsopen) write (17,'(a)',err=154) trim(adjustl(buff3))
-      write (error_unit,'(a)') trim(adjustl(buff3))
+      if (itsopen) write (17,'(a)',err=154) trim(line)
+      write (error_unit,'(a)') trim(line)
+      return
+154   print *,itsopen,'- Cannot write into warning file the message: ',trim(line)
+   end subroutine log_msg
 
-      goto 155
-154   inquire(unit=17, opened=itsopen) 
+   ! Time step attached to every message; negative values (outside the time loop) are omitted.
+   subroutine set_log_step(step)
+      integer(kind=4), intent(in) :: step
+      logStep = step
+   end subroutine set_log_step
 
-      print *,itsopen,'- Cannot write into warning file the message: ',trim(adjustl(buff3))
-155   return
+   function log_line(level, origin, message) result(res)
+      integer, intent(in) :: level
+      character(len=*), intent(in) :: origin, message
+      character(len=BUFSIZE) :: res
+      character(len=32) :: stepTag
 
-   end subroutine WarnErrReport
+      res = ''
+      if (logStep >= 0) then
+         write(stepTag,'(a,i0,a)') '[n=', logStep, ']'
+         res = trim(stepTag)//' '
+      end if
+      if (len_trim(origin) > 0) res = trim(res)//' ['//trim(adjustl(origin))//'] '
+      res = trim(adjustl(res))//' '//trim(LEVEL_NAMES(level))//': '//trim(adjustl(message))
+      res = adjustl(res)
+   end function log_line
 
    function isFatalError() result(res)
       logical :: res

@@ -1793,7 +1793,7 @@ contains
       fieldReference%H%deltaz => this%dzh
 
       ciclo_temporal :  do while (this%n <= this%control%finaltimestep)
-      
+         call set_log_step(this%n)
          call this%step()
          call updateAndFlush()
 
@@ -1873,6 +1873,7 @@ contains
          ! write(*write(*,*) 'timestepping: ', n
          this%n=this%n+1 !increase iteration
       end do ciclo_temporal ! End of the time-stepping loop
+      call set_log_step(-1_4)
 
 
 contains
