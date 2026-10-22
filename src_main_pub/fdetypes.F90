@@ -650,15 +650,6 @@ module  FDETYPES_m
       real(kind=rkind), dimension(:), allocatable :: sigmam
    end type SGBCMaterialProfile_t
 
-   ! type :: conformal_maps_t
-   !    type(face_map_t) :: face_map
-   ! end type
-   ! type :: conformal_fields_t
-   !    type(face_t), dimension(:), allocatable :: faces
-   !    type(edge_t), dimension(:), allocatable :: edges
-   ! end type
-
-
    type, public :: edge_t
       integer(kind=4), dimension(3) :: cell
       integer(kind=4) :: direction = -1

@@ -1260,6 +1260,7 @@ contains
       type(side_t), dimension(:), allocatable, intent(in) :: contour
       type(edge_t), dimension(:), allocatable :: res
       integer(kind=4) :: i, n
+      
       n = 0
       do i = 1, size(contour)
          if(contour(i)%isOnAnyEdge() .and. abs(contour(i)%length() -1.0) < EDGE_RATIO_EQ_TOLERANCE) then 
@@ -1271,7 +1272,9 @@ contains
       do i = 1, size(contour)
          if(contour(i)%isOnAnyEdge() .and. abs(contour(i)%length() -1.0) < EDGE_RATIO_EQ_TOLERANCE) then 
             n = n + 1
-            res(n) = edge_t(cell=contour(i)%getCell(), direction=contour(i)%getEdge(), ratio = 0.0)
+            res(n)%cell = contour(i)%getCell()
+            res(n)%direction = contour(i)%getEdge()
+            res(n)%ratio = 0.0
          end if
       end do
    end function
@@ -1405,8 +1408,12 @@ contains
       aux(1:size(edges)) = edges
       coords(1) = min(side%startNode%position(edge), side%endNode%position(edge))
       coords(2) = max(side%startNode%position(edge), side%endNode%position(edge))
-      
-      new_edge = edge_t(cell=cell, ratio=ratio, direction=edge, material_coords = coords, is_two_sided = split)
+
+      new_edge%cell = cell
+      new_edge%ratio = ratio
+      new_edge%direction = edge
+      new_edge%material_coords = coords
+      new_edge%is_two_sided = split
       aux(size(edges) + 1) = new_edge
 
       deallocate(edges)
@@ -1452,8 +1459,12 @@ contains
       end if
       allocate(aux(size(faces) + 1))
       aux(1:size(faces)) = faces
-      new_face = face_t(cell=cell, ratio=ratio, direction=face, is_two_sided=split, normal = n, contour_inside_edges = inside)
-      ! new_face = face_t(cell=cell, ratio=ratio, direction=face, is_two_sided=split_candidate)
+      new_face%cell = cell
+      new_face%ratio = ratio
+      new_face%direction = face
+      new_face%is_two_sided = split
+      new_face%normal = n
+      new_face%contour_inside_edges = inside
       aux(size(faces) + 1) = new_face
 
       deallocate(faces)
