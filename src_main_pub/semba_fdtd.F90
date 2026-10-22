@@ -599,6 +599,8 @@ contains
                write(thefileno,'(a)') '# (  500 ,  599 ) '//trim(adjustl('Lumped element (+indexmedium)                                           (Surface)'))
                write(thefileno,'(a)') '# ( 1000 , 1999 ) '//trim(adjustl('Conformal Volume PEC (+indexmedium)                                     (Surface)'))
                write(thefileno,'(a)') '# ( 2000 , 2999 ) '//trim(adjustl('Conformal Volume PEC (+indexmedium)                                     (Line)'))
+               write(thefileno,'(a)') '# ( 3000 , 3999 ) '//trim(adjustl('Conformal surface PEC (+indexmedium)                                    (Surface)'))
+               write(thefileno,'(a)') '# ( 4000 , 4999 ) '//trim(adjustl('Conformal surface PEC (+indexmedium)                                    (Line)'))
                write(thefileno,'(a)') '# ( -0.5 , -0.5 ) '//trim(adjustl('Other types of media                                                    (Line)'))
                write(thefileno,'(a)') '# ( -1.0 , -1.0 ) '//trim(adjustl('Other types of media                                                    (Surface)'))
          close(thefileno)

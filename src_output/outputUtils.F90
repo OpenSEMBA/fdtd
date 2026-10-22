@@ -696,8 +696,10 @@ contains
          surface_output_media_type = 0.0_RKIND
       else if (material%is%PMC) then
          surface_output_media_type = 16.0_RKIND
-      else if (material%is%ConformalPec) then
+      else if (material%is%ConformalPec .and. material%is%Volume) then
          surface_output_media_type = 1000.0_RKIND + media
+      else if (material%is%ConformalPec .and. material%is%Surface) then
+         surface_output_media_type = 3000.0_RKIND + media
       else if (material%is%SGBC .or. material%is%Multiport .or. material%is%AnisMultiport) then
          surface_output_media_type = 300.0_RKIND + media
       else if (material%is%EDispersive .or. material%is%MDispersive .or. material%is%EDispersiveAnis .or. &
@@ -733,8 +735,10 @@ contains
          edge_output_media_type = 0.5_RKIND
       else if (material%is%PMC) then
          edge_output_media_type = 16.5_RKIND
-      else if (material%is%ConformalPec) then
+      else if (material%is%ConformalPec .and. material%is%Volume) then
          edge_output_media_type = 2000.0_RKIND + media
+      else if (material%is%ConformalPec .and. material%is%Surface) then
+         edge_output_media_type = 4000.0_RKIND + media
       else if (material%is%SGBC .or. material%is%Multiport .or. material%is%AnisMultiport) then
          edge_output_media_type = 3.5_RKIND
       else if (material%is%EDispersive .or. material%is%MDispersive .or. material%is%EDispersiveAnis .or. &
