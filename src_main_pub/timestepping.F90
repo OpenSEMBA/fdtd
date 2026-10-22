@@ -2780,7 +2780,78 @@ contains
       return
    end subroutine destroy_and_deallocate
 
-   
-   
+   subroutine reportmedia(sgg)
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      integer(kind=4) :: j
+      character(len=BUFSIZE) :: buff
+
+      do j = 0, sgg%NumMedia
+         write(buff,*) '_____________________________'
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'MEDIO :  ', j
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Priority ', sgg%Med(j)%Priority
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Epr ', sgg%Med(j)%Epr
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Sigma ', sgg%Med(j)%Sigma
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Mur ', sgg%Med(j)%Mur
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'SigmaM ', sgg%Med(j)%SigmaM
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is PML ', sgg%Med(j)%Is%PML
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is PEC ', sgg%Med(j)%Is%PEC
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is ThinWIRE ', sgg%Med(j)%Is%ThinWire
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is MULTIWIRE ', sgg%Med(j)%Is%Multiwire
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is SlantedWIRE ', sgg%Med(j)%Is%SlantedWire
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is EDispersive ', sgg%Med(j)%Is%EDispersive
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is EDispersiveaANIS', sgg%Med(j)%Is%EDispersiveANIS
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is MDispersive ', sgg%Med(j)%Is%MDispersive
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is MDispersiveANIS ', sgg%Med(j)%Is%MDispersiveANIS
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is SGBC ', sgg%Med(j)%Is%SGBC
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is Lossy ', sgg%Med(j)%Is%Lossy
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is Multiport ', sgg%Med(j)%Is%multiport
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is AnisMultiport ', sgg%Med(j)%Is%anismultiport
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is MultiportPadding ', sgg%Med(j)%Is%multiportpadding
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is Dielectric ', sgg%Med(j)%Is%DIELECTRIC
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is Anisotropic ', sgg%Med(j)%Is%Anisotropic
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is Needed ', sgg%Med(j)%Is%Needed
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is already_YEEadvanced_byconformal ', sgg%Med(j)%Is%already_YEEadvanced_byconformal
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Iss split_and_useless ', sgg%Med(j)%Is%split_and_useless
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is Volume ', sgg%Med(j)%Is%Volume
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is Surface ', sgg%Med(j)%Is%Surface
+         call WarnErrReport(Trim(buff))
+         write(buff,*) 'Is Line ', sgg%Med(j)%Is%Line
+         call WarnErrReport(Trim(buff))
+         write(buff,*) '_____________________________'
+         call WarnErrReport(Trim(buff))
+      end do
+      return
+   end subroutine reportmedia
 
 end module
