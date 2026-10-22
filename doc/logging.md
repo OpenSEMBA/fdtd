@@ -136,6 +136,7 @@ one fits:
 | `PML`, `CPML`, `MUR` | boundaries |
 | `FARFIELD`, `OUTPUT`, `PROGRESS`, `RESUMING` | outputs, progress and restart |
 | `MAIN` | `semba_fdtd.F90` launch flow |
+| `MPI` | MPI communication setup (`mpicomm.F90`) |
 
 ## Writing a new message
 
@@ -170,6 +171,7 @@ Guidelines:
 | `call WarnErrReport(buff, .true.)` | `call log_msg(LOG_ERROR, 'ORIGIN', buff)` |
 | `call WarnErrReport(buff, flag)` | `call log_msg(merge(LOG_ERROR, LOG_WARN, flag), 'ORIGIN', buff)` |
 | `print *, 'Bug in tags'` then `stop` | `call log_msg(LOG_ERROR, 'PREPROCESS', 'Bug in tags')` then `stop` |
+| `print *, msg` then `stop` (must exit now) | `call StopOnError(layoutnumber, num_procs, msg)` |
 | `(    1/    1) some text` | `(    1/    1) [n=42] [WIRES] WARN: some text` |
 | `(    1/    1) ERROR: msg` (StopOnError, console only) | `(    1/    1) FATAL: msg` (console and warnings file) |
 
@@ -177,8 +179,7 @@ Guidelines:
 
 - **No step tag in `_Warnings.txt`.** The warnings file is merged and closed
   before the time loop, so `[n=...]` only shows up on stderr.
-- **`StopOnError` has no origin.** Its 382 call sites still pass only a
-  message.
+- **`StopOnError` has no origin.** Its call sites still pass only a message.
 - **`stop` exits with code 0.** Some preprocessing paths log `LOG_ERROR` and
   then call a bare `stop`, which still exits 0. `StopOnError` exits 1.
 - **Levels were assigned mechanically.** During the migration, the level came
