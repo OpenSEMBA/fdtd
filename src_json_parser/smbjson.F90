@@ -132,14 +132,12 @@ contains
       allocate(res%jsonfile)
       call res%jsonfile%initialize()
       if (res%jsonfile%failed()) then
-         call log_msg(LOG_ERROR, 'SMBJSON', "Failed to initialize JSONfile")
-         error stop 'smbjson: failed to initialize JSON file: '//res%filename
+         call log_msg(LOG_FATAL, 'SMBJSON', "Failed to initialize JSONfile")
       end if
 
       call res%jsonfile%load(filename = res%filename)
       if (res%jsonfile%failed()) then
-         call log_msg(LOG_ERROR, 'SMBJSON', "Failed to load JSON file: "//res%filename)
-         error stop 'smbjson: failed to load JSON file: '//res%filename
+         call log_msg(LOG_FATAL, 'SMBJSON', "Failed to load JSON file: "//res%filename)
       end if
 
       allocate(res%core)
@@ -155,8 +153,7 @@ contains
       integer :: stat 
 
       if (.not. this%isInitialized .or. .not. associated(this%core) .or. .not. associated(this%root)) then
-         call log_msg(LOG_ERROR, 'SMBJSON', 'smbjson: parser is not initialized for input file: '//this%filename)
-         error stop 'smbjson: parser is not initialized'
+         call log_msg(LOG_FATAL, 'SMBJSON', 'smbjson: parser is not initialized for input file: '//this%filename)
       end if
 
       this%mesh = this%readMesh()

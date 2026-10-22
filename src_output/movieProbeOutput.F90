@@ -83,7 +83,7 @@ contains
       filename = get_last_component(this%path)
       this%filesPath = join_path(this%path, filename)
       call initialise_movie_metadata(this, error, control%mpidir)
-      if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+      if (error /= 0) call log_msg(LOG_FATAL, 'OUTPUT', &
                                        'Unable to initialise movie output metadata')
       this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_ACTIVE
 
@@ -102,29 +102,29 @@ contains
 
        if (publication%local_is_owner) then
           call create_folder(this%path, error)
-          if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+          if (error /= 0) call log_msg(LOG_FATAL, 'OUTPUT', &
                                            'Unable to create movie output directory')
           call create_bin_file(this%filesPath, error)
-          if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+          if (error /= 0) call log_msg(LOG_FATAL, 'OUTPUT', &
                                            'Unable to create movie binary output')
        end if
        call synchronise_movie_participants(this, control)
        call write_geometry_companion(this%filesPath, this%mainCoords, this%auxCoords, problemInfo, &
                                      this%publication%communicator, geometry_status, geometry_diagnostic)
        if (this%publication%local_is_owner .and. geometry_status /= VISUALISATION_SUCCESS) then
-          call StopOnError(control%layoutnumber, control%num_procs, &
+          call log_msg(LOG_FATAL, 'OUTPUT', &
                            'Unable to create movie geometry: '//trim(geometry_diagnostic))
        end if
 
        if (publication%mode == OUTPUT_PUBLICATION_COLLECTIVE .or. publication%local_is_owner) then
          call create_movie_files(this, problemInfo, error)
-         if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+         if (error /= 0) call log_msg(LOG_FATAL, 'OUTPUT', &
                                           'Unable to initialise movie HDF5 output')
       end if
       call init_output_transport(transport, root_rank=0, status=error, &
                                  communicator=this%publication%communicator)
       if (error /= OUTPUT_TRANSPORT_SUCCESS) then
-         call StopOnError(control%layoutnumber, control%num_procs, &
+         call log_msg(LOG_FATAL, 'OUTPUT', &
                           'Unable to initialise movie classification transport')
       end if
       call write_classification_attributes(this, transport)
@@ -145,7 +145,7 @@ contains
 
       if (this%publication%communicator_size > 1) then
          call MPI_Barrier(this%publication%communicator, error)
-         if (error /= MPI_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
+         if (error /= MPI_SUCCESS) call log_msg(LOG_FATAL, 'OUTPUT', &
                                                     'Unable to synchronise movie output participants')
       end if
 #endif
@@ -278,7 +278,7 @@ contains
          case (IMHC)
             call save_field_module(this, fieldsReference%H, request, step, problemInfo)
          case default
-            call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
+            call log_msg(LOG_FATAL, 'OUTPUT', "Volumic measure not supported")
          end select
       else if (any(VOLUMIC_X_MEASURE == request)) then
          select case (request)
@@ -289,7 +289,7 @@ contains
          case (IHXC)
             call save_field_component(this, this%xValueForTime, fieldsReference%H%x, step, problemInfo, IHX)
          case default
-            call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
+            call log_msg(LOG_FATAL, 'OUTPUT', "Volumic measure not supported")
          end select
       else if (any(VOLUMIC_Y_MEASURE == request)) then
          select case (request)
@@ -300,7 +300,7 @@ contains
          case (IHYC)
             call save_field_component(this, this%yValueForTime, fieldsReference%H%y, step, problemInfo, IHY)
          case default
-            call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
+            call log_msg(LOG_FATAL, 'OUTPUT', "Volumic measure not supported")
          end select
       else if (any(VOLUMIC_Z_MEASURE == request)) then
          select case (request)
@@ -311,7 +311,7 @@ contains
          case (IHZC)
             call save_field_component(this, this%zValueForTime, fieldsReference%H%z, step, problemInfo, IHZ)
          case default
-            call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
+            call log_msg(LOG_FATAL, 'OUTPUT', "Volumic measure not supported")
          end select
       end if
    end subroutine update_movie_probe_output
@@ -328,13 +328,13 @@ contains
       call init_output_transport(transport, root_rank=0, status=error, &
                                  communicator=this%publication%communicator)
       if (error /= OUTPUT_TRANSPORT_SUCCESS) then
-         call StopOnError(0, 0, 'Unable to initialise movie output transport')
+         call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to initialise movie output transport')
       end if
 
       call write_bin_file(this, transport)
       call write_visualisation(this, transport)
       call flush_visualisation(this%visualisation, error, diagnostic)
-      if (error /= VISUALISATION_SUCCESS) call StopOnError(0, 0, &
+      if (error /= VISUALISATION_SUCCESS) call log_msg(LOG_FATAL, 'OUTPUT', &
                                                            'Unable to flush movie HDF5 output: '//trim(diagnostic))
       call clear_memory_data(this)
    end subroutine flush_movie_probe_output
@@ -352,12 +352,12 @@ contains
       end if
       call close_visualisation(this%visualisation, error, diagnostic)
       if (error /= VISUALISATION_SUCCESS) then
-         call StopOnError(0, 0, 'Unable to close movie HDF5 output: '//trim(diagnostic))
+         call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to close movie HDF5 output: '//trim(diagnostic))
       end if
 #ifdef CompileWithMPI
       if (this%publication%owns_communicator .and. this%publication%local_participates) then
          call MPI_Comm_free(this%publication%communicator, error)
-         if (error /= MPI_SUCCESS) call StopOnError(0, 0, 'Unable to free movie output communicator')
+         if (error /= MPI_SUCCESS) call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to free movie output communicator')
          this%publication%owns_communicator = .false.
          this%publication%communicator = MPI_COMM_NULL
       end if
@@ -382,7 +382,7 @@ contains
          this%metadata%lifecycle%diagnostic = 'Required movie output artifacts are incomplete'
       end if
       if (this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) then
-         call StopOnError(0, 0, trim(this%metadata%lifecycle%diagnostic))
+         call log_msg(LOG_FATAL, 'OUTPUT', trim(this%metadata%lifecycle%diagnostic))
       end if
    end subroutine close_movie_probe_output
 
@@ -410,13 +410,13 @@ contains
          end do
          call transfer_flush_batch(transport, local_records, gathered_records, counts, displacements, counts_status)
          if (counts_status /= OUTPUT_TRANSPORT_SUCCESS) then
-            call StopOnError(0, 0, 'Unable to gather movie binary records')
+            call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to gather movie binary records')
          end if
          if (this%publication%local_is_owner) then
             call append_binary_real64(add_extension(this%filesPath, BINARYEXTENSION), &
                                       this%metadata%artifacts(1), gathered_records, status)
             if (status /= BINARY_WRITER_SUCCESS) then
-               call StopOnError(0, 0, 'Unable to append movie binary records')
+               call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to append movie binary records')
             end if
          end if
       end do
@@ -548,14 +548,14 @@ contains
       case (OUTPUT_PUBLICATION_ROOT_AGGREGATION)
          call gather_global_dense(this, local_values, transport, global_values, transport_status)
          if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
-            call StopOnError(0, 0, 'Unable to aggregate movie HDF5 values')
+            call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to aggregate movie HDF5 values')
          end if
          if (this%publication%local_is_owner) then
             call write_visualisation_attribute(this%visualisation, attribute, global_values, status, diagnostic)
             call require_visualisation_success(status, diagnostic, 'Movie HDF5 write failed: ')
          end if
       case default
-         call StopOnError(0, 0, 'Unsupported movie output publication mode')
+         call log_msg(LOG_FATAL, 'OUTPUT', 'Unsupported movie output publication mode')
       end select
    end subroutine publish_dense_attribute
 
@@ -564,7 +564,7 @@ contains
       character(len=*), intent(in) :: diagnostic, context
 
       if (status /= VISUALISATION_SUCCESS) then
-         call StopOnError(0, 0, context//trim(diagnostic))
+         call log_msg(LOG_FATAL, 'OUTPUT', context//trim(diagnostic))
       end if
    end subroutine require_visualisation_success
 

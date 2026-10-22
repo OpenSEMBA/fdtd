@@ -1354,7 +1354,7 @@ contains
          (k < SINPML_fullsize(whatfield)%ZE)) then
             if (control%makeholes.and.(.not.IsEnd_norLeft_norRight).and.(.not.Is_LeftEnd).and.(.not.Is_RightEnd)) then
                 if (control%num_procs==0) then 
-                    call stoponerror(control%layoutnumber,control%num_procs,'Makeholes not available for MPI. Stoppping. ')
+                    call log_msg(LOG_FATAL, 'WIRES', 'Makeholes not available for MPI. Stoppping. ')
                 end if
                select case (whatfield)
                 case (IEX)
@@ -2204,7 +2204,7 @@ contains
 !
              dummy%Lind_devia=dummy%Lind_devia + givenautoin_devia
          else
-             if (givenautoin <= tiny(1.0e-1))  call StopOnError(0,0,'Fieldtotl not compatible with null given self inductance. ')
+             if (givenautoin <= tiny(1.0e-1))  call log_msg(LOG_FATAL, 'WIRES', 'Fieldtotl not compatible with null given self inductance. ')
                  
              dummy%Lind=givenautoin
 !
@@ -3506,7 +3506,7 @@ contains
          !Junctions and plain nodes require this correction in case of two distinct radius segments meet
          DenominatorFractionMinusDummy=0.0_RKIND_WIRES
          deltadummy1=0.0_RKIND_WIRES
-         if (wireNode%NumCurrentPlus<=0)  call StopOnError(0,0,'Bug fractionminuss. ')
+         if (wireNode%NumCurrentPlus<=0)  call log_msg(LOG_FATAL, 'WIRES', 'Bug fractionminuss. ')
          do j1=1,wireNode%NumCurrentPlus
             select case (j1)
              case (1)
@@ -3561,7 +3561,7 @@ contains
          segmento%FractionPlus=-1.0e30_RKIND_wires !absurd value, it must always enter some case
          DenominatorFractionPlusDummy=0.0_RKIND_WIRES
          deltadummy2=0.0_RKIND_WIRES
-         if (wireNode%NumCurrentMinus<=0)  call StopOnError(0,0,'Bug fractionplus. ')
+         if (wireNode%NumCurrentMinus<=0)  call log_msg(LOG_FATAL, 'WIRES', 'Bug fractionplus. ')
          do j1=1,wireNode%NumCurrentMinus
             select case (j1)
              case (1)

@@ -4,8 +4,8 @@
 module progress_m
    use FDETYPES_m
    use snapxdmf_m
-   use Report_m, only: print11, StopOnError, get_secnds, time_t, erasesignalingfiles, &
-                       openclosedelete, file10isopen, log_msg, LOG_WARN
+   use Report_m, only: print11, get_secnds, time_t, erasesignalingfiles, &
+                       openclosedelete, file10isopen, log_msg, LOG_WARN, LOG_FATAL
 
    implicit none
    private
@@ -71,10 +71,10 @@ contains
          if (.not.errnofile) then
             if (c%resume_fromold) then
                buff='FILE '//trim(adjustl(c%nresumeable2))//'.old DOES NOT EXIST'
-               call StopOnError(c%layoutnumber,c%num_procs,buff)
+               call log_msg(LOG_FATAL, 'PROGRESS', buff)
             else
                buff='FILE '//trim(adjustl(c%nresumeable2))//' DOES NOT EXIST'
-               call StopOnError(c%layoutnumber,c%num_procs,buff)
+               call log_msg(LOG_FATAL, 'PROGRESS', buff)
             end if
          end if
          call print11(c%layoutnumber,SEPARADOR//SEPARADOR//SEPARADOR)

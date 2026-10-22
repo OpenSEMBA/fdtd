@@ -435,7 +435,7 @@ contains
             if (Abs(px*ex+py*ey+pz*ez) >= 1e-4) then
                write(buff,*) 'NO TEM PLANEWAVE',ex,ey,ez,px,py,pz,(px*ex+py*ey+pz*ez),this%plnSrc%collection(i)%alpha,  &
                   this%plnSrc%collection(i)%beta,this%plnSrc%collection(i)%theta,this%plnSrc%collection(i)%phi
-               call STOPONERROR(layoutnumber,num_procs,buff)
+               call log_msg(LOG_FATAL, 'PREPROCESS', buff)
             end if
             !
             sgg%PlaneWave(i)%px(1) = px
@@ -898,7 +898,7 @@ contains
          else if (this%DielRegs%lins(i)%diode) then
 !!!27/08/15 diodes not yet supported
             write(buff, '(a)')    'Lumped Diodes currently unsupported. .'
-            call STOPONERROR(layoutnumber,num_procs,buff)
+            call log_msg(LOG_FATAL, 'PREPROCESS', buff)
 !!!
             sgg%Med(contamedia)%Is%Lumped = .true.
             sgg%Med(contamedia)%Is%lossy = .true. !important that if it is lumped this is set to lossy so that thin-wires does the bonding correctly !bug agb 120123 test_GGGbugresis_wire_stoch_foragasconbug
@@ -919,7 +919,7 @@ contains
             sgg%Med(contamedia)%Is%Lumped = .false.
             if (.not. this%DielRegs%lins(i)%plain) then
                write(buff, '(a)')    'Buggy error 1 in preprocess lumped. .'
-               call STOPONERROR(layoutnumber,num_procs,buff)
+               call log_msg(LOG_FATAL, 'PREPROCESS', buff)
             end if
          end if
 !!!end lumped
@@ -1295,7 +1295,7 @@ contains
                   !
                   if ((this%LossyThinSurfs%cs(j)%numLayers >1).and.SGBCDispersive) then
                      write(buff, *)    'ERROR in SGBCs Number of layers >1 still unsupported for SGBCDispersive. '
-                     call StopOnError (0,0,buff)
+                     call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                   end if
                   !
                   allocate(sgg%Med(contamedia)%Multiport(1)%epr(1:this%LossyThinSurfs%cs(j)%numLayers), &
@@ -1344,11 +1344,11 @@ contains
                         delta=(sgg%DZ(pointZI)+sgg%Dz(pointZI-1))/2.0_RKIND
                       case default
                         write(buff, '(a)')    'Buggy error 1 in preprocess composites. .'
-                        call STOPONERROR(layoutnumber,num_procs,buff)
+                        call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                      end select
                   else
                      write(buff, '(a)')    'Buggy error 2 in preprocess composites. .'
-                     call STOPONERROR(layoutnumber,num_procs,buff)
+                     call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                   end if
                   sgg%Med(contamedia)%Multiport(1)%numLayers = this%LossyThinSurfs%cs(j)%numLayers
                   !the specified one
@@ -1376,7 +1376,7 @@ contains
                   rdummy=maxval(abs(this%LossyThinSurfs%cs(j)%MU_devia))+maxval(abs(this%LossyThinSurfs%cs(j)%SigmaM_devia))
                   if (rdummy>1.0e-15_RKIND) then
                      write(buff, '(a)')    'Non null deviations found in sigmam or mu in composites. Still unsupported.'
-                     call STOPONERROR(layoutnumber,num_procs,buff)
+                     call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                   end if
 
                   !!!
@@ -1394,7 +1394,7 @@ contains
                      if (SGBCDispersive)   sgg%Med(contamedia)%Is%SGBCDispersive = .TRUE.
                   else
                      write(buff, '(a)')    'Some -mibc -sgbc switch should be used for Composites.'
-                     call STOPONERROR(layoutnumber,num_procs,buff)
+                     call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                   end if
                   sgg%Med(contamedia)%Is%DIELECTRIC = .FALSE.
 
@@ -1517,11 +1517,11 @@ contains
                         delta=(sgg%DZ(pointZI)+sgg%Dz(pointZI-1))/2.0_RKIND
                       case default
                         write(buff, '(a)')    'Buggy error 1 in preprocess composites. .'
-                        call STOPONERROR(layoutnumber,num_procs,buff)
+                        call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                      end select
                   else
                      write(buff, '(a)')    'Buggy error 2 in preprocess composites. .'
-                     call STOPONERROR(layoutnumber,num_procs,buff)
+                     call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                   end if
                   sgg%Med(contamedia)%AnisMultiport(1)%Multiportdir = this%LossyThinSurfs%cs(j)%C(i)%or
                   sgg%Med(contamedia)%AnisMultiport(1)%epr    = this%LossyThinSurfs%cs(j)%eps / Eps0
@@ -1540,7 +1540,7 @@ contains
                      sgg%Med(contamedia)%Is%Lossy = .TRUE.
                   else
                      write(buff, '(a)')    'Some -mibc -sgbc switch should be used for Anisotropic Composites.'
-                     call STOPONERROR(layoutnumber,num_procs,buff)
+                     call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                   end if
 
                   sgg%Med(contamedia)%Is%DIELECTRIC = .FALSE.
@@ -1874,7 +1874,7 @@ contains
             +abs(sgg%Med(contamedia)%wire(1)%Series_C_LeftEnd_devia)
          if (rdummy>1.0e-15_RKIND) then
             write(buff, '(a)')    'Non null deviations found in L, C or radius in wires stoch. Still unsupported.'
-            call STOPONERROR(layoutnumber,num_procs,buff)
+            call log_msg(LOG_FATAL, 'PREPROCESS', buff)
          end if
 !end stoch
          !
@@ -2360,7 +2360,7 @@ contains
                end if
             else if (trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) /= 'None') then
                write(buff,*) 'WRONG type of wire source '//trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE))
-               call stoponerror (layoutnumber,num_procs,buff)
+               call log_msg(LOG_FATAL, 'PREPROCESS', buff)
             end if
          end do hilosbarre
          sgg%Med(contamedia)%wire(1)%NUMVOLTAGESOURCES=CONTAVOLT
@@ -2511,7 +2511,7 @@ contains
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Isource%sourceFile%name = trim (adjustl(this%swires%SW(j)%swc(i)%SRCFILE))
             else if (trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) /= 'None') then
                write(buff,*) 'WRONG type of wire source '//trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE))
-               call stoponerror (layoutnumber,num_procs,buff)
+               call log_msg(LOG_FATAL, 'PREPROCESS', buff)
             end if
          end do
       end do
@@ -2695,7 +2695,7 @@ contains
                      i1 = i1-1
                   else
                      write(buff,*) 'Thin Slot must be defined over a conductive or surface-impedance material',i1, j1, k1, direccion
-                     call stoponerror (layoutnumber,num_procs,buff)
+                     call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                      !careful, with nfde you cannot make staircase Slots because the orientation of the planes cannot be determined
                      !in the common sections. Therefore I could not test the anisotropic electric shared ones, only the magnetic ones
                   end if
@@ -2735,7 +2735,7 @@ contains
                      mur1 = 0.5_RKIND  * (sgg%Med(medium1)%Mur+sgg%Med(medium2)%Mur)
                   else
                      write(buff,*) 'Media around the Slot are not plain media: ', medium1, medium2
-                     call STOPONERROR(layoutnumber,num_procs,buff)
+                     call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                   end if
                   width = this%tSlots%Tg(j)%width
                   if (sgg%NumPlaneWaves == 1) then
@@ -3363,7 +3363,7 @@ contains
                !if it has not been caught
                if (.not.trappedNode) then
                   write(buff,'(a,i9)') 'Current probe not found in WIRE segment ',this%Sonda%collection(i)%cordinates(j)%XI
-                  call StopOnError(layoutnumber,num_procs,buff)
+                  call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                end if
             else if (abs(tempType) == NP_COR_LINE) then
                sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
@@ -3380,7 +3380,7 @@ contains
          tama2 = (this%oldSONDA%probes(i)%n_FarField)
          if (tama2 > 1) then
             buff='Only one Far Field probe allowed'
-            call STOPONERROR(layoutnumber,num_procs,buff)
+            call log_msg(LOG_FATAL, 'PREPROCESS', buff)
          end if
          if (tama2 > 0) sgg%observation(ii)%nP = 1 !one point for the whole farfield (it is symbolic)
          !electric FIELDS
@@ -3392,7 +3392,7 @@ contains
             tama6 = (this%oldSONDA%probes(i)%Electric(j)%probe%n_cord)
             buff='TAMANIOS DE PROBES EH RAROS'
             if ((tama3 /= tama4) .OR. (tama3 /= tama5) .OR. (tama3 /= tama6)) &
-            &                call STOPONERROR(layoutnumber,num_procs,buff)
+            &                call log_msg(LOG_FATAL, 'PREPROCESS', buff)
             do k = 1, tama3
                gridPoint%XI = this%oldSONDA%probes(i)%Electric(j)%probe%i(k)
                gridPoint%YI = this%oldSONDA%probes(i)%Electric(j)%probe%j(k)
@@ -3412,7 +3412,7 @@ contains
             tama6 = (this%oldSONDA%probes(i)%Magnetic(j)%probe%n_cord)
             buff='pre1_ERROR: TAMANIOS DE PROBES EH RAROS'
             if ((tama3 /= tama4) .OR. (tama3 /= tama5) .OR. (tama3 /= tama6)) &
-            &           call STOPONERROR(layoutnumber,num_procs,buff)
+            &           call log_msg(LOG_FATAL, 'PREPROCESS', buff)
             do k = 1, tama3
                gridPoint%XI = this%oldSONDA%probes(i)%Magnetic(j)%probe%i(k)
                gridPoint%YI = this%oldSONDA%probes(i)%Magnetic(j)%probe%j(k)
@@ -3517,7 +3517,7 @@ contains
       if (sondas > MAXPROBES) then
          write(buff,*) 'Too many probes= ', sondas, 'Either  or reduce the number of probes below ', &
          & MAXPROBES
-         call STOPONERROR(layoutnumber,num_procs,buff)
+         call log_msg(LOG_FATAL, 'PREPROCESS', buff)
       end if
       if (sondas > 1024) then
          write(buff,*) 'Number of probes ', &
@@ -3625,7 +3625,7 @@ contains
                 (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
                 (sgg%observation(ii)%FreqStep < 0.0_RKIND)) then
                   write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
-                  if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,num_procs,buff)
+                  if (sgg%observation(ii)%FreqDomain) call log_msg(LOG_FATAL, 'PREPROCESS', buff)
             end if
             !!!
             do j = 1, tama2
@@ -3809,12 +3809,12 @@ contains
             !farfields (it is not time domain but a special form of it)
             tama2 = (this%oldSONDA%probes(i)%n_FarField)
             write(buff,*) 'More than 1 Far Field box unsupported'
-            if (tama2 > 1) call STOPONERROR(layoutnumber,num_procs,buff)
+            if (tama2 > 1) call log_msg(LOG_FATAL, 'PREPROCESS', buff)
             !
             do j = 1, tama2
                tama3 = (this%oldSONDA%probes(i)%FarField(j)%probe%n_cord)
                buff='FAR FIELD PROBE REQUIRES TWO COORDINATES FOR THE BOX'
-               if (tama3 /= 2)  call STOPONERROR(layoutnumber,num_procs,buff)
+               if (tama3 /= 2)  call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                !
                sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
                gridPoint%XI = this%oldSONDA%probes(i)%FarField(j)%probe%i(1)
@@ -3853,7 +3853,7 @@ contains
                   (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
                   (sgg%observation(ii)%FreqStep < 0.0_RKIND)) then
                   write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
-                  if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,num_procs,buff)
+                  if (sgg%observation(ii)%FreqDomain) call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                end if
                !
 
@@ -3867,7 +3867,7 @@ contains
                tama6 = (this%oldSONDA%probes(i)%Electric(j)%probe%n_cord)
                buff='TAMANIOS DE PROBES EH RAROS'
                if ((tama3 /= tama4) .OR. (tama3 /= tama5) .OR. (tama3 /= tama6))  &
-               &                call STOPONERROR(layoutnumber,num_procs,buff)
+               &                call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                write(probenumber, '(i7)') ii
                do k = 1, tama3
                   gridPoint%XI = this%oldSONDA%probes(i)%Electric(j)%probe%i(k)
@@ -3912,7 +3912,7 @@ contains
                tama6 = (this%oldSONDA%probes(i)%Magnetic(j)%probe%n_cord)
                buff='TAMANIOS DE PROBES EH RAROS'
                if ((tama3 /= tama4) .OR. (tama3 /= tama5) .OR. (tama3 /= tama6))  &
-               &                call STOPONERROR(layoutnumber,num_procs,buff)
+               &                call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                do k = 1, tama3
                   gridPoint%XI = this%oldSONDA%probes(i)%Magnetic(j)%probe%i(k)
                   gridPoint%YI = this%oldSONDA%probes(i)%Magnetic(j)%probe%j(k)
@@ -4028,7 +4028,7 @@ contains
                   (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
                   (sgg%observation(ii)%FreqStep < 0.0_RKIND) ) then
                   write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
-                  if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,num_procs,buff)
+                  if (sgg%observation(ii)%FreqDomain) call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                end if
                !END COMPATIBILITY 15/07/15
                select case (this%BloquePRB%BP(i)%NML)
@@ -4114,7 +4114,7 @@ contains
                tama2 = 1
                if (tama2 >1) then
                   write(buff,*) 'Only 1 Volumic probe allown per section'
-                  call STOPONERROR(layoutnumber,num_procs,buff)
+                  call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                end if
                do j = 1, tama2
                   !I clip these probes to allow out-of-the box snapshot probes !beware, if this is changed here also change it above
@@ -4234,7 +4234,7 @@ contains
                tama2 = (this%VolPrb%collection(i)%len_cor)
                if (tama2 >1) then
                   write(buff,*) 'Only 1 Volumic probe allown per section'
-                  call STOPONERROR(layoutnumber,num_procs,buff)
+                  call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                end if
                do j = 1, tama2
                   !I clip these probes to allow out-of-the box snapshot probes
@@ -4488,7 +4488,7 @@ contains
                call print11 (layoutnumber, buff)
 !end for debugging
                write(buff,*) 'Buggy error in Volumic probes. np/=1. , np=',sgg%observation(ii)%nP
-               call STOPONERROR(layoutnumber,num_procs,buff)
+               call log_msg(LOG_FATAL, 'PREPROCESS', buff)
             end if
          end do
 !!!find 210618
@@ -4558,7 +4558,7 @@ contains
       if (extraMedium%exists) then
          CONTAMEDIA = CONTAMEDIA+1
          if  (extraMedium%elementIndex /= contamedia) then !should be already done earlier
-            call STOPONERROR(layoutnumber,num_procs,'Bug in media count. ')
+            call log_msg(LOG_FATAL, 'PREPROCESS', 'Bug in media count. ')
          end if
          extraMedium%elementIndex=CONTAMEDIA
       end if
@@ -4611,10 +4611,10 @@ contains
          close (14)
          if (sgg%NumMedia > 32767) then
             buff='Number of media>32767. Recompile with #define CompileWithInt4'
-            call STOPONERROR(layoutnumber,num_procs,buff)
+            call log_msg(LOG_FATAL, 'PREPROCESS', buff)
          else
             buff='Number of media>127. Recompile with #define CompileWithInt2'
-            call STOPONERROR(layoutnumber,num_procs,buff)
+            call log_msg(LOG_FATAL, 'PREPROCESS', buff)
          end if
       end if
 #endif
@@ -4622,14 +4622,14 @@ contains
       if (sgg%NumMedia > 32767) then
          close (14)
          buff='Number of media>32767. Recompile with #define CompileWithInt4'
-         call STOPONERROR(layoutnumber,num_procs,buff)
+         call log_msg(LOG_FATAL, 'PREPROCESS', buff)
       end if
 #endif
 #ifdef CompileWithInt4
       if (sgg%NumMedia > 2.0e9) then
          close (14)
          buff='Number of media>2^31-1. Cannot continue. '
-         call STOPONERROR(layoutnumber,num_procs,buff)
+         call log_msg(LOG_FATAL, 'PREPROCESS', buff)
       end if
 #endif
       !read the source files
@@ -4644,7 +4644,7 @@ contains
             inquire(file=trim(adjustl(sgg%observation(ii)%FileNormalize)), EXIST=errnofile)
             if (.NOT. errnofile) then
                buff=trim(adjustl(sgg%observation(ii)%FileNormalize))//' DOES NOT EXIST'
-               call STOPONERROR(layoutnumber,num_procs,buff)
+               call log_msg(LOG_FATAL, 'PREPROCESS', buff)
             end if
          end if
          !
@@ -4742,7 +4742,7 @@ contains
                                                ownMedium, minusMedium, plusMedium)) cycle
             if (.not. isThinSlotHostMedium(ownMedium)) cycle
             if (isThinSlotHostMedium(minusMedium) .neqv. isThinSlotHostMedium(plusMedium)) then
-               call StopOnError(layoutnumber, num_procs, 'Thin Slot cannot run along the perimeter of its conductive sheet')
+               call log_msg(LOG_FATAL, 'PREPROCESS', 'Thin Slot cannot run along the perimeter of its conductive sheet')
             end if
          end do
       end subroutine
@@ -5703,11 +5703,11 @@ contains
                      inquire(file=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%NAME)), EXIST=errnofile)
                      if (.NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%name))//' DOES NOT EXIST'
-                        call STOPONERROR(layoutnumber,num_procs,buff)
+                        call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                      end if
                      if (.not. file_has_samples(trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%NAME)), 2)) then
                         buff=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%name))//' IS EMPTY OR CONTAINS FEWER THAN TWO SAMPLES'
-                        call STOPONERROR(layoutnumber,num_procs,buff)
+                        call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%NAME)),action='read')
                      read (15,*) time1, field1
@@ -5741,7 +5741,7 @@ contains
                                  buff=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%sourceFile%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     close(15)
-                                    call STOPONERROR(layoutnumber,num_procs,buff)
+                                    call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                                  end if
                               end if
                            end if
@@ -5759,11 +5759,11 @@ contains
                      inquire(file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%NAME)), EXIST=errnofile)
                      if (.NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%name))//' DOES NOT EXIST'
-                        call STOPONERROR(layoutnumber,num_procs,buff)
+                        call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                      end if
                      if (.not. file_has_samples(trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%NAME)), 2)) then
                         buff=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%name))//' IS EMPTY OR CONTAINS FEWER THAN TWO SAMPLES'
-                        call STOPONERROR(layoutnumber,num_procs,buff)
+                        call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%NAME)),action='read')
                      read (15,*) time1, field1
@@ -5797,7 +5797,7 @@ contains
                                  buff=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%sourceFile%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     close(15)
-                                    call STOPONERROR(layoutnumber,num_procs,buff)
+                                    call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                                  end if
                               end if
                            end if
@@ -5817,11 +5817,11 @@ contains
                      inquire(file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%NAME)), EXIST=errnofile)
                      if (.NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%name))//' DOES NOT EXIST'
-                        call STOPONERROR(layoutnumber,num_procs,buff)
+                        call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                      end if
                      if (.not. file_has_samples(trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%NAME)), 2)) then
                         buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%name))//' IS EMPTY OR CONTAINS FEWER THAN TWO SAMPLES'
-                        call STOPONERROR(layoutnumber,num_procs,buff)
+                        call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%NAME)),action='read')
                      read (15,*) time1, field1
@@ -5855,7 +5855,7 @@ contains
                                  buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%sourceFile%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     close(15)
-                                    call STOPONERROR(layoutnumber,num_procs,buff)
+                                    call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                                  end if
                               end if
                            end if
@@ -5870,11 +5870,11 @@ contains
                      inquire(file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%NAME)), EXIST=errnofile)
                      if (.NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%name))//' DOES NOT EXIST'
-                        call STOPONERROR(layoutnumber,num_procs,buff)
+                        call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                      end if
                      if (.not. file_has_samples(trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%NAME)), 2)) then
                         buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%name))//' IS EMPTY OR CONTAINS FEWER THAN TWO SAMPLES'
-                        call STOPONERROR(layoutnumber,num_procs,buff)
+                        call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%NAME)),action='read')
                      read (15,*) time1, field1
@@ -5908,7 +5908,7 @@ contains
                                  buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%sourceFile%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     close(15)
-                                    call STOPONERROR(layoutnumber,num_procs,buff)
+                                    call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                                  end if
                               end if
                            end if
@@ -5930,11 +5930,11 @@ contains
                inquire(file=trim(adjustl(sgg%NodalSource(j)%sourceFile%NAME)), EXIST=errnofile)
                if (.NOT. errnofile) then
                   buff=trim(adjustl(sgg%NodalSource(j)%sourceFile%name))//' DOES NOT EXIST'
-                  call STOPONERROR(layoutnumber,num_procs,buff)
+                  call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                end if
                if (.not. file_has_samples(trim(adjustl(sgg%NodalSource(j)%sourceFile%NAME)), 2)) then
                   buff=trim(adjustl(sgg%NodalSource(j)%sourceFile%name))//' IS EMPTY OR CONTAINS FEWER THAN TWO SAMPLES'
-                  call STOPONERROR(layoutnumber,num_procs,buff)
+                  call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                end if
                open(15, file=trim(adjustl(sgg%NodalSource(j)%sourceFile%NAME)),action='read')
                read (15,*) time1, field1
@@ -5967,7 +5967,7 @@ contains
                            buff=trim(adjustl(sgg%NodalSource(j)%sourceFile%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                            if (.not.ignoresamplingerrors) then
                               close(15)
-                              call STOPONERROR(layoutnumber,num_procs,buff)
+                              call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                            end if
                         end if
                      end if
@@ -5994,11 +5994,11 @@ contains
             inquire(file=trim(adjustl(sgg%PlaneWave(j)%sourceFile%NAME)), EXIST=errnofile)
             if (.NOT. errnofile) then
                buff=trim(adjustl(sgg%PlaneWave(j)%sourceFile%name))//' DOES NOT EXIST'
-               call STOPONERROR(layoutnumber,num_procs,buff)
+               call log_msg(LOG_FATAL, 'PREPROCESS', buff)
             end if
             if (.not. file_has_samples(trim(adjustl(sgg%PlaneWave(j)%sourceFile%NAME)), 2)) then
                buff=trim(adjustl(sgg%PlaneWave(j)%sourceFile%name))//' IS EMPTY OR CONTAINS FEWER THAN TWO SAMPLES'
-               call STOPONERROR(layoutnumber,num_procs,buff)
+               call log_msg(LOG_FATAL, 'PREPROCESS', buff)
             end if
             open(15, file=trim(adjustl(sgg%PlaneWave(j)%sourceFile%NAME)),action='read')
             read (15,*) time1, field1
@@ -6027,7 +6027,7 @@ contains
                         buff=trim(adjustl(sgg%PlaneWave(j)%sourceFile%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                         if (.not.ignoresamplingerrors) then
                            close(15)
-                           call STOPONERROR(layoutnumber,num_procs,buff)
+                           call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                         end if
                      end if
                   end if
@@ -6170,8 +6170,7 @@ contains
             sgg%Med(contamedia)%EDispersive(1)%NumPolRes33 /= 0) then
             sgg%Med(contamedia)%Is%EDispersive = .TRUE.
             sgg%Med(contamedia)%Is%EDispersiveAnis = .TRUE.
-            call log_msg(LOG_ERROR, 'PREPROCESS', 'Error: anisotropic dispersive unsupported')
-            stop
+            call log_msg(LOG_FATAL, 'PREPROCESS', 'Error: anisotropic dispersive unsupported')
             sgg%Med(contamedia)%Is%DIELECTRIC = .FALSE.
          end if
          if (sgg%Med(contamedia)%MDispersive(1)%NumPolRes11 /= 0) then
@@ -6183,8 +6182,7 @@ contains
             sgg%Med(contamedia)%MDISPERSIVE(1)%NumPolRes33 /= 0) then
             sgg%Med(contamedia)%Is%MDISPERSIVE = .TRUE.
             sgg%Med(contamedia)%Is%MDISPERSIVEAnis = .TRUE.
-            call log_msg(LOG_ERROR, 'PREPROCESS', 'Error: anisotropic dispersive unsupported')
-            stop
+            call log_msg(LOG_FATAL, 'PREPROCESS', 'Error: anisotropic dispersive unsupported')
             sgg%Med(contamedia)%Is%DIELECTRIC = .FALSE.
          end if
          !!!!
@@ -6310,7 +6308,7 @@ contains
       else
          if (tama /= this%despl%mx2-this%despl%mx1) then
             buff='Tamanio discretizacion distinto de la region'
-            call STOPONERROR(layoutnumber,num_procs,buff)
+            call log_msg(LOG_FATAL, 'PREPROCESS', buff)
          end if
          do i = this%despl%mx1, this%despl%mx2 - 1
             sgg%dx (i) = this%despl%desx(i)
@@ -6326,7 +6324,7 @@ contains
       else
          if (tama /= this%despl%my2-this%despl%my1) then
             buff='Tamanio discretizacion distinto de la region'
-            call STOPONERROR(layoutnumber,num_procs,buff)
+            call log_msg(LOG_FATAL, 'PREPROCESS', buff)
          end if
          do i = this%despl%my1, this%despl%my2 - 1
             sgg%dy (i) = this%despl%desY(i)
@@ -6342,7 +6340,7 @@ contains
       else
          if (tama /= this%despl%mz2-this%despl%mz1) then
             buff='Tamanio discretizacion distinto de la region'
-            call STOPONERROR(layoutnumber,num_procs,buff)
+            call log_msg(LOG_FATAL, 'PREPROCESS', buff)
          end if
          do i = this%despl%mz1, this%despl%mz2 - 1
             sgg%dz (i) = this%despl%desZ(i)
@@ -6361,7 +6359,7 @@ contains
       else
          if (tama /= this%despl%mx2-this%despl%mx1) then
             buff='Tamanio discretizacion distinto de la region'
-            call STOPONERROR(layoutnumber,num_procs,buff)
+            call log_msg(LOG_FATAL, 'PREPROCESS', buff)
          end if
          do i = this%despl%mx1, this%despl%mx2 - 1
             linesX (i+1) = this%despl%desx(i) + linesX (i)
@@ -6378,7 +6376,7 @@ contains
       else
          if (tama /= this%despl%my2-this%despl%my1) then
             buff='Tamanio discretizacion distinto de la region'
-            call STOPONERROR(layoutnumber,num_procs,buff)
+            call log_msg(LOG_FATAL, 'PREPROCESS', buff)
          end if
          do i = this%despl%my1, this%despl%my2 - 1
             linesY (i+1) = this%despl%desY(i) + linesY (i)
@@ -6395,7 +6393,7 @@ contains
       else
          if (tama /= this%despl%mz2-this%despl%mz1) then
             buff='Tamanio discretizacion distinto de la region'
-            call STOPONERROR(layoutnumber,num_procs,buff)
+            call log_msg(LOG_FATAL, 'PREPROCESS', buff)
          end if
          do i = this%despl%mz1, this%despl%mz2 - 1
             linesZ (i+1) = this%despl%desZ(i) + linesZ (i)
@@ -7155,8 +7153,7 @@ contains
             tama3 = (this%DielRegs%vols(i)%n_c2P)
 
             if ((tama2 == 0) .and. (tama3==0)) then
-               call log_msg(LOG_ERROR, 'PREPROCESS', 'Bug in Dielectric Tags. Missing coordinates')
-               stop
+               call log_msg(LOG_FATAL, 'PREPROCESS', 'Bug in Dielectric Tags. Missing coordinates')
             end if
 
             ! Check c1P coordinates
@@ -7177,8 +7174,7 @@ contains
             tama3 = (this%DielRegs%surfs(i)%n_c2P)
 
             if ((tama2 == 0) .and. (tama3==0)) then
-               call log_msg(LOG_ERROR, 'PREPROCESS', 'Bug in Dielectric Tags. Missing coordinates')
-               stop
+               call log_msg(LOG_FATAL, 'PREPROCESS', 'Bug in Dielectric Tags. Missing coordinates')
             end if
 
             ! Check c1P coordinates
@@ -7199,8 +7195,7 @@ contains
             tama3 = (this%DielRegs%Lins(i)%n_c2P)
 
             if ((tama2 == 0) .and. (tama3==0)) then
-               call log_msg(LOG_ERROR, 'PREPROCESS', 'Bug in Dielectric Tags. Missing coordinates')
-               stop
+               call log_msg(LOG_FATAL, 'PREPROCESS', 'Bug in Dielectric Tags. Missing coordinates')
             end if
 
             ! Check c1P coordinates
@@ -7220,8 +7215,7 @@ contains
             tama3 = (this%DielRegs%vols(i)%n_c2P)
 
             if ((tama2 == 0) .and. (tama3==0)) then
-               call log_msg(LOG_ERROR, 'PREPROCESS', 'Bug in Animat Tags. Missing coordinates')
-               stop
+               call log_msg(LOG_FATAL, 'PREPROCESS', 'Bug in Animat Tags. Missing coordinates')
             end if
 
             ! Check c1P coordinates
@@ -7241,8 +7235,7 @@ contains
             tama3 = (this%DielRegs%Surfs(i)%n_c2P)
 
             if ((tama2 == 0) .and. (tama3==0)) then
-               call log_msg(LOG_ERROR, 'PREPROCESS', 'Bug in Animat Tags. Missing coordinates')
-               stop
+               call log_msg(LOG_FATAL, 'PREPROCESS', 'Bug in Animat Tags. Missing coordinates')
             end if
 
             ! Check c1P coordinates
@@ -7262,8 +7255,7 @@ contains
             tama3 = (this%DielRegs%Lins(i)%n_c2P)
 
             if ((tama2 == 0) .and. (tama3==0)) then
-               call log_msg(LOG_ERROR, 'PREPROCESS', 'Bug in Animat Tags. Missing coordinates')
-               stop
+               call log_msg(LOG_FATAL, 'PREPROCESS', 'Bug in Animat Tags. Missing coordinates')
             end if
 
             ! Check c1P coordinates
@@ -7294,13 +7286,11 @@ contains
                if (tama2/=0) then
                   tagtype%tag(numertag) =  this%frqdepmats%vols(i)%c(1)%tag
                else
-                  call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
-                  stop
+                  call log_msg(LOG_FATAL, 'PREPROCESS', 'bug in tags.')
                end if
                do j = 1, tama2
                   if (trim(adjustl(this%frqdepmats%vols(i)%c(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                     call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
-                     stop
+                     call log_msg(LOG_FATAL, 'PREPROCESS', 'bug in tags.')
                   end if
                end do
             end if
@@ -7321,13 +7311,11 @@ contains
                if (tama2/=0) then
                   tagtype%tag(numertag) =  this%frqdepmats%surfs(i)%c(1)%tag
                else
-                  call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
-                  stop
+                  call log_msg(LOG_FATAL, 'PREPROCESS', 'bug in tags.')
                end if
                do j = 1, tama2
                   if (trim(adjustl(this%frqdepmats%surfs(i)%c(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                     call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
-                     stop
+                     call log_msg(LOG_FATAL, 'PREPROCESS', 'bug in tags.')
                   end if
                end do
             end if
@@ -7348,13 +7336,11 @@ contains
                if (tama2/=0) then
                   tagtype%tag(numertag) =  this%LossyThinSurfs%cs(i)%C(1)%tag
                else
-                  call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
-                  stop
+                  call log_msg(LOG_FATAL, 'PREPROCESS', 'bug in tags.')
                end if
                do j = 1, tama2
                   if (trim(adjustl(this%frqdepmats%lins(i)%c(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                     call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
-                     stop
+                     call log_msg(LOG_FATAL, 'PREPROCESS', 'bug in tags.')
                   end if
                end do
             end if
@@ -7382,13 +7368,11 @@ contains
                if (tama2/=0) then
                   tagtype%tag(numertag) =  this%twires%TW(i)%TWC(1)%tag
                else
-                  call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
-                  stop
+                  call log_msg(LOG_FATAL, 'PREPROCESS', 'bug in tags.')
                end if
                do j = 1, tama2
                   if (trim(adjustl(this%twires%TW(i)%TWC(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                     call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
-                     stop
+                     call log_msg(LOG_FATAL, 'PREPROCESS', 'bug in tags.')
                   end if
                end do
             end if
@@ -7427,13 +7411,11 @@ contains
                if (tama2/=0) then
                   tagtype%tag(numertag) =  this%swires%SW(i)%swc(1)%tag
                else
-                  call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
-                  stop
+                  call log_msg(LOG_FATAL, 'PREPROCESS', 'bug in tags.')
                end if
                do j = 1,tama2
                   if (trim(adjustl(this%swires%SW(i)%swc(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                     call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
-                     stop
+                     call log_msg(LOG_FATAL, 'PREPROCESS', 'bug in tags.')
                   end if
                end do
             end if
@@ -7557,8 +7539,7 @@ contains
              if (prev_components(m)%n_c1P > 0) then
                 do k = 1, prev_components(m)%n_c1P
                    if (tagToCheck == trim(adjustl(prev_components(m)%c1P(k)%tag))) then
-                      call log_msg(LOG_ERROR, 'PREPROCESS', trim(error_msg)//' Duplicate tag found: '//trim(tagToCheck))
-                      stop
+                      call log_msg(LOG_FATAL, 'PREPROCESS', trim(error_msg)//' Duplicate tag found: '//trim(tagToCheck))
                    end if
                 end do
              end if
@@ -7566,8 +7547,7 @@ contains
              if (prev_components(m)%n_c2P > 0) then
                 do k = 1, prev_components(m)%n_c2P
                    if (tagToCheck == trim(adjustl(prev_components(m)%c2P(k)%tag))) then
-                      call log_msg(LOG_ERROR, 'PREPROCESS', trim(error_msg)//' Duplicate tag found: '//trim(tagToCheck))
-                      stop
+                      call log_msg(LOG_FATAL, 'PREPROCESS', trim(error_msg)//' Duplicate tag found: '//trim(tagToCheck))
                    end if
                 end do
              end if
@@ -7650,8 +7630,7 @@ contains
              if (prev_components(m)%n_c1P > 0) then
                 do k = 1, prev_components(m)%n_c1P
                    if (tagToCheck == trim(adjustl(prev_components(m)%c1P(k)%tag))) then
-                      call log_msg(LOG_ERROR, 'PREPROCESS', trim(error_msg)//' Duplicate tag found: '//trim(tagToCheck))
-                      stop
+                      call log_msg(LOG_FATAL, 'PREPROCESS', trim(error_msg)//' Duplicate tag found: '//trim(tagToCheck))
                    end if
                 end do
              end if
@@ -7659,8 +7638,7 @@ contains
              if (prev_components(m)%n_c2P > 0) then
                 do k = 1, prev_components(m)%n_c2P
                    if (tagToCheck == trim(adjustl(prev_components(m)%c2P(k)%tag))) then
-                      call log_msg(LOG_ERROR, 'PREPROCESS', trim(error_msg)//' Duplicate tag found: '//trim(tagToCheck))
-                      stop
+                      call log_msg(LOG_FATAL, 'PREPROCESS', trim(error_msg)//' Duplicate tag found: '//trim(tagToCheck))
                    end if
                 end do
              end if
@@ -7685,8 +7663,7 @@ contains
        integer :: j
 
        if (component%nc == 0) then
-          call log_msg(LOG_ERROR, 'PREPROCESS', 'Bug in LossyThinSurf Tags. Missing coordinates')
-          stop
+          call log_msg(LOG_FATAL, 'PREPROCESS', 'Bug in LossyThinSurf Tags. Missing coordinates')
        end if
 
        check_tags: do j = 1, component%nc
@@ -7750,8 +7727,7 @@ contains
       integer :: j
 
       if (component%N_tgc == 0) then
-         call log_msg(LOG_ERROR, 'PREPROCESS', 'Bug in ThinSlot Tags. Missing coordinates')
-         stop
+         call log_msg(LOG_FATAL, 'PREPROCESS', 'Bug in ThinSlot Tags. Missing coordinates')
       end if
 
       check_tags: do j = 1, component%N_tgc

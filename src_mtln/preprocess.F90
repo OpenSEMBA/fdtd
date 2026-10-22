@@ -5,7 +5,7 @@ module mtln_preprocess_m
     use mtl_bundle_m
     use network_manager_m
     use mtl_m
-    use Report_m, only: log_msg, LOG_WARN, LOG_ERROR
+    use Report_m, only: log_msg, LOG_WARN, LOG_ERROR, LOG_FATAL
     use directoryUtils_m, only: file_has_samples
     use fhash, only: fhash_tbl_t, key=>fhash_key, fhash_key_t
     use json_string_utilities, only: lowercase_string
@@ -990,8 +990,7 @@ contains
         character(len=:), allocatable :: message
         if (file_has_samples(trim(adjustl(path)), 2)) return
         message = 'Excitation file '//trim(adjustl(path))//' is empty or contains fewer than two samples'
-        call log_msg(LOG_ERROR, 'MTLN', message)
-        error stop 'Empty or invalid excitation file'
+        call log_msg(LOG_FATAL, 'MTLN', message)
     end subroutine checkSourceExcitationFile
 
     subroutine addVSourceWithSeriesR(arr, start_name, end_name, source)

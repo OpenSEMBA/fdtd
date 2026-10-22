@@ -341,7 +341,7 @@ contains
       case (1)
          ext = trim(adjustl(ck))//'_'//trim(adjustl(ci))//'_'//trim(adjustl(cj))
       case default
-         call stoponerror(0, 0, 'Buggy error in mpidir.')
+         call log_msg(LOG_FATAL, 'OUTPUT', 'Buggy error in mpidir.')
       end select
 #else
       ext = trim(adjustl(ci))//'_'//trim(adjustl(cj))//'_'//trim(adjustl(ck))

@@ -293,8 +293,7 @@ contains
       if (dummy%IsInitialValue) then
         !!!evolucion=1.0_RKIND
         if (int(t/dummy%deltaevol)/=0) then
-            call log_msg(LOG_ERROR, 'SOURCES', 'error en initial values.')
-            stop
+            call log_msg(LOG_FATAL, 'SOURCES', 'error en initial values.')
         end if
         evolucion=dummy%evol(0) !should be 1 always
         return
@@ -578,8 +577,7 @@ contains
       real(kind = RKIND) :: GM2_1
       !!!
       if (simu_devia) then
-          call log_msg(LOG_ERROR, 'SOURCES', 'Devia H nodal/field sources untested. Aborting')
-          stop
+          call log_msg(LOG_FATAL, 'SOURCES', 'Devia H nodal/field sources untested. Aborting')
       end if
       GM2_1=GM2(1)
       !---------------------------> starts AdvancenodalH <---------------------------------------

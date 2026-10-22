@@ -6,7 +6,7 @@ module pointProbeOutput_m
    use domain_m
    use outputUtils_m
    use ilumina_m, only: Incid
-   use Report_m, only: StopOnError, log_msg, LOG_INFO, LOG_WARN
+   use Report_m, only: log_msg, LOG_INFO, LOG_WARN, LOG_FATAL
 
    implicit none
 
@@ -130,24 +130,24 @@ contains
       real(kind=RKIND) :: scalarValue
 
       open(newunit=unit, file=trim(this%domain%normalizationFile), status='old', action='read', iostat=ioStatus)
-      if (ioStatus /= 0) call StopOnError(0, 0, 'Unable to read point-probe normalization file')
+      if (ioStatus /= 0) call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to read point-probe normalization file')
       read(unit, *, iostat=ioStatus) t0, scalarValue
       read(unit, *, iostat=ioStatus) t1, scalarValue
-      if (ioStatus /= 0) call StopOnError(0, 0, 'Normalization file needs at least two samples')
+      if (ioStatus /= 0) call log_msg(LOG_FATAL, 'OUTPUT', 'Normalization file needs at least two samples')
       dt = abs(t1 - t0)
-      if (dt <= tiny(1.0_RKIND_TIME)) call StopOnError(0, 0, 'Normalization file has a zero sampling interval')
+      if (dt <= tiny(1.0_RKIND_TIME)) call log_msg(LOG_FATAL, 'OUTPUT', 'Normalization file has a zero sampling interval')
       rewind(unit)
       call alloc_and_init(this%normalizationForFreq, this%nFreq, (0.0_CKIND, 0.0_CKIND))
       do
          read(unit, *, iostat=ioStatus) t, scalarValue
          if (ioStatus < 0) exit
-         if (ioStatus /= 0) call StopOnError(0, 0, 'Invalid normalization sample')
+         if (ioStatus /= 0) call log_msg(LOG_FATAL, 'OUTPUT', 'Invalid normalization sample')
          do i = 1, this%nFreq
             this%normalizationForFreq(i) = this%normalizationForFreq(i) + dt*scalarValue*exp(MCPI2*this%frequencySlice(i)*t)
          end do
       end do
       close(unit)
-      if (any(abs(this%normalizationForFreq) <= tiny(1.0_RKIND))) call StopOnError(0, 0, 'Zero normalization spectrum')
+      if (any(abs(this%normalizationForFreq) <= tiny(1.0_RKIND))) call log_msg(LOG_FATAL, 'OUTPUT', 'Zero normalization spectrum')
    end subroutine initialise_normalization_spectrum
 
    subroutine update_point_probe_output(this, step, field, sgg, saveTimeSample)

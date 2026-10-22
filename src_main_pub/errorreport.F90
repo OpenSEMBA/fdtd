@@ -18,17 +18,17 @@ module Report_m
    logical, save :: ignoreerrors
    logical, save :: fatalerror=.false.
 
-   integer, parameter, public :: LOG_INFO = 1, LOG_WARN = 2, LOG_ERROR = 3
+   integer, parameter, public :: LOG_INFO = 1, LOG_WARN = 2, LOG_ERROR = 3, LOG_FATAL = 4
    character(len=5), parameter :: LEVEL_NAMES(4) = ['INFO ', 'WARN ', 'ERROR', 'FATAL']
-   integer, parameter :: LOG_FATAL = 4
    integer(kind=4), save :: logStep = -1
+   integer(kind=4), save :: logRank = 0
 
-   public StopOnError,CloseReportingFiles, &
+   public CloseReportingFiles, &
    print11,Onprint,Offprint,file10isopen,file11isopen
    public INITWARNINGFILE,CLOSEWARNINGFILE,get_secnds, &
           erasesignalingfiles,openclosedelete,openclose
    public isFatalError, resetFatalError
-   public log_msg, set_log_step, log_line
+   public log_msg, set_log_step, set_log_rank, log_line
    public TRIMNULLCHAR,time_t
 
 
@@ -52,82 +52,37 @@ contains
       return
    end subroutine
    !!!!!!!!!!!!!!!!!
-   subroutine StopOnError(layoutnumber,num_procs,message,calledfrommain)
+   ! Writes a FATAL line to stdout, _Report.txt and the warnings file, then stops every rank.
+   subroutine abort_run(line)
+      character(len=*), intent(in) :: line
       character(len=BUFSIZE) :: lockFile
-      logical , optional  :: calledfrommain
-      character(len=*), intent(in) :: message
-      integer(kind=4), optional  :: layoutnumber,num_procs
+      logical :: warningIsOpen
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
-      character(len=BUFSIZE) :: whoami
-      logical :: warningIsOpen
 
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
-
-
-      call print11(layoutnumber,trim(adjustl(whoami))//' '//log_line(LOG_FATAL, '', message),.true.)
+      call print11(logRank,trim(line),.true.)
       inquire(unit=17, opened=warningIsOpen)
-      if (warningIsOpen) write (17,'(a)',err=153) trim(adjustl(whoami))//' '//trim(log_line(LOG_FATAL, '', message))
+      if (warningIsOpen) write (17,'(a)',err=153) trim(line)
 153   continue
 
-      !19/12/14 bug OLD1812. A stoponerror created by an embedded nodal source arrives here in MPI. The closewarn... does a barrier and prevents the process from dying.
-
-      !the stoponerror calls must be reviewed and made more elegant. For now I abort crudely, commenting out without closing either warning or dxf (To do)
-
-      !call CLOSEWARNINGFILE(layoutnumber,num_procs)
-      !!!!call CLOSEdxfFILE(layoutnumber,num_procs)
-
-
-
-      !!!!the return is only for the cluster
-#ifdef keeppause
-      if (present(calledfrommain)) then
-         if (calledfrommain) then
-            if (layoutnumber == 0) then
-               open(38, FILE='pause')
-               write(38, '(a)') '!END'
-               close (38)
-            end if
-            call print11(layoutnumber,'Trying to relaunch. Correct error, create launch, and remove pause/warning '// &
-                                      'file (or kill the process)',.true.)
-!!!            call CloseReportingFiles !sgg 240817 the reporting files must not be closed
-            return
-         end if
-      else
-         if (layoutnumber == 0) then
-            open(38, FILE='pause')
-            write(38, '(a)') '!END'
-            close (38)
-         end if
-         call print11(layoutnumber,'Stopping, but creating the signal file pause to prevent queuing losses!!! '// & '
-                                   '(correct error and remove to continue)',.true.)
-      end if
-#else
-      if (layoutnumber == 0) then
+      if (logRank == 0) then
          lockFile='running'
-          call openclosedelete(lockFile)
-         !
+         call openclosedelete(lockFile)
          lockFile='pause'
-          call openclosedelete(lockFile)
-         !
+         call openclosedelete(lockFile)
          lockFile='relaunch'
-          call openclosedelete(lockFile)
+         call openclosedelete(lockFile)
       end if
-#endif
 
 #ifdef CompileWithMPI
-      call print11(layoutnumber,'Trying to kill all MPI processes (may fail!)...',.true.)
+      call print11(logRank,'Trying to kill all MPI processes (may fail!)...',.true.)
       call MPI_Abort(SUBCOMM_MPI, -1, ierr)
       call MPI_FINALIZE(ierr)
 #endif
       call CloseReportingFiles
- 
       stop 1
-
-      return
-
-   end subroutine
+   end subroutine abort_run
 
 
 
@@ -222,6 +177,7 @@ contains
 
 
    ! Writes '(rank/nprocs) [n=step] [ORIGIN] LEVEL: message' to the warnings file and stderr.
+   ! LOG_FATAL does not return: it aborts the run through abort_run.
    subroutine log_msg(level, origin, message)
       use iso_fortran_env, only : error_unit
       integer, intent(in) :: level
@@ -233,6 +189,7 @@ contains
 
       line = trim(adjustl(whoami))//' '//log_line(level, origin, message)
       call trimnullchar(line)
+      if (level == LOG_FATAL) call abort_run(line)
 
       inquire(unit=17, opened=itsopen)
       if (itsopen) write (17,'(a)',err=154) trim(line)
@@ -240,6 +197,13 @@ contains
       return
 154   print *,itsopen,'- Cannot write into warning file the message: ',trim(line)
    end subroutine log_msg
+
+   ! Rank prefix '(rank/nprocs)' of every message; call it as soon as the MPI rank is known.
+   subroutine set_log_rank(layoutnumber, num_procs)
+      integer(kind=4), intent(in) :: layoutnumber, num_procs
+      logRank = layoutnumber
+      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
+   end subroutine set_log_rank
 
    ! Time step attached to every message; negative values (outside the time loop) are omitted.
    subroutine set_log_step(step)

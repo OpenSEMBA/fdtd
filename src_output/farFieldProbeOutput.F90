@@ -37,7 +37,7 @@ contains
       character(len=BUFSIZE) :: artifact_paths(1)
       integer :: artifact_kinds(1), ios
 
-      if (domain%domainType /= FREQUENCY_DOMAIN) call StopOnError(0, 0, "Unexpected domain type for farField probe")
+      if (domain%domainType /= FREQUENCY_DOMAIN) call log_msg(LOG_FATAL, 'OUTPUT', "Unexpected domain type for farField probe")
 
       this%domain = domain
       this%sphericRange = sphericRange

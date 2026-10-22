@@ -255,13 +255,13 @@ contains
                   call MPI_Allreduce(localMapMinimum, globalMapMinimum, 3, MPI_INTEGER, MPI_MIN, &
                                      SUBCOMM_MPI, mpiError)
                   if (mpiError /= MPI_SUCCESS) then
-                     call StopOnError(control%layoutnumber, control%num_procs, &
+                     call log_msg(LOG_FATAL, 'OUTPUT', &
                                       'Unable to determine distributed geometry map lower bounds')
                   end if
                   call MPI_Allreduce(localMapMaximum, globalMapMaximum, 3, MPI_INTEGER, MPI_MAX, &
                                      SUBCOMM_MPI, mpiError)
                   if (mpiError /= MPI_SUCCESS) then
-                     call StopOnError(control%layoutnumber, control%num_procs, &
+                     call log_msg(LOG_FATAL, 'OUTPUT', &
                                       'Unable to determine distributed geometry map upper bounds')
                   end if
                   globalMapLower = cell_coordinate_t(globalMapMinimum(1), globalMapMinimum(2), globalMapMinimum(3))
@@ -286,12 +286,12 @@ contains
                   call MPI_Allgather(localMapPath, BUFSIZE, MPI_CHARACTER, mapPiecePaths, BUFSIZE, &
                                      MPI_CHARACTER, SUBCOMM_MPI, mpiError)
                   if (mpiError /= MPI_SUCCESS) then
-                     call StopOnError(control%layoutnumber, control%num_procs, &
+                     call log_msg(LOG_FATAL, 'OUTPUT', &
                                       'Unable to collect distributed geometry map paths')
                   end if
                   call MPI_Barrier(SUBCOMM_MPI, mpiError)
                   if (mpiError /= MPI_SUCCESS) then
-                     call StopOnError(control%layoutnumber, control%num_procs, &
+                     call log_msg(LOG_FATAL, 'OUTPUT', &
                                       'Unable to synchronize distributed geometry map output')
                   end if
                   if (control%layoutnumber == 0) then
@@ -335,7 +335,7 @@ contains
 
             case (LINEINTEGRAL)
                if (domain%domainType /= TIME_DOMAIN) then
-                  call stoponerror(0, 0, 'Line probes only support the time domain')
+                  call log_msg(LOG_FATAL, 'OUTPUT', 'Line probes only support the time domain')
                else
                   outputCount = outputCount + 1
                   outputs(outputCount)%outputID = LINE_PROBE_ID
@@ -384,7 +384,7 @@ contains
 #endif
                                        eps0, mu0)
             case default
-               call stoponerror(0, 0, 'OutputRequestType type not implemented yet on new observations')
+               call log_msg(LOG_FATAL, 'OUTPUT', 'OutputRequestType type not implemented yet on new observations')
             end select
          end do
       end do
@@ -468,7 +468,7 @@ contains
             call MPI_Allgather(outputPartitions(output_index)%has_data, 1, MPI_LOGICAL, rank_has_data, 1, &
                                MPI_LOGICAL, SUBCOMM_MPI, ierr)
             if (ierr /= MPI_SUCCESS) then
-               call StopOnError(control%layoutnumber, control%num_procs, &
+               call log_msg(LOG_FATAL, 'OUTPUT', &
                                 'Unable to identify distributed output participants')
             end if
          else
@@ -495,7 +495,7 @@ contains
                                                       collective_status)
          end if
          if (collective_status /= OUTPUT_COLLECTIVE_SUCCESS) then
-            call StopOnError(control%layoutnumber, control%num_procs, &
+            call log_msg(LOG_FATAL, 'OUTPUT', &
                              'Unable to configure distributed output publication')
          end if
 
@@ -513,7 +513,7 @@ contains
             if (publication%local_participates) color = 0
             call MPI_Comm_split(SUBCOMM_MPI, color, control%layoutnumber, publication%communicator, ierr)
             if (ierr /= MPI_SUCCESS) then
-               call StopOnError(control%layoutnumber, control%num_procs, &
+               call log_msg(LOG_FATAL, 'OUTPUT', &
                                 'Unable to create distributed output communicator')
             end if
             if (publication%local_participates) then
@@ -664,7 +664,7 @@ contains
          case (MAPVTK_ID)
          case (MTLN_PROBE_ID)
          case default
-            call stoponerror(0, 0, 'Output update not implemented')
+            call log_msg(LOG_FATAL, 'OUTPUT', 'Output update not implemented')
          end select
       end do
 
@@ -705,7 +705,7 @@ contains
       integer(kind=SINGLE), intent(in) :: nTime
       real(kind=RKIND_TIME), allocatable, intent(in) :: timeStep(:)
       if (.not. allocated(timeStep)) return
-      if (nTime >= size(timeStep)) call StopOnError(0, 0, &
+      if (nTime >= size(timeStep)) call log_msg(LOG_FATAL, 'OUTPUT', &
                                                     'Probe time buffer full: flush outputs every OUTPUT_TIME_BUFFER_SIZE steps')
    end subroutine check_time_buffer
 

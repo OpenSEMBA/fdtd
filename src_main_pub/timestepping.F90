@@ -462,9 +462,9 @@ module Solver_m
       J=this%sgg%Alloc(IEX)%YI
       K=this%sgg%Alloc(IEX)%ZI
       do field=IEY,6
-         if (this%sgg%Alloc(field)%XI /= I) call stoponerror(this%control%layoutnumber,this%control%num_procs,'OFFSETS IN INITIAL COORD NOT ALLOWED')
-         if (this%sgg%Alloc(field)%YI /= J) call stoponerror(this%control%layoutnumber,this%control%num_procs,'OFFSETS IN INITIAL COORD NOT ALLOWED')
-         if (this%sgg%Alloc(field)%ZI /= K) call stoponerror(this%control%layoutnumber,this%control%num_procs,'OFFSETS IN INITIAL COORD NOT ALLOWED')
+         if (this%sgg%Alloc(field)%XI /= I) call log_msg(LOG_FATAL, 'SOLVER', 'OFFSETS IN INITIAL COORD NOT ALLOWED')
+         if (this%sgg%Alloc(field)%YI /= J) call log_msg(LOG_FATAL, 'SOLVER', 'OFFSETS IN INITIAL COORD NOT ALLOWED')
+         if (this%sgg%Alloc(field)%ZI /= K) call log_msg(LOG_FATAL, 'SOLVER', 'OFFSETS IN INITIAL COORD NOT ALLOWED')
       end do
 
       write(whoami,'(a,i5,a,i5,a)') '(',this%control%layoutnumber+1,'/',this%control%num_procs,') '
@@ -524,7 +524,7 @@ module Solver_m
             if (this%control%resume_fromold) then
                close (14)
                write(dubuf,*) 'Incoherence between MPI saved steps for resuming.', dummyMin,dummyMax,this%lastexecutedtimesteP
-               call stoponerror (this%control%layoutnumber,this%control%num_procs,BUFF,.true.) !so that it returns
+               call log_msg(LOG_FATAL, 'SOLVER', BUFF) !so that it returns
                call this%destroy_and_deallocate()
                return
             else
@@ -539,7 +539,7 @@ module Solver_m
                call MPI_AllReduce(this%lastexecutedtimestep, dummyMax, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
                if ((dummyMax /= this%lastexecutedtimestep).or.(dummyMin /= this%lastexecutedtimestep)) then
                   write(DUbuf,*) 'NO success. fields.old MPI are also incoherent for resuming.', dummyMin,dummyMax,this%lastexecutedtimestep
-                  call stoponerror (this%control%layoutnumber,this%control%num_procs,DUBUF,.true.) !so that it returns
+                  call log_msg(LOG_FATAL, 'SOLVER', DUBUF) !so that it returns
                   call this%destroy_and_deallocate()
                   return
                else
@@ -551,7 +551,7 @@ module Solver_m
             close (14)
 
             write(dubuf,*) 'Incoherence between MPI saved steps for resuming.',dummyMin,dummyMax,this%lastexecutedtimestep
-            call stoponerror (this%control%layoutnumber,this%control%num_procs,dubuf,.true.) !so that it returns
+            call log_msg(LOG_FATAL, 'SOLVER', dubuf) !so that it returns
             call this%destroy_and_deallocate()
             return
 #endif
@@ -563,7 +563,7 @@ module Solver_m
       end if
 
       if (this%initialtimestep>this%control%finaltimestep) then
-          call stoponerror (this%control%layoutnumber,this%control%num_procs,'Initial time step greater than final one',.true.) !so that it returns
+          call log_msg(LOG_FATAL, 'SOLVER', 'Initial time step greater than final one') !so that it returns
           call this%destroy_and_deallocate()
           return
       end if
@@ -640,7 +640,7 @@ module Solver_m
 
       if (this%control%fatalerror) then
          dubuf='FATAL ERRORS. Revise *Warnings.txt file. ABORTING...'
-         call stoponerror(this%control%layoutnumber,this%control%num_procs,dubuf,.true.) !so that it returns
+         call log_msg(LOG_FATAL, 'SOLVER', dubuf) !so that it returns
          call this%destroy_and_deallocate()
          return
       end if

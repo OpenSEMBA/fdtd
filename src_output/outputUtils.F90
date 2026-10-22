@@ -131,7 +131,7 @@ contains
       else if (mpidir == 1) then
          ext = trim(adjustl(chark))//'_'//trim(adjustl(chari))//'_'//trim(adjustl(charj))
       else
-         call stoponerror(0, 0, 'Buggy error in mpidir. ')
+         call log_msg(LOG_FATAL, 'OUTPUT', 'Buggy error in mpidir. ')
       end if
 #else
       ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))
@@ -165,7 +165,7 @@ contains
          ext = trim(adjustl(chark))//'_'//trim(adjustl(chari))//'_'//trim(adjustl(charj))//'__'// &
                trim(adjustl(chark2))//'_'//trim(adjustl(chari2))//'_'//trim(adjustl(charj2))
       else
-         call stoponerror(0, 0, 'Buggy error in mpidir. ')
+         call log_msg(LOG_FATAL, 'OUTPUT', 'Buggy error in mpidir. ')
       end if
 #else
       ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))//'__'// &
@@ -265,7 +265,7 @@ contains
          case default; prefixExtension = prefix(field)
          end select
       else
-         call stoponerror(0, 0, "Buggy error in mpidir.")
+         call log_msg(LOG_FATAL, 'OUTPUT', "Buggy error in mpidir.")
       end if
       return
    end function get_rotated_prefix
@@ -409,7 +409,7 @@ contains
       case (IHX); getBlockCurrentDirection = ICURX
       case (IHY); getBlockCurrentDirection = ICURY
       case (IHZ); getBlockCurrentDirection = ICURZ
-      case default; call StopOnError(0, 0, 'field is not H field')
+      case default; call log_msg(LOG_FATAL, 'OUTPUT', 'field is not H field')
       end select
    end function
 
@@ -623,7 +623,7 @@ contains
       case (IHX); currentType = IBLOQUEJX
       case (IHY); currentType = IBLOQUEJY
       case (IHZ); currentType = IBLOQUEJZ
-      case default; call StopOnError(0, 0, 'field is not a E or H field')
+      case default; call log_msg(LOG_FATAL, 'OUTPUT', 'field is not a E or H field')
       end select
    end function
 
@@ -643,7 +643,7 @@ contains
       case (IHYC); get_volumetric_classification_field = IHY
       case (IHZC); get_volumetric_classification_field = IHZ
       case default
-         call StopOnError(0, 0, 'Unsupported volumetric classification component')
+         call log_msg(LOG_FATAL, 'OUTPUT', 'Unsupported volumetric classification component')
       end select
    end function get_volumetric_classification_field
 
