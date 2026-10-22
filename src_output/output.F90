@@ -11,6 +11,7 @@ module output_m
    use movieProbeOutput_m
    use frequencySliceProbeOutput_m
    use farFieldOutput_m
+   use farfield_m, only: farfield_buffer_bytes
    use mapVTKOutput_m
    use outputDecomposition_m, only: output_partition_t, build_output_partition, point_is_owned_by_rank, &
                                     OUTPUT_PARTITION_SUCCESS, OUTPUT_PARTITION_INVALID_ARGUMENT
@@ -817,10 +818,8 @@ contains
                            array_bytes(p%zValueForFreq) + array_bytes(p%globalCoords)
             end associate
          case (FAR_FIELD_PROBE_ID)
-            associate (p => outputs(i)%farFieldOutput)
-               bytes(id) = bytes(id) + array_bytes(p%frequencySlice) + array_bytes(p%auxExp_E) + &
-                           array_bytes(p%auxExp_H) + array_bytes(p%coords) + array_bytes(p%valueForFreq)
-            end associate
+            ! All far-field probes share the single FF accumulator in farfield_m.
+            bytes(id) = farfield_buffer_bytes()
          case (MAPVTK_ID)
             associate (p => outputs(i)%mapvtkOutput)
                bytes(id) = bytes(id) + array_bytes(p%coords) + array_bytes(p%currentType) + &
