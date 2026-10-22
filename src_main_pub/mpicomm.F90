@@ -1745,7 +1745,8 @@ module build_t_linea_mpi_m
 #ifdef CompileWithMPI
    !
    use NFDETypes_m
-   
+   use Report_m, only: log_msg, LOG_ERROR
+
 contains
 
 
