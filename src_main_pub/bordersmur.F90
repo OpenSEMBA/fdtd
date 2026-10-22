@@ -425,9 +425,7 @@ contains
       end do
 
       goto 635
-634   call print11(0,SEPARADOR//separador//separador)
-      call print11(0,'BORDERSMUR: ERROR WRITING RESTARTING FIELDS. IGNORING AND CONTINUING')
-      call print11(0,SEPARADOR//separador//separador)          
+634   call log_msg(LOG_WARN, 'MUR', 'cannot write restarting fields, ignoring and continuing')
 635   return
    end subroutine StoreFieldsMURBorders
 

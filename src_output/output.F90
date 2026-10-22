@@ -202,11 +202,11 @@ contains
          mtln_solver => GetSolverPtr()
          if (.not. allocated(mtln_solver%bundles)) then
             if (control%layoutnumber == 0) then
-               call print11(0, 'WARNING: mtln solver has not bundles allocated. No MTLN bundle requests were found.')
+               call log_msg(LOG_WARN, 'OUTPUT', 'mtln solver has not bundles allocated. No MTLN bundle requests were found.')
             end if
          else if (size(mtln_solver%bundles) == 0) then
             if (control%layoutnumber == 0) then
-               call print11(0, 'WARNING: mtln solver has not bundles registered. No MTLN bundle requests were found.')
+               call log_msg(LOG_WARN, 'OUTPUT', 'mtln solver has not bundles registered. No MTLN bundle requests were found.')
             end if
          else
             mtlnObservationExist: do i = 1, size(mtln_solver%bundles)

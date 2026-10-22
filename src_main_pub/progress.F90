@@ -5,7 +5,7 @@ module progress_m
    use FDETYPES_m
    use snapxdmf_m
    use Report_m, only: print11, StopOnError, get_secnds, time_t, erasesignalingfiles, &
-                       openclosedelete, file10isopen
+                       openclosedelete, file10isopen, log_msg, LOG_WARN
 
    implicit none
    private
@@ -143,7 +143,7 @@ contains
                           BUFFOBSE,' steps'
          call print11(c%layoutnumber,dubuf)
       else
-         call print11(c%layoutnumber,'WARNING: NO flushing of observation DATA scheduled')
+         if (c%layoutnumber == 0) call log_msg(LOG_WARN, 'PROGRESS', 'NO flushing of observation DATA scheduled')
       end if
       write(dubuf,*)  'Reporting simulation info every  ',int(REPORTINGSECONDS/60.0_RKIND),' minutes '
       call print11(c%layoutnumber,dubuf)
