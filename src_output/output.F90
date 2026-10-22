@@ -42,6 +42,7 @@ module output_m
    public :: close_outputs
    public :: delete_outputs
    public :: GetOutputPartition
+   public :: estimate_outputs_memory, report_outputs_memory
    public :: POINT_PROBE_ID, WIRE_CURRENT_PROBE_ID, WIRE_CHARGE_PROBE_ID, BULK_PROBE_ID, &
              MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID, FAR_FIELD_PROBE_ID, LINE_PROBE_ID, MTLN_PROBE_ID
    !===========================
@@ -61,6 +62,10 @@ module output_m
                                       FREQUENCY_SLICE_PROBE_ID = 6, &
                                       FAR_FIELD_PROBE_ID = 7, &
                                       MAPVTK_ID = 8, LINE_PROBE_ID = 9, MTLN_PROBE_ID = 10
+
+   character(len=*), parameter :: OUTPUT_KIND_NAMES(0:MTLN_PROBE_ID) = [character(len=16) :: &
+                                  'point', 'wire current', 'wire charge', 'bulk current', '', 'movie', &
+                                  'frequency slice', 'far field', 'map VTK', 'line', 'MTLN']
 
    real(kind=RKIND), save           ::  eps0, mu0
    real(kind=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
@@ -760,6 +765,106 @@ contains
          end select
       end do
    end subroutine flush_outputs
+
+   ! Solver-side probe buffers per outputID; HDF5/transport/metadata buffers are not counted.
+   subroutine estimate_outputs_memory(bytes, counts)
+      integer(kind=8), intent(out) :: bytes(0:MTLN_PROBE_ID)
+      integer(kind=4), intent(out) :: counts(0:MTLN_PROBE_ID)
+      integer :: i, id
+
+      bytes = 0_8
+      counts = 0_4
+      if (.not. associated(outputs)) return
+      do i = 1, size(outputs)
+         id = outputs(i)%outputID
+         if (id < 0 .or. id > MTLN_PROBE_ID) cycle
+         counts(id) = counts(id) + 1_4
+         select case (id)
+         case (POINT_PROBE_ID)
+            associate (p => outputs(i)%pointProbe)
+               bytes(id) = bytes(id) + array_bytes(p%timeStep) + array_bytes(p%frequencySlice) + &
+                           array_bytes(p%auxExp_E) + array_bytes(p%auxExp_H) + array_bytes(p%valueForTime) + &
+                           array_bytes(p%incidentForTime) + array_bytes(p%valueForFreq) + &
+                           array_bytes(p%incidentForFreq) + array_bytes(p%normalizationForFreq)
+            end associate
+         case (WIRE_CURRENT_PROBE_ID)
+            associate (p => outputs(i)%wireCurrentProbe)
+               bytes(id) = bytes(id) + array_bytes(p%timeStep) + array_bytes(p%currentValues)
+            end associate
+         case (WIRE_CHARGE_PROBE_ID)
+            associate (p => outputs(i)%wireChargeProbe)
+               bytes(id) = bytes(id) + array_bytes(p%timeStep) + array_bytes(p%chargeValue)
+            end associate
+         case (BULK_PROBE_ID)
+            associate (p => outputs(i)%bulkCurrentProbe)
+               bytes(id) = bytes(id) + array_bytes(p%timeStep) + array_bytes(p%valueForTime)
+            end associate
+         case (LINE_PROBE_ID)
+            associate (p => outputs(i)%lineProbe)
+               bytes(id) = bytes(id) + array_bytes(p%timeStep) + array_bytes(p%valueForTime) + array_bytes(p%segments)
+            end associate
+         case (MOVIE_PROBE_ID)
+            associate (p => outputs(i)%movieProbe)
+               bytes(id) = bytes(id) + array_bytes(p%timeStep) + array_bytes(p%coords) + array_bytes(p%tagNumber) + &
+                           array_bytes(p%mediaType) + array_bytes(p%xValueForTime) + &
+                           array_bytes(p%yValueForTime) + array_bytes(p%zValueForTime)
+            end associate
+         case (FREQUENCY_SLICE_PROBE_ID)
+            associate (p => outputs(i)%frequencySliceProbe)
+               bytes(id) = bytes(id) + array_bytes(p%frequencySlice) + array_bytes(p%auxExp_E) + &
+                           array_bytes(p%auxExp_H) + array_bytes(p%coords) + array_bytes(p%tagNumber) + &
+                           array_bytes(p%mediaType) + array_bytes(p%xValueForFreq) + array_bytes(p%yValueForFreq) + &
+                           array_bytes(p%zValueForFreq) + array_bytes(p%globalCoords)
+            end associate
+         case (FAR_FIELD_PROBE_ID)
+            associate (p => outputs(i)%farFieldOutput)
+               bytes(id) = bytes(id) + array_bytes(p%frequencySlice) + array_bytes(p%auxExp_E) + &
+                           array_bytes(p%auxExp_H) + array_bytes(p%coords) + array_bytes(p%valueForFreq)
+            end associate
+         case (MAPVTK_ID)
+            associate (p => outputs(i)%mapvtkOutput)
+               bytes(id) = bytes(id) + array_bytes(p%coords) + array_bytes(p%currentType) + &
+                           array_bytes(p%materialTag) + array_bytes(p%mediaType)
+            end associate
+         end select
+      end do
+   end subroutine estimate_outputs_memory
+
+   ! An unallocated allocatable actual argument arrives as an absent optional dummy.
+   pure integer(kind=8) function array_bytes(values)
+      class(*), intent(in), optional :: values(..)
+      array_bytes = 0_8
+      if (present(values)) array_bytes = size(values, kind=8)*storage_size(values, kind=8)/8_8
+   end function array_bytes
+
+   subroutine report_outputs_memory(layoutnumber)
+      integer(kind=4), intent(in) :: layoutnumber
+      integer(kind=8) :: bytes(0:MTLN_PROBE_ID)
+      integer(kind=4) :: counts(0:MTLN_PROBE_ID)
+      character(len=BUFSIZE) :: dubuf
+      integer :: id
+#ifdef CompileWithMPI
+      integer(kind=8) :: localBytes(0:MTLN_PROBE_ID)
+      integer(kind=4) :: localCounts(0:MTLN_PROBE_ID), ierr
+#endif
+
+      call estimate_outputs_memory(bytes, counts)
+#ifdef CompileWithMPI
+      ! shortcut: a probe split across ranks is counted once per rank, fine for sizing memory.
+      localBytes = bytes
+      localCounts = counts
+      call MPI_AllReduce(localBytes, bytes, size(bytes), MPI_INTEGER8, MPI_SUM, SUBCOMM_MPI, ierr)
+      call MPI_AllReduce(localCounts, counts, size(counts), MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
+#endif
+      call print11(layoutnumber, 'Probe buffer memory (estimate, all ranks):')
+      do id = 0, MTLN_PROBE_ID
+         if (counts(id) == 0) cycle
+         write (dubuf, '(a16,i8,a,f14.2,a)') OUTPUT_KIND_NAMES(id), counts(id), ' probes', bytes(id)/1048576.0d0, ' MB'
+         call print11(layoutnumber, dubuf)
+      end do
+      write (dubuf, '(a16,i8,a,f14.2,a)') 'total           ', sum(counts), ' probes', sum(bytes)/1048576.0d0, ' MB'
+      call print11(layoutnumber, dubuf)
+   end subroutine report_outputs_memory
 
    subroutine remove_unused_outputs(output_list)
       implicit none
