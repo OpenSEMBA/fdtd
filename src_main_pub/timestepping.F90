@@ -633,6 +633,7 @@ module Solver_m
       this%n_info = 5 + this%initialtimestep
 
       write(dubuf,*) 'Init Timing...';  call print11(this%control%layoutnumber,dubuf)
+      if (this%thereAre%Observation) call report_outputs_memory(this%control%layoutnumber)
       call InitTiming(this%sgg, this%control, this%control%time_desdelanzamiento, this%initialtimestep, this%control%maxSourceValue, &
                       merge(OUTPUT_TIME_BUFFER_SIZE, 0, this%thereAre%Observation))
 
