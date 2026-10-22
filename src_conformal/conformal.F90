@@ -36,10 +36,9 @@ contains
       end do
    end function
 
-   subroutine buildConformalMedia(conformalRegs, volumes, surfaces, sgbc_surfaces, alloc)
+   subroutine buildConformalMedia(conformalRegs, volumes, surfaces, alloc)
       type(ConformalPECRegions_t), pointer, intent(in) :: conformalRegs
       type(ConformalMedia_t), allocatable, dimension(:), intent(inout) :: volumes, surfaces
-      type(ConformalMedia_t), allocatable, dimension(:), optional, intent(inout) :: sgbc_surfaces
       type(XYZlimit_t), dimension(1:6), intent(in) :: alloc
       if (associated(conformalRegs%volumes)) then
          volumes = buildMedia(conformalRegs%volumes, BODY_TYPE_VOLUME, alloc)
@@ -51,13 +50,6 @@ contains
       else
          allocate(surfaces(0))
       end if
-      ! if (present(sgbc_surfaces)) then
-      !    if (associated(conformalRegs%sgbc_surfaces)) then
-      !       sgbc_surfaces = buildSGBCSurfaceMedia(conformalRegs%sgbc_surfaces)
-      !    else
-      !       allocate(sgbc_surfaces(0))
-      !    end if
-      ! end if
    end subroutine
 
    function buildSurfaceMedia(elements, body_type) result(res)
