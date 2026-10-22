@@ -1,6 +1,6 @@
 module lineProbeOutput_m
    use FDETYPES_m, only: RKIND, RKIND_TIME, SINGLE, BUFSIZE, direction_t, xyzlimit_t, IEX, IEY, IEZ
-   use outputTypes_m, only: field_data_t, line_probe_output_t, domain_t, TIME_DOMAIN, OUTPUT_TIME_BUFFER_SIZE, &
+   use outputTypes_m, only: field_data_t, line_probe_output_t, domain_t, TIME_DOMAIN, time_buffer_capacity, &
                             OUTPUT_ARTIFACT_TEXT, DATFILEEXTENSION, TIMEEXTENSION, declare_probe_artifacts
    use allocationUtils_m, only: alloc_and_init
    use directoryUtils_m, only: create_file_with_path
@@ -76,8 +76,8 @@ contains
       else
          this%segments = segments
       end if
-      call alloc_and_init(this%timeStep, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND_TIME)
-      call alloc_and_init(this%valueForTime, OUTPUT_TIME_BUFFER_SIZE, 0.0_RKIND)
+      call alloc_and_init(this%timeStep, time_buffer_capacity(this%domain), 0.0_RKIND_TIME)
+      call alloc_and_init(this%valueForTime, time_buffer_capacity(this%domain), 0.0_RKIND)
 
       artifact_paths(1) = trim(this%path)//'_'//TIMEEXTENSION//DATFILEEXTENSION
       artifact_kinds = OUTPUT_ARTIFACT_TEXT
