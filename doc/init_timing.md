@@ -74,6 +74,15 @@ held by each probe: time samples, frequency accumulators, coordinates and
 material tags. Time buffers have a fixed size of `ceil(128 / tstride)` samples
 (`time_buffer_capacity`), so the figure is valid for the whole run.
 
+Each row is the sum over all probes of that type. Two rows come from outside
+the `outputs` array:
+
+- `far field`: the near-to-far-field DFT accumulators held in `FF`
+  (`farfield_buffer_bytes` in `src_main_pub/farfield.F90`). All far-field probes
+  share this single accumulator, so the row reports it once.
+- `MTLN`: wire probes solved by MTLN (`src_mtln/probes.F90`), reached through
+  `GetSolverPtr`. They buffer a single frame, so they are usually 0.00 MB.
+
 Limits:
 
 - HDF5, MPI transport and metadata buffers are not included.
