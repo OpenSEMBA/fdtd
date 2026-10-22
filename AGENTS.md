@@ -116,6 +116,8 @@ semba-fdtd        executable entry point
 - **Output**: ASCII probe `.dat` files, XDMF+HDF5 movies/snapshots, and VTK;
   see `doc/output.md`
 - Test data and example cases live under `testData/`
+- **Logs**: warnings, errors and diagnostics go through `log_msg` in
+  `Report_m`; see `doc/logging.md`
 
 ### Optional Features and Conditional Compilation
 
