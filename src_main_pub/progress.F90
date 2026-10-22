@@ -5,7 +5,7 @@ module progress_m
    use FDETYPES_m
    use snapxdmf_m
    use Report_m, only: print11, get_secnds, time_t, erasesignalingfiles, &
-                       openclosedelete, file10isopen, log_msg, LOG_WARN, LOG_ERROR, LOG_FATAL
+                       openclosedelete, file10isopen, log_msg, LOG_ERROR, LOG_FATAL
 
    implicit none
    private
@@ -93,12 +93,14 @@ contains
 
    end subroutine InitReporting
 
-   subroutine InitTiming(sgg, c, t, initialtimestep, maxSourceValue)
+   ! observationFlushSteps: step period of the probe buffer flush, 0 when there are no probes.
+   subroutine InitTiming(sgg, c, t, initialtimestep, maxSourceValue, observationFlushSteps)
       type(SGGFDTDINFO_t), intent(in) :: sgg
       type(sim_control_t) , intent(in):: c
       real(kind=8), intent(in) :: t
       integer(kind=4), intent(in) :: initialtimestep
       real(kind=RKIND), intent(in) :: maxSourceValue
+      integer(kind=4), intent(in) :: observationFlushSteps
       type(time_t) :: time_out2
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
@@ -128,24 +130,23 @@ contains
       call print11(c%layoutnumber,dubuf)
 
       if (c%flushsecondsFIELDS/=0) then
-         write(dubuf,*)  'Flushing restarting FIELDS every ',int(c%flushsecondsFIELDS/60.0_RKIND),' minutes'
-         call print11(c%layoutnumber,dubuf)
+         write(dubuf,'(a,i0,a)')  'Restart FIELDS flush: every ',c%flushsecondsFIELDS/60,' minutes'
+      else if (c%maxCPUtime == TOPCPUTIME) then
+         dubuf = 'Restart FIELDS flush: none scheduled'
       else
-         if (c%maxCPUtime == TOPCPUTIME) then
-            call print11(c%layoutnumber,'NO flushing of restarting FIELDS scheduled')
-         else
-            write(dubuf,*)  'Flushing of restarting FIELDS at the end (mins) :',c%maxCPUtime
-            call print11(c%layoutnumber,dubuf)
-         end if
+         write(dubuf,'(a,i0,a)')  'Restart FIELDS flush: at the end, after ',c%maxCPUtime,' minutes'
       end if
-      if (c%flushsecondsDATA/=0) then
-         write(dubuf,*)  'Flushing observation DATA every  ',int(c%flushsecondsDATA/60.0_RKIND),' minutes and every ', &
-                          BUFFOBSE,' steps'
-         call print11(c%layoutnumber,dubuf)
+      call print11(c%layoutnumber,dubuf)
+      if (observationFlushSteps == 0) then
+         dubuf = 'Observation DATA flush: no probes'
+      else if (c%flushsecondsDATA == 0 .or. c%flushsecondsDATA >= TOPCPUTIME*60) then
+         write(dubuf,'(a,i0,a)')  'Observation DATA flush: every ',observationFlushSteps,' steps; time-based: none'
       else
-         if (c%layoutnumber == 0) call log_msg(LOG_WARN, 'PROGRESS', 'NO flushing of observation DATA scheduled')
+         write(dubuf,'(a,i0,a,i0,a)')  'Observation DATA flush: every ',observationFlushSteps, &
+                                       ' steps; time-based: every ',c%flushsecondsDATA/60,' minutes'
       end if
-      write(dubuf,*)  'Reporting simulation info every  ',int(REPORTINGSECONDS/60.0_RKIND),' minutes '
+      call print11(c%layoutnumber,dubuf)
+      write(dubuf,'(a,i0,a)')  'Reporting simulation info every ',REPORTINGSECONDS/60,' minutes'
       call print11(c%layoutnumber,dubuf)
 
 #ifdef CompileWithMPI
