@@ -163,10 +163,9 @@ contains
                                        ((1.0_RKIND / minval(sgg%DY))**2.0_RKIND) + & 
                                        ((1.0_RKIND / minval(sgg%DZ))**2.0_RKIND ))))
             if (sgg%dt > dt*min_scale_factor) then 
-               write(*,*) '-- Conformal geometry requires a time step change'
-               write(*,*) 'Previous time step: ', sgg%dt
+               write(buff,*) 'Conformal geometry requires a time step change: ', sgg%dt, ' -> ', dt*min_scale_factor
+               call log_msg(LOG_WARN, 'PREPROCESS', buff)
                sgg%dt = dt*min_scale_factor
-               write(*,*) 'New time step: ', sgg%dt
             end if
          else
             allocate(conformal_media(0))
@@ -6171,7 +6170,7 @@ contains
             sgg%Med(contamedia)%EDispersive(1)%NumPolRes33 /= 0) then
             sgg%Med(contamedia)%Is%EDispersive = .TRUE.
             sgg%Med(contamedia)%Is%EDispersiveAnis = .TRUE.
-            print *, "Error: anisotropic dispersive unsupported"
+            call log_msg(LOG_ERROR, 'PREPROCESS', 'Error: anisotropic dispersive unsupported')
             stop
             sgg%Med(contamedia)%Is%DIELECTRIC = .FALSE.
          end if
@@ -6184,7 +6183,7 @@ contains
             sgg%Med(contamedia)%MDISPERSIVE(1)%NumPolRes33 /= 0) then
             sgg%Med(contamedia)%Is%MDISPERSIVE = .TRUE.
             sgg%Med(contamedia)%Is%MDISPERSIVEAnis = .TRUE.
-            print *, "Error: anisotropic dispersive unsupported"
+            call log_msg(LOG_ERROR, 'PREPROCESS', 'Error: anisotropic dispersive unsupported')
             stop
             sgg%Med(contamedia)%Is%DIELECTRIC = .FALSE.
          end if
@@ -7156,7 +7155,7 @@ contains
             tama3 = (this%DielRegs%vols(i)%n_c2P)
 
             if ((tama2 == 0) .and. (tama3==0)) then
-               print *,'Bug in Dielectric Tags. Missing coordinates'
+               call log_msg(LOG_ERROR, 'PREPROCESS', 'Bug in Dielectric Tags. Missing coordinates')
                stop
             end if
 
@@ -7178,7 +7177,7 @@ contains
             tama3 = (this%DielRegs%surfs(i)%n_c2P)
 
             if ((tama2 == 0) .and. (tama3==0)) then
-               print *,'Bug in Dielectric Tags. Missing coordinates'
+               call log_msg(LOG_ERROR, 'PREPROCESS', 'Bug in Dielectric Tags. Missing coordinates')
                stop
             end if
 
@@ -7200,7 +7199,7 @@ contains
             tama3 = (this%DielRegs%Lins(i)%n_c2P)
 
             if ((tama2 == 0) .and. (tama3==0)) then
-               print *,'Bug in Dielectric Tags. Missing coordinates'
+               call log_msg(LOG_ERROR, 'PREPROCESS', 'Bug in Dielectric Tags. Missing coordinates')
                stop
             end if
 
@@ -7221,7 +7220,7 @@ contains
             tama3 = (this%DielRegs%vols(i)%n_c2P)
 
             if ((tama2 == 0) .and. (tama3==0)) then
-               print *,'Bug in Animat Tags. Missing coordinates'
+               call log_msg(LOG_ERROR, 'PREPROCESS', 'Bug in Animat Tags. Missing coordinates')
                stop
             end if
 
@@ -7242,7 +7241,7 @@ contains
             tama3 = (this%DielRegs%Surfs(i)%n_c2P)
 
             if ((tama2 == 0) .and. (tama3==0)) then
-               print *,'Bug in Animat Tags. Missing coordinates'
+               call log_msg(LOG_ERROR, 'PREPROCESS', 'Bug in Animat Tags. Missing coordinates')
                stop
             end if
 
@@ -7263,7 +7262,7 @@ contains
             tama3 = (this%DielRegs%Lins(i)%n_c2P)
 
             if ((tama2 == 0) .and. (tama3==0)) then
-               print *,'Bug in Animat Tags. Missing coordinates'
+               call log_msg(LOG_ERROR, 'PREPROCESS', 'Bug in Animat Tags. Missing coordinates')
                stop
             end if
 
@@ -7295,12 +7294,12 @@ contains
                if (tama2/=0) then
                   tagtype%tag(numertag) =  this%frqdepmats%vols(i)%c(1)%tag
                else
-                  print *,'bug in tags. '
+                  call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
                   stop
                end if
                do j = 1, tama2
                   if (trim(adjustl(this%frqdepmats%vols(i)%c(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                     print *,'bug in tags. '
+                     call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
                      stop
                   end if
                end do
@@ -7322,12 +7321,12 @@ contains
                if (tama2/=0) then
                   tagtype%tag(numertag) =  this%frqdepmats%surfs(i)%c(1)%tag
                else
-                  print *,'bug in tags. '
+                  call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
                   stop
                end if
                do j = 1, tama2
                   if (trim(adjustl(this%frqdepmats%surfs(i)%c(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                     print *,'bug in tags. '
+                     call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
                      stop
                   end if
                end do
@@ -7349,12 +7348,12 @@ contains
                if (tama2/=0) then
                   tagtype%tag(numertag) =  this%LossyThinSurfs%cs(i)%C(1)%tag
                else
-                  print *,'bug in tags. '
+                  call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
                   stop
                end if
                do j = 1, tama2
                   if (trim(adjustl(this%frqdepmats%lins(i)%c(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                     print *,'bug in tags. '
+                     call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
                      stop
                   end if
                end do
@@ -7383,12 +7382,12 @@ contains
                if (tama2/=0) then
                   tagtype%tag(numertag) =  this%twires%TW(i)%TWC(1)%tag
                else
-                  print *,'bug in tags. '
+                  call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
                   stop
                end if
                do j = 1, tama2
                   if (trim(adjustl(this%twires%TW(i)%TWC(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                     print *,'bug in tags. '
+                     call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
                      stop
                   end if
                end do
@@ -7428,12 +7427,12 @@ contains
                if (tama2/=0) then
                   tagtype%tag(numertag) =  this%swires%SW(i)%swc(1)%tag
                else
-                  print *,'bug in tags. '
+                  call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
                   stop
                end if
                do j = 1,tama2
                   if (trim(adjustl(this%swires%SW(i)%swc(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                     print *,'bug in tags. '
+                     call log_msg(LOG_ERROR, 'PREPROCESS', 'bug in tags.')
                      stop
                   end if
                end do
@@ -7558,8 +7557,7 @@ contains
              if (prev_components(m)%n_c1P > 0) then
                 do k = 1, prev_components(m)%n_c1P
                    if (tagToCheck == trim(adjustl(prev_components(m)%c1P(k)%tag))) then
-                      print *, error_msg
-                      print *, 'Duplicate tag found:', tagToCheck
+                      call log_msg(LOG_ERROR, 'PREPROCESS', trim(error_msg)//' Duplicate tag found: '//trim(tagToCheck))
                       stop
                    end if
                 end do
@@ -7568,8 +7566,7 @@ contains
              if (prev_components(m)%n_c2P > 0) then
                 do k = 1, prev_components(m)%n_c2P
                    if (tagToCheck == trim(adjustl(prev_components(m)%c2P(k)%tag))) then
-                      print *, error_msg
-                      print *, 'Duplicate tag found:', tagToCheck
+                      call log_msg(LOG_ERROR, 'PREPROCESS', trim(error_msg)//' Duplicate tag found: '//trim(tagToCheck))
                       stop
                    end if
                 end do
@@ -7653,8 +7650,7 @@ contains
              if (prev_components(m)%n_c1P > 0) then
                 do k = 1, prev_components(m)%n_c1P
                    if (tagToCheck == trim(adjustl(prev_components(m)%c1P(k)%tag))) then
-                      print *, error_msg
-                      print *, 'Duplicate tag found:', tagToCheck
+                      call log_msg(LOG_ERROR, 'PREPROCESS', trim(error_msg)//' Duplicate tag found: '//trim(tagToCheck))
                       stop
                    end if
                 end do
@@ -7663,8 +7659,7 @@ contains
              if (prev_components(m)%n_c2P > 0) then
                 do k = 1, prev_components(m)%n_c2P
                    if (tagToCheck == trim(adjustl(prev_components(m)%c2P(k)%tag))) then
-                      print *, error_msg
-                      print *, 'Duplicate tag found:', tagToCheck
+                      call log_msg(LOG_ERROR, 'PREPROCESS', trim(error_msg)//' Duplicate tag found: '//trim(tagToCheck))
                       stop
                    end if
                 end do
@@ -7690,7 +7685,7 @@ contains
        integer :: j
 
        if (component%nc == 0) then
-          print *, 'Bug in LossyThinSurf Tags. Missing coordinates'
+          call log_msg(LOG_ERROR, 'PREPROCESS', 'Bug in LossyThinSurf Tags. Missing coordinates')
           stop
        end if
 
@@ -7755,7 +7750,7 @@ contains
       integer :: j
 
       if (component%N_tgc == 0) then
-         print *, 'Bug in ThinSlot Tags. Missing coordinates'
+         call log_msg(LOG_ERROR, 'PREPROCESS', 'Bug in ThinSlot Tags. Missing coordinates')
          stop
       end if
 

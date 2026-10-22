@@ -1,6 +1,7 @@
 module nfde_rotate_m
     !       
    use NFDETypes_m
+   use Report_m, only: log_msg, LOG_ERROR
 
    !
    implicit none
@@ -578,7 +579,7 @@ contains
       type(Parseador_t), intent(inout) :: this
       integer(kind=4) :: mpidir    
       if ((mpidir/=1).and.(this%ANIMATS%nvols+this%ANIMATS%nsurfs+this%ANIMATS%nlins/=0)) then
-           print *,'Rotations in anisotropic unsupported'
+           call log_msg(LOG_ERROR, 'ROTATE', 'Rotations in anisotropic unsupported')
            stop
            return
       end if

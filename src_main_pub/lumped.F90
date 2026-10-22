@@ -322,7 +322,7 @@ contains
                 sgg%Med(jmed)%sigma = sigmaeff !returns the effective one to the main one to correctly make lossy connections with thin wires 120123
                 sgg%Med(jmed)%sigmareasignado=.true.
             else
-                print *,'error buggy: reasignando sigma en un lumped'
+                call log_msg(LOG_ERROR, 'LUMPED', 'error buggy: reasignando sigma en un lumped')
                 stop
             end if
 !ORIGINALS COMMENTED OUT 151222 by others equivalent to simplify the stoch implementation            
