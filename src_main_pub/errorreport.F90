@@ -13,7 +13,7 @@ module Report_m
 
    logical, save :: printea,warningfileIsOpen=.false.,verbose,file10isopen,file11isopen
    character(len=BUFSIZE), save :: warningFile = ' '
-   character(len=BUFSIZE), save  :: whoami
+   character(len=BUFSIZE), save  :: whoami = ' '
 
    logical, save :: ignoreerrors
    logical, save :: fatalerror=.false.
