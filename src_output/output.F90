@@ -827,6 +827,24 @@ contains
             end associate
          end select
       end do
+#ifdef CompileWithMTLN
+      block
+         type(mtln_solver_t), pointer :: mtln_solver
+         integer :: j
+         mtln_solver => GetSolverPtr()
+         if (.not. allocated(mtln_solver%bundles)) return
+         do i = 1, size(mtln_solver%bundles)
+            if (.not. allocated(mtln_solver%bundles(i)%probes)) cycle
+            do j = 1, size(mtln_solver%bundles(i)%probes)
+               associate (p => mtln_solver%bundles(i)%probes(j))
+                  if (p%output_writer_rank < 0) cycle
+                  counts(MTLN_PROBE_ID) = counts(MTLN_PROBE_ID) + 1_4
+                  bytes(MTLN_PROBE_ID) = bytes(MTLN_PROBE_ID) + array_bytes(p%t) + array_bytes(p%val)
+               end associate
+            end do
+         end do
+      end block
+#endif
    end subroutine estimate_outputs_memory
 
    ! An unallocated allocatable actual argument arrives as an absent optional dummy.
