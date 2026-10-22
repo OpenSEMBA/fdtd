@@ -3848,7 +3848,6 @@ contains
 
          n = countNumberOfMultiwireProbes(wire_probes)
          allocate(res(n))
-         if (n == 0) return
 
          n = 0
          do i = 1, size(wire_probes)
@@ -3889,6 +3888,9 @@ contains
                   end do
                   res(n)%attached_to_cable => cable_ptr
                end do
+            else
+               call log_msg(LOG_ERROR, 'SMBJSON', 'Wire probe "'//readProbeName(wire_probes(i)%p)// &
+                  '" must reference a node whose coordinateId belongs to a wire polyline')
             end if
          end do
       end function
