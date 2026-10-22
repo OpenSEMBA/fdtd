@@ -273,7 +273,7 @@ contains
       end if
 
       if (.not. found) then
-         write (buff, '(a,4i7,a)') 'ERROR: WIRE probe ', node, probe_i, probe_j, probe_k, ' DOES NOT EXIST'
+         write (buff, '(a,4i7,a)') 'WIRE probe ', node, probe_i, probe_j, probe_k, ' DOES NOT EXIST'
          call log_msg(LOG_ERROR, 'OUTPUT', buff)
       end if
    end subroutine find_current_segment
@@ -317,7 +317,7 @@ contains
       end do
 
       if (.not. found) then
-         write (buff, '(a,4i7,a)') 'ERROR: CHARGE probe ', node, probe_i, probe_j, probe_k, ' DOES NOT EXIST'
+         write (buff, '(a,4i7,a)') 'CHARGE probe ', node, probe_i, probe_j, probe_k, ' DOES NOT EXIST'
          call log_msg(LOG_ERROR, 'OUTPUT', buff)
       end if
    end subroutine find_charge_segment

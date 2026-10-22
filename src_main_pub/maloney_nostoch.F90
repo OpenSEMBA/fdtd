@@ -324,11 +324,11 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
                   compo%Correct_Hb=.true.
                   compo%Correct_Ha=.false.
                 case DEFAULT
-                  write(buff, *)    'Buggy ERROR: In SGBCs. '
+                  write(buff, *)    'Internal bug: In SGBCs. '
                   call log_msg(LOG_ERROR, 'SGBC', buff)
                end select
                if ((compo%med(1) == 0).or.(compo%med(0) == 0).or.(sgg%med(compo%med(1))%Is%PEC).or.(sgg%med(compo%med(0))%Is%PEC)) then
-                  write(buff, *)    'Buggy ERROR: In SGBCs. '
+                  write(buff, *)    'Internal bug: In SGBCs. '
                   call log_msg(LOG_ERROR, 'SGBC', buff)
                end if
 !!!!!!!!!
@@ -342,7 +342,7 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
                if (compo%depth==0) then
                     compo%SGBCCrank=.false.
                else if (compo%depth<0) then
-                  write(buff, *)    'Buggy ERROR: In SGBCs compo%depth<0. ',compo%depth
+                  write(buff, *)    'Internal bug: In SGBCs compo%depth<0. ',compo%depth
                   call log_msg(LOG_ERROR, 'SGBC', buff)
                else
                     compo%SGBCCrank=SGBCCrank
@@ -413,11 +413,11 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
                   compo%Correct_Ha=.false.
                   compo%Correct_Hb=.true.
                 case DEFAULT
-                  write(buff, *)    'Buggy ERROR: In SGBCs. '
+                  write(buff, *)    'Internal bug: In SGBCs. '
                   call log_msg(LOG_ERROR, 'SGBC', buff)
                end select
                if ((compo%med(1) == 0).or.(compo%med(0) == 0).or.(sgg%med(compo%med(1))%Is%PEC).or.(sgg%med(compo%med(0))%Is%PEC)) then
-                  write(buff, *)    'Buggy ERROR: In SGBCs. '
+                  write(buff, *)    'Internal bug: In SGBCs. '
                   call log_msg(LOG_ERROR, 'SGBC', buff)
                end if
 !!!!   
@@ -431,7 +431,7 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
                if (compo%depth==0) then
                     compo%SGBCCrank=.false.
                else if (compo%depth<0) then
-                  write(buff, *)    'Buggy ERROR: In SGBCs compo%depth<0. ',compo%depth
+                  write(buff, *)    'Internal bug: In SGBCs compo%depth<0. ',compo%depth
                   call log_msg(LOG_ERROR, 'SGBC', buff)
                else
                     compo%SGBCCrank=SGBCcrank
@@ -502,11 +502,11 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
                   compo%Correct_Ha=.false.
                   compo%Correct_Hb=.true.
                 case DEFAULT
-                  write(buff, *)    'Buggy ERROR: In SGBCs. '
+                  write(buff, *)    'Internal bug: In SGBCs. '
                   call log_msg(LOG_ERROR, 'SGBC', buff)
                end select
                if ((compo%med(1) == 0).or.(compo%med(0) == 0).or.(sgg%med(compo%med(1))%Is%PEC).or.(sgg%med(compo%med(0))%Is%PEC)) then
-                  write(buff, *)    'Buggy ERROR: In SGBCs. '
+                  write(buff, *)    'Internal bug: In SGBCs. '
                   call log_msg(LOG_ERROR, 'SGBC', buff)
                end if
 !!!!!!!!!
@@ -520,7 +520,7 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
                if (compo%depth==0) then
                     compo%SGBCCrank=.false.
                else if (compo%depth<0) then
-                  write(buff, *)    'Buggy ERROR: In SGBCs compo%depth<0. ',compo%depth
+                  write(buff, *)    'Internal bug: In SGBCs compo%depth<0. ',compo%depth
                   call log_msg(LOG_ERROR, 'SGBC', buff)
                else
                     compo%SGBCCrank=SGBCcrank
@@ -1013,7 +1013,7 @@ subroutine AdvanceSGBCH
          compo%Hb_Plus = compo%Hb_Plus -  compo%gm2_externo* (compo%Efield - compo%E(compo%depth))
          compo%Hb_Minu = compo%Hb_Minu +  compo%gm2_externo* (compo%Efield - compo%E(-compo%depth))
       else     
-         write(buff, *)    'Buggy ERROR: In SGBCs. '
+         write(buff, *)    'Internal bug: In SGBCs. '
          call log_msg(LOG_FATAL, 'SGBC', buff)
       end if
    end do
@@ -1382,7 +1382,7 @@ subroutine test_stab(G2,GM2)
    end do
 
    if (unstable) then
-        write(buff, *)    'ERROR: SGBCs may become unstable. Reduce cfl'
+        write(buff, *)    'SGBCs may become unstable. Reduce cfl'
         call log_msg(LOG_ERROR, 'SGBC', buff)
    end if
 

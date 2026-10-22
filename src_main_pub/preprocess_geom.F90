@@ -1317,17 +1317,17 @@ contains
                   !!!!!!!!it was wrong before. bug summer 140815
                   if(.not.((pointXI>=sgg%allocDxI).and.(pointXI<=sgg%allocDxE))) then
                      pointXI= sgg%allocDxI
-                     write(buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',pointXI,pointYI,pointZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
+                     write(buff, *)    'precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',pointXI,pointYI,pointZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
                      call log_msg(LOG_ERROR, 'PREPROCESS', buff)
                   end if
                   if(.not.((pointYI>=sgg%allocDyI).and.(pointYI<=sgg%allocDyE))) then
                      pointYI= sgg%allocDyI
-                     write(buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',pointXI,pointYI,pointZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
+                     write(buff, *)    'precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',pointXI,pointYI,pointZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
                      call log_msg(LOG_ERROR, 'PREPROCESS', buff)
                   end if
                   if(.not.((pointZI>=sgg%allocDzI).and.(pointZI<=sgg%allocDzE))) then
                      pointZI= sgg%allocDzI
-                     write(buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',pointXI,pointYI,pointZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
+                     write(buff, *)    'precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',pointXI,pointYI,pointZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
                      call log_msg(LOG_ERROR, 'PREPROCESS', buff)
                   end if
                   isInside = (pointXI>=sgg%allocDxI).and.(pointXI<=sgg%allocDxE).and. &
@@ -1490,7 +1490,7 @@ contains
                   !
 
                   if (this%LossyThinSurfs%cs(j)%numLayers >1) then
-                     write(buff, '(a)')    'pre1_ERROR:  Anisotropic multiport materials unsupported for multilayered structures.'
+                     write(buff, '(a)')    'Anisotropic multiport materials unsupported for multilayered structures.'
                      call log_msg(LOG_ERROR, 'PREPROCESS', buff)
                   end if
                   pointXI = Max (gridPoint%XI, Min(BoundingBox%XI, BoundingBox%XE)) !copied from healer
@@ -1500,7 +1500,7 @@ contains
                   if(.not.((pointXI>=sgg%allocDxI).and.(pointXI<=sgg%allocDxE))) pointXI= sgg%allocDxI
                   if(.not.((pointYI>=sgg%allocDyI).and.(pointYI<=sgg%allocDyE))) pointYI= sgg%allocDyI
                   if(.not.((pointZI>=sgg%allocDzI).and.(pointZI<=sgg%allocDzE))) pointZI= sgg%allocDzI
-                  write(buff, '(a)')    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)'
+                  write(buff, '(a)')    'precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)'
                   call log_msg(LOG_ERROR, 'PREPROCESS', buff)
 
                   isInside = (pointXI>=sgg%allocDxI).and.(pointXI<=sgg%allocDxE).and. &
@@ -2014,17 +2014,17 @@ contains
                 case (IEX)
                   if ((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k))%is%PEC)) then
                      paraerrhilo=.true.
-                     write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   x-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
+                     write(buff, '(a,i7,3i5,a)')    'x-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
                      if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                   else if (media%sggMiEx(i,j,k) /= 1) then
                      islossy = (sgg%Med(media%sggMiEx(i,j,k))%Sigma /= 0.0_RKIND)
                      if (islossy) then
                         paraerrhilo=.true.
-                        write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i, j, k, &
+                        write(buff, '(a,i7,3i5,a,i5)') 'x-WIRE at ',OrigIndex, i, j, k, &
                            ' embedded within LOSSY medium ', &
                            media%sggMiEx(i,j,k)
                      else
-                        write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i, j, k,' embedded within medium ', &
+                        write(buff, '(a,i7,3i5,a,i5)') 'x-WIRE at ',OrigIndex, i, j, k,' embedded within medium ', &
                            media%sggMiEx(i,j,k)
                      end if
                      if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
@@ -2036,7 +2036,7 @@ contains
                   &     ((media%sggMiEx(i  ,j,k) /=0).and.(.not.(sgg%med(media%sggMiEx(i  ,j,k))%is%PEC)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !only LeftEnd and RightEnd may touch
                         paraerrhilo=.true.
-                        write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of x-WIRE at  ',OrigIndex, i, j, k, &
+                        write(buff, '(a,i7,3i5,a)')    'intermediate node of x-WIRE at  ',OrigIndex, i, j, k, &
                            ' touching PEC'
                         if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                      else
@@ -2051,7 +2051,7 @@ contains
                   &         ((media%sggMiEx(i  ,j,k) /=0).and.(.not.(sgg%med(media%sggMiEx(i  ,j,k))%is%PEC)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !only LeftEnd and RightEnd may touch
                         paraerrhilo=.true.
-                        write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of x-WIRE at  ',OrigIndex, i+1, j, k, &
+                        write(buff, '(a,i7,3i5,a)')    'intermediate node of x-WIRE at  ',OrigIndex, i+1, j, k, &
                            ' touching PEC'
                         if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                      else
@@ -2061,38 +2061,38 @@ contains
                      end if
                   else if (((media%sggMiEy(i  ,j,k) /= 1)).and. &
                      (media%sggMiEx(i  ,j,k) == 1)) then
-                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'x-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEy(i,j,k)
                      if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                   else if (((media%sggMiEz(i  ,j,k) /= 1)).and. &
                      (media%sggMiEx(i  ,j,k) == 1)) then
-                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'x-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEz(i,j,k)
                      if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                   else if (((media%sggMiEy(i+1,j,k) /= 1)).and. &
                      (media%sggMiEx(i  ,j,k) == 1)) then
-                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i+1, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'x-WIRE at ',OrigIndex, i+1, j, k,' touching medium ', &
                      &                                  media%sggMiEy(i+1,j,k)
                      if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                   else if (((media%sggMiEz(i+1,j,k) /= 1)).and. &
                      (media%sggMiEx(i  ,j,k) == 1)) then
-                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i+1, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'x-WIRE at ',OrigIndex, i+1, j, k,' touching medium ', &
                      &                                  media%sggMiEz(i+1,j,k)
                      if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                   end if
                 case (IEY)
                   if ((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k))%is%PEC)) then
                      paraerrhilo=.true.
-                     write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   y-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
+                     write(buff, '(a,i7,3i5,a)')    'y-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
                      if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                   else if (media%sggMiEy(i,j,k) /= 1) then
                      islossy = (sgg%Med(media%sggMiEy(i,j,k))%Sigma /= 0.0_RKIND)
                      if (islossy) then
                         paraerrhilo=.true.
-                        write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: Y-WIRE at ',OrigIndex, i, j, k,' embedded within LOSSY medium ', &
+                        write(buff, '(a,i7,3i5,a,i5)') 'Y-WIRE at ',OrigIndex, i, j, k,' embedded within LOSSY medium ', &
                            media%sggMiEY(i,j,k)
                      else
-                        write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j, k,' embedded within medium ', &
+                        write(buff, '(a,i7,3i5,a,i5)') 'y-WIRE at ',OrigIndex, i, j, k,' embedded within medium ', &
                            media%sggMiEy(i,j,k)
                      end if
                      if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
@@ -2104,7 +2104,7 @@ contains
                   &     ((media%sggMiEy(i,j  ,k) /=0).and.(.not.(sgg%med(media%sggMiEy(i,j  ,k))%is%PEC)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !only LeftEnd and RightEnd may touch
                         paraerrhilo=.true.
-                        write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of y-WIRE at ',OrigIndex, i, j, k, &
+                        write(buff, '(a,i7,3i5,a)')    'intermediate node of y-WIRE at ',OrigIndex, i, j, k, &
                            ' touching PEC'
                         if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                      else
@@ -2119,7 +2119,7 @@ contains
                   &         ((media%sggMiEy(i,j  ,k) /=0).and.(.not.(sgg%med(media%sggMiEy(i,j  ,k))%is%PEC)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !only LeftEnd and RightEnd may touch
                         paraerrhilo=.true.
-                        write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of y-WIRE at ',OrigIndex, i, j+1, k, &
+                        write(buff, '(a,i7,3i5,a)')    'intermediate node of y-WIRE at ',OrigIndex, i, j+1, k, &
                            ' touching PEC'
                         if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                      else
@@ -2129,39 +2129,39 @@ contains
                      end if
                   else if (((media%sggMiEx(i,j  ,k) /= 1)).and. &
                   &         (media%sggMiEy(i,j  ,k) == 1)) then
-                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'y-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEx(i,j,k)
                      if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                   else if (((media%sggMiEz(i,j  ,k) /= 1)).and. &
                   &         (media%sggMiEy(i,j  ,k) == 1)) then
-                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'y-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEz(i,j,k)
                      if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                   else if (((media%sggMiEx(i,j+1,k) /= 1)).and. &
                   &         (media%sggMiEy(i,j  ,k) == 1)) then
-                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j+1, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'y-WIRE at ',OrigIndex, i, j+1, k,' touching medium ', &
                      &                                  media%sggMiEx(i,j+1,k)
                      if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                   else if (((media%sggMiEz(i,j+1,k) /= 1)).and. &
                   &         (media%sggMiEy(i,j  ,k) == 1)) then
-                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j+1, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'y-WIRE at ',OrigIndex, i, j+1, k,' touching medium ', &
                      &                                  media%sggMiEz(i,j+1,k)
                      if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                   end if
                 case (IEZ)
                   if ((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k))%is%PEC)) then
                      paraerrhilo=.true.
-                     write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   z-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
+                     write(buff, '(a,i7,3i5,a)')    'z-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
                      if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                   else if (media%sggMiEz(i,j,k) /= 1) then
                      islossy = (sgg%Med(media%sggMiEz(i,j,k))%Sigma /= 0.0_RKIND)
                      if (islossy) then
                         paraerrhilo=.true.
-                        write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: Y-WIRE at ',OrigIndex, i, j, k, &
+                        write(buff, '(a,i7,3i5,a,i5)') 'Y-WIRE at ',OrigIndex, i, j, k, &
                            ' embedded within LOSSY medium ', &
                            media%sggMiEz(i,j,k)
                      else
-                        write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' embedded within medium ', &
+                        write(buff, '(a,i7,3i5,a,i5)') 'z-WIRE at ',OrigIndex, i, j, k,' embedded within medium ', &
                            media%sggMiEz(i,j,k)
                      end if
                      if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
@@ -2173,7 +2173,7 @@ contains
                   &     ((media%sggMiEz(i,j,k) /=0).and.(.not.(sgg%med(media%sggMiEz(i,j,k))%is%PEC)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !only LeftEnd and RightEnd may touch
                         paraerrhilo=.true.
-                        write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of z-WIRE at ',OrigIndex, i, j, k, &
+                        write(buff, '(a,i7,3i5,a)')    'intermediate node of z-WIRE at ',OrigIndex, i, j, k, &
                            ' touching PEC'
                         if (verbose)  call log_msg(LOG_INFO, 'PREPROCESS', buff)
                      else
@@ -2188,7 +2188,7 @@ contains
                   &         (((media%sggMiEz(i,j,k) /=0).and.(.not.(sgg%med(media%sggMiEz(i,j,k))%is%PEC))).or.(.not.(sgg%med(media%sggMiEz(i,j,k))%is%PEC)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !only LeftEnd and RightEnd may touch
                         paraerrhilo=.true.
-                        write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of z-WIRE at ',OrigIndex, i, j, k+1, &
+                        write(buff, '(a,i7,3i5,a)')    'intermediate node of z-WIRE at ',OrigIndex, i, j, k+1, &
                            ' touching PEC'
                         if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                      else
@@ -2198,22 +2198,22 @@ contains
                      end if
                   else if (((media%sggMiEx(i,j,k) /= 1)).and. &
                   &         (media%sggMiEz(i,j,k) == 1)) then
-                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEx(i,j,k)
                      if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                   else if (((media%sggMiEy(i,j,k) /= 1)).and. &
                   &         (media%sggMiEz(i,j,k) == 1)) then
-                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEy(i,j,k)
                      if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                   else if (((media%sggMiEy(i,j,k+1) /= 1)).and. &
                   &         (media%sggMiEz(i,j,k) == 1)) then
-                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEy(i,j,k+1)
                      if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                   else if (((media%sggMiEx(i,j,k+1) /= 1)).and. &
                   &         (media%sggMiEz(i,j,k) == 1)) then
-                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEx(i,j,k+1)
                      if (verbose) call log_msg(LOG_INFO, 'PREPROCESS', buff)
                   end if
@@ -2280,7 +2280,7 @@ contains
                   ((this%twires%TW(j)%TWC(i)%k).eq.(this%twires%TW(j)%TWC(i-1)%k)).and. &
                   ((this%twires%TW(j)%TWC(i)%D).eq.(this%twires%TW(j)%TWC(i-1)%D))) then
                   sgg%Med(contamedia)%wire(1)%numsegmentos = 1
-                  write(buff, '(a,1i7,a)')    'pre1_SEVEREWARNING: removing a repeteated segment from a 2-segment wire. Index= ',this%twires%TW(j)%TWC(i)%nd,'. Double check that no wire probes was attached to it'
+                  write(buff, '(a,1i7,a)')    'removing a repeteated segment from a 2-segment wire. Index= ',this%twires%TW(j)%TWC(i)%nd,'. Double check that no wire probes was attached to it'
                   call log_msg(LOG_WARN, 'PREPROCESS', buff)
                   exit hilosbarre
                end if
@@ -2593,7 +2593,7 @@ contains
       bboxwirYE=dummy_bboxwirYE
       bboxwirZE=dummy_bboxwirZE
 #endif
-      write(buff, '(a, 6I12)')    'pre1_INFO:  Bounding Box for WIREs min_x,min_y,min_z, MAX_x,MAX_y,MAX_z',bboxwirXI,bboxwirYI,bboxwirZI,bboxwirXE,bboxwirYE,bboxwirZE
+      write(buff, '(a, 6I12)')    'Bounding Box for WIREs min_x,min_y,min_z, MAX_x,MAX_y,MAX_z',bboxwirXI,bboxwirYI,bboxwirZI,bboxwirXE,bboxwirYE,bboxwirZE
       if (((bboxwirXI<2**20).or.(bboxwirYI<2**20).or.(bboxwirZI<2**20).or.(bboxwirXE>-(2**20)).or.(bboxwirYE>-(2**20)).or.(bboxwirZE>-(2**20))).or.(VERBOSE)) then
          call log_msg(LOG_INFO, 'PREPROCESS', buff)
       end if
@@ -2953,7 +2953,7 @@ contains
                         if (this%nodsrc%NodalSource(i)%isElec) then
                            isValid = isValid .AND. ( .NOT. sgg%Med(medium)%Is%PEC)
                         end if
-                        write (buff,*) 'WARNING: Ex Nodal source on PEC media will be ignored (', i1, j1, k1,')'
+                        write (buff,*) 'Ex Nodal source on PEC media will be ignored (', i1, j1, k1,')'
                         if (.NOT. isValid) call  log_msg(LOG_WARN, 'PREPROCESS', buff)
                         !
                         ! COMMENTED OUT 250816 BECAUSE IT GIVES AN ERROR JUST WHEN THE SOURCE FALLS ON AN MPI CUT. THE CASE OF punto_s%ZE = Min (this%nodsrc%NodalSource(i)%c1P(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE  )) WOULD HAVE TO BE HANDLED BUT I DID NOT WANT TO DO IT
@@ -2985,7 +2985,7 @@ contains
                         if (this%nodsrc%NodalSource(i)%isElec) then
                            isValid = isValid .AND. ( .NOT. sgg%Med(medium)%Is%PEC)
                         end if
-                        write (buff,*) 'WARNING: Ey Nodal source on PMC media will be ignored (', i1, j1, k1,')'
+                        write (buff,*) 'Ey Nodal source on PMC media will be ignored (', i1, j1, k1,')'
                         if (.NOT. isValid) call  log_msg(LOG_WARN, 'PREPROCESS', buff)
                         !
                         !
@@ -3017,7 +3017,7 @@ contains
                         if (this%nodsrc%NodalSource(i)%isElec) then
                            isValid = isValid .AND. ( .NOT. sgg%Med(medium)%Is%PEC)
                         end if
-                        write (buff,*) 'WARNING: Ez Nodal source on PMC media will be ignored (', i1, j1, k1,')'
+                        write (buff,*) 'Ez Nodal source on PMC media will be ignored (', i1, j1, k1,')'
                         if (.NOT. isValid) call  log_msg(LOG_WARN, 'PREPROCESS', buff)
                         !
                         !
@@ -3127,7 +3127,7 @@ contains
                         if (this%nodsrc%NodalSource(i)%isElec) then
                            isValid = isValid .AND. ( .NOT. sgg%Med(medium)%Is%PEC)
                         end if
-                        write (buff,*) 'WARNING: Ex Nodal source on PEC media will be ignored (', i1, j1, k1,')'
+                        write (buff,*) 'Ex Nodal source on PEC media will be ignored (', i1, j1, k1,')'
                         if (.NOT. isValid) call  log_msg(LOG_WARN, 'PREPROCESS', buff)
                         !
                         !
@@ -3160,7 +3160,7 @@ contains
                         if (this%nodsrc%NodalSource(i)%isElec) then
                            isValid = isValid .AND. ( .NOT. sgg%Med(medium)%Is%PEC)
                         end if
-                        write (buff,*) 'WARNING: Ey Nodal source on PMC media will be ignored (', i1, j1, k1,')'
+                        write (buff,*) 'Ey Nodal source on PMC media will be ignored (', i1, j1, k1,')'
                         if (.NOT. isValid) call  log_msg(LOG_WARN, 'PREPROCESS', buff)
                         !
                         !
@@ -3192,7 +3192,7 @@ contains
                         if (this%nodsrc%NodalSource(i)%isElec) then
                            isValid = isValid .AND. ( .NOT. sgg%Med(medium)%Is%PEC)
                         end if
-                        write (buff,*) 'WARNING: Ez Nodal source on PMC media will be ignored (', i1, j1, k1,')'
+                        write (buff,*) 'Ez Nodal source on PMC media will be ignored (', i1, j1, k1,')'
                         if (.NOT. isValid) call  log_msg(LOG_WARN, 'PREPROCESS', buff)
                         !
                         !
@@ -3410,7 +3410,7 @@ contains
             tama4 = (this%oldSONDA%probes(i)%Magnetic(j)%probe%n_cord)
             tama5 = (this%oldSONDA%probes(i)%Magnetic(j)%probe%n_cord)
             tama6 = (this%oldSONDA%probes(i)%Magnetic(j)%probe%n_cord)
-            buff='pre1_ERROR: TAMANIOS DE PROBES EH RAROS'
+            buff='TAMANIOS DE PROBES EH RAROS'
             if ((tama3 /= tama4) .OR. (tama3 /= tama5) .OR. (tama3 /= tama6)) &
             &           call log_msg(LOG_FATAL, 'PREPROCESS', buff)
             do k = 1, tama3
@@ -3624,7 +3624,7 @@ contains
             if ((sgg%observation(ii)%InitialFreq < 0.).or. &
                 (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
                 (sgg%observation(ii)%FreqStep < 0.0_RKIND)) then
-                  write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
+                  write(buff,*) 'Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
                   if (sgg%observation(ii)%FreqDomain) call log_msg(LOG_FATAL, 'PREPROCESS', buff)
             end if
             !!!
@@ -3852,7 +3852,7 @@ contains
                if ((sgg%observation(ii)%InitialFreq < 0.).or. &
                   (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
                   (sgg%observation(ii)%FreqStep < 0.0_RKIND)) then
-                  write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
+                  write(buff,*) 'Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
                   if (sgg%observation(ii)%FreqDomain) call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                end if
                !
@@ -4027,7 +4027,7 @@ contains
                if ((sgg%observation(ii)%InitialFreq < 0.).or. &
                   (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
                   (sgg%observation(ii)%FreqStep < 0.0_RKIND) ) then
-                  write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
+                  write(buff,*) 'Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
                   if (sgg%observation(ii)%FreqDomain) call log_msg(LOG_FATAL, 'PREPROCESS', buff)
                end if
                !END COMPATIBILITY 15/07/15
@@ -4522,7 +4522,7 @@ contains
                   sgg%EShared%elem(j1)%times = sgg%EShared%elem(j1)%times + 1
                   !!!!!!!!   write (17,*) i1,j1,sgg%EShared%elem(j1)%times,sgg%Med(sgg%EShared%elem(j1)%SharedMed)%Priority
                   if (sgg%EShared%elem(j1)%times > 4) then
-                     write(buff,'(a,4i5)') 'WARNING: More than 4 media try to occupy ', sgg%EShared%elem(j1)%field,sgg%EShared%elem(j1)%i,   &
+                     write(buff,'(a,4i5)') 'More than 4 media try to occupy ', sgg%EShared%elem(j1)%field,sgg%EShared%elem(j1)%i,   &
                         sgg%EShared%elem(j1)%j, sgg%EShared%elem(j1)%k
                      if ( ((.not.sgg%Med(sgg%EShared%elem(i1)%SharedMed)%is%thinwire).and.(.not.sgg%Med(sgg%EShared%elem(j1)%SharedMed)%is%thinwire)).and. &
                         ((.not.sgg%Med(sgg%EShared%elem(i1)%SharedMed)%is%SlantedWire).and.(.not.sgg%Med(sgg%EShared%elem(j1)%SharedMed)%is%SlantedWire)).or.verbose) call  log_msg(LOG_INFO, 'PREPROCESS', buff)
@@ -4540,7 +4540,7 @@ contains
                   sgg%HShared%elem(i1)%times = sgg%HShared%elem(i1)%times + 1
                   sgg%HShared%elem(j1)%times = sgg%HShared%elem(j1)%times + 1
                   if (sgg%HShared%elem(j1)%times > 4) then
-                     write(buff,'(a,4i5)') 'WARNING: More than 4 media try to occupy ', sgg%hShared%elem(j1)%field,sgg%HShared%elem(j1)%i,  &
+                     write(buff,'(a,4i5)') 'More than 4 media try to occupy ', sgg%hShared%elem(j1)%field,sgg%HShared%elem(j1)%i,  &
                         sgg%HShared%elem(j1)%j, sgg%HShared%elem(j1)%k
                      if ( ((.not.sgg%Med(sgg%EShared%elem(i1)%SharedMed)%is%thinwire).and.(.not.sgg%Med(sgg%EShared%elem(j1)%SharedMed)%is%thinwire)).and. &
                         ((.not.sgg%Med(sgg%EShared%elem(i1)%SharedMed)%is%SlantedWire).and.(.not.sgg%Med(sgg%EShared%elem(j1)%SharedMed)%is%SlantedWire)).or.verbose) call  log_msg(LOG_INFO, 'PREPROCESS', buff)
@@ -6077,7 +6077,7 @@ contains
          type(FreqDepenMaterial_t), pointer :: fdgeom
 
          if (fdgeom%l+fdgeom%LM /=0) then
-            BUFF='ERROR: SECOND ORDER DISPERSIVE MEDIA UNSUPPORTED. TRANSLATE THEM TO FIRST ORDER ()'
+            BUFF='SECOND ORDER DISPERSIVE MEDIA UNSUPPORTED. TRANSLATE THEM TO FIRST ORDER ()'
             call log_msg(LOG_ERROR, 'PREPROCESS', buff)
          end if
          !
@@ -6170,7 +6170,7 @@ contains
             sgg%Med(contamedia)%EDispersive(1)%NumPolRes33 /= 0) then
             sgg%Med(contamedia)%Is%EDispersive = .TRUE.
             sgg%Med(contamedia)%Is%EDispersiveAnis = .TRUE.
-            call log_msg(LOG_FATAL, 'PREPROCESS', 'Error: anisotropic dispersive unsupported')
+            call log_msg(LOG_FATAL, 'PREPROCESS', 'anisotropic dispersive unsupported')
             sgg%Med(contamedia)%Is%DIELECTRIC = .FALSE.
          end if
          if (sgg%Med(contamedia)%MDispersive(1)%NumPolRes11 /= 0) then
@@ -6182,7 +6182,7 @@ contains
             sgg%Med(contamedia)%MDISPERSIVE(1)%NumPolRes33 /= 0) then
             sgg%Med(contamedia)%Is%MDISPERSIVE = .TRUE.
             sgg%Med(contamedia)%Is%MDISPERSIVEAnis = .TRUE.
-            call log_msg(LOG_FATAL, 'PREPROCESS', 'Error: anisotropic dispersive unsupported')
+            call log_msg(LOG_FATAL, 'PREPROCESS', 'anisotropic dispersive unsupported')
             sgg%Med(contamedia)%Is%DIELECTRIC = .FALSE.
          end if
          !!!!

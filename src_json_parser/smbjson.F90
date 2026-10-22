@@ -1437,7 +1437,7 @@ contains
 
          outputName = this%getStrAt(p, J_NAME, found=nameFound)
          if (.not. nameFound) then 
-            call log_msg(LOG_ERROR, 'SMBJSON', "ERROR: name entry not found for probe.")
+            call log_msg(LOG_ERROR, 'SMBJSON', "name entry not found for probe.")
          end if
          res%outputrequest = trim(adjustl(outputName))
 
@@ -1445,10 +1445,10 @@ contains
 
          elemIds = this%getIntsAt(p, J_ELEMENTIDS, found=elementIdsFound)
          if (.not. elementIdsFound) then
-            call log_msg(LOG_ERROR, 'SMBJSON', "ERROR: element ids entry not found for probe.")
+            call log_msg(LOG_ERROR, 'SMBJSON', "element ids entry not found for probe.")
          end if
          if (size(elemIds) /= 1) then
-            call log_msg(LOG_ERROR, 'SMBJSON', "ERROR: point probe must contain a single element id.")
+            call log_msg(LOG_ERROR, 'SMBJSON', "point probe must contain a single element id.")
          end if
 
          polyline = this%mesh%getPolyline(elemIds(1))
@@ -1953,7 +1953,7 @@ contains
                   J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
                   J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
       if (size(mwires) /= 0) then 
-         call log_msg(LOG_ERROR, 'SMBJSON', 'ERROR: shieldedMultiwires and unshieldedMultiwires can only be defined if compiled with MTLN')
+         call log_msg(LOG_ERROR, 'SMBJSON', 'shieldedMultiwires and unshieldedMultiwires can only be defined if compiled with MTLN')
       end if
 
       mAs = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
@@ -2915,7 +2915,7 @@ contains
          case (J_MAT_TYPE_WIRE)
             res => null()
          case default
-            call log_msg(LOG_ERROR, 'SMBJSON', 'ERROR: Material type not recognized')
+            call log_msg(LOG_ERROR, 'SMBJSON', 'Material type not recognized')
          end select
       end function
 
@@ -2940,7 +2940,7 @@ contains
          case (J_MAT_TYPE_WIRE)
             res = 0
          case default
-            call log_msg(LOG_ERROR, 'SMBJSON', 'ERROR: Material type not recognized')
+            call log_msg(LOG_ERROR, 'SMBJSON', 'Material type not recognized')
          end select
       end function
 
@@ -3304,13 +3304,13 @@ contains
          type(json_value), pointer :: res
 
          if (terminationId == -1) then
-            call log_msg(LOG_ERROR, 'SMBJSON', 'Error: missing terminal on cable side')
+            call log_msg(LOG_ERROR, 'SMBJSON', 'missing terminal on cable side')
             res => null()
             return
          end if
          terminal = this%matTable%getId(terminationId)
          if (.not. this%existsAt(terminal%p, J_MAT_TERM_TERMINATIONS)) then
-            call log_msg(LOG_ERROR, 'SMBJSON', 'Error: missing terminations on terminal')
+            call log_msg(LOG_ERROR, 'SMBJSON', 'missing terminations on terminal')
             res => null()
             return
          end if

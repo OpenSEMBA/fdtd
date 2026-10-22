@@ -501,7 +501,7 @@ contains
       if (mur_second) then
 
 
-         call log_msg(LOG_FATAL, 'MUR', 'ERROR: MUR SECOND not correctly implemented')
+         call log_msg(LOG_FATAL, 'MUR', 'MUR SECOND not correctly implemented')
          !!!!!!?!?!?!?!?!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!?!?!?!?!?!!!!!!!!!!!!!!!!!!!Edges!!!!!!!!!!!!!!!!!!!!!Mur primer orden
          !!!!!!?!?!?!?!?!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

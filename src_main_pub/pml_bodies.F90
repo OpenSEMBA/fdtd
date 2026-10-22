@@ -202,7 +202,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!
       ThereArePMLbodies=ThereArePMLbodies.and.(conta /=0)
       if (.not.therearePMLbodies) then
-         write(buff, *)    'Buggy ERROR: In PMLbodies. fields exist withouth Hfields. '
+         write(buff, *)    'Internal bug: In PMLbodies. fields exist withouth Hfields. '
         call log_msg(LOG_ERROR, 'PML', buff)
       end if
       berpmlH%NumNodes=conta
@@ -241,7 +241,7 @@ contains
                      PML_%maxTotal=maxZ(jmed)
                      PML_%posi=k1
                   case DEFAULT
-                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
+                     write(buff, *)    'Internal bug: In PMLbodies. '
                      call log_msg(LOG_ERROR, 'PML', buff)
                   end select
                   !call calc_pmlbodypar
@@ -282,7 +282,7 @@ contains
                      PML_%maxTotal=maxX(jmed)
                      PML_%posi=i1
                    case DEFAULT
-                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
+                     write(buff, *)    'Internal bug: In PMLbodies. '
                      call log_msg(LOG_ERROR, 'PML', buff)
                   end select
                   !call calc_pmlbodypar
@@ -323,7 +323,7 @@ contains
                      PML_%maxTotal=maxY(jmed)
                      PML_%posi=j1
                    case DEFAULT
-                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
+                     write(buff, *)    'Internal bug: In PMLbodies. '
                      call log_msg(LOG_ERROR, 'PML', buff)
                   end select
                   !call calc_pmlbodypar
@@ -369,7 +369,7 @@ contains
                      PML_%maxTotal=maxZ(jmed)
                      PML_%posi=k1+0.5
                   case DEFAULT
-                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
+                     write(buff, *)    'Internal bug: In PMLbodies. '
                      call log_msg(LOG_ERROR, 'PML', buff)
                   end select
                   !call calc_pmlbodypar
@@ -410,7 +410,7 @@ contains
                      PML_%maxTotal=maxX(jmed)
                      PML_%posi=i1+0.5
                    case DEFAULT
-                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
+                     write(buff, *)    'Internal bug: In PMLbodies. '
                      call log_msg(LOG_ERROR, 'PML', buff)
                   end select
                   !call calc_pmlbodypar
@@ -451,7 +451,7 @@ contains
                      PML_%maxTotal=maxY(jmed)
                      PML_%posi=j1+0.5
                    case DEFAULT
-                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
+                     write(buff, *)    'Internal bug: In PMLbodies. '
                      call log_msg(LOG_ERROR, 'PML', buff)
                   end select
                   !call calc_pmlbodypar

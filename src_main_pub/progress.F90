@@ -5,7 +5,7 @@ module progress_m
    use FDETYPES_m
    use snapxdmf_m
    use Report_m, only: print11, get_secnds, time_t, erasesignalingfiles, &
-                       openclosedelete, file10isopen, log_msg, LOG_WARN, LOG_FATAL
+                       openclosedelete, file10isopen, log_msg, LOG_WARN, LOG_ERROR, LOG_FATAL
 
    implicit none
    private
@@ -800,12 +800,8 @@ contains
 #endif
       if (stoponNaN) then
          if (layoutnumber == 0) then
-            write(dubuf,*) 'ERROR, ABORTING: UNSTABILITIES. Possible reasons and fixes: '
-            call print11(layoutnumber,dubuf)
-            write(dubuf,*) '     In case of single wires: reduce WIRE radii and/or reduce sgg%dt'
-            call print11(layoutnumber,dubuf)
-            write(dubuf,*) '     In case of surface IBCs: reduce -att factor'
-            call print11(layoutnumber,dubuf)
+            call log_msg(LOG_ERROR, 'PROGRESS', 'Instabilities detected, aborting. Single wires: reduce WIRE radii '// &
+                         'and/or sgg%dt. Surface IBCs: reduce -att factor')
          end if
 #ifdef CompileWithMPI
          call MPI_Barrier(MPI_COMM_WORLD,ierr)

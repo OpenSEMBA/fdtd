@@ -322,7 +322,7 @@ contains
                 sgg%Med(jmed)%sigma = sigmaeff !returns the effective one to the main one to correctly make lossy connections with thin wires 120123
                 sgg%Med(jmed)%sigmareasignado=.true.
             else
-                call log_msg(LOG_FATAL, 'LUMPED', 'error buggy: reasignando sigma en un lumped')
+                call log_msg(LOG_FATAL, 'LUMPED', 'Internal bug: reasignando sigma en un lumped')
             end if
 !ORIGINALS COMMENTED OUT 151222 by others equivalent to simplify the stoch implementation            
 !           G1=(1.0_RKIND  - SigmaEff * sgg%dt / (2.0_RKIND * epsilonEff) ) / &
@@ -372,7 +372,7 @@ contains
                 lumped_%diodeB    = -lumped_%diodeB * alignedDeltaE / 2.0_RKIND
                 lumped_%diodepreA = -DiodIsat * G2 / ( transversalDeltaHa * transversalDeltaHb) 
             else
-                write(buff, *)    'Buggy ERROR: In lumped orientations. '
+                write(buff, *)    'Internal bug: In lumped orientations. '
                 call log_msg(LOG_ERROR, 'LUMPED', buff)
             end if   
         

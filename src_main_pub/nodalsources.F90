@@ -238,7 +238,7 @@ contains
             !Read the time evolution
             dummy%nodHard(dummy%numHard)%deltaevol=sggdummy%sourceFile%deltaSamples
             if (dummy%nodHard(dummy%numHard)%deltaevol > sgg%dt) then
-               write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sggdummy%sourceFile%Name))// &
+               write (buff,'(a,e12.2e3)')  ''//trim(adjustl(sggdummy%sourceFile%Name))// &
                ' undersampled by a factor ',dummy%nodHard(dummy%numHard)%deltaevol/sgg%dt
                call log_msg(LOG_WARN, 'SOURCES', buff)
             end if
@@ -259,7 +259,7 @@ contains
             !Read the time evolution
             dummy%nodSoft(dummy%numSoft)%deltaevol=sggdummy%sourceFile%deltaSamples
             if (dummy%nodSoft(dummy%numSoft)%deltaevol > sgg%dt) then
-               write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sggdummy%sourceFile%Name))// &
+               write (buff,'(a,e12.2e3)')  ''//trim(adjustl(sggdummy%sourceFile%Name))// &
                ' undersampled by a factor ',dummy%nodSoft(dummy%numSoft)%deltaevol/sgg%dt
                call log_msg(LOG_WARN, 'SOURCES', buff)
             end if

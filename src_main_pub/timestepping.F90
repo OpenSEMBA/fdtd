@@ -1265,18 +1265,18 @@ contains
          dtcritico=newdtcritico
 #endif
          if (this%sgg%dt <= dtcritico) then
-            write(buff,'(a,e10.2e3)')  'WIR_INFO: deltat for stability OK: ',dtcritico
+            write(buff,'(a,e10.2e3)')  'deltat for stability OK: ',dtcritico
             if ((this%control%layoutnumber==0).and.this%control%verbose) call log_msg(LOG_INFO, 'SOLVER', buff)
          else
             if (.not.(this%control%resume.and.this%control%permitscaling)) then !do not abort, only warn if permittivity scaling
 #ifdef CompileWithMTLN
-               write(buff,'(a,e10.2e3)')  'WIR_ERROR: Possibly UNSTABLE dt, make dt < ',dtcritico
+               write(buff,'(a,e10.2e3)')  'Possibly UNSTABLE dt, make dt < ',dtcritico
 #else
-               write(buff,'(a,e10.2e3)')  'WIR_ERROR: Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs, use -stableradholland or make dt < ',dtcritico
+               write(buff,'(a,e10.2e3)')  'Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs, use -stableradholland or make dt < ',dtcritico
 #endif
                if (this%control%layoutnumber==0) call log_msg(LOG_ERROR, 'SOLVER', buff)
             else
-               write(buff,'(a,e10.2e3)')  'WIR_WARNING: Resume and Pscaling with wires. Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs: dt is over ',dtcritico
+               write(buff,'(a,e10.2e3)')  'Resume and Pscaling with wires. Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs: dt is over ',dtcritico
                if (this%control%layoutnumber==0) call log_msg(LOG_WARN, 'SOLVER', buff)
             end if
          end if

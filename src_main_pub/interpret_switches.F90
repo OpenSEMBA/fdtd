@@ -188,7 +188,7 @@ contains
       n = commandargumentcount(l%chaininput, binaryPath)
       if (n == 0) then
          call print_basic_help(l)
-      call log_msg(LOG_FATAL, 'MAIN', 'Error: NO arguments neither command line nor in launch file. Correct and remove pause...')
+      call log_msg(LOG_FATAL, 'MAIN', 'NO arguments neither command line nor in launch file. Correct and remove pause...')
          statuse = -1
       end if
       l%opcionestotales = ''
@@ -887,7 +887,7 @@ contains
       !just to be sure that I do not have stupid errors
 #ifdef CompileWithMPI
       if ((sizeof(MPI_DOUBLE_PRECISION) /= 4) .OR. (sizeof(MPI_REAL) /= 4)) then
-         call log_msg(LOG_FATAL, 'MAIN', 'SEVERE COMPILATION ERROR: MPI_REAL l%num_procs is not 4. ')
+         call log_msg(LOG_FATAL, 'MAIN', 'Build mismatch: MPI_REAL l%num_procs is not 4. ')
       end if
 #endif
 
@@ -1617,7 +1617,7 @@ contains
       n = commandargumentcount(l%chain2, binaryPath)
       if (n == 0) then
          call print_basic_help(l)
-      call log_msg(LOG_FATAL, 'MAIN', 'Error: NO arguments neither command line nor in launch file. Correct and remove pause...')
+      call log_msg(LOG_FATAL, 'MAIN', 'NO arguments neither command line nor in launch file. Correct and remove pause...')
          statuse = -1
          goto 667
       end if
@@ -1790,7 +1790,7 @@ contains
       !
       ! If no input is present we stop
       if (len(trim(adjustl(l%fichin))) <= 0) then
-         call log_msg(LOG_FATAL, 'MAIN', 'ERROR! -> No input file was specified. Use -i ****.fdtd.json'); statuse = -1; goto 667
+         call log_msg(LOG_FATAL, 'MAIN', 'No input file was specified. Use -i ****.fdtd.json'); statuse = -1; goto 667
       end if
 
       l%fileFDE = trim(adjustl(l%fichin))//NFDEEXTENSION
