@@ -19,8 +19,9 @@ messages, and how to add new ones. The implementation lives in
 - `LOG_ERROR` marks the run as failed. Before the time loop starts, the solver
   aborts unless `-ignoreerrors` was given. `LOG_INFO` and `LOG_WARN` never stop
   the run.
-- `StopOnError` is still the immediate-abort path. Its message is now tagged
-  `FATAL` and also written to the warnings file.
+- `LOG_FATAL` is the immediate-abort path and **does not return**: the message
+  goes to stdout, `_Report.txt` and the warnings file, then every rank stops
+  with exit code 1. It replaces the old `StopOnError`.
 - `print11` is unchanged. It writes formatted, human-oriented output (banners,
   tables, progress) to stdout and `_Report.txt`. It is not a diagnostics
   channel.
@@ -32,12 +33,12 @@ messages, and how to add new ones. The implementation lives in
 | `INFO` | `LOG_INFO` | Diagnostics, configuration dumps, verbose traces | no | `-verbose` output, media dump, wire topology |
 | `WARN` | `LOG_WARN` | Something odd that the solver can work around | no | ignored sources, write failures that are skipped |
 | `ERROR` | `LOG_ERROR` | Invalid input or state; the run must not proceed | **yes** | parser validation, unsupported geometry |
-| `FATAL` | (internal) | Emitted only by `StopOnError`; the process exits right away | n/a | unrecoverable conditions |
+| `FATAL` | `LOG_FATAL` | Unrecoverable state; the process exits right away | n/a | missing input file, MPI failures |
 
 ```mermaid
 flowchart TD
     A[Something worth reporting] --> B{Can the run continue<br/>with correct results?}
-    B -- "No, and we must stop now" --> F["StopOnError(...)<br/>FATAL"]
+    B -- "No, and we must stop now" --> F["log_msg(LOG_FATAL, ...)"]
     B -- "No, but let the rest of the<br/>input be checked first" --> E["log_msg(LOG_ERROR, ...)"]
     B -- Yes --> C{Does the user need<br/>to act on it?}
     C -- Yes --> W["log_msg(LOG_WARN, ...)"]
@@ -65,7 +66,7 @@ flowchart LR
     S -->|"set_log_step(n)"| STEP[(logStep)]
     STEP -.-> FMT
 
-    SOE["StopOnError(msg)"] --> OUT11["print11: stdout + _Report.txt"]
+    SOE["log_msg(LOG_FATAL, ...)"] --> OUT11["print11: stdout + _Report.txt"]
     SOE --> U17
     SOE --> X[["MPI_Abort / stop 1"]]
 ```
@@ -93,7 +94,7 @@ sequenceDiagram
     Rep->>FS: rank 0 merges every _tmpWarnings.txt into <root>_Warnings.txt
     Rep-->>TS: fatalerror reduced over all ranks
     alt fatal error and no -ignoreerrors
-        TS->>Rep: StopOnError("FATAL ERRORS. Revise *Warnings.txt file")
+        TS->>Rep: log_msg(LOG_FATAL, 'SOLVER', 'FATAL ERRORS. Revise *Warnings.txt file. ABORTING...')
     else
         loop every time step n
             TS->>Rep: set_log_step(n)
@@ -111,7 +112,7 @@ during time stepping therefore go to **stderr only**. That is where the
 
 | File | Writer | Content |
 |---|---|---|
-| `<root><rank>_tmpWarnings.txt` | `log_msg`, `StopOnError` on every rank | Per-rank messages before the time loop. They are left on disk if the run aborts. |
+| `<root><rank>_tmpWarnings.txt` | `log_msg` on every rank | Per-rank messages before the time loop. They are left on disk if the run aborts. |
 | `<root>_Warnings.txt` | `CLOSEWARNINGFILE` on rank 0 | Merged messages from every rank |
 | `<root>_Report.txt` | `print11` on rank 0 | Human-oriented run report: banners, configuration, progress |
 | stderr | `log_msg` on every rank | Every leveled message, including those emitted inside the time loop |
@@ -141,7 +142,7 @@ one fits:
 ## Writing a new message
 
 ```fortran
-use Report_m, only: log_msg, LOG_INFO, LOG_WARN, LOG_ERROR
+use Report_m, only: log_msg, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_FATAL
 
 write(buff, *) 'Thin slot width ', width, ' is below the cell size'
 call log_msg(LOG_WARN, 'PREPROCESS', buff)
@@ -150,6 +151,9 @@ call log_msg(LOG_ERROR, 'SMBJSON', 'Unknown probe type "'//trim(probeType)//'"')
 
 ! Runtime choice of severity
 call log_msg(merge(LOG_ERROR, LOG_WARN, isFatal), 'WIRES', buff)
+
+! Unrecoverable: does not return
+call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to initialise movie HDF5 output')
 ```
 
 Guidelines:
@@ -157,9 +161,15 @@ Guidelines:
 - Do not put `WARNING:` or `ERROR:` in the message text: the level is already
   printed. Older messages still carry tags such as `wir0_WARNING:`; remove
   them when you edit those lines.
-- Use `LOG_ERROR` only when the run has to stop. It sets the fatal flag.
+- Use `LOG_ERROR` only when the run has to stop. It sets the fatal flag and
+  lets the rest of the input be checked. Use `LOG_FATAL` when it must stop now;
+  do not follow a log call with `stop` or `error stop`.
 - Do not use `print *` or `write(*,*)` for diagnostics. Those messages bypass
   the warnings file and carry no rank or step.
+- The `(rank/nprocs)` prefix comes from `set_log_rank`, which `semba_fdtd`
+  calls right after MPI starts and again after a stochastic run splits into
+  halves, so each half has its own rank 0 for the signal files. Call it again
+  if your code changes `layoutnumber`. Do not pass the rank in the message.
 - Inside the time loop, `log_msg` adds the step automatically. Do not format
   `n` into the message.
 
@@ -170,18 +180,15 @@ Guidelines:
 | `call WarnErrReport(buff)` | `call log_msg(LOG_WARN, 'ORIGIN', buff)` |
 | `call WarnErrReport(buff, .true.)` | `call log_msg(LOG_ERROR, 'ORIGIN', buff)` |
 | `call WarnErrReport(buff, flag)` | `call log_msg(merge(LOG_ERROR, LOG_WARN, flag), 'ORIGIN', buff)` |
-| `print *, 'Bug in tags'` then `stop` | `call log_msg(LOG_ERROR, 'PREPROCESS', 'Bug in tags')` then `stop` |
-| `print *, msg` then `stop` (must exit now) | `call StopOnError(layoutnumber, num_procs, msg)` |
+| `print *, 'Bug in tags'` then `stop` | `call log_msg(LOG_FATAL, 'PREPROCESS', 'Bug in tags')` (no `stop`) |
+| `call StopOnError(layoutnumber, num_procs, msg)` | `call log_msg(LOG_FATAL, 'ORIGIN', msg)` |
 | `(    1/    1) some text` | `(    1/    1) [n=42] [WIRES] WARN: some text` |
-| `(    1/    1) ERROR: msg` (StopOnError, console only) | `(    1/    1) FATAL: msg` (console and warnings file) |
+| `(    1/    1) ERROR: msg` (StopOnError, console only) | `(    1/    1) [OUTPUT] FATAL: msg` (console and warnings file) |
 
 ## Known limitations
 
 - **No step tag in `_Warnings.txt`.** The warnings file is merged and closed
   before the time loop, so `[n=...]` only shows up on stderr.
-- **`StopOnError` has no origin.** Its call sites still pass only a message.
-- **`stop` exits with code 0.** Some preprocessing paths log `LOG_ERROR` and
-  then call a bare `stop`, which still exits 0. `StopOnError` exits 1.
 - **Levels were assigned mechanically.** During the migration, the level came
   from the old error flag: messages whose text says `INFO`, or that only print
   under `verbose`, became `INFO`, and the rest became `WARN`. Some `WARN`
