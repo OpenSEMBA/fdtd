@@ -1172,7 +1172,8 @@ contains
       integer :: i, edge
       integer, dimension(3) :: cell
       logical, optional, intent(in) :: is_two_sided
-      logical :: split = .false.
+      logical :: split
+      split = .false.
       if (present(is_two_sided)) split = is_two_sided
       do i = 1, size(contour)
          edge = contour(i)%getEdge()
@@ -1388,7 +1389,9 @@ contains
       type(edge_t) :: new_edge
       real(kind=rkind) :: ratio
       real(kind = rkind), dimension(2) :: coords
-      logical :: split = .false.
+      logical :: split
+
+      split = .false.
 
       if (present(is_two_sided)) split = is_two_sided
       ratio = 1.0 - side%length()
@@ -1420,9 +1423,10 @@ contains
       type(edge_t), dimension(:), allocatable, optional :: edges_inside
       type(edge_t), dimension(:), allocatable :: inside
       real(kind=RKIND), dimension(3) :: n = [0.0,0.0,0.0]
-      logical :: split = .false.
+      logical :: split
       integer :: i
 
+      split = .false.
       ! logical :: split_candidate
 
       ! split_candidate = .false.
@@ -1435,11 +1439,7 @@ contains
       !       return
       !    end if
       ! end do
-      if (present(is_two_sided)) then 
-         split = is_two_sided
-      else 
-         split = .false.
-      end if
+      if (present(is_two_sided)) split = is_two_sided
       if (present(normal)) n = normal
       if (present(edges_inside)) then 
          inside = edges_inside 

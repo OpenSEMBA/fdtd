@@ -561,7 +561,7 @@ contains
         call this%allocate(buck)
     end subroutine
 
-    function computeEdgeRegionIICorrection(edge)
+    function computeEdgeRegionIICorrection(edge) result(res)
         type(edge_t), intent(in) :: edge
         real(kind=rkind) :: res
         res = 1.0
@@ -570,7 +570,7 @@ contains
         end if
     end function
 
-    function computeFaceRegionIICorrection(face)
+    function computeFaceRegionIICorrection(face) result(res)
         type(face_t), intent(in) :: face
         real(kind=rkind) :: res
         res = face%ratio/(1.0-face%ratio)
