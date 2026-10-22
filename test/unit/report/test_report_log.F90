@@ -45,6 +45,4 @@ integer function test_log_msg_sets_fatal_error() bind(C, name="test_log_msg_sets
         status = 1
     end if
     call resetFatalError()
-
-    call resetFatalError()
 end function test_log_msg_sets_fatal_error
