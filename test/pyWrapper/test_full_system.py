@@ -2078,6 +2078,7 @@ def test_conformal_box(tmp_path):
     solver["mesh"]["elements"][3]["subtype"] = "volume"
     solver.cleanUp()
     solver.run()
+    assert solver.hasFinishedSuccessfully()
 
     inside_volume = Probe(solver.getSolvedProbeFolders("back")[0])
     outside_volume = Probe(solver.getSolvedProbeFolders("front")[0])
@@ -2085,6 +2086,7 @@ def test_conformal_box(tmp_path):
     solver["mesh"]["elements"][3]["subtype"] = "surface"
     solver.cleanUp()
     solver.run()
+    assert solver.hasFinishedSuccessfully()
 
     inside_surface = Probe(solver.getSolvedProbeFolders("back")[0])
     outside_surface = Probe(solver.getSolvedProbeFolders("front")[0])

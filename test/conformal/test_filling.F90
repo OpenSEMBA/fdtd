@@ -1064,3 +1064,31 @@ integer function test_conformal_filling_cylinder_base_on_grid_plane() bind(C) re
 
 end function
 
+integer function test_conformal_add_edge_optional_reset() bind(C) result(err)
+    use conformal_m, only: addEdge
+    use conformal_types_m, only: coord_t, side_t
+    use FDETypes_m, only: edge_t
+    implicit none
+
+    type(edge_t), dimension(:), allocatable :: edges
+    type(side_t) :: side
+    integer(kind=4), dimension(3) :: cell = [1, 1, 1]
+
+    err = 0
+    ! A full-length contour edge of a thin surface is deliberately skipped.
+    side%startNode = coord_t(position=[1.0, 1.0, 1.0])
+    side%endNode = coord_t(position=[2.0, 1.0, 1.0])
+    allocate(edges(0))
+    call addEdge(edges, cell, 1, side, is_two_sided=.true.)
+    if (size(edges) /= 0) err = err + 1
+
+    ! The next call omits the optional argument.  It must not inherit the
+    ! previous two-sided flag (the local variable used to have implicit SAVE).
+    call addEdge(edges, cell, 1, side)
+    if (size(edges) /= 1) err = err + 1
+    if (size(edges) == 1) then
+        if (edges(1)%is_two_sided) err = err + 1
+        if (edges(1)%ratio /= 0.0) err = err + 1
+    end if
+end function
+

@@ -67,11 +67,27 @@ contains
       type(ConformalPECElements_t) :: canonical_element
       type(ConformalMedia_t), dimension(:), allocatable :: res
       integer :: i
+      integer(kind=4) :: element_body_type
+      logical :: is_closed
+      character(len=256) :: validation_message
       if (present(body_type)) b = body_type
       allocate(res(size(elements)))
       do i = 1, size(elements)
          canonical_element = canonicalClosedSurfaceOrientation(elements(i))
-         res(i) = buildMediaFromElement(canonical_element, b)
+         element_body_type = b
+         ! A closed PEC shell that mixes grid-aligned intervals with conformal
+         ! triangles has one physical side, exactly like a volume boundary.
+         ! Building its partial faces as two-sided thin-sheet media makes the
+         ! discrete reflection differ from the equivalent volume.  Open panels
+         ! keep the two-sided treatment.
+         if (b == BODY_TYPE_SURFACE .and. .not. elements(i)%is_sgbc .and. &
+             allocated(elements(i)%intervals)) then
+            if (size(elements(i)%intervals) > 0) then
+               call validateConformalVolume(elements(i), is_closed, validation_message)
+               if (is_closed) element_body_type = BODY_TYPE_VOLUME
+            end if
+         end if
+         res(i) = buildMediaFromElement(canonical_element, element_body_type)
       end do
    end function buildSurfaceMedia
 
@@ -86,7 +102,7 @@ contains
       do i = 1, size(elements)
          ! SGBC layer ordering is defined by user winding, so unlike PEC closed
          ! surfaces this path must not canonicalize triangle orientation.
-         res(i) = buildMediaFromElement(elements(i))
+         res(i) = buildMediaFromElement(elements(i), BODY_TYPE_SURFACE)
          res(i)%is_sgbc = .true.
          res(i)%sgbc_profile = elements(i)%sgbc_profile
          block
@@ -1172,7 +1188,8 @@ contains
       integer :: i, edge
       integer, dimension(3) :: cell
       logical, optional, intent(in) :: is_two_sided
-      logical :: split = .false.
+      logical :: split
+      split = .false.
       if (present(is_two_sided)) split = is_two_sided
       do i = 1, size(contour)
          edge = contour(i)%getEdge()
@@ -1388,8 +1405,9 @@ contains
       type(edge_t) :: new_edge
       real(kind=rkind) :: ratio
       real(kind = rkind), dimension(2) :: coords
-      logical :: split = .false.
+      logical :: split
 
+      split = .false.
       if (present(is_two_sided)) split = is_two_sided
       ratio = 1.0 - side%length()
       ! skip edges that fill the whole edge if they are

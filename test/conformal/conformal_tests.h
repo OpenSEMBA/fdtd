@@ -36,6 +36,7 @@ extern "C" int test_conformal_edge_next_cell();
 extern "C" int test_conformal_pec_media_raytracing();
 extern "C" int test_conformal_filling_closed_corner();
 extern "C" int test_conformal_filling_block_and_corner();
+extern "C" int test_conformal_add_edge_optional_reset();
 extern "C" int test_conformal_pec_media();
 extern "C" int test_conformal_pec_corner();
 extern "C" int test_conformal_edges_from_contour_inside();
@@ -81,6 +82,7 @@ TEST(conformal, conformal_split_faces)                      { EXPECT_EQ(0, test_
 TEST(conformal, conformal_edge_next_cell)                      { EXPECT_EQ(0, test_conformal_edge_next_cell()); }
 TEST(conformal, conformal_filling_closed_corner)               { EXPECT_EQ(0, test_conformal_filling_closed_corner()); }
 TEST(conformal, conformal_filling_block_and_corner)            { EXPECT_EQ(0, test_conformal_filling_block_and_corner()); }
+TEST(conformal, conformal_add_edge_optional_reset)             { EXPECT_EQ(0, test_conformal_add_edge_optional_reset()); }
 TEST(conformal, conformal_edges_from_contour_inside)            { EXPECT_EQ(0, test_conformal_edges_from_contour_inside()); }
 TEST(conformal, conformal_sgbc_zero_state)                     { EXPECT_EQ(0, test_conformal_sgbc_zero_state()); }
 TEST(conformal, conformal_sgbc_layer_orientation)              { EXPECT_EQ(0, test_conformal_sgbc_layer_orientation()); }
