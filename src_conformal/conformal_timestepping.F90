@@ -85,11 +85,13 @@ contains
         type(edge_t), intent(out) :: edge
         integer(kind=4), dimension(4), intent(in) :: edge_key
         logical, intent(in) :: in_region_II
+
         edge%cell = edge_key(1:3)
         edge%direction = edge_key(4)
         edge%material_coords = [0.0, 1.0]
         allocate(edge%region_I_fields%E)
         allocate(edge%region_II_fields%E)
+        
         if (in_region_II) then
             edge%ratio = 0.0
             edge%edge_region = EDGE_REGION_II

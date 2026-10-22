@@ -63,10 +63,11 @@ contains
    function buildSurfaceMedia(elements, body_type) result(res)
       type(ConformalPECElements_t), dimension(:), pointer, intent(in) :: elements
       integer(kind=4), optional :: body_type
-      integer(kind=4) :: b = BODY_TYPE_UNDEFINED
+      integer(kind=4) :: b
       type(ConformalPECElements_t) :: canonical_element
       type(ConformalMedia_t), dimension(:), allocatable :: res
       integer :: i
+      b = BODY_TYPE_UNDEFINED
       if (present(body_type)) b = body_type
       allocate(res(size(elements)))
       do i = 1, size(elements)
@@ -842,10 +843,11 @@ contains
       type(ConformalPECElements_t), dimension(:), pointer :: elements
       integer(kind=4), optional :: body_type
       type(XYZlimit_t), dimension(1:6), optional :: alloc
-      integer(kind=4) :: b = BODY_TYPE_UNDEFINED
+      integer(kind=4) :: b
       type(ConformalPECElements_t) :: canonical_element
       type(ConformalMedia_t), dimension(:), allocatable :: res
       integer :: i
+      b = BODY_TYPE_UNDEFINED
       if (present(body_type)) b = body_type
       allocate(res(size(elements)))
       do i = 1, size(elements)
@@ -874,7 +876,7 @@ contains
       type(ConformalPECElements_t), intent(in) :: element
       integer(kind=4), optional :: body_type
       type(XYZlimit_t), dimension(1:6), optional :: alloc
-      integer(kind=4) :: b = BODY_TYPE_UNDEFINED
+      integer(kind=4) :: b
       type(ConformalMedia_t) :: res
 
       type(cell_map_t) :: cell_map
@@ -882,6 +884,7 @@ contains
       type(edge_t), dimension(:), allocatable :: edges
       type(face_t), dimension(:), allocatable :: faces
 
+      b = BODY_TYPE_UNDEFINED
       if (present(body_type)) b = body_type
 
       call buildCellMap(cell_map, element, b)
@@ -1243,7 +1246,8 @@ contains
       real(kind=rkind) :: area
       integer :: face
       integer, dimension(3) :: cell
-      real(kind=RKIND), dimension(3) :: normal = [0.0,0.0,0.0]
+      real(kind=RKIND), dimension(3) :: normal
+      normal = [0.0,0.0,0.0]
       cell = findContourCell(contour)
       face = findContourFace(contour)
       normal = computeNormalFromSidesOnFace(contour)
@@ -1277,7 +1281,8 @@ contains
    function computeNormalFromSidesOnFace(contour) result(res)
       type(side_t), dimension(:), allocatable, intent(in) :: contour
       real(kind=RKIND), dimension(3) :: res
-      integer :: i, n_on_face = 0
+      integer :: i, n_on_face
+      n_on_face = 0
       do i = 1, size(contour)
          if (contour(i)%isOnAnyFace()) then 
             res = res + contour(i)%normal
@@ -1422,10 +1427,11 @@ contains
       real(kind=RKIND), dimension(3), optional :: normal
       type(edge_t), dimension(:), allocatable, optional :: edges_inside
       type(edge_t), dimension(:), allocatable :: inside
-      real(kind=RKIND), dimension(3) :: n = [0.0,0.0,0.0]
+      real(kind=RKIND), dimension(3) :: n
       logical :: split
       integer :: i
 
+      n = [0.0,0.0,0.0]
       split = .false.
       ! logical :: split_candidate
 
@@ -1519,7 +1525,8 @@ contains
       real(kind=rkind), dimension(:), allocatable :: aux
       real(kind=rkind) :: ratio
       integer :: i
-      logical :: new = .true.
+      logical :: new
+      new = .true.
       if (size(ratios) == 0) then
          deallocate(ratios)
          allocate(ratios(1))

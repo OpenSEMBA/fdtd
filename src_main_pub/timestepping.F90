@@ -2475,6 +2475,7 @@ contains
       integer :: i, j, k, n
 
       do n = 1, size(this%conformal_fields%faces)
+         corr = 0.0
          c = this%conformal_fields%faces(n)%cell
          i = c(1); j = c(2); k = c(3)
          select case (this%conformal_fields%faces(n)%direction)
@@ -2488,8 +2489,9 @@ contains
          E2 => this%conformal_fields%faces(n)%region_I_fields%E2
          E3 => this%conformal_fields%faces(n)%region_I_fields%E3
          E4 => this%conformal_fields%faces(n)%region_I_fields%E4
-
          H = this%g%gm1(med)*H + this%g%gm2(med)*((E2 - E4)*id1 - (E3 - E1)*id2)
+
+
          !region 2
          H  => this%conformal_fields%faces(n)%region_II_fields%H
          E1 => this%conformal_fields%faces(n)%region_II_fields%E1
@@ -2500,6 +2502,26 @@ contains
          corr = computeFaceRegionIICorrection(this%conformal_fields%faces(n))
          H = this%g%gm1(med)*H + this%g%gm2(med)*corr*((E2 - E4)*id1 - (E3 - E1)*id2)
 
+      end do
+
+      ! The grid E of full edges outside the surface may have been modified after the conformal
+      ! update (planewave injection, boundaries...). Their own copy is resynchronised with it.
+      do n = 1, size(this%conformal_fields%edges)
+         c = this%conformal_fields%edges(n)%cell
+         i = c(1); j = c(2); k = c(3)
+         if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_I) then 
+            select case (this%conformal_fields%edges(n)%direction)
+               case (EDGE_X); this%conformal_fields%edges(n)%region_I_fields%E = this%Ex(i,j,k)
+               case (EDGE_Y); this%conformal_fields%edges(n)%region_I_fields%E = this%Ey(i,j,k)
+               case (EDGE_Z); this%conformal_fields%edges(n)%region_I_fields%E = this%Ez(i,j,k)
+            end select
+         else if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_II) then 
+            select case (this%conformal_fields%edges(n)%direction)
+               case (EDGE_X); this%conformal_fields%edges(n)%region_II_fields%E = this%Ex(i,j,k)
+               case (EDGE_Y); this%conformal_fields%edges(n)%region_II_fields%E = this%Ey(i,j,k)
+               case (EDGE_Z); this%conformal_fields%edges(n)%region_II_fields%E = this%Ez(i,j,k)
+            end select
+         end if
       end do
    end subroutine
 
@@ -2513,6 +2535,7 @@ contains
       integer(kind=4), dimension(3) :: c
       integer :: i, j, k, n
       do n = 1, size(this%conformal_fields%edges)
+         corr = 0.0
          E_eff = 0.0
          c = this%conformal_fields%edges(n)%cell
          i = c(1); j = c(2); k = c(3)
@@ -2556,144 +2579,6 @@ contains
       end do
 
    end subroutine
-
-   ! subroutine solver_advanceConformalE(this)
-   !    class(solver_t) :: this
-   !    integer :: n, i, j, k, normal_direction, split_direction, transverse_direction
-   !    real(kind=rkind) :: sign, inverse_step, field_correction, lower_fraction
-
-   !    if (.not. allocated(this%conformal_surface_faces)) return
-   !    do n = 1, size(this%conformal_surface_faces)
-   !       i = this%conformal_surface_faces(n)%cell(1)
-   !       j = this%conformal_surface_faces(n)%cell(2)
-   !       k = this%conformal_surface_faces(n)%cell(3)
-   !       normal_direction = this%conformal_surface_faces(n)%face_direction
-   !       split_direction = this%conformal_surface_faces(n)%split_direction
-   !       transverse_direction = 6-normal_direction-split_direction
-   !       sign = leviCivita(normal_direction, split_direction, transverse_direction)
-   !       lower_fraction = this%conformal_surface_faces(n)%lower_fraction
-   !       field_correction = this%conformal_surface_faces(n)%upper_h - &
-   !                          this%conformal_surface_faces(n)%lower_h
-
-   !       ! The ordinary Yee update sees the area-weighted H stored on the grid.
-   !       ! Replace it with lower_h and upper_h on the two electric boundaries
-   !       ! normal to the split, respectively.
-   !       select case (split_direction)
-   !       case (1); inverse_step = this%Idxh(i)
-   !       case (2); inverse_step = this%Idyh(j)
-   !       case (3); inverse_step = this%Idzh(k)
-   !       end select
-   !       call addConformalElectricCorrection(this, transverse_direction, i, j, k, &
-   !                                            sign*inverse_step*(1.0_RKIND-lower_fraction)*field_correction)
-   !       select case (split_direction)
-   !       case (1); i = i + 1; inverse_step = this%Idxh(i)
-   !       case (2); j = j + 1; inverse_step = this%Idyh(j)
-   !       case (3); k = k + 1; inverse_step = this%Idzh(k)
-   !       end select
-   !       call addConformalElectricCorrection(this, transverse_direction, i, j, k, &
-   !                                            sign*inverse_step*lower_fraction*field_correction)
-   !       if (this%conformal_surface_faces(n)%is_sgbc) then
-   !          call this%conformal_surface_faces(n)%sgbc%advance( &
-   !             sign*this%conformal_surface_faces(n)%lower_h, &
-   !             sign*this%conformal_surface_faces(n)%upper_h)
-   !       end if
-   !    end do
-   ! end subroutine solver_advanceConformalE
-
-   ! subroutine addConformalElectricCorrection(this, direction, i, j, k, correction)
-   !    class(solver_t) :: this
-   !    integer, intent(in) :: direction, i, j, k
-   !    real(kind=rkind), intent(in) :: correction
-   !    integer :: medium
-
-   !    select case (direction)
-   !    case (1)
-   !       medium = this%media%sggMiEx(i,j,k)
-   !       this%Ex(i,j,k) = this%Ex(i,j,k)+this%g%g2(medium)*correction
-   !    case (2)
-   !       medium = this%media%sggMiEy(i,j,k)
-   !       this%Ey(i,j,k) = this%Ey(i,j,k)+this%g%g2(medium)*correction
-   !    case (3)
-   !       medium = this%media%sggMiEz(i,j,k)
-   !       this%Ez(i,j,k) = this%Ez(i,j,k)+this%g%g2(medium)*correction
-   !    end select
-   ! end subroutine addConformalElectricCorrection
-
-   ! subroutine solver_advanceConformalH(this)
-   !    class(solver_t) :: this
-   !    integer :: n, i, j, k, normal_direction, split_direction, transverse_direction
-   !    real(kind=rkind) :: sign, split_inverse_step, transverse_inverse_step
-   !    real(kind=rkind) :: lower_e, upper_e, transverse_lower_e, transverse_upper_e
-   !    real(kind=rkind) :: lower_fraction, common_curl, magnetic_factor
-   !    real(kind=rkind) :: surface_lower_e, surface_upper_e
-
-   !    if (.not. allocated(this%conformal_surface_faces)) return
-   !    do n = 1, size(this%conformal_surface_faces)
-   !       i = this%conformal_surface_faces(n)%cell(1)
-   !       j = this%conformal_surface_faces(n)%cell(2)
-   !       k = this%conformal_surface_faces(n)%cell(3)
-   !       normal_direction = this%conformal_surface_faces(n)%face_direction
-   !       split_direction = this%conformal_surface_faces(n)%split_direction
-   !       transverse_direction = 6-normal_direction-split_direction
-   !       sign = leviCivita(normal_direction, split_direction, transverse_direction)
-   !       lower_fraction = this%conformal_surface_faces(n)%lower_fraction
-   !       call getConformalElectricPair(this, transverse_direction, split_direction, i, j, k, &
-   !                                     lower_e, upper_e, split_inverse_step)
-   !       call getConformalElectricPair(this, split_direction, transverse_direction, i, j, k, &
-   !                                     transverse_lower_e, transverse_upper_e, transverse_inverse_step)
-   !       common_curl = sign*(transverse_upper_e-transverse_lower_e)*transverse_inverse_step
-   !       magnetic_factor = this%sgg%dt/this%mu0
-   !       surface_lower_e = 0.0_RKIND
-   !       surface_upper_e = 0.0_RKIND
-   !       if (this%conformal_surface_faces(n)%is_sgbc) then
-   !          surface_lower_e = this%conformal_surface_faces(n)%sgbc%lower_e()
-   !          surface_upper_e = this%conformal_surface_faces(n)%sgbc%upper_e()
-   !       end if
-   !       this%conformal_surface_faces(n)%lower_h = this%conformal_surface_faces(n)%lower_h + &
-   !          magnetic_factor*(common_curl+sign*(lower_e-surface_lower_e)*split_inverse_step/lower_fraction)
-   !       this%conformal_surface_faces(n)%upper_h = this%conformal_surface_faces(n)%upper_h + &
-   !          magnetic_factor*(common_curl+sign*(surface_upper_e-upper_e)*split_inverse_step/(1.0_RKIND-lower_fraction))
-   !       ! Preserve the full-face magnetic flux represented by the Yee field.
-   !       ! The weighted subface updates reduce exactly to the ordinary Yee curl.
-   !       select case (normal_direction)
-   !       case (1); this%Hx(i,j,k) = lower_fraction*this%conformal_surface_faces(n)%lower_h + &
-   !                                  (1.0_RKIND-lower_fraction)*this%conformal_surface_faces(n)%upper_h
-   !       case (2); this%Hy(i,j,k) = lower_fraction*this%conformal_surface_faces(n)%lower_h + &
-   !                                  (1.0_RKIND-lower_fraction)*this%conformal_surface_faces(n)%upper_h
-   !       case (3); this%Hz(i,j,k) = lower_fraction*this%conformal_surface_faces(n)%lower_h + &
-   !                                  (1.0_RKIND-lower_fraction)*this%conformal_surface_faces(n)%upper_h
-   !       end select
-   !    end do
-   ! end subroutine solver_advanceConformalH
-
-   ! subroutine getConformalElectricPair(this, field_direction, offset_direction, i, j, k, &
-   !                                     lower_e, upper_e, inverse_step)
-   !    class(solver_t) :: this
-   !    integer, intent(in) :: field_direction, offset_direction, i, j, k
-   !    real(kind=rkind), intent(out) :: lower_e, upper_e, inverse_step
-   !    integer :: upper_i, upper_j, upper_k
-
-   !    upper_i = i
-   !    upper_j = j
-   !    upper_k = k
-   !    select case (offset_direction)
-   !    case (1); upper_i = upper_i+1; inverse_step = this%Idxe(i)
-   !    case (2); upper_j = upper_j+1; inverse_step = this%Idye(j)
-   !    case (3); upper_k = upper_k+1; inverse_step = this%Idze(k)
-   !    end select
-   !    select case (field_direction)
-   !    case (1)
-   !       lower_e = this%Ex(i,j,k)
-   !       upper_e = this%Ex(upper_i,upper_j,upper_k)
-   !    case (2)
-   !       lower_e = this%Ey(i,j,k)
-   !       upper_e = this%Ey(upper_i,upper_j,upper_k)
-   !    case (3)
-   !       lower_e = this%Ez(i,j,k)
-   !       upper_e = this%Ez(upper_i,upper_j,upper_k)
-   !    end select
-   ! end subroutine getConformalElectricPair
-
 
    subroutine initializeConformalFields(this)
       class(solver_t) :: this

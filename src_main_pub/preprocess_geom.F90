@@ -2531,7 +2531,6 @@ contains
       do j = 1, ubound(conformal_volumes,1)
 
          call addConformalMedia(sgg, media, conformal_volumes(j), edge_ratios, face_ratios, contamedia, volume_side_maps(j), isVolume)
-         ! call addConformalMedia(sgg, media, conformal_volumes(j), edge_ratios, face_ratios, contamedia, conf_bounding_box, volume_side_maps(j), isVolume)
          numertag = searchtag(tagtype,conformal_volumes(j)%tag)
          call CreateConformalPECVolume (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
             & media%sggMiHx, media%sggMiHy, media%sggMiHz,  Alloc_iEx_XI, &
@@ -2551,7 +2550,6 @@ contains
 
       do j = 1, ubound(conformal_surfaces,1)
          call addConformalMedia(sgg, media, conformal_surfaces(j), edge_ratios, face_ratios, contamedia, surface_side_maps(j), isSurface)
-         ! call addConformalMedia(sgg, media, conformal_surfaces(j), edge_ratios, face_ratios, contamedia, conf_bounding_box, surface_side_maps(j), isSurface)
       end do
 
       if (ubound(conformal_surfaces, 1) > 0) then
@@ -2566,8 +2564,6 @@ contains
             sgg%ConformalSGBCProfiles(j) = conformal_sgbc_surfaces(j)%sgbc_profile
             call addConformalMedia(sgg, media, conformal_sgbc_surfaces(j), sgbc_edge_ratios, &
                sgbc_face_ratios, contamedia, sgbc_side_maps(j), isSurface, .true., j)
-            ! call addConformalMedia(sgg, media, conformal_sgbc_surfaces(j), sgbc_edge_ratios, &
-            !    sgbc_face_ratios, contamedia, conf_bounding_box, sgbc_side_maps(j), isSurface, .true., j)
          end do
          contamedia = contamedia + ubound(sgbc_edge_ratios,1) + ubound(sgbc_face_ratios,1)
          if (findloc(sgbc_edge_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
@@ -5393,17 +5389,6 @@ contains
          end if
       end function changeTimeStepIfConformalNeeded
 
-      ! subroutine initConformalBoundingBox(sgg, bbox)
-      !    type(SGGFDTDINFO_t), intent(in) :: sgg
-      !    type(XYZlimit_t), intent(inout) :: bbox
-      !    bbox%XI = -sgg%Alloc(IHX)%XI
-      !    bbox%XE = -sgg%Alloc(IHX)%XE
-      !    bbox%YI = -sgg%Alloc(IHY)%YI
-      !    bbox%YE = -sgg%Alloc(IHY)%YE
-      !    bbox%ZI = -sgg%Alloc(IHZ)%ZI
-      !    bbox%ZE = -sgg%Alloc(IHZ)%ZE
-      ! end subroutine
-
       subroutine getDifferentEdgeRatios(ratios, conformal_media)
          real(kind=rkind), dimension(:), allocatable, intent(inout) :: ratios
          type(ConformalMedia_t), dimension(:), allocatable, intent(in) :: conformal_media
@@ -5475,8 +5460,6 @@ contains
 
       subroutine addConformalMedia(sgg, media, conformal_media, edge_ratios, face_ratios, contamedia, side_map, type, &
                                    is_sgbc, profile_index)
-      ! subroutine addConformalMedia(sgg, media, conformal_media, edge_ratios, face_ratios, contamedia, bbox, side_map, type, &
-      !                              is_sgbc, profile_index)
          type(SGGFDTDINFO_t), intent(inout) :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
@@ -5484,7 +5467,6 @@ contains
          real(kind=rkind), dimension(:), allocatable :: edge_ratios_no_zero, face_ratios_no_zero
          integer(kind=4), intent(in) :: contamedia
          integer(kind=4) :: num_media
-         ! type(XYZlimit_t), intent(inout) :: bbox
          type(side_tris_map_t), intent(in) :: side_map
          integer(kind=4), intent(in) :: type
          logical, optional, intent(in) :: is_sgbc
@@ -5496,7 +5478,6 @@ contains
          if (present(is_sgbc)) sgbc_behavior = is_sgbc
          sgbc_profile_index = 0
          if (present(profile_index)) sgbc_profile_index = profile_index
-         ! call initConformalBoundingBox(sgg,bbox)
 
          if (findloc(edge_ratios, 0.0, 1) /= 0) then
             allocate(edge_ratios_no_zero(ubound(edge_ratios,1) - 1))
@@ -5525,20 +5506,15 @@ contains
          end if
          num_media = contamedia
          call addConformalEdgeMedia(sgg, media, conformal_media, num_media, edge_ratios_no_zero, type, sgbc_behavior)
-         ! call addConformalEdgeMedia(sgg, media, conformal_media, num_media, edge_ratios_no_zero, bbox, type, sgbc_behavior)
          num_media = contamedia + ubound(edge_ratios_no_zero,1)
          call addConformalFaceMedia(sgg, media, conformal_media, num_media, face_ratios_no_zero, type, &
                                     sgbc_behavior, sgbc_profile_index)
-         ! call addConformalFaceMedia(sgg, media, conformal_media, num_media, face_ratios_no_zero, bbox, type, &
-         !                            sgbc_behavior, sgbc_profile_index)
          if (type == isVolume) then
             call addUndetectedBorderFaces(sgg, media, conformal_media, num_media, edge_ratios_no_zero, side_map)
-            ! call addUndetectedBorderFaces(sgg, media, conformal_media, num_media, edge_ratios_no_zero, bbox, side_map)
          end if
       end subroutine
 
       subroutine addConformalFaceMedia(sgg, media, conformal_media, num_media, face_ratios, type, is_sgbc, profile_index)
-      ! subroutine addConformalFaceMedia(sgg, media, conformal_media, num_media, face_ratios, bbox, type, is_sgbc, profile_index)
          type(SGGFDTDINFO_t), intent(INOUT) :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
@@ -5549,7 +5525,6 @@ contains
          integer(kind=4) :: cell(3)
          integer(kind=4) :: previous_faces
          type(face_t), dimension(:), allocatable :: combined_faces
-         ! type(XYZlimit_t), intent(inout) :: bbox
          integer(kind=4), intent(in) :: type
          logical, intent(in) :: is_sgbc
          integer(kind=4), intent(in) :: profile_index
@@ -5648,7 +5623,6 @@ contains
       end function
 
       subroutine addConformalEdgeMedia(sgg, media, conformal_media, num_media, edge_ratios, type, is_sgbc)
-      ! subroutine addConformalEdgeMedia(sgg, media, conformal_media, num_media, edge_ratios, bbox, type, is_sgbc)
          type(SGGFDTDINFO_t), intent(INOUT) :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
@@ -5659,7 +5633,6 @@ contains
          integer(kind=4) :: cell(3)
          integer(kind=4) :: previous_edges
          type(edge_t), dimension(:), allocatable :: combined_edges
-         ! type(XYZlimit_t), intent(inout) :: bbox
          integer(kind=4), intent(in) :: type
          logical, intent(in) :: is_sgbc
          integer :: j, k
@@ -5725,7 +5698,6 @@ contains
       end subroutine
 
       subroutine addUndetectedBorderFaces(sgg, media, conformal_media, num_media, edge_ratios, side_map)
-      ! subroutine addUndetectedBorderFaces(sgg, media, conformal_media, num_media, edge_ratios, bbox, side_map)
          type(SGGFDTDINFO_t), intent(inout) :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
@@ -5734,7 +5706,6 @@ contains
          real(kind=rkind), dimension(:), allocatable, intent(in) :: edge_ratios
          integer(kind=4) :: edge_media
          integer(kind=4) :: cell(3)
-         ! type(XYZlimit_t), intent(inout) :: bbox
          type(side_tris_map_t), intent(in) :: side_map
          type(triangle_t), dimension(:), allocatable :: tris
          integer(kind=4), dimension(4) :: key

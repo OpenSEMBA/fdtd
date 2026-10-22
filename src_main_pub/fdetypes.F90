@@ -676,8 +676,6 @@ module  FDETYPES_m
       logical :: is_two_sided = .false.
       type(edge_t), dimension(:), allocatable :: contour_inside_edges
       real(kind=RKIND), dimension(3) :: normal
-      integer(kind=4) :: split_direction = 0
-      real(kind=rkind) :: lower_fraction = 0.0_RKIND
       integer(kind=4) :: sgbc_profile_index = 0
       integer(kind=4) :: surface_normal_sign = 0
       type(conformal_face_fields_t) :: region_I_fields, region_II_fields
