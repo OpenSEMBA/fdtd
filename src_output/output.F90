@@ -630,9 +630,10 @@ contains
       logical :: timeSampleDue
 
       do i = 1, size(outputs)
+         timeSampleDue = time_sample_due(outputs(i), timeIndx, discreteTime)
          select case (outputs(i)%outputID)
          case (POINT_PROBE_ID)
-            timeSampleDue = is_time_sample_due(outputs(i)%pointProbe%domain, timeIndx, discreteTime)
+            ! Called every step: its frequency-domain DFT accumulates regardless of time sampling.
             fieldComponent => get_field_component(outputs(i)%pointProbe%component, fieldsReference) !Each component requires different values but I don't know how to obtain them
             if (present(sgg)) then
                call update_solver_output(outputs(i)%pointProbe, discreteTime, fieldComponent, sgg, timeSampleDue)
@@ -641,20 +642,20 @@ contains
                                          saveTimeSample=timeSampleDue)
             end if
          case (WIRE_CURRENT_PROBE_ID)
-            if (.not. is_time_sample_due(outputs(i)%wireCurrentProbe%domain, timeIndx, discreteTime)) cycle
+            if (.not. timeSampleDue) cycle
             call update_solver_output(outputs(i)%wireCurrentProbe, discreteTime, control, InvEps, InvMu)
          case (WIRE_CHARGE_PROBE_ID)
-            if (.not. is_time_sample_due(outputs(i)%wireChargeProbe%domain, timeIndx, discreteTime)) cycle
+            if (.not. timeSampleDue) cycle
             call update_solver_output(outputs(i)%wireChargeProbe, discreteTime)
          case (BULK_PROBE_ID)
-            if (.not. is_time_sample_due(outputs(i)%bulkCurrentProbe%domain, timeIndx, discreteTime)) cycle
+            if (.not. timeSampleDue) cycle
             fieldReference = get_field_reference(outputs(i)%bulkCurrentProbe%component, fieldsReference)
             call update_solver_output(outputs(i)%bulkCurrentProbe, discreteTime, fieldReference)
          case (LINE_PROBE_ID)
-            if (.not. is_time_sample_due(outputs(i)%lineProbe%domain, timeIndx, discreteTime)) cycle
+            if (.not. timeSampleDue) cycle
             call update_solver_output(outputs(i)%lineProbe, discreteTime, fieldsReference%E)
          case (MOVIE_PROBE_ID)
-            if (.not. is_time_sample_due(outputs(i)%movieProbe%domain, timeIndx, discreteTime)) cycle
+            if (.not. timeSampleDue) cycle
             call update_solver_output(outputs(i)%movieProbe, discreteTime, fieldsReference, control, problemInfo)
          case (FREQUENCY_SLICE_PROBE_ID)
             call update_solver_output(outputs(i)%frequencySliceProbe, discreteTime, fieldsReference, control, problemInfo)
@@ -668,6 +669,45 @@ contains
       end do
 
    end subroutine update_outputs
+
+   ! Single sampling rule for every time-domain probe. Also guards the buffers sized by
+   ! time_buffer_capacity, which assume outputs are flushed every OUTPUT_TIME_BUFFER_SIZE steps.
+   logical function time_sample_due(output, timeIndex, discreteTime) result(sampleDue)
+      type(solver_output_t), intent(in) :: output
+      integer(kind=SINGLE), intent(in) :: timeIndex
+      real(kind=RKIND_TIME), intent(in) :: discreteTime
+
+      select case (output%outputID)
+      case (POINT_PROBE_ID)
+         sampleDue = is_time_sample_due(output%pointProbe%domain, timeIndex, discreteTime)
+         if (sampleDue) call check_time_buffer(output%pointProbe%nTime, output%pointProbe%timeStep)
+      case (WIRE_CURRENT_PROBE_ID)
+         sampleDue = is_time_sample_due(output%wireCurrentProbe%domain, timeIndex, discreteTime)
+         if (sampleDue) call check_time_buffer(output%wireCurrentProbe%nTime, output%wireCurrentProbe%timeStep)
+      case (WIRE_CHARGE_PROBE_ID)
+         sampleDue = is_time_sample_due(output%wireChargeProbe%domain, timeIndex, discreteTime)
+         if (sampleDue) call check_time_buffer(output%wireChargeProbe%nTime, output%wireChargeProbe%timeStep)
+      case (BULK_PROBE_ID)
+         sampleDue = is_time_sample_due(output%bulkCurrentProbe%domain, timeIndex, discreteTime)
+         if (sampleDue) call check_time_buffer(output%bulkCurrentProbe%nTime, output%bulkCurrentProbe%timeStep)
+      case (LINE_PROBE_ID)
+         sampleDue = is_time_sample_due(output%lineProbe%domain, timeIndex, discreteTime)
+         if (sampleDue) call check_time_buffer(output%lineProbe%nTime, output%lineProbe%timeStep)
+      case (MOVIE_PROBE_ID)
+         sampleDue = is_time_sample_due(output%movieProbe%domain, timeIndex, discreteTime)
+         if (sampleDue) call check_time_buffer(output%movieProbe%nTime, output%movieProbe%timeStep)
+      case default
+         sampleDue = .false.
+      end select
+   end function time_sample_due
+
+   subroutine check_time_buffer(nTime, timeStep)
+      integer(kind=SINGLE), intent(in) :: nTime
+      real(kind=RKIND_TIME), allocatable, intent(in) :: timeStep(:)
+      if (.not. allocated(timeStep)) return
+      if (nTime >= size(timeStep)) call StopOnError(0, 0, &
+                                                    'Probe time buffer full: flush outputs every OUTPUT_TIME_BUFFER_SIZE steps')
+   end subroutine check_time_buffer
 
    logical function is_time_sample_due(domain, timeIndex, discreteTime) result(sampleDue)
       type(domain_t), intent(in) :: domain
