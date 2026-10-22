@@ -374,7 +374,7 @@ contains
                 lumped_%diodepreA = -DiodIsat * G2 / ( transversalDeltaHa * transversalDeltaHb) 
             else
                 write(buff, *)    'Buggy ERROR: In lumped orientations. '
-                call WarnErrReport (buff,.TRUE.)
+                call log_msg(LOG_ERROR, 'LUMPED', buff)
             end if   
         
 #ifdef CompileWithStochastic

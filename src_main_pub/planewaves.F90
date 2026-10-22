@@ -274,7 +274,7 @@ contains
            if (deltaevol(jjj) > sgg%dt) then
               write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sgg%PlaneWave(jjj)%sourceFile%Name))// &
               ' undersampled by a factor ',deltaevol(jjj)/sgg%dt
-              call WarnErrReport(buff)
+              call log_msg(LOG_WARN, 'PLANEWAVE', buff)
            end if
        end do
 !!

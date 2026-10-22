@@ -325,11 +325,11 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
                   compo%Correct_Ha=.false.
                 case DEFAULT
                   write(buff, *)    'Buggy ERROR: In SGBCs. '
-                  call WarnErrReport (buff,.TRUE.)
+                  call log_msg(LOG_ERROR, 'SGBC', buff)
                end select
                if ((compo%med(1) == 0).or.(compo%med(0) == 0).or.(sgg%med(compo%med(1))%Is%PEC).or.(sgg%med(compo%med(0))%Is%PEC)) then
                   write(buff, *)    'Buggy ERROR: In SGBCs. '
-                  call WarnErrReport (buff,.TRUE.)
+                  call log_msg(LOG_ERROR, 'SGBC', buff)
                end if
 !!!!!!!!!
                compo%jmed       = jmed
@@ -343,7 +343,7 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
                     compo%SGBCCrank=.false.
                else if (compo%depth<0) then
                   write(buff, *)    'Buggy ERROR: In SGBCs compo%depth<0. ',compo%depth
-                  call WarnErrReport (buff,.TRUE.)
+                  call log_msg(LOG_ERROR, 'SGBC', buff)
                else
                     compo%SGBCCrank=SGBCCrank
                end if
@@ -414,11 +414,11 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
                   compo%Correct_Hb=.true.
                 case DEFAULT
                   write(buff, *)    'Buggy ERROR: In SGBCs. '
-                  call WarnErrReport (buff,.TRUE.)
+                  call log_msg(LOG_ERROR, 'SGBC', buff)
                end select
                if ((compo%med(1) == 0).or.(compo%med(0) == 0).or.(sgg%med(compo%med(1))%Is%PEC).or.(sgg%med(compo%med(0))%Is%PEC)) then
                   write(buff, *)    'Buggy ERROR: In SGBCs. '
-                  call WarnErrReport (buff,.TRUE.)
+                  call log_msg(LOG_ERROR, 'SGBC', buff)
                end if
 !!!!   
                compo%jmed       = jmed
@@ -432,7 +432,7 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
                     compo%SGBCCrank=.false.
                else if (compo%depth<0) then
                   write(buff, *)    'Buggy ERROR: In SGBCs compo%depth<0. ',compo%depth
-                  call WarnErrReport (buff,.TRUE.)
+                  call log_msg(LOG_ERROR, 'SGBC', buff)
                else
                     compo%SGBCCrank=SGBCcrank
                end if
@@ -503,11 +503,11 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
                   compo%Correct_Hb=.true.
                 case DEFAULT
                   write(buff, *)    'Buggy ERROR: In SGBCs. '
-                  call WarnErrReport (buff,.TRUE.)
+                  call log_msg(LOG_ERROR, 'SGBC', buff)
                end select
                if ((compo%med(1) == 0).or.(compo%med(0) == 0).or.(sgg%med(compo%med(1))%Is%PEC).or.(sgg%med(compo%med(0))%Is%PEC)) then
                   write(buff, *)    'Buggy ERROR: In SGBCs. '
-                  call WarnErrReport (buff,.TRUE.)
+                  call log_msg(LOG_ERROR, 'SGBC', buff)
                end if
 !!!!!!!!!
                compo%jmed  = jmed
@@ -521,7 +521,7 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
                     compo%SGBCCrank=.false.
                else if (compo%depth<0) then
                   write(buff, *)    'Buggy ERROR: In SGBCs compo%depth<0. ',compo%depth
-                  call WarnErrReport (buff,.TRUE.)
+                  call log_msg(LOG_ERROR, 'SGBC', buff)
                else
                     compo%SGBCCrank=SGBCcrank
                end if
@@ -566,7 +566,7 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
     end do
 
     write(buff, *)  ' Maximum SGBC depth= ',2*i,' for medium jmed= ',jmed
-    call WarnErrReport (buff)
+    call log_msg(LOG_WARN, 'SGBC', buff)
 
 
 
@@ -1387,7 +1387,7 @@ subroutine test_stab(G2,GM2)
 
    if (unstable) then
         write(buff, *)    'ERROR: SGBCs may become unstable. Reduce cfl'
-        call WarnErrReport (buff,.true.)
+        call log_msg(LOG_ERROR, 'SGBC', buff)
    end if
 
    return

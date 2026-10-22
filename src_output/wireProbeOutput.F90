@@ -274,7 +274,7 @@ contains
 
       if (.not. found) then
          write (buff, '(a,4i7,a)') 'ERROR: WIRE probe ', node, probe_i, probe_j, probe_k, ' DOES NOT EXIST'
-         call WarnErrReport(buff, .true.)
+         call log_msg(LOG_ERROR, 'OUTPUT', buff)
       end if
    end subroutine find_current_segment
 
@@ -298,7 +298,7 @@ contains
 
       if (trim(adjustl(wiresflavor)) /= 'holland' .and. &
           trim(adjustl(wiresflavor)) /= 'transition') then
-         call WarnErrReport('Charge probes only supported for holland wires', .true.)
+         call log_msg(LOG_ERROR, 'OUTPUT', 'Charge probes only supported for holland wires')
          return
       end if
 
@@ -318,7 +318,7 @@ contains
 
       if (.not. found) then
          write (buff, '(a,4i7,a)') 'ERROR: CHARGE probe ', node, probe_i, probe_j, probe_k, ' DOES NOT EXIST'
-         call WarnErrReport(buff, .true.)
+         call log_msg(LOG_ERROR, 'OUTPUT', buff)
       end if
    end subroutine find_charge_segment
 

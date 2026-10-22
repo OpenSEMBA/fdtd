@@ -298,7 +298,7 @@ contains
 #ifndef CompileWithMTLN
       NFDE_FILE => cargar_NFDE_FILE (this%l%filefde)
 #else
-      call WarnErrReport(".nfde files are not supported when compiling with MTLN.", .true.)
+      call log_msg(LOG_ERROR, 'MAIN', ".nfde files are not supported when compiling with MTLN.")
 #endif
    else
       allocate (NFDE_FILE)
@@ -973,7 +973,7 @@ contains
          read (unit, '(A)', end=2010) l_aux
          if (len_trim (adjustl(l_aux))>=BUFSIZE) then
             write(buffer,*) 'Line in .nfde larger than ',BUFSIZE,'Recompile '
-            call warnerrreport(buffer,.TRUE.) !ABORTA
+            call log_msg(LOG_ERROR, 'MAIN', buffer) !ABORTA
          end if
          rInfo%numberValue = rInfo%numberValue + 1
          line => rInfo%lines (rInfo%numberValue)

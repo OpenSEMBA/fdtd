@@ -203,7 +203,7 @@ contains
       ThereArePMLbodies=ThereArePMLbodies.and.(conta /=0)
       if (.not.therearePMLbodies) then
          write(buff, *)    'Buggy ERROR: In PMLbodies. fields exist withouth Hfields. '
-        call WarnErrReport (buff,.TRUE.)
+        call log_msg(LOG_ERROR, 'PML', buff)
       end if
       berpmlH%NumNodes=conta
       allocate (berpmlH%Nodes(1 : berpmlH%NumNodes))
@@ -242,7 +242,7 @@ contains
                      PML_%posi=k1
                   case DEFAULT
                      write(buff, *)    'Buggy ERROR: In PMLbodies. '
-                     call WarnErrReport (buff,.TRUE.)
+                     call log_msg(LOG_ERROR, 'PML', buff)
                   end select
                   !call calc_pmlbodypar
                 end if
@@ -283,7 +283,7 @@ contains
                      PML_%posi=i1
                    case DEFAULT
                      write(buff, *)    'Buggy ERROR: In PMLbodies. '
-                     call WarnErrReport (buff,.TRUE.)
+                     call log_msg(LOG_ERROR, 'PML', buff)
                   end select
                   !call calc_pmlbodypar
                 end if
@@ -324,7 +324,7 @@ contains
                      PML_%posi=j1
                    case DEFAULT
                      write(buff, *)    'Buggy ERROR: In PMLbodies. '
-                     call WarnErrReport (buff,.TRUE.)
+                     call log_msg(LOG_ERROR, 'PML', buff)
                   end select
                   !call calc_pmlbodypar
                 end if
@@ -370,7 +370,7 @@ contains
                      PML_%posi=k1+0.5
                   case DEFAULT
                      write(buff, *)    'Buggy ERROR: In PMLbodies. '
-                     call WarnErrReport (buff,.TRUE.)
+                     call log_msg(LOG_ERROR, 'PML', buff)
                   end select
                   !call calc_pmlbodypar
                 end if
@@ -411,7 +411,7 @@ contains
                      PML_%posi=i1+0.5
                    case DEFAULT
                      write(buff, *)    'Buggy ERROR: In PMLbodies. '
-                     call WarnErrReport (buff,.TRUE.)
+                     call log_msg(LOG_ERROR, 'PML', buff)
                   end select
                   !call calc_pmlbodypar
                 end if
@@ -452,7 +452,7 @@ contains
                      PML_%posi=j1+0.5
                    case DEFAULT
                      write(buff, *)    'Buggy ERROR: In PMLbodies. '
-                     call WarnErrReport (buff,.TRUE.)
+                     call log_msg(LOG_ERROR, 'PML', buff)
                   end select
                   !call calc_pmlbodypar
                 end if

@@ -971,7 +971,7 @@ contains
                   !!
                   write(buff,'(a,2e10.2e3)') ' Composites stabilization att. factor=',this%control%attfactorc,this%sgg%Med(i)%SigmaM
 
-                  call WarnErrReport(buff)
+                  call log_msg(LOG_INFO, 'SOLVER', buff)
                   !!
                   fmax=1.0_RKIND / (10.0_RKIND * this%sgg%dt)
                   skin_depth=1.0_RKIND / (Sqrt(2.0_RKIND)*fmax*Pi*(epr*this%eps0**2*(4*mur*this%mu0**2.0_RKIND + this%sgg%Med(i)%Sigmam**2/(fmax**2*Pi**2.0_RKIND )))**0.25_RKIND * &
@@ -980,14 +980,14 @@ contains
                   -(0.0001295712360834271997*AIMAG(fmax*Sqrt((epr*((0,-2.825225e7) + &
                   8.8757061047382236e6*mur + this%control%attfactorc*((0,2.825225e7) + 8.8757061047382236e6*mur)))/ &
                   (1.124121310242e12 + 1.124121310242e12*this%control%attfactorc))*min(deltaespmax,skin_depth)))
-                  if (this%control%layoutnumber == 0) call WarnErrReport(buff)
+                  if (this%control%layoutnumber == 0) call log_msg(LOG_INFO, 'SOLVER', buff)
                   if (fmax > 3e9) then
                      fmax=3e9
                      write(buff,'(a,e9.2e2,a,e10.2e3)') '             At f=',fmax,',Max Att(dB)=', &
                      -(0.0001295712360834271997*AIMAG(fmax*Sqrt((epr*((0,-2.825225e7) + &
                      8.8757061047382236e6*mur + this%control%attfactorc*((0,2.825225e7) + 8.8757061047382236e6*mur)))/ &
                      (1.124121310242e12 + 1.124121310242e12*this%control%attfactorc))*min(deltaespmax,skin_depth)))
-                     if (this%control%layoutnumber == 0) call WarnErrReport(buff)
+                     if (this%control%layoutnumber == 0) call log_msg(LOG_INFO, 'SOLVER', buff)
                   end if
                   att=.true.
                end if
@@ -1006,7 +1006,7 @@ contains
                   this%sgg%Med(i)%Sigma =(-2.0_RKIND * (-1.0_RKIND + this%control%attfactorw)*this%eps0)/((1 + this%control%attfactorw)*this%sgg%dt)
                   if (.not.att) then
                      write(buff,'(a,2e10.2e3)') ' WIREs stabilization att. factors=',this%control%attfactorw,this%sgg%Med(i)%Sigma
-                     if (this%control%layoutnumber == 0) call WarnErrReport(buff)
+                     if (this%control%layoutnumber == 0) call log_msg(LOG_INFO, 'SOLVER', buff)
                      att=.true.
                   end if
                end if
@@ -1029,29 +1029,29 @@ contains
          character(len=BUFSIZE) :: buff   
          if ((this%control%layoutnumber == 0).and.this%control%verbose) then
             write(buff,'(a,3e9.2e2)') 'CPML  alpha, alphaorder, kappa factors= ', this%control%alphamaxpar,this%control%alphaOrden,this%control%kappamaxpar
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             if (this%control%extraMedium%exists) then
                write(buff,'(a,i5,e9.2e2)') 'CPML correction size,factor to scale sigmamax = ', &
                this%control%extraMedium%pml_size,this%control%extraMedium%sigma
-               call WarnErrReport(buff)
+               call log_msg(LOG_INFO, 'SOLVER', buff)
             end if
             write(buff,*) 'saveall=',this%control%saveall,', flushsecondsFields=',this%control%flushsecondsFields,', flushsecondsData=',this%control%flushsecondsData,', maxCPUtime=',this%control%maxCPUtime,', singlefilewrite=',this%control%singlefilewrite
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'TAPARRABOS=',this%control%TAPARRABOS,', wiresflavor=',trim(adjustl(this%control%wiresflavor)),', mindistwires=',this%control%mindistwires,', wirecrank=',this%control%wirecrank , 'makeholes=',this%control%makeholes
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'connectendings=',this%control%connectendings,', isolategroupgroups=',this%control%isolategroupgroups
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'wirethickness ', this%control%wirethickness, 'stableradholland=',this%control%stableradholland,'mtlnberenger=',this%control%mtlnberenger,' inductance_model=',trim(adjustl(this%control%inductance_model)), &
                         ', inductance_order=',this%control%inductance_order,', groundwires=',this%control%groundwires,' ,fieldtotl=',this%control%fieldtotl,' noSlantedcrecepelo =',this%control%noSlantedcrecepelo 
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'sgbc=',this%control%sgbc,', mibc=',this%control%mibc,', attfactorc=',this%control%attfactorc,', attfactorw=',this%control%attfactorw
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'NOcompomur=',this%control%NOcompomur,', ADE=',this%control%ADE,', conformalskin=',this%control%conformalskin,', sgbcFreq=',this%control%sgbcFreq,', sgbcresol=',this%control%sgbcresol,', sgbccrank=',this%control%sgbccrank,', sgbcDepth=',this%control%sgbcdepth
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'mur_second=',this%control%mur_second,', murafterpml=',this%control%murafterpml,', facesNF2FF%tr=',this%control%facesNF2FF%tr,', facesNF2FF%fr=',this%control%facesNF2FF%fr,', facesNF2FF%iz=',this%control%facesNF2FF%iz
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'facesNF2FF%de=',this%control%facesNF2FF%de,', facesNF2FF%ab=',this%control%facesNF2FF%ab,', facesNF2FF%ar=',this%control%facesNF2FF%ar,', NF2FFDecim=',this%control%NF2FFDecim
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
          end if
       end subroutine
 
@@ -1266,7 +1266,7 @@ contains
 #endif
          if (this%sgg%dt <= dtcritico) then
             write(buff,'(a,e10.2e3)')  'WIR_INFO: deltat for stability OK: ',dtcritico
-            if ((this%control%layoutnumber==0).and.this%control%verbose) call WarnErrReport(buff)
+            if ((this%control%layoutnumber==0).and.this%control%verbose) call log_msg(LOG_INFO, 'SOLVER', buff)
          else
             if (.not.(this%control%resume.and.this%control%permitscaling)) then !do not abort, only warn if permittivity scaling
 #ifdef CompileWithMTLN
@@ -1274,10 +1274,10 @@ contains
 #else
                write(buff,'(a,e10.2e3)')  'WIR_ERROR: Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs, use -stableradholland or make dt < ',dtcritico
 #endif
-               if (this%control%layoutnumber==0) call WarnErrReport(buff,.true.)
+               if (this%control%layoutnumber==0) call log_msg(LOG_ERROR, 'SOLVER', buff)
             else
                write(buff,'(a,e10.2e3)')  'WIR_WARNING: Resume and Pscaling with wires. Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs: dt is over ',dtcritico
-               if (this%control%layoutnumber==0) call WarnErrReport(buff,.false.)
+               if (this%control%layoutnumber==0) call log_msg(LOG_WARN, 'SOLVER', buff)
             end if
          end if
       !!!
@@ -2788,69 +2788,69 @@ contains
 
       do j = 0, sgg%NumMedia
          write(buff,*) '_____________________________'
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'MEDIO :  ', j
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Priority ', sgg%Med(j)%Priority
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Epr ', sgg%Med(j)%Epr
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Sigma ', sgg%Med(j)%Sigma
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Mur ', sgg%Med(j)%Mur
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'SigmaM ', sgg%Med(j)%SigmaM
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is PML ', sgg%Med(j)%Is%PML
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is PEC ', sgg%Med(j)%Is%PEC
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is ThinWIRE ', sgg%Med(j)%Is%ThinWire
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is MULTIWIRE ', sgg%Med(j)%Is%Multiwire
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is SlantedWIRE ', sgg%Med(j)%Is%SlantedWire
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is EDispersive ', sgg%Med(j)%Is%EDispersive
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is EDispersiveaANIS', sgg%Med(j)%Is%EDispersiveANIS
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is MDispersive ', sgg%Med(j)%Is%MDispersive
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is MDispersiveANIS ', sgg%Med(j)%Is%MDispersiveANIS
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is SGBC ', sgg%Med(j)%Is%SGBC
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is Lossy ', sgg%Med(j)%Is%Lossy
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is Multiport ', sgg%Med(j)%Is%multiport
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is AnisMultiport ', sgg%Med(j)%Is%anismultiport
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is MultiportPadding ', sgg%Med(j)%Is%multiportpadding
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is Dielectric ', sgg%Med(j)%Is%DIELECTRIC
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is Anisotropic ', sgg%Med(j)%Is%Anisotropic
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is Needed ', sgg%Med(j)%Is%Needed
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is already_YEEadvanced_byconformal ', sgg%Med(j)%Is%already_YEEadvanced_byconformal
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Iss split_and_useless ', sgg%Med(j)%Is%split_and_useless
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is Volume ', sgg%Med(j)%Is%Volume
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is Surface ', sgg%Med(j)%Is%Surface
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) 'Is Line ', sgg%Med(j)%Is%Line
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
          write(buff,*) '_____________________________'
-         call WarnErrReport(Trim(buff))
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
       end do
       return
    end subroutine reportmedia

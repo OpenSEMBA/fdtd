@@ -240,7 +240,7 @@ contains
             if (dummy%nodHard(dummy%numHard)%deltaevol > sgg%dt) then
                write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sggdummy%sourceFile%Name))// &
                ' undersampled by a factor ',dummy%nodHard(dummy%numHard)%deltaevol/sgg%dt
-               call WarnErrReport(buff)
+               call log_msg(LOG_WARN, 'SOURCES', buff)
             end if
             dummy%nodHard(dummy%numHard)%numus =  sggdummy%sourceFile%NumSamples
             dummy%nodHard(dummy%numHard)%evol  => sggdummy%sourceFile%Samples
@@ -261,7 +261,7 @@ contains
             if (dummy%nodSoft(dummy%numSoft)%deltaevol > sgg%dt) then
                write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sggdummy%sourceFile%Name))// &
                ' undersampled by a factor ',dummy%nodSoft(dummy%numSoft)%deltaevol/sgg%dt
-               call WarnErrReport(buff)
+               call log_msg(LOG_WARN, 'SOURCES', buff)
             end if
             dummy%nodSoft(dummy%numSoft)%numus =  sggdummy%sourceFile%NumSamples
             dummy%nodSoft(dummy%numSoft)%evol  => sggdummy%sourceFile%Samples
