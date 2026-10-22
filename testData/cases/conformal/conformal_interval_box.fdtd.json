@@ -1,0 +1,363 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Planewave illuminating a PEC panel",
+    "general": {
+        "timeStep": 3e-12,
+        "numberOfSteps": 50000
+    },
+    "boundary": {
+        "xLower": {
+            "type": "pec"
+        },
+        "xUpper": {
+            "type": "pec"
+        },
+        "yLower": {
+            "type": "pmc"
+        },
+        "yUpper": {
+            "type": "pmc"
+        },
+        "zLower": {
+            "type": "pml"
+        },
+        "zUpper": {
+            "type": "pml"
+        }
+    },
+    "mesh": {
+        "grid": {
+            "numberOfCells": [
+                3,
+                3,
+                10
+            ],
+            "steps": {
+                "x": [
+                    0.02
+                ],
+                "y": [
+                    0.02
+                ],
+                "z": [
+                    0.02
+                ]
+            }
+        },
+        "coordinates": [
+            {
+                "id": 1,
+                "relativePosition": [
+                    1,
+                    1,
+                    1
+                ]
+            },
+            {
+                "id": 2,
+                "relativePosition": [
+                    1,
+                    1,
+                    5
+                ]
+            },
+            {
+                "id": 3,
+                "relativePosition": [
+                    0,
+                    0,
+                    5
+                ]
+            },
+            {
+                "id": 4,
+                "relativePosition": [
+                    2,
+                    0,
+                    5
+                ]
+            },
+            {
+                "id": 5,
+                "relativePosition": [
+                    0,
+                    2,
+                    5
+                ]
+            },
+            {
+                "id": 6,
+                "relativePosition": [
+                    2,
+                    2,
+                    5
+                ]
+            },
+            {
+                "id": 7,
+                "relativePosition": [
+                    0,
+                    0,
+                    4.25
+                ]
+            },
+            {
+                "id": 8,
+                "relativePosition": [
+                    2,
+                    0,
+                    4.25
+                ]
+            },
+            {
+                "id": 9,
+                "relativePosition": [
+                    0,
+                    2,
+                    4.25
+                ]
+            },
+            {
+                "id": 10,
+                "relativePosition": [
+                    2,
+                    2,
+                    4.25
+                ]
+            },
+            {
+                "id": 11,
+                "relativePosition": [
+                    1,
+                    0,
+                    5
+                ]
+            },
+            {
+                "id": 12,
+                "relativePosition": [
+                    2,
+                    1,
+                    5
+                ]
+            },
+            {
+                "id": 13,
+                "relativePosition": [
+                    0,
+                    1,
+                    5
+                ]
+            },
+            {
+                "id": 14,
+                "relativePosition": [
+                    1,
+                    2,
+                    5
+                ]
+            },
+            {
+                "id": 15,
+                "relativePosition": [
+                    1,
+                    1,
+                    5
+                ]
+            },
+            {
+                "id": 16,
+                "relativePosition": [
+                    1,
+                    0,
+                    4.25
+                ]
+            },
+            {
+                "id": 17,
+                "relativePosition": [
+                    2,
+                    1,
+                    4.25
+                ]
+            },
+            {
+                "id": 18,
+                "relativePosition": [
+                    0,
+                    1,
+                    4.25
+                ]
+            },
+            {
+                "id": 19,
+                "relativePosition": [
+                    1,
+                    2,
+                    4.25
+                ]
+            },
+            {
+                "id": 20,
+                "relativePosition": [
+                    1,
+                    1,
+                    4.25
+                ]
+            },
+            {
+                "id": 21,
+                "relativePosition": [
+                    1,
+                    1,
+                    7
+                ]
+            },
+            {
+                "id": 22,
+                "relativePosition": [
+                    1,
+                    1,
+                    5
+                ]
+            }
+        ],
+        "elements": [
+            {
+                "id": 1,
+                "type": "node",
+                "coordinateIds": [
+                    21
+                ]
+            },
+            {
+                "id": 2,
+                "type": "node",
+                "coordinateIds": [
+                    22
+                ]
+            },
+            {
+                "id": 3,
+                "type": "cell",
+                "name": "pw-box",
+                "intervals": [
+                    [
+                        [
+                            -1,
+                            -1,
+                            3
+                        ],
+                        [
+                            4,
+                            4,
+                            35
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 4,
+                "type": "cell",
+                "name": "square",
+                "intervals": [
+                    [
+                        [
+                            0,
+                            0,
+                            5
+                        ],
+                        [
+                            2,
+                            2,
+                            5
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 5,
+                "type": "conformal",
+                "subtype": "volume",
+                "name": "conformal-box",
+                "intervals": [
+                    [[2,2,6],[0,0,6]],
+                    [[2,0,8],[0,0,6]],
+                    [[0,2,8],[0,0,6]],
+                    [[0,0,8],[2,2,8]],
+                    [[0,2,6],[2,2,8]],
+                    [[2,0,6],[2,2,8]]
+                ],
+                "triangles": [
+                ]
+            }
+        ]
+    },
+    "materials": [
+        {
+            "name": "aluminum",
+            "id": 1,
+            "type": "multilayeredSurface",
+            "layers": [
+                {
+                    "thickness": 0.01,
+                    "electricConductivity": 100
+                }
+            ]
+        },
+        {
+            "name": "pec",
+            "id": 2,
+            "type": "pec"
+        }
+    ],
+    "materialAssociations": [
+        {
+            "materialId": 2,
+            "elementIds": [
+                5
+            ]
+        }
+    ],
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "gauss.exc",
+            "elementIds": [
+                3
+            ],
+            "direction": {
+                "theta": 0.0,
+                "phi": 0.0
+            },
+            "polarization": {
+                "theta": 1.5708,
+                "phi": 0.0
+            }
+        }
+    ],
+    "probes": [
+        {
+            "name": "inside",
+            "type": "point",
+            "field": "electric",
+            "directions": [
+                "x"
+            ],
+            "elementIds": [
+                1
+            ]
+        },
+        {
+            "name": "outside",
+            "type": "point",
+            "field": "electric",
+            "directions": [
+                "x"
+            ],
+            "elementIds": [
+                2
+            ]
+        }
+    ]
+}

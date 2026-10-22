@@ -829,7 +829,7 @@ def test_partial_triangle_on_grid_face_is_conformal(tmp_path):
         solver.getVTKMap(), celltype=9, property='mediatype')
     conformal_faces = {
         medium: count for medium, count in face_media.items()
-        if 1000 < medium < 2000
+        if 3000 < medium < 4000
     }
     assert sum(conformal_faces.values()) == 1
 

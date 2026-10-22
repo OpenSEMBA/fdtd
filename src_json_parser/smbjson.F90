@@ -821,7 +821,8 @@ contains
       do i = 1, size(mAs)
          do j = 1, size(mAs(i)%elementIds)
             cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j), found)
-            if (.not. found .or. cR%typename /= REGION_TYPE_SURFACE .or. size(cR%triangles) == 0) cycle
+            if (.not. found) cycle
+            if (cR%typename /= REGION_TYPE_SURFACE .or. size(cR%triangles) == 0) cycle
             tagName = this%buildTagName(mAs(i)%materialId, mAs(i)%elementIds(j))
             call appendSGBCRegion(res%sgbc_surfaces, cR, tagName, readSGBCProfile(mAs(i)%materialId))
          end do
