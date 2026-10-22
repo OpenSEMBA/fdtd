@@ -1765,14 +1765,13 @@ contains
          fieldType = this%getStrAt(p, J_FIELD, default=J_FIELD_ELECTRIC)
          call this%core%get(p, J_PR_MOVIE_COMPONENT, compsPtr, found=componentsFound)
          allocate(res%cordinates(1))
+         res%cordinates(1) = cs(1)
          if (componentsFound) then
             call this%core%get(compsPtr, component)
-            res%cordinates(1) = cs(1)
-            res%cordinates(1)%Or  = buildVolProbeType(fieldType, component)
-         else 
+         else
             component = J_DIR_M
-            res%cordinates(1)%Or  = buildVolProbeType(fieldType, component)
          end if
+         res%cordinates(1)%Or  = buildVolProbeType(fieldType, component)
          res%len_cor = size(res%cordinates)
          
          res%outputrequest = trim(adjustl(this%getStrAt(p, J_NAME, default=" ")))

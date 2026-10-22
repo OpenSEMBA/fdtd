@@ -1030,6 +1030,19 @@ def test_one_cell_PEC_surface_Jprobe(tmp_path):
         assert current_movie_geometry_all_tag_counts(solver)[64] == 5
 
 
+@pytest.mark.probes
+def test_current_density_movie_without_component_defaults_to_magnitude(tmp_path):
+    input_filename = CASES_FOLDER + "observation/one_cell_surface_Jprobe.fdtd.json"
+    solver = FDTD(input_filename=input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    solver["general"]["numberOfSteps"] = 1
+    del solver["probes"][0]["component"]
+    solver.run()
+
+    assert Path(solver.getCurrentMovie()).is_file()
+    assert current_movie_geometry_all_tag_counts(solver)[64] == 5
+
+
 def test_one_cell_SGBC_surface_Jprobe(tmp_path):
     input_filename = CASES_FOLDER + "observation/one_cell_surface_Jprobe.fdtd.json"
     solver = FDTD(input_filename=input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
