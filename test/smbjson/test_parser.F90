@@ -6,11 +6,11 @@ integer function test_parser_ctor() bind(C) result(err)
 
    character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'planewave.fdtd.json'
    type(parser_t) :: parser
-   
+
    parser = parser_t(filename)
    if (parser%isInitialized) then
       err = 0
-   else 
+   else
       err = 1
    end if
 end function
@@ -86,10 +86,10 @@ integer function test_parser_read_mesh() bind(C) result(err)
 
    parser = parser_t(filename)
    mesh = parser%readMesh()
-   
+
    ! call mesh%printCoordHashInfo() !! For debugging only
    expected%position = [10,0,1]
-   
+
    obtained = mesh%getCoordinate(59, found)
    if (.not. found) err = err + 1
    if (any(obtained%position /= expected%position)) err = err + 1
@@ -115,6 +115,7 @@ integer function test_parser_read_conformal_volume() bind(C) result(err)
    character(len=*),parameter :: FILENAME = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'conformal.fdtd.json'
    type(parser_t) :: parser
    type(mesh_t) :: mesh
+   type(Parseador_t) :: problem
    logical :: found
    type(conformal_region_t), dimension(:), allocatable :: conformal_regions
    type(cell_region_t), dimension(:), allocatable :: cell_regions
@@ -128,4 +129,25 @@ integer function test_parser_read_conformal_volume() bind(C) result(err)
    if (size(conformal_regions(1)%triangles) /= 24) err = err + 1
    cell_regions = mesh%getCellRegions([5])
    if (size(cell_regions(1)%intervals) /= 1) err = err + 1
+
+   problem = parser%readProblemDescription()
+   if (.not. associated(problem%conformalRegs%volumes)) err = err + 1
+   if (size(problem%conformalRegs%volumes) /= 1) err = err + 1
+end function
+
+integer function test_parser_reject_conformal_nonpec_material() bind(C) result(err)
+   use smbjson_m
+   use smbjson_testingTools_m
+   use Report_m, only: isFatalError, resetFatalError
+   implicit none
+
+   type(parser_t) :: parser
+   type(Parseador_t) :: problem
+
+   err = 0
+   call resetFatalError()
+   parser = parser_t(PATH_TO_TEST_DATA//INPUT_EXAMPLES//'conformal_nonpec_material.fdtd.json')
+   problem = parser%readProblemDescription()
+   if (.not. isFatalError()) err = err + 1
+   call resetFatalError()
 end function
