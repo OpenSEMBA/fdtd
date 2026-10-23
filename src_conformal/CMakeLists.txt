@@ -6,6 +6,7 @@ add_library(conformal
 	"cell_map.F90"
     "conformal.F90"
     "conformal_timestepping.F90"
+    "conformal_sgbc.F90"
     "geometry.F90"
 )
 
