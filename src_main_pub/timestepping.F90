@@ -1810,36 +1810,40 @@ contains
          call MPI_Barrier(MPI_COMM_WORLD,ierr) !050619 included to address stochastic stopflushing problems
 #endif
          
-         if (call_timing) then
-            call Timing(this%sgg,this%bounds,this%n,this%n_info,this%control%layoutnumber,this%control%num_procs, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,this%initialtimestep, &
-            this%control%finaltimestep,this%perform,this%parar,.FALSE., &
-            Ex,Ey,Ez,this%everflushed,this%control%nInputRoot,this%control%maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
+          if (call_timing) then
+             call Timing(this%sgg, this%bounds, this%n, this%n_info, this%control%layoutnumber, &
+                         this%control%num_procs, this%control%maxCPUtime, this%control%flushsecondsFields, &
+                         this%control%flushsecondsData, this%initialtimestep, this%control%finaltimestep, &
+                         this%perform, this%parar, .false., Ex, Ey, Ez, this%everflushed, &
+                         this%control%nInputRoot, this%control%maxSourceValue, this%control%opcionestotales, &
+                         this%control%simu_devia, this%control%dontwritevtk, this%control%permitscaling)
 
-            if (.not.this%parar) then !!! if it is due to a stop it is handled at the end
-               if (this%perform%flushFIELDS) then
-                  call performFlushField()
-               end if
+             if (.not. this%parar) then
+                if (this%perform%flushFIELDS) then
+                   call performFlushField()
+                end if
 
-               if (this%perform%isFlush()) then
-                      !
-                      flushFF=this%perform%postprocess
-                      if (this%thereAre%FarFields.and.flushFF) then
-                          write(dubuf,'(a,i9)')  ' INIT OBSERVATION DATA FLUSHING and Near-to-Far field n= ',this%n
-                      else
-                          write(dubuf,'(a,i9)')  ' INIT OBSERVATION DATA FLUSHING n= ',this%n
-                      end if
-                      call printMessageWithSeparator(this%control%layoutnumber,dubuf)
-                      if (this%thereAre%Observation) call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, flushFF)
-                 end if !of the if (this%performflushDATA.or....
-                  if (this%control%singlefilewrite.and.this%perform%unpackFlag) call singleUnpack()
-                  if ((this%control%singlefilewrite.and.this%perform%unpackFlag).or.this%perform%isFlush()) then
-                     write(dubuf,'(a,i9)')  ' Continuing simulation at n= ',this%n
-                     call printMessageWithSeparator(this%control%layoutnumber,dubuf)
-                  end if
+                if (this%perform%isFlush()) then
+                   flushFF=this%perform%postprocess
+                   if (this%thereAre%FarFields .and. flushFF) then
+                      write(dubuf, '(a, i9)') 'INIT OBSERVATION DATA FLUSHING and Near-to-Far field n= ', this%n
+                   else
+                      write(dubuf, '(a, i9)') 'INIT OBSERVATION DATA FLUSHING n= ', this%n
+                   end if
+                   if (this%control%layoutnumber == 0) call log_msg(LOG_INFO, 'SOLVER', dubuf)
+                   if (this%thereAre%Observation) then
+                      call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, flushFF)
+                   end if
+                end if
 
-                end if !!!of the if (.not.this%parar)
-             end if !!!of the if(n >= n_info
-!          !!!!!!!!all the previous must be together
+                if (this%control%singlefilewrite .and. this%perform%unpackFlag) call singleUnpack()
+                if ((this%control%singlefilewrite .and. this%perform%unpackFlag) .or. this%perform%isFlush()) then
+                   write(dubuf, '(a, i9)') 'Continuing simulation at n= ', this%n
+                   if (this%control%layoutnumber == 0) call log_msg(LOG_INFO, 'SOLVER', dubuf)
+                end if
+
+             end if
+          end if
               
          this%control%fatalerror=.false.
          if (this%parar) then
@@ -1869,15 +1873,9 @@ contains
 #endif
       end if
 #endif
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         !!!  Increase time step
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         ! write(*write(*,*) 'timestepping: ', n
          this%n=this%n+1 !increase iteration
       end do ciclo_temporal ! End of the time-stepping loop
       call set_log_step(-1_4)
-
-
 contains
 
 #ifdef CompileWithMPI

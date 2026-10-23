@@ -8,7 +8,7 @@ module movieProbeOutput_m
    use volumicProbeUtils_m
    use, intrinsic :: iso_fortran_env, only: int64, real64
    use outputCollective_m, only: OUTPUT_PUBLICATION_COLLECTIVE, OUTPUT_PUBLICATION_ROOT_AGGREGATION
-   use outputTransport_m, only: output_transport_t, init_output_transport, transfer_flush_batch, &
+   use outputTransport_m, only: output_transport_t, init_output_transport, relay_flush_batch, &
                                 OUTPUT_TRANSPORT_SUCCESS, OUTPUT_TRANSPORT_INVALID_CONTEXT
    use outputBinary_m, only: validate_binary_layout, append_binary_real64, BINARY_WRITER_SUCCESS
    use outputVisualisation_m, only: initialise_movie_visualisation, begin_visualisation_step, &
@@ -393,9 +393,8 @@ contains
    subroutine write_bin_file(this, transport)
       type(movie_probe_output_t), intent(inout) :: this
       type(output_transport_t), intent(in) :: transport
-      integer :: counts_status, i, record_index, status, time_index
-      integer, allocatable :: counts(:), displacements(:)
-      real(real64), allocatable :: gathered_records(:), local_records(:)
+      integer :: i, record_index, relay_status, source_rank, status, time_index
+      real(real64), allocatable :: local_records(:), rank_records(:)
 
       allocate (local_records(7*this%nPoints))
       do time_index = 1, this%nTime
@@ -408,17 +407,20 @@ contains
                                                                 real(this%zValueForTime(time_index, i), real64)]
             record_index = record_index + 7
          end do
-         call transfer_flush_batch(transport, local_records, gathered_records, counts, displacements, counts_status)
-         if (counts_status /= OUTPUT_TRANSPORT_SUCCESS) then
-            call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to gather movie binary records')
-         end if
-         if (this%publication%local_is_owner) then
-            call append_binary_real64(add_extension(this%filesPath, BINARYEXTENSION), &
-                                      this%metadata%artifacts(1), gathered_records, status)
-            if (status /= BINARY_WRITER_SUCCESS) then
-               call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to append movie binary records')
+         ! Appending rank by rank keeps the gather order without holding every rank's records on the owner.
+         do source_rank = 0, transport%rank_count - 1
+            call relay_flush_batch(transport, source_rank, local_records, rank_records, relay_status)
+            if (relay_status /= OUTPUT_TRANSPORT_SUCCESS) then
+               call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to gather movie binary records')
             end if
-         end if
+            if (this%publication%local_is_owner) then
+               call append_binary_real64(add_extension(this%filesPath, BINARYEXTENSION), &
+                                         this%metadata%artifacts(1), rank_records, status)
+               if (status /= BINARY_WRITER_SUCCESS) then
+                  call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to append movie binary records')
+               end if
+            end if
+         end do
       end do
    end subroutine write_bin_file
 
@@ -575,52 +577,50 @@ contains
       real(real64), allocatable, intent(out) :: global_values(:)
       integer, intent(out) :: status
 
-      integer, allocatable :: counts(:), displacements(:)
-      real(real64), allocatable :: gathered_values(:), local_batch(:)
-      integer(int64) :: global_shape(3), offset(3), shapeValue(3)
-      integer :: global_index, i, j, k, local_index, rank_index, value_start
+      real(real64), allocatable :: local_batch(:), rank_batch(:)
+      integer(int64) :: global_index, global_shape(3), i, j, k, local_index, offset(3), shapeValue(3)
+      integer :: source_rank
 
       allocate (local_batch(6 + size(local_values)))
       local_batch(1:3) = real(this%publication%file_offset, real64)
       local_batch(4:6) = real(this%publication%local_shape, real64)
       local_batch(7:) = local_values
-      call transfer_flush_batch(transport, local_batch, gathered_values, counts, displacements, status)
-      if (status /= OUTPUT_TRANSPORT_SUCCESS) return
-
-      if (transport%rank /= transport%root_rank) then
-         allocate (global_values(0))
-         return
-      end if
 
       global_shape = [ &
                      int(this%publication%global_upper%x, int64) - int(this%publication%global_lower%x, int64) + 1_int64, &
                      int(this%publication%global_upper%y, int64) - int(this%publication%global_lower%y, int64) + 1_int64, &
                      int(this%publication%global_upper%z, int64) - int(this%publication%global_lower%z, int64) + 1_int64]
-      allocate (global_values(int(product(global_shape))))
-      global_values = 0.0_real64
-      do rank_index = 1, transport%rank_count
-         if (counts(rank_index) < 6) then
+      if (transport%rank == transport%root_rank) then
+         allocate (global_values(product(global_shape)))
+         global_values = 0.0_real64
+      else
+         allocate (global_values(0))
+      end if
+
+      ! The root receives one rank's slab at a time instead of a gathered copy of the whole frame.
+      do source_rank = 0, transport%rank_count - 1
+         call relay_flush_batch(transport, source_rank, local_batch, rank_batch, status)
+         if (status /= OUTPUT_TRANSPORT_SUCCESS) return
+         if (transport%rank /= transport%root_rank) cycle
+         if (size(rank_batch) < 6) then
             status = OUTPUT_TRANSPORT_INVALID_CONTEXT
             return
          end if
-         value_start = displacements(rank_index)
-         offset = nint(gathered_values(value_start + 1:value_start + 3), kind=int64)
-         shapeValue = nint(gathered_values(value_start + 4:value_start + 6), kind=int64)
+         offset = nint(rank_batch(1:3), kind=int64)
+         shapeValue = nint(rank_batch(4:6), kind=int64)
          if (any(shapeValue <= 0_int64) .or. any(offset < 0_int64) .or. &
              any(offset + shapeValue > global_shape) .or. &
-             int(counts(rank_index) - 6, int64) /= product(shapeValue)) then
+             size(rank_batch, kind=int64) - 6_int64 /= product(shapeValue)) then
             status = OUTPUT_TRANSPORT_INVALID_CONTEXT
             return
          end if
-         do k = 1, int(shapeValue(3))
-         do j = 1, int(shapeValue(2))
-         do i = 1, int(shapeValue(1))
-            local_index = i + (j - 1)*int(shapeValue(1)) + &
-                          (k - 1)*int(shapeValue(1)*shapeValue(2))
-            global_index = int(offset(1)) + i + &
-                           (int(offset(2)) + j - 1)*int(global_shape(1)) + &
-                           (int(offset(3)) + k - 1)*int(global_shape(1)*global_shape(2))
-            global_values(global_index) = gathered_values(value_start + 6 + local_index)
+         do k = 1, shapeValue(3)
+         do j = 1, shapeValue(2)
+         do i = 1, shapeValue(1)
+            local_index = i + (j - 1)*shapeValue(1) + (k - 1)*shapeValue(1)*shapeValue(2)
+            global_index = offset(1) + i + (offset(2) + j - 1)*global_shape(1) + &
+                           (offset(3) + k - 1)*global_shape(1)*global_shape(2)
+            global_values(global_index) = rank_batch(6 + local_index)
          end do
          end do
          end do
