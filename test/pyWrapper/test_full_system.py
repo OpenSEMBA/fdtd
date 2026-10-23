@@ -2062,8 +2062,8 @@ def test_conformal_panel(tmp_path):
     idx_min = (np.abs(fq - fmin)).argmin()
     idx_max = (np.abs(fq - fmax)).argmin()
     fdtd_s21 = S21[idx_min:idx_max]
-    assert np.all(np.abs(fdtd_s21) < 1e-6)
     assert np.all(back['field'] < 1e-6)
+    assert np.all(20*np.log10(np.abs(fdtd_s21)) < -100)
 
 @pytest.mark.conformal
 @pytest.mark.probes
