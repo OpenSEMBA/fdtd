@@ -3,7 +3,8 @@ module lineProbeOutput_m
    use outputTypes_m, only: field_data_t, line_probe_output_t, domain_t, TIME_DOMAIN, time_buffer_capacity, &
                             OUTPUT_ARTIFACT_TEXT, DATFILEEXTENSION, TIMEEXTENSION, declare_probe_artifacts
    use allocationUtils_m, only: alloc_and_init
-   use directoryUtils_m, only: create_file_with_path
+   use outputUtils_m, only: open_data_file, open_append_data_file
+   use Report_m, only: StopOnError
 #ifdef CompileWithMPI
    use FDETYPES_m, only: REALSIZE
    use mpi
@@ -12,7 +13,7 @@ module lineProbeOutput_m
    private
 
    public :: calculate_line_integral, init_line_probe_output, update_line_probe_output, &
-             flush_line_probe_output, complete_line_probe_sample, line_segment_is_local
+             flush_line_probe_output, close_line_probe_output, complete_line_probe_sample, line_segment_is_local
 
 contains
 
@@ -42,15 +43,17 @@ contains
       end do
    end function calculate_line_integral
 
-   subroutine init_line_probe_output(this, segments, domain, output_path, sweeps, rank, rank_count)
+   subroutine init_line_probe_output(this, segments, domain, output_path, sweeps, rank, rank_count, &
+                                    append_to_file)
       type(line_probe_output_t), intent(out) :: this
       type(direction_t), intent(in) :: segments(:)
       type(domain_t), intent(in) :: domain
       character(len=*), intent(in) :: output_path
       type(xyzlimit_t), intent(in), optional :: sweeps(:)
       integer(kind=SINGLE), intent(in), optional :: rank, rank_count
+      logical, intent(in), optional :: append_to_file
       character(len=BUFSIZE) :: artifact_paths(1)
-      integer :: artifact_kinds(1), ios, unit, segment_index, local_count
+      integer :: artifact_kinds(1), ios, segment_index, local_count
 
       this%domain = domain
       this%path = output_path
@@ -83,13 +86,11 @@ contains
       artifact_kinds = OUTPUT_ARTIFACT_TEXT
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
       if (this%isWriter) then
-         call create_file_with_path(this%artifacts(1)%relative_path, ios)
-         if (ios /= 0) return
-         open (newunit=unit, file=this%artifacts(1)%relative_path, status='old', action='write', position='append', iostat=ios)
-         if (ios /= 0) return
-         write (unit, '(A)', iostat=ios) 't lineIntegral'
-         close (unit)
-         if (ios /= 0) return
+         call open_data_file(this%artifacts(1)%relative_path, this%path, TIMEEXTENSION, DATFILEEXTENSION, &
+                             't lineIntegral', this%fileUnitTime, append=append_to_file)
+         if (this%fileUnitTime == 0) then
+            call StopOnError(0, 0, 'Unable to open probe output file: '//trim(this%artifacts(1)%relative_path))
+         end if
       end if
    end subroutine init_line_probe_output
 
@@ -149,20 +150,29 @@ contains
 
    subroutine flush_line_probe_output(this)
       type(line_probe_output_t), intent(inout) :: this
-      integer :: elementIndex, ios, unit
+      integer :: elementIndex, ios
 
       if (this%nTime == 0) return
       if (this%isWriter) then
-         open (newunit=unit, file=this%artifacts(1)%relative_path, status='old', action='write', position='append', iostat=ios)
-         if (ios /= 0) return
+         if (this%fileUnitTime == 0) call open_append_data_file(this%fileUnitTime, this%artifacts(1)%relative_path, ios)
+         if (this%fileUnitTime == 0) call StopOnError(0, 0, 'Line probe output is not open: '//trim(this%artifacts(1)%relative_path))
          do elementIndex = 1, this%nTime
-            write (unit, '(ES24.16E3,1X,ES24.16E3)', iostat=ios) this%timeStep(elementIndex), this%valueForTime(elementIndex)
-            if (ios /= 0) exit
+            write (this%fileUnitTime, '(ES24.16E3,1X,ES24.16E3)', iostat=ios) &
+               this%timeStep(elementIndex), this%valueForTime(elementIndex)
+            if (ios /= 0) return
          end do
-         close (unit)
-         if (ios /= 0) return
+         flush (this%fileUnitTime)
       end if
       call complete_line_probe_sample(this)
    end subroutine flush_line_probe_output
+
+   subroutine close_line_probe_output(this)
+      type(line_probe_output_t), intent(inout) :: this
+
+      if (this%fileUnitTime /= 0) then
+         close (this%fileUnitTime)
+         this%fileUnitTime = 0
+      end if
+   end subroutine close_line_probe_output
 
 end module lineProbeOutput_m
