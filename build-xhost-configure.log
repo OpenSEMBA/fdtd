@@ -1,0 +1,64 @@
+-- The Fortran compiler identification is IntelLLVM 2025.3.0 with MSVC-like command-line
+-- The C compiler identification is IntelLLVM 2025.3.0 with MSVC-like command-line
+-- Detecting Fortran compiler ABI info
+-- Detecting Fortran compiler ABI info - done
+-- Check for working Fortran compiler: C:/Program Files (x86)/Intel/oneAPI/compiler/latest/bin/ifx.exe - skipped
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: C:/Program Files (x86)/Intel/oneAPI/compiler/latest/bin/icx-cl.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Compiler Id is: IntelLLVM
+-- Build type: Release
+-- Using lapack libraries at: C:/salva/elemwave/fdtd/precompiled_libraries/windows-intelLLVM/lapack/
+-- Found HDF5: hdf5::hdf5_fortran-static (found version "1.14.4") found components: Fortran HL
+-- hdf5 found at: C:/salva/elemwave/fdtd/precompiled_libraries/windows-intel/hdf5/include
+-- HDF5_Fortran_COMPILER_EXECUTABLE=
+-- HDF5_Fortran_LIBRARIES=hdf5::hdf5_fortran-static
+-- HDF5_IS_PARALLEL=OFF
+-- HDF5_Fortran_INCLUDE_DIRS=C:/salva/elemwave/fdtd/precompiled_libraries/windows-intel/hdf5/include
+-- Found MPI_Fortran: C:/Program Files (x86)/Intel/oneAPI/mpi/latest/lib/impi.lib (found version "4.1")
+-- Found MPI: TRUE (found version "4.1") found components: Fortran
+-- MPI found at: C:/Program Files (x86)/Intel/oneAPI/mpi/latest/include;C:/Program Files (x86)/Intel/oneAPI/mpi/latest/include/mpi
+-- Using Windows flags
+-- Using IntelLLVM (ifx) flags
+-- Creating build system for ngspice in Windows
+-- The CXX compiler identification is IntelLLVM 2025.3.0 with MSVC-like command-line
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files (x86)/Intel/oneAPI/compiler/latest/bin/icx.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- NGSPICE_ENABLE_KLU is ON
+-- NGSPICE_ENABLE_XSPICE is ON
+-- Found HDF5: hdf5::hdf5_fortran-static (found version "1.14.4") found components: Fortran
+-- Creating build system for smbjson
+-- Creating build system for mtlnsolver
+-- Creating build system for ngspice interface
+-- Creating build system for output
+-- Creating build system for conformal
+-- Git commit info found using git command: 314f5ee4
+-- 
+-- Solver configuration summary:
+--   System: Windows
+--   Generator: Ninja
+--   Build type: Release
+--   Fortran compiler: C:/Program Files (x86)/Intel/oneAPI/compiler/latest/bin/ifx.exe (IntelLLVM 2025.3.0)
+--   C compiler: C:/Program Files (x86)/Intel/oneAPI/compiler/latest/bin/icx-cl.exe (IntelLLVM 2025.3.0)
+--   Runtime output: C:/salva/elemwave/fdtd/build-rls-mpi-omp-xhost/bin
+--   Library output: C:/salva/elemwave/fdtd/build-rls-mpi-omp-xhost/lib
+--   Fortran modules: C:/salva/elemwave/fdtd/build-rls-mpi-omp-xhost/mod
+--   MPI: ON
+--   MTLN: ON
+--   SMBJSON: ON
+--   Tests: OFF
+--   Precision: single
+--   MPI Fortran compiler: C:/Program Files (x86)/Intel/oneAPI/mpi/latest/bin/mpiifx.bat
+--   MPI version: 4.1
+--   HDF5 version: 1.14.4
+--   HDF5 parallel: OFF
+--   HDF5 Fortran libraries: hdf5::hdf5_fortran-static
+--   LAPACK directory: C:/salva/elemwave/fdtd/precompiled_libraries/windows-intelLLVM/lapack/
+-- Configuring done (15.4s)
+-- Generating done (0.9s)
+-- Build files have been written to: C:/salva/elemwave/fdtd/build-rls-mpi-omp-xhost
