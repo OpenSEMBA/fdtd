@@ -15,9 +15,11 @@ module pointProbeOutput_m
    public :: init_point_probe_output
    public :: update_point_probe_output
    public :: flush_point_probe_output
+   public :: close_point_probe_output
 
 contains
-   subroutine init_point_probe_output(this, coordinates, field, domain, outputTypeExtension, mpidir, timeInterval, hasIncident)
+   subroutine init_point_probe_output(this, coordinates, field, domain, outputTypeExtension, mpidir, timeInterval, &
+                                      hasIncident, append_to_file)
       type(point_probe_output_t), intent(out) :: this
       type(cell_coordinate_t) :: coordinates
       integer(kind=SINGLE), intent(in) :: mpidir, field
@@ -26,6 +28,7 @@ contains
 
       real(kind=RKIND_TIME), intent(in) :: timeInterval
       logical, intent(in), optional :: hasIncident
+      logical, intent(in), optional :: append_to_file
 
       integer(kind=SINGLE) :: i
       integer :: artifact_kinds(2)
@@ -70,27 +73,40 @@ contains
          call declare_probe_artifacts(this%artifacts, artifact_paths(:2), artifact_kinds(:2))
          this%filePathTime = this%artifacts(1)%relative_path
          this%filePathFreq = this%artifacts(2)%relative_path
-         call create_data_file(this%filePathTime, this%path, TIMEEXTENSION, DATFILEEXTENSION, time_header())
-         call create_data_file(this%filePathFreq, this%path, FREQUENCYEXTENSION, DATFILEEXTENSION, &
-                               frequency_header(this))
+         call open_data_file(this%filePathTime, this%path, TIMEEXTENSION, DATFILEEXTENSION, &
+                             time_header(), this%fileUnitTime, append=append_to_file)
+         call open_data_file(this%filePathFreq, this%path, FREQUENCYEXTENSION, DATFILEEXTENSION, &
+                             frequency_header(this), this%fileUnitFreq)
+         call check_output_file(this%fileUnitTime, this%filePathTime)
+         call check_output_file(this%fileUnitFreq, this%filePathFreq)
       else if (this%domain%domainType == TIME_DOMAIN) then
          allocate (this%artifacts(1))
          artifact_paths(1) = trim(this%path)//'_'//TIMEEXTENSION//DATFILEEXTENSION
          artifact_kinds(1) = OUTPUT_ARTIFACT_TEXT
          call declare_probe_artifacts(this%artifacts, artifact_paths(:1), artifact_kinds(:1))
          this%filePathTime = this%artifacts(1)%relative_path
-         call create_data_file(this%filePathTime, this%path, TIMEEXTENSION, DATFILEEXTENSION, time_header())
+         call open_data_file(this%filePathTime, this%path, TIMEEXTENSION, DATFILEEXTENSION, &
+                             time_header(), this%fileUnitTime, append=append_to_file)
+         call check_output_file(this%fileUnitTime, this%filePathTime)
       else if (this%domain%domainType == FREQUENCY_DOMAIN) then
          allocate (this%artifacts(1))
          artifact_paths(1) = trim(this%path)//'_'//FREQUENCYEXTENSION//DATFILEEXTENSION
          artifact_kinds(1) = OUTPUT_ARTIFACT_TEXT
          call declare_probe_artifacts(this%artifacts, artifact_paths(:1), artifact_kinds(:1))
          this%filePathFreq = this%artifacts(1)%relative_path
-         call create_data_file(this%filePathFreq, this%path, FREQUENCYEXTENSION, DATFILEEXTENSION, &
-                               frequency_header(this))
+         call open_data_file(this%filePathFreq, this%path, FREQUENCYEXTENSION, DATFILEEXTENSION, &
+                             frequency_header(this), this%fileUnitFreq)
+         call check_output_file(this%fileUnitFreq, this%filePathFreq)
       end if
 
    contains
+      subroutine check_output_file(unit, filePath)
+         integer, intent(in) :: unit
+         character(len=*), intent(in) :: filePath
+
+         if (unit == 0) call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to open probe output file: '//trim(filePath))
+      end subroutine check_output_file
+
       function get_output_path() result(outputPath)
          character(len=BUFSIZE)  :: probeBoundsExtension, prefixFieldExtension
          character(len=BUFSIZE) :: outputPath
@@ -219,7 +235,6 @@ contains
       subroutine flush_time_domain(this)
          type(point_probe_output_t), intent(in) :: this
          integer :: i
-         integer :: unit
 
          if (this%nTime <= 0) then
 #ifdef CompileWithDebug
@@ -227,23 +242,21 @@ contains
 #endif
              return
          end if
-         open (newunit=unit, file=this%filePathTime, status="old", action="write", position="append")
+         if (this%fileUnitTime == 0) call log_msg(LOG_FATAL, 'OUTPUT', 'Point probe output is not open: '//trim(this%filePathTime))
 
          do i = 1, this%nTime
             if (this%hasIncident) then
-               write (unit, FMT) this%timeStep(i), this%valueForTime(i), this%incidentForTime(i)
+               write (this%fileUnitTime, FMT) this%timeStep(i), this%valueForTime(i), this%incidentForTime(i)
             else
-               write (unit, FMT) this%timeStep(i), this%valueForTime(i)
+               write (this%fileUnitTime, FMT) this%timeStep(i), this%valueForTime(i)
             end if
          end do
-
-         close (unit)
+         flush (this%fileUnitTime)
       end subroutine flush_time_domain
 
       subroutine flush_frequency_domain(this)
          type(point_probe_output_t), intent(in) :: this
          integer :: i
-         integer :: unit
          complex(kind=CKIND) :: spectrum
 
          if (.not. allocated(this%frequencySlice) .or. .not. allocated(this%valueForFreq)) then
@@ -257,21 +270,24 @@ contains
 #endif
              return
          end if
-         open (newunit=unit, file=this%filePathFreq, status="replace", action="write")
-         write (unit, '(A)') frequency_header(this)
+         if (this%fileUnitFreq == 0) call log_msg(LOG_FATAL, 'OUTPUT', 'Point probe output is not open: '//trim(this%filePathFreq))
+
+         rewind (this%fileUnitFreq)
+         write (this%fileUnitFreq, '(A)') frequency_header(this)
 
          do i = 1, this%nFreq
             spectrum = this%valueForFreq(i)
             if (this%domain%transferFlag) spectrum = spectrum/this%normalizationForFreq(i)
             if (this%hasIncident) then
-               write (unit, FMT) this%frequencySlice(i), abs(spectrum), atan2(aimag(spectrum), real(spectrum)), &
-                                  abs(this%incidentForFreq(i)), atan2(aimag(this%incidentForFreq(i)), real(this%incidentForFreq(i)))
+               write (this%fileUnitFreq, FMT) this%frequencySlice(i), abs(spectrum), atan2(aimag(spectrum), real(spectrum)), &
+                                              abs(this%incidentForFreq(i)), &
+                                              atan2(aimag(this%incidentForFreq(i)), real(this%incidentForFreq(i)))
             else
-               write (unit, FMT) this%frequencySlice(i), abs(spectrum), atan2(aimag(spectrum), real(spectrum))
+               write (this%fileUnitFreq, FMT) this%frequencySlice(i), abs(spectrum), atan2(aimag(spectrum), real(spectrum))
             end if
          end do
-
-         close (unit)
+         endfile (this%fileUnitFreq)
+         flush (this%fileUnitFreq)
       end subroutine flush_frequency_domain
 
       subroutine clear_time_data()
@@ -283,4 +299,17 @@ contains
       end subroutine clear_time_data
 
    end subroutine flush_point_probe_output
+
+   subroutine close_point_probe_output(this)
+      type(point_probe_output_t), intent(inout) :: this
+
+      if (this%fileUnitTime /= 0) then
+         close (this%fileUnitTime)
+         this%fileUnitTime = 0
+      end if
+      if (this%fileUnitFreq /= 0) then
+         close (this%fileUnitFreq)
+         this%fileUnitFreq = 0
+      end if
+   end subroutine close_point_probe_output
 end module

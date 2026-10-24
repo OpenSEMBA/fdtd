@@ -20,6 +20,8 @@ module wireProbeOutput_m
    public :: update_wire_charge_probe_output
    public :: flush_wire_current_probe_output
    public :: flush_wire_charge_probe_output
+   public :: close_wire_current_probe_output
+   public :: close_wire_charge_probe_output
    !===========================
 
    !===========================
@@ -47,13 +49,14 @@ contains
    ! INITIALIZATION
    !======================================================================
    subroutine init_wire_current_probe_output(this, coordinates, node, field, domain, media, &
-                                             outputTypeExtension, mpidir, wiresflavor)
+                                             outputTypeExtension, mpidir, wiresflavor, append_to_file)
       type(wire_current_probe_output_t), intent(out) :: this
       type(cell_coordinate_t), intent(in)            :: coordinates
       type(domain_t), intent(in)                     :: domain
       type(MediaData_t), intent(in)                  :: media(:)
       integer(kind=SINGLE), intent(in)               :: node, field, mpidir
       character(len=*), intent(in)                   :: outputTypeExtension, wiresflavor
+      logical, intent(in), optional                  :: append_to_file
       character(len=BUFSIZE) :: artifact_paths(1)
       integer :: artifact_kinds(1)
 
@@ -71,18 +74,21 @@ contains
       artifact_kinds = OUTPUT_ARTIFACT_TEXT
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
       this%filePathTime = this%artifacts(1)%relative_path
-      call create_data_file(this%filePathTime, this%path, TIMEEXTENSION, DATFILEEXTENSION, &
-                            't current delta_voltage plus_voltage minus_voltage voltage_difference')
+      call open_data_file(this%filePathTime, this%path, TIMEEXTENSION, DATFILEEXTENSION, &
+                          't current delta_voltage plus_voltage minus_voltage voltage_difference', &
+                          this%fileUnitTime, append=append_to_file)
+      if (this%fileUnitTime == 0) call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to open probe output file: '//trim(this%filePathTime))
 
    end subroutine init_wire_current_probe_output
 
    subroutine init_wire_charge_probe_output(this, coordinates, node, field, domain, &
-                                            outputTypeExtension, mpidir, wiresflavor)
+                                            outputTypeExtension, mpidir, wiresflavor, append_to_file)
       type(wire_charge_probe_output_t), intent(out) :: this
       type(cell_coordinate_t), intent(in)           :: coordinates
       type(domain_t), intent(in)                    :: domain
       integer(kind=SINGLE), intent(in)              :: node, field, mpidir
       character(len=*), intent(in)                  :: outputTypeExtension, wiresflavor
+      logical, intent(in), optional                 :: append_to_file
       character(len=BUFSIZE) :: artifact_paths(1)
       integer :: artifact_kinds(1)
 
@@ -100,7 +106,9 @@ contains
       artifact_kinds = OUTPUT_ARTIFACT_TEXT
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)
       this%filePathTime = this%artifacts(1)%relative_path
-      call create_data_file(this%filePathTime, this%path, TIMEEXTENSION, DATFILEEXTENSION, 't charge')
+      call open_data_file(this%filePathTime, this%path, TIMEEXTENSION, DATFILEEXTENSION, &
+                          't charge', this%fileUnitTime, append=append_to_file)
+      if (this%fileUnitTime == 0) call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to open probe output file: '//trim(this%filePathTime))
 
    end subroutine init_wire_charge_probe_output
 
@@ -144,42 +152,58 @@ contains
    !======================================================================
    subroutine flush_wire_current_probe_output(this)
       type(wire_current_probe_output_t), intent(inout) :: this
-      integer :: i, ios, unit
+      integer :: i, ios
 
-      open (newunit=unit, file=this%filePathTime, status='old', action='write', position='append', iostat=ios)
-      if (ios /= 0) return
+      if (this%fileUnitTime == 0) call open_append_data_file(this%fileUnitTime, this%filePathTime, ios)
+      if (this%fileUnitTime == 0) call log_msg(LOG_FATAL, 'OUTPUT', 'Wire probe output is not open: '//trim(this%filePathTime))
 
       do i = 1, this%nTime
-         write (unit, FMT, iostat=ios) this%timeStep(i), &
+         write (this%fileUnitTime, FMT, iostat=ios) this%timeStep(i), &
             this%currentValues(i)%current, &
             this%currentValues(i)%deltaVoltage, &
             this%currentValues(i)%plusVoltage, &
             this%currentValues(i)%minusVoltage, &
             this%currentValues(i)%voltageDiference
-         if (ios /= 0) exit
+         if (ios /= 0) return
       end do
-      close (unit, iostat=ios)
+      flush (this%fileUnitTime)
 
-      if (ios /= 0) return
       call clear_current_time_data(this)
    end subroutine
 
    subroutine flush_wire_charge_probe_output(this)
       type(wire_charge_probe_output_t), intent(inout) :: this
-      integer :: i, ios, unit
+      integer :: i, ios
 
-      open (newunit=unit, file=this%filePathTime, status='old', action='write', position='append', iostat=ios)
-      if (ios /= 0) return
+      if (this%fileUnitTime == 0) call open_append_data_file(this%fileUnitTime, this%filePathTime, ios)
+      if (this%fileUnitTime == 0) call log_msg(LOG_FATAL, 'OUTPUT', 'Wire probe output is not open: '//trim(this%filePathTime))
 
       do i = 1, this%nTime
-         write (unit, FMT, iostat=ios) this%timeStep(i), this%chargeValue(i)
-         if (ios /= 0) exit
+         write (this%fileUnitTime, FMT, iostat=ios) this%timeStep(i), this%chargeValue(i)
+         if (ios /= 0) return
       end do
-      close (unit, iostat=ios)
+      flush (this%fileUnitTime)
 
-      if (ios /= 0) return
       call clear_charge_time_data(this)
    end subroutine
+
+   subroutine close_wire_current_probe_output(this)
+      type(wire_current_probe_output_t), intent(inout) :: this
+
+      if (this%fileUnitTime /= 0) then
+         close (this%fileUnitTime)
+         this%fileUnitTime = 0
+      end if
+   end subroutine close_wire_current_probe_output
+
+   subroutine close_wire_charge_probe_output(this)
+      type(wire_charge_probe_output_t), intent(inout) :: this
+
+      if (this%fileUnitTime /= 0) then
+         close (this%fileUnitTime)
+         this%fileUnitTime = 0
+      end if
+   end subroutine close_wire_charge_probe_output
 
    subroutine find_current_segment(this, node, field, media, wiresflavor)
       type(wire_current_probe_output_t), intent(inout) :: this

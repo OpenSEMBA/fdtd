@@ -4,23 +4,26 @@ module bulkProbeOutput_m
    use allocationUtils_m, only: alloc_and_init
    use outputTypes_m
    use outputUtils_m
-   use Report_m, only: log_msg, LOG_INFO
+   use Report_m, only: log_msg, LOG_INFO, LOG_FATAL
 #ifdef CompileWithMPI
    use mpi
 #endif
    implicit none
    private
 
-   public :: init_bulk_probe_output, update_bulk_probe_output, flush_bulk_probe_output
+   public :: init_bulk_probe_output, update_bulk_probe_output, flush_bulk_probe_output, &
+             close_bulk_probe_output
 
 contains
 
-   subroutine init_bulk_probe_output(this, lowerBound, upperBound, field, domain, outputTypeExtension, mpidir)
+   subroutine init_bulk_probe_output(this, lowerBound, upperBound, field, domain, outputTypeExtension, mpidir, &
+                                    append_to_file)
       type(bulk_current_probe_output_t), intent(out) :: this
       type(cell_coordinate_t), intent(in) :: lowerBound, upperBound
       integer(kind=SINGLE), intent(in) :: mpidir, field
       character(len=BUFSIZE), intent(in) :: outputTypeExtension
       type(domain_t), intent(in) :: domain
+      logical, intent(in), optional :: append_to_file
 
       character(len=BUFSIZE) :: artifact_paths(1)
       character(len=13) :: data_header
@@ -54,7 +57,9 @@ contains
          data_header = 't current'
       end select
       if (this%isWriter) then
-         call create_data_file(this%filePathTime, this%path, TIMEEXTENSION, DATFILEEXTENSION, data_header)
+         call open_data_file(this%filePathTime, this%path, TIMEEXTENSION, DATFILEEXTENSION, data_header, &
+                             this%fileUnitTime, append=append_to_file)
+         if (this%fileUnitTime == 0) call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to open probe output file: '//trim(this%filePathTime))
       end if
 
    contains
@@ -211,8 +216,7 @@ contains
 
    subroutine flush_bulk_probe_output(this)
       type(bulk_current_probe_output_t), intent(inout) :: this
-      integer :: i
-      integer :: unit
+      integer :: i, ios
       if (this%nTime <= 0) then
 #ifdef CompileWithDebug
          call log_msg(LOG_INFO, 'OUTPUT', 'No data to write.')
@@ -221,13 +225,12 @@ contains
       end if
 
       if (this%isWriter) then
-         open (newunit=unit, file=this%filePathTime, status="old", action="write", position="append")
-
+         if (this%fileUnitTime == 0) call open_append_data_file(this%fileUnitTime, this%filePathTime, ios)
+         if (this%fileUnitTime == 0) call log_msg(LOG_FATAL, 'OUTPUT', 'Bulk probe output is not open: '//trim(this%filePathTime))
          do i = 1, this%nTime
-            write (unit, FMT) this%timeStep(i), this%valueForTime(i)
+            write (this%fileUnitTime, FMT) this%timeStep(i), this%valueForTime(i)
          end do
-
-         close (unit)
+         flush (this%fileUnitTime)
       end if
       call clear_time_data()
    contains
@@ -238,5 +241,14 @@ contains
          this%nTime = 0
       end subroutine clear_time_data
    end subroutine flush_bulk_probe_output
+
+   subroutine close_bulk_probe_output(this)
+      type(bulk_current_probe_output_t), intent(inout) :: this
+
+      if (this%fileUnitTime /= 0) then
+         close (this%fileUnitTime)
+         this%fileUnitTime = 0
+      end if
+   end subroutine close_bulk_probe_output
 
 end module bulkProbeOutput_m

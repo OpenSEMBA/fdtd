@@ -113,6 +113,11 @@ module output_m
    end interface
 
    interface close_solver_output
+      module procedure close_point_probe_output
+      module procedure close_wire_current_probe_output
+      module procedure close_wire_charge_probe_output
+      module procedure close_bulk_probe_output
+      module procedure close_line_probe_output
       module procedure close_movie_probe_output
       module procedure close_frequency_slice_probe_output
    end interface
@@ -314,15 +319,18 @@ contains
                outputs(outputCount)%outputID = POINT_PROBE_ID
 
                allocate (outputs(outputCount)%pointProbe)
-                 call init_solver_output(outputs(outputCount)%pointProbe, lowerBound, outputRequestType, domain, outputTypeExtension, control%mpidir, sgg%dt, &
-                                       sgg%NumPlaneWaves >= 1)
+                 call init_solver_output(outputs(outputCount)%pointProbe, lowerBound, outputRequestType, domain, &
+                                       outputTypeExtension, control%mpidir, sgg%dt, sgg%NumPlaneWaves >= 1, &
+                                       append_to_file=control%resume)
             case (IJX, IJY, IJZ)
                if (wiresExists) then
                   outputCount = outputCount + 1
                   outputs(outputCount)%outputID = WIRE_CURRENT_PROBE_ID
 
                   allocate (outputs(outputCount)%wireCurrentProbe)
-                   call init_solver_output(outputs(outputCount)%wireCurrentProbe, lowerBound, NODE, outputRequestType, domain, problemInfo%materialList, outputTypeExtension, control%mpidir, control%wiresflavor)
+                   call init_solver_output(outputs(outputCount)%wireCurrentProbe, lowerBound, NODE, outputRequestType, &
+                                           domain, problemInfo%materialList, outputTypeExtension, control%mpidir, &
+                                           control%wiresflavor, append_to_file=control%resume)
                end if
 
             case (IQX, IQY, IQZ)
@@ -330,14 +338,17 @@ contains
                outputs(outputCount)%outputID = WIRE_CHARGE_PROBE_ID
 
                allocate (outputs(outputCount)%wireChargeProbe)
-                 call init_solver_output(outputs(outputCount)%wireChargeProbe, lowerBound, NODE, outputRequestType, domain, outputTypeExtension, control%mpidir, control%wiresflavor)
+                 call init_solver_output(outputs(outputCount)%wireChargeProbe, lowerBound, NODE, outputRequestType, &
+                                         domain, outputTypeExtension, control%mpidir, control%wiresflavor, &
+                                         append_to_file=control%resume)
 
             case (IBLOQUEJX, IBLOQUEJY, IBLOQUEJZ, IBLOQUEMX, IBLOQUEMY, IBLOQUEMZ)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = BULK_PROBE_ID
 
                allocate (outputs(outputCount)%bulkCurrentProbe)
-                 call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control%mpidir)
+                 call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, &
+                                         domain, outputTypeExtension, control%mpidir, append_to_file=control%resume)
 
             case (LINEINTEGRAL)
                if (domain%domainType /= TIME_DOMAIN) then
@@ -348,7 +359,8 @@ contains
                   allocate (outputs(outputCount)%lineProbe)
                   call init_line_probe_output(outputs(outputCount)%lineProbe, sgg%observation(ii)%P(i)%line, domain, &
                                               trim(outputTypeExtension)//'_LI', &
-                                              sgg%Sweep, control%layoutnumber, control%num_procs)
+                                              sgg%Sweep, control%layoutnumber, control%num_procs, &
+                                              append_to_file=control%resume)
                end if
 
             case (ICUR, IMEC, IMHC, ICURX, ICURY, ICURZ, IEXC, IEYC, IEZC, IHXC, IHYC, IHZC)
@@ -918,6 +930,16 @@ contains
       integer :: i
       do i = 1, size(outputs)
          select case (outputs(i)%outputID)
+         case (POINT_PROBE_ID)
+            call close_solver_output(outputs(i)%pointProbe)
+         case (WIRE_CURRENT_PROBE_ID)
+            call close_solver_output(outputs(i)%wireCurrentProbe)
+         case (WIRE_CHARGE_PROBE_ID)
+            call close_solver_output(outputs(i)%wireChargeProbe)
+         case (BULK_PROBE_ID)
+            call close_solver_output(outputs(i)%bulkCurrentProbe)
+         case (LINE_PROBE_ID)
+            call close_solver_output(outputs(i)%lineProbe)
          case (MOVIE_PROBE_ID)
             call close_solver_output(outputs(i)%movieProbe)
          case (FREQUENCY_SLICE_PROBE_ID)

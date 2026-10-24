@@ -83,6 +83,7 @@ integer function test_init_point_probe() bind(c) result(err)
                                      'Point probe created a probe-specific folder')
 
    ! Cleanup
+   call close_outputs()
    call remove_folder(testPath, ios)
    deallocate (sgg%Observation, outputs)
 
@@ -162,7 +163,7 @@ integer function test_init_point_probe_with_incident() bind(c) result(err)
    use FDETYPES_m
    use fdetypes_tools_m
    use outputTypes_m, only: point_probe_output_t, domain_t, cell_coordinate_t, TIME_DOMAIN, OUTPUT_ARTIFACT_UNDEFINED
-   use pointProbeOutput_m, only: init_point_probe_output
+   use pointProbeOutput_m, only: init_point_probe_output, close_point_probe_output
    use assertionTools_m, only: assert_true, assert_string_equal
    use directoryUtils_m, only: delete_file, file_exists, join_path
    use testOutputUtils_m, only: get_temp_folder
@@ -179,6 +180,7 @@ integer function test_init_point_probe_with_incident() bind(c) result(err)
    domain%domainType = TIME_DOMAIN
    coordinates = cell_coordinate_t(1, 1, 1)
    call init_point_probe_output(probe, coordinates, IEX, domain, path, 3, 0.1_RKIND_TIME, .true.)
+   call close_point_probe_output(probe)
 
    err = err + assert_true(probe%hasIncident .and. allocated(probe%incidentForTime), &
                            'Incident point probe did not allocate incident samples')
@@ -343,7 +345,8 @@ integer function test_line_probe_dat_output() bind(c) result(err)
    ! Verifies line-probe flush retains every sample in one text file.
    use FDETYPES_m, only: RKIND, RKIND_TIME, direction_t, IEX
    use outputTypes_m, only: line_probe_output_t, field_data_t, domain_t, TIME_DOMAIN
-   use lineProbeOutput_m, only: init_line_probe_output, update_line_probe_output, flush_line_probe_output
+   use lineProbeOutput_m, only: init_line_probe_output, update_line_probe_output, flush_line_probe_output, &
+                                close_line_probe_output
    use assertionTools_m, only: assert_integer_equal, assert_true
    use directoryUtils_m, only: delete_file, file_exists
    use testOutputUtils_m, only: get_temp_folder
@@ -364,6 +367,7 @@ integer function test_line_probe_dat_output() bind(c) result(err)
    domain%domainType = TIME_DOMAIN
    segments(1) = direction_t(1, 1, 1, IEX)
    call init_line_probe_output(probe, segments, domain, path)
+   err = err + assert_true(probe%fileUnitTime /= 0, 'Line output was not kept open after init')
    ex = 2.0_RKIND
    ey = 0.0_RKIND
    ez = 0.0_RKIND
@@ -377,6 +381,8 @@ integer function test_line_probe_dat_output() bind(c) result(err)
    call update_line_probe_output(probe, 0.0_RKIND_TIME, electric_field)
    call update_line_probe_output(probe, 0.1_RKIND_TIME, electric_field)
    call flush_line_probe_output(probe)
+   err = err + assert_true(probe%fileUnitTime /= 0, 'Line output was closed after flush')
+   call close_line_probe_output(probe)
 
    text_records = 0
    open (newunit=text_unit, file=trim(path)//'_tm.dat', status='old', action='read', iostat=ios)
@@ -1051,6 +1057,10 @@ integer function test_flush_point_probe() bind(c) result(err)
 
    test_err = test_err + assert_integer_equal(size(probe%artifacts), 2, &
                                                'Point probe did not declare both text domains')
+   test_err = test_err + assert_true(probe%fileUnitTime /= 0, &
+                                     'Point time output was not kept open after init')
+   test_err = test_err + assert_true(probe%fileUnitFreq /= 0, &
+                                     'Point frequency output was not kept open after init')
 
    ! A declared scalar artifact remains discoverable when no sample is recorded.
    call flush_point_probe_output(probe)
@@ -1076,6 +1086,10 @@ integer function test_flush_point_probe() bind(c) result(err)
    call flush_point_probe_output(probe)
 
    ! Assertions
+   test_err = test_err + assert_true(probe%fileUnitTime /= 0, &
+                                     'Point time output was closed after flush')
+   test_err = test_err + assert_true(probe%fileUnitFreq /= 0, &
+                                     'Point frequency output was closed after flush')
    test_err = test_err + assert_written_output_file(probe%filePathTime)
    test_err = test_err + assert_written_output_file(probe%filePathFreq)
    test_err = test_err + assert_true(.not. file_exists(trim(probe%path)//'_tm.bin'), &
@@ -1096,6 +1110,7 @@ integer function test_flush_point_probe() bind(c) result(err)
    end if
 
    !Cleanup
+   call close_point_probe_output(probe)
    call remove_folder(testPath, ios)
 
    err = test_err
@@ -1104,7 +1119,8 @@ end function
 integer function test_flush_wire_probe_dat() bind(c) result(err)
    use FDETYPES_m, only: RKIND, RKIND_TIME
    use outputTypes_m, only: wire_current_probe_output_t, wire_charge_probe_output_t, OUTPUT_ARTIFACT_TEXT
-   use wireProbeOutput_m, only: flush_wire_current_probe_output, flush_wire_charge_probe_output
+   use wireProbeOutput_m, only: flush_wire_current_probe_output, flush_wire_charge_probe_output, &
+                                close_wire_current_probe_output, close_wire_charge_probe_output
    use assertionTools_m, only: assert_true
    use directoryUtils_m, only: create_file_with_path, delete_file, file_exists
    use testOutputUtils_m, only: get_temp_folder
@@ -1128,6 +1144,7 @@ integer function test_flush_wire_probe_dat() bind(c) result(err)
    current_probe%currentValues(1)%current = 2.0_RKIND
    call create_file_with_path(current_probe%filePathTime, ios)
    call flush_wire_current_probe_output(current_probe)
+   call close_wire_current_probe_output(current_probe)
    inquire (file=current_probe%filePathTime, size=current_size, iostat=ios)
    err = err + assert_true(ios == 0 .and. current_size > 0, 'Wire-current text record was not published')
    err = err + assert_true(.not. file_exists(join_path(folder, 'current_tm.bin')), &
@@ -1142,6 +1159,7 @@ integer function test_flush_wire_probe_dat() bind(c) result(err)
    charge_probe%chargeValue(1) = 2.0_RKIND
    call create_file_with_path(charge_probe%filePathTime, ios)
    call flush_wire_charge_probe_output(charge_probe)
+   call close_wire_charge_probe_output(charge_probe)
    inquire (file=charge_probe%filePathTime, size=charge_size, iostat=ios)
    err = err + assert_true(ios == 0 .and. charge_size > 0, 'Wire-charge text record was not published')
    err = err + assert_true(.not. file_exists(join_path(folder, 'charge_tm.bin')), &
@@ -1154,7 +1172,7 @@ end function test_flush_wire_probe_dat
 integer function test_flush_bulk_probe_dat() bind(c) result(err)
    use FDETYPES_m, only: RKIND, RKIND_TIME
    use outputTypes_m, only: bulk_current_probe_output_t, OUTPUT_ARTIFACT_TEXT
-   use bulkProbeOutput_m, only: flush_bulk_probe_output
+   use bulkProbeOutput_m, only: flush_bulk_probe_output, close_bulk_probe_output
    use assertionTools_m, only: assert_true
    use directoryUtils_m, only: create_file_with_path, delete_file, file_exists
    use testOutputUtils_m, only: get_temp_folder
@@ -1176,6 +1194,7 @@ integer function test_flush_bulk_probe_dat() bind(c) result(err)
    probe%valueForTime(1) = 2.0_RKIND
    call create_file_with_path(probe%filePathTime, ios)
    call flush_bulk_probe_output(probe)
+   call close_bulk_probe_output(probe)
    inquire (file=probe%filePathTime, size=text_size, iostat=ios)
    err = err + assert_true(ios == 0 .and. text_size > 0, 'Bulk text record was not published')
    err = err + assert_true(.not. file_exists(join_path(folder, 'probe_tm.bin')), &
@@ -1268,6 +1287,7 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
 
    probe%nTime = n
    call flush_point_probe_output(probe)
+   call close_point_probe_output(probe)
 
    ! Assertions
    unit = 1
