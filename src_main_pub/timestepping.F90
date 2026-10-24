@@ -70,6 +70,9 @@ module Solver_m
 
    use EpsMuTimeScale_m
    use CALC_CONSTANTS_m
+#ifdef CompileWithCUDA
+   use cuda_field_updates_m, only: cuda_advance_field, CUDA_EX, CUDA_EY, CUDA_EZ, CUDA_HX, CUDA_HY, CUDA_HZ
+#endif
 #ifdef CompileWithPrescale
    use P_rescale
 #endif              
@@ -2127,6 +2130,7 @@ contains
       real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hz
       real(kind=rkind), dimension(:), pointer :: Idyh
       real(kind=rkind), dimension(:), pointer :: Idzh
+      real(kind=rkind), dimension(:), pointer :: G1, G2
 
       real(kind=rkind) :: Idzhk, Idyhj
       integer(kind=4) :: i, j, k
@@ -2138,12 +2142,15 @@ contains
 
       Idyh(0:this%bounds%dyh%NY-1) => this%Idyh
       Idzh(0:this%bounds%dzh%NZ-1) => this%Idzh
+      G1 => this%g%g1
+      G2 => this%g%g2
 
+#ifdef CompileWithCUDA
+      call cuda_advance_field(CUDA_EX, Ex, sggMiEx, Hz, Hy, Idyh, Idzh, G1, G2, &
+            this%bounds%sweepEx%NX, this%bounds%sweepEx%NY, this%bounds%sweepEx%NZ)
+#else
 #ifdef CompileWithOpenMP
 !$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medium,Idzhk,Idyhj) 
-#endif
-#ifdef CompileWithACC   
-!$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medium,Idzhk,Idyhj)  copyin(Ex,sggMiEx,Hy,Hz,Idyh,Idzh,b,G1,G2) copyout(Ex) 
 #endif
       do k=1,this%bounds%sweepEx%NZ
          do j=1,this%bounds%sweepEx%NY
@@ -2151,13 +2158,14 @@ contains
                Idzhk=Idzh(k)
                Idyhj=Idyh(j)
                medium =sggMiEx(i,j,k)
-               Ex(i,j,k)=this%g%g1(medium)*Ex(i,j,k)+this%g%g2(medium)* &
+               Ex(i,j,k)=G1(medium)*Ex(i,j,k)+G2(medium)* &
                ((Hz(i,j,k)-Hz(i,j-1,k))*Idyhj-(Hy(i,j,k)-Hy(i,j,k-1))*Idzhk)
             end do
          end do
       end do
-#ifdef CompileWithOpenMP   
+#ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
+#endif
 #endif
    end subroutine advanceEx
 
@@ -2170,6 +2178,7 @@ contains
       real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hx
       real(kind=rkind), dimension(:), pointer :: Idzh
       real(kind=rkind), dimension(:), pointer :: Idxh
+      real(kind=rkind), dimension(:), pointer :: G1, G2
 
       real(kind=rkind) :: Idzhk
       integer(kind=4) :: i, j, k
@@ -2181,24 +2190,28 @@ contains
 
       Idzh(0:this%bounds%dzh%NZ-1) => this%Idzh
       Idxh(0:this%bounds%dxh%NX-1) => this%Idxh
+      G1 => this%g%g1
+      G2 => this%g%g2
 
+#ifdef CompileWithCUDA
+      call cuda_advance_field(CUDA_EY, Ey, sggMiEy, Hx, Hz, Idzh, Idxh, G1, G2, &
+            this%bounds%sweepEy%NX, this%bounds%sweepEy%NY, this%bounds%sweepEy%NZ)
+#else
 #ifdef CompileWithOpenMP
 !$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medium,Idzhk)  
-#endif
-#ifdef CompileWithACC   
-!$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medium,Idzhk)     copyin(Ey,sggMiEy,Hz,Hx,Idzh,Idxh,b,G1,G2) copyout(Ey) 
 #endif
       do k=1,this%bounds%sweepEy%NZ
          do j=1,this%bounds%sweepEy%NY
             do i=1,this%bounds%sweepEy%NX
                Idzhk=Idzh(k)
                medium =sggMiEy(i,j,k)
-               Ey(i,j,k)=this%g%g1(medium)*Ey(i,j,k)+this%g%g2(medium)*((Hx(i,j,k)-Hx(i,j,k-1))*Idzhk-(Hz(i,j,k)-Hz(i-1,j,k))*Idxh(i))
+               Ey(i,j,k)=G1(medium)*Ey(i,j,k)+G2(medium)*((Hx(i,j,k)-Hx(i,j,k-1))*Idzhk-(Hz(i,j,k)-Hz(i-1,j,k))*Idxh(i))
             end do
          end do
       end do
 #ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
+#endif
 #endif
 
 
@@ -2215,6 +2228,7 @@ contains
       real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hy
       real(kind=rkind), dimension(:), pointer :: Idyh
       real(kind=rkind), dimension(:), pointer :: Idxh
+      real(kind=rkind), dimension(:), pointer :: G1, G2
       !------------------------> Local variables
       real(kind = RKIND) :: Idyhj
       integer(kind = 4) :: i, j, k
@@ -2227,24 +2241,28 @@ contains
 
       Idyh(0:this%bounds%dyh%NY-1) => this%Idyh
       Idxh(0:this%bounds%dxh%NX-1) => this%Idxh
+      G1 => this%g%g1
+      G2 => this%g%g2
 
+#ifdef CompileWithCUDA
+      call cuda_advance_field(CUDA_EZ, Ez, sggMiEz, Hy, Hx, Idxh, Idyh, G1, G2, &
+            this%bounds%sweepEz%NX, this%bounds%sweepEz%NY, this%bounds%sweepEz%NZ)
+#else
 #ifdef CompileWithOpenMP
 !$OMP  PARALLEL do  DEFAULT(SHARED) collapse (2) private (i,j,k,medium,Idyhj)    
-#endif
-#ifdef CompileWithACC   
-!$ACC parallel loop   DEFAULT(present) collapse (2) private (i,j,k,medium,Idyhj)        copyin(Ez,sggMiEz,Hx,Hy,Idxh,Idyh,b,G1,G2) copyout(Ez) 
 #endif
       do k=1,this%bounds%sweepEz%NZ
          do j=1,this%bounds%sweepEz%NY
             do i=1,this%bounds%sweepEz%NX
                Idyhj=Idyh(j)
                medium =sggMiEz(i,j,k)
-               Ez(i,j,k)=this%g%g1(medium)*Ez(i,j,k)+this%g%g2(medium)*((Hy(i,j,k)-Hy(i-1,j,k))*Idxh(i)-(Hx(i,j,k)-Hx(i,j-1,k))*Idyhj)
+               Ez(i,j,k)=G1(medium)*Ez(i,j,k)+G2(medium)*((Hy(i,j,k)-Hy(i-1,j,k))*Idxh(i)-(Hx(i,j,k)-Hx(i,j-1,k))*Idyhj)
             end do
          end do
       end do
 #ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
+#endif
 #endif
       return
    end subroutine advanceEz
@@ -2279,6 +2297,7 @@ contains
       real(kind=rkind), dimension(:,:,:), pointer, contiguous  :: Ez
       real(kind=rkind), dimension(:), pointer:: IdyE
       real(kind=rkind), dimension(:), pointer:: IdzE
+      real(kind=rkind), dimension(:), pointer :: GM1, GM2
       real(kind=rkind) :: Idzek, Idyej
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medium
@@ -2289,13 +2308,16 @@ contains
 
       IdyE(0:this%bounds%dyE%NY-1) => this%IdyE
       IdzE(0:this%bounds%dzE%NZ-1) => this%IdzE
+      GM1 => this%g%gm1
+      GM2 => this%g%gm2
 
 
+#ifdef CompileWithCUDA
+      call cuda_advance_field(CUDA_HX, Hx, sggMiHx, Ey, Ez, IdzE, IdyE, GM1, GM2, &
+            this%bounds%sweepHx%NX, this%bounds%sweepHx%NY, this%bounds%sweepHx%NZ)
+#else
 #ifdef CompileWithOpenMP
 !$OMP  PARALLEL do  DEFAULT(SHARED) collapse (2) private (i,j,k,medium,Idzek,Idyej)     
-#endif
-#ifdef CompileWithACC   
-!$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medium,Idzek,Idyej)       copyin(Hx,sggMiHx,Ey,Ez,Idye,Idze,b,GM1,GM2) copyout(Hx) 
 #endif
       do k=1,this%bounds%sweepHx%NZ
          do j=1,this%bounds%sweepHx%NY
@@ -2303,12 +2325,13 @@ contains
             Idzek=Idze(k)
             Idyej=Idye(j)
                medium =sggMiHx(i,j,k)
-               Hx(i,j,k)=this%g%gm1(medium)*Hx(i,j,k)+this%g%gm2(medium)*((Ey(i,j,k+1)-Ey(i,j,k))*Idzek-(Ez(i,j+1,k)-Ez(i,j,k))*Idyej)
+               Hx(i,j,k)=GM1(medium)*Hx(i,j,k)+GM2(medium)*((Ey(i,j,k+1)-Ey(i,j,k))*Idzek-(Ez(i,j+1,k)-Ez(i,j,k))*Idyej)
             end do
          end do
       end do
 #ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
+#endif
 #endif
       return
    end subroutine advanceHx
@@ -2322,6 +2345,7 @@ contains
       real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Ex
       real(kind=rkind), dimension(:), pointer :: IdzE
       real(kind=rkind), dimension(:), pointer :: IdxE
+      real(kind=rkind), dimension(:), pointer :: GM1, GM2
       real(kind=rkind) :: Idzek
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medium
@@ -2332,24 +2356,28 @@ contains
 
       IdzE(0:this%bounds%dzE%NZ-1) => this%IdzE
       IdxE(0:this%bounds%dxE%NX-1) => this%IdxE
+      GM1 => this%g%gm1
+      GM2 => this%g%gm2
 
+#ifdef CompileWithCUDA
+      call cuda_advance_field(CUDA_HY, Hy, sggMiHy, Ez, Ex, IdxE, IdzE, GM1, GM2, &
+            this%bounds%sweepHy%NX, this%bounds%sweepHy%NY, this%bounds%sweepHy%NZ)
+#else
 #ifdef CompileWithOpenMP
 !$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medium,Idzek)     
-#endif
-#ifdef CompileWithACC   
-!$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medium,Idzek)         copyin(Hy,sggMiHy,Ez,Ex,Idze,Idxe,b,GM1,GM2) copyout(Hy) 
 #endif
       do k=1,this%bounds%sweepHy%NZ
          do j=1,this%bounds%sweepHy%NY
             do i=1,this%bounds%sweepHy%NX
                Idzek=Idze(k)
                medium =sggMiHy(i,j,k)
-               Hy(i,j,k)=this%g%gm1(medium)*Hy(i,j,k)+this%g%gm2(medium)*((Ez(i+1,j,k)-Ez(i,j,k))*Idxe(i)-(Ex(i,j,k+1)-Ex(i,j,k))*Idzek)
+               Hy(i,j,k)=GM1(medium)*Hy(i,j,k)+GM2(medium)*((Ez(i+1,j,k)-Ez(i,j,k))*Idxe(i)-(Ex(i,j,k+1)-Ex(i,j,k))*Idzek)
             end do
          end do
       end do
 #ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
+#endif
 #endif
       return
    end subroutine advanceHy
@@ -2362,6 +2390,7 @@ contains
       real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Ey
       real(kind=rkind), dimension(:), pointer :: IdyE
       real(kind=rkind), dimension(:), pointer :: IdxE
+      real(kind=rkind), dimension(:), pointer :: GM1, GM2
 
       real(kind = RKIND) :: Idyej
       integer(kind = 4) :: i, j, k
@@ -2371,24 +2400,28 @@ contains
       Ey(0:this%bounds%Ey%NX-1,0:this%bounds%Ey%NY-1,0:this%bounds%Ey%NZ-1) => this%Ey
       IdyE(0:this%bounds%dyE%NY-1) => this%IdyE
       IdxE(0:this%bounds%dxE%NX-1) => this%IdxE
+      GM1 => this%g%gm1
+      GM2 => this%g%gm2
 
+#ifdef CompileWithCUDA
+      call cuda_advance_field(CUDA_HZ, Hz, sggMiHz, Ex, Ey, IdyE, IdxE, GM1, GM2, &
+            this%bounds%sweepHz%NX, this%bounds%sweepHz%NY, this%bounds%sweepHz%NZ)
+#else
 #ifdef CompileWithOpenMP
 !$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medium,Idyej)  
-#endif
-#ifdef CompileWithACC   
-!$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medium,Idyej)       copyin(Hz,sggMiHz,Ex,Ey,Idxe,Idye,b,GM1,GM2) copyout(Hz)
 #endif
       do k=1,this%bounds%sweepHz%NZ
          do j=1,this%bounds%sweepHz%NY
             do i=1,this%bounds%sweepHz%NX
                Idyej=Idye(j)
                medium =sggMiHz(i,j,k)
-               Hz(i,j,k)=this%g%gm1(medium)*Hz(i,j,k)+this%g%gm2(medium)*((Ex(i,j+1,k)-Ex(i,j,k))*Idyej-(Ey(i+1,j,k)-Ey(i,j,k))*Idxe(i))
+               Hz(i,j,k)=GM1(medium)*Hz(i,j,k)+GM2(medium)*((Ex(i,j+1,k)-Ex(i,j,k))*Idyej-(Ey(i+1,j,k)-Ey(i,j,k))*Idxe(i))
             end do
          end do
       end do
 #ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
+#endif
 #endif
       return
    end subroutine advanceHz

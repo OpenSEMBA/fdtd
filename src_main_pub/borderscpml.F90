@@ -7,6 +7,9 @@
 module BORDERS_CPML_m
    use FDETYPES_m
    use Report_m
+#ifdef CompileWithCUDA
+   use cuda_field_updates_m, only: cuda_cpml_job_t, cuda_advance_cpml_jobs, set_cuda_view
+#endif
    implicit none
    private
    !
@@ -528,23 +531,28 @@ contains
       integer, intent(in) :: NumMedia
       type(bounds_t), intent(in) :: b
       !--->
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiEx%NX-1, 0 :  b%sggMiEx%NY-1, 0 :  b%sggMiEx%NZ-1), intent(in) :: sggMiEx
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiEy%NX-1, 0 :  b%sggMiEy%NY-1, 0 :  b%sggMiEy%NZ-1), intent(in) :: sggMiEy
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiEz%NX-1, 0 :  b%sggMiEz%NY-1, 0 :  b%sggMiEz%NZ-1), intent(in) :: sggMiEz
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiEx%NX-1, 0 :  b%sggMiEx%NY-1, 0 :  b%sggMiEx%NZ-1), intent(in), target :: sggMiEx
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiEy%NX-1, 0 :  b%sggMiEy%NY-1, 0 :  b%sggMiEy%NZ-1), intent(in), target :: sggMiEy
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiEz%NX-1, 0 :  b%sggMiEz%NY-1, 0 :  b%sggMiEz%NZ-1), intent(in), target :: sggMiEz
       !--->
-      real(kind = RKIND), dimension(0 :  NumMedia), intent(in) :: g2
+      real(kind = RKIND), dimension(0 :  NumMedia), intent(in), target :: g2
       !--->
-      real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(in) :: Hx
-      real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(in) :: Hy
-      real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(in) :: Hz
+      real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(in), target :: Hx
+      real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(in), target :: Hy
+      real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(in), target :: Hz
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension(0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent(inout) :: Ex
-      real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(inout) :: Ey
-      real(kind = RKIND), dimension(0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent(inout) :: Ez
+      real(kind = RKIND), dimension(0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent(inout), target :: Ex
+      real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(inout), target :: Ey
+      real(kind = RKIND), dimension(0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent(inout), target :: Ez
       !---------------------------> local variables <-----------------------------------------------
       integer(kind=4) :: REGION, i, j, k, medium, i_m, j_m, k_m
       !---------------------------> starts AdvanceelectricCPML <-------------------------------------
 
+#ifdef CompileWithCUDA
+      call advance_electric_cpml_cuda(b, sggMiEx, sggMiEy, sggMiEz, g2, &
+            Ex, Ey, Ez, Hx, Hy, Hz)
+      return
+#else
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -815,6 +823,7 @@ contains
 
       !---------------------------> ends AdvanceelectricCPML <---------------------------------------
       return
+#endif
    end subroutine AdvanceelectricCPML
    !**************************************************************************************************
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -825,24 +834,29 @@ contains
       integer, intent(in) :: NumMedia
       type(bounds_t), intent(in) :: b
       !--->
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiHx%NX-1, 0 :  b%sggMiHx%NY-1, 0 :  b%sggMiHx%NZ-1), intent(in) :: sggMiHx
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent(in) :: sggMiHy
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent(in) :: sggMiHz
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiHx%NX-1, 0 :  b%sggMiHx%NY-1, 0 :  b%sggMiHx%NZ-1), intent(in), target :: sggMiHx
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent(in), target :: sggMiHy
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent(in), target :: sggMiHz
       !--->
-      real(kind = RKIND), dimension(0 :  NumMedia), intent(in) :: gm2
+      real(kind = RKIND), dimension(0 :  NumMedia), intent(in), target :: gm2
       !--->
-      real(kind = RKIND), dimension(0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent(in) :: Ex
-      real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(in) :: Ey
-      real(kind = RKIND), dimension(0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent(in) :: Ez
+      real(kind = RKIND), dimension(0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent(in), target :: Ex
+      real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(in), target :: Ey
+      real(kind = RKIND), dimension(0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent(in), target :: Ez
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(inout) :: Hx
-      real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(inout) :: Hy
-      real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(inout) :: Hz
+      real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(inout), target :: Hx
+      real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(inout), target :: Hy
+      real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(inout), target :: Hz
       !---------------------------> local variables <-----------------------------------------------
       integer(kind=4) :: REGION, i, j, k, medium, i_m, j_m, k_m
       !---------------------------> starts AdvanceMagneTicCPML <-------------------------------------
       !Hetic Fields PML Zone
       !
+#ifdef CompileWithCUDA
+      call advance_magnetic_cpml_cuda(b, sggMiHx, sggMiHy, sggMiHz, gm2, &
+            Hx, Hy, Hz, Ex, Ey, Ez)
+      return
+#else
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1115,6 +1129,7 @@ contains
 
       !---------------------------> ends AdvanceMagneTicCPML <---------------------------------------
       return
+#endif
    end subroutine AdvanceMagneTicCPML
 !!!
 !!!   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2272,7 +2287,186 @@ end subroutine calc_cpmlconstants
       return
    end subroutine AdvanceMagneTicCPML_freespace
 
+#ifdef CompileWithCUDA
+   subroutine append_cpml_job(jobs, job_count, output, media, source, psi, &
+         coefficient_b, coefficient_c, coefficient_g, output_lo, source_lo, psi_lo, &
+         coefficient_b_lo, coefficient_c_lo, coefficient_g_lo, &
+         region_lo, region_hi, axis, source_direction, update_sign)
+      type(cuda_cpml_job_t), intent(inout) :: jobs(:)
+      integer, intent(inout) :: job_count
+      real(kind=RKIND), target, contiguous, intent(inout) :: output(:,:,:), psi(:,:,:)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES), target, contiguous, intent(in) :: media(:,:,:)
+      real(kind=RKIND), target, contiguous, intent(in) :: source(:,:,:)
+      real(kind=RKIND), target, contiguous, intent(in) :: coefficient_b(:), coefficient_c(:), coefficient_g(:)
+      integer, intent(in) :: output_lo(3), source_lo(3), psi_lo(3), region_lo(3), region_hi(3)
+      integer, intent(in) :: coefficient_b_lo, coefficient_c_lo, coefficient_g_lo
+      integer, intent(in) :: axis, source_direction, update_sign
+      type(cuda_cpml_job_t) :: job
+
+      if (any(region_lo > region_hi)) return
+      if (job_count >= size(jobs)) error stop "CUDA CPML job capacity exceeded."
+      job_count = job_count + 1
+
+      call set_cuda_view(job%output, output, output_lo(1), output_lo(2), output_lo(3))
+      call set_cuda_view(job%media, media, output_lo(1), output_lo(2), output_lo(3))
+      call set_cuda_view(job%source, source, source_lo(1), source_lo(2), source_lo(3))
+      call set_cuda_view(job%psi, psi, psi_lo(1), psi_lo(2), psi_lo(3))
+      call set_cuda_view(job%coefficient_b, coefficient_b, coefficient_b_lo)
+      call set_cuda_view(job%coefficient_c, coefficient_c, coefficient_c_lo)
+      call set_cuda_view(job%coefficient_g, coefficient_g, coefficient_g_lo)
+      job%region_xi = region_lo(1)
+      job%region_xe = region_hi(1)
+      job%region_yi = region_lo(2)
+      job%region_ye = region_hi(2)
+      job%region_zi = region_lo(3)
+      job%region_ze = region_hi(3)
+      job%axis = axis
+      job%source_direction = source_direction
+      job%update_sign = update_sign
+      jobs(job_count) = job
+   end subroutine append_cpml_job
+
+   subroutine advance_electric_cpml_cuda(b, sggMiEx, sggMiEy, sggMiEz, g2, &
+         Ex, Ey, Ez, Hx, Hy, Hz)
+      type(bounds_t), intent(in) :: b
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES), target, intent(in) :: &
+            sggMiEx(0:b%sggMiEx%NX-1,0:b%sggMiEx%NY-1,0:b%sggMiEx%NZ-1), &
+            sggMiEy(0:b%sggMiEy%NX-1,0:b%sggMiEy%NY-1,0:b%sggMiEy%NZ-1), &
+            sggMiEz(0:b%sggMiEz%NX-1,0:b%sggMiEz%NY-1,0:b%sggMiEz%NZ-1)
+      real(kind=RKIND), target, contiguous, intent(in) :: g2(0:)
+      real(kind=RKIND), target, intent(inout) :: &
+            Ex(0:b%Ex%NX-1,0:b%Ex%NY-1,0:b%Ex%NZ-1), &
+            Ey(0:b%Ey%NX-1,0:b%Ey%NY-1,0:b%Ey%NZ-1), &
+            Ez(0:b%Ez%NX-1,0:b%Ez%NY-1,0:b%Ez%NZ-1)
+      real(kind=RKIND), target, intent(in) :: &
+            Hx(0:b%Hx%NX-1,0:b%Hx%NY-1,0:b%Hx%NZ-1), &
+            Hy(0:b%Hy%NX-1,0:b%Hy%NY-1,0:b%Hy%NZ-1), &
+            Hz(0:b%Hz%NX-1,0:b%Hz%NY-1,0:b%Hz%NZ-1)
+      type(cuda_cpml_job_t) :: jobs(12)
+      integer :: job_count, region
+
+      job_count = 0
+      do region=LEFT,RIGHT
+         call append_cpml_job(jobs, job_count, Ex, sggMiEx, Hz, regLR(region)%Psi_Exy, &
+               P_be_y, P_ce_y, g2, [b%Ex%XI,b%Ex%YI,b%Ex%ZI], &
+               [b%Hz%XI,b%Hz%YI,b%Hz%ZI], &
+               [lbound(regLR(region)%Psi_Exy,1),lbound(regLR(region)%Psi_Exy,2),lbound(regLR(region)%Psi_Exy,3)], &
+               lbound(P_be_y,1),lbound(P_ce_y,1),0, &
+               [PMLc(IEX)%XI(region),PMLc(IEX)%YI(region),PMLc(IEX)%ZI(region)], &
+               [PMLc(IEX)%XE(region),PMLc(IEX)%YE(region),PMLc(IEX)%ZE(region)], 2, -1, 1)
+         call append_cpml_job(jobs, job_count, Ez, sggMiEz, Hx, regLR(region)%Psi_Ezy, &
+               P_be_y, P_ce_y, g2, [b%Ez%XI,b%Ez%YI,b%Ez%ZI], &
+               [b%Hx%XI,b%Hx%YI,b%Hx%ZI], &
+               [lbound(regLR(region)%Psi_Ezy,1),lbound(regLR(region)%Psi_Ezy,2),lbound(regLR(region)%Psi_Ezy,3)], &
+               lbound(P_be_y,1),lbound(P_ce_y,1),0, &
+               [PMLc(IEZ)%XI(region),PMLc(IEZ)%YI(region),PMLc(IEZ)%ZI(region)], &
+               [PMLc(IEZ)%XE(region),PMLc(IEZ)%YE(region),PMLc(IEZ)%ZE(region)], 2, -1, -1)
+      end do
+      do region=DOWN,UP
+         call append_cpml_job(jobs, job_count, Ey, sggMiEy, Hx, regDU(region)%Psi_Eyz, &
+               P_be_z, P_ce_z, g2, [b%Ey%XI,b%Ey%YI,b%Ey%ZI], &
+               [b%Hx%XI,b%Hx%YI,b%Hx%ZI], &
+               [lbound(regDU(region)%Psi_Eyz,1),lbound(regDU(region)%Psi_Eyz,2),lbound(regDU(region)%Psi_Eyz,3)], &
+               lbound(P_be_z,1),lbound(P_ce_z,1),0, &
+               [PMLc(IEY)%XI(region),PMLc(IEY)%YI(region),PMLc(IEY)%ZI(region)], &
+               [PMLc(IEY)%XE(region),PMLc(IEY)%YE(region),PMLc(IEY)%ZE(region)], 3, -1, 1)
+         call append_cpml_job(jobs, job_count, Ex, sggMiEx, Hy, regDU(region)%Psi_Exz, &
+               P_be_z, P_ce_z, g2, [b%Ex%XI,b%Ex%YI,b%Ex%ZI], &
+               [b%Hy%XI,b%Hy%YI,b%Hy%ZI], &
+               [lbound(regDU(region)%Psi_Exz,1),lbound(regDU(region)%Psi_Exz,2),lbound(regDU(region)%Psi_Exz,3)], &
+               lbound(P_be_z,1),lbound(P_ce_z,1),0, &
+               [PMLc(IEX)%XI(region),PMLc(IEX)%YI(region),PMLc(IEX)%ZI(region)], &
+               [PMLc(IEX)%XE(region),PMLc(IEX)%YE(region),PMLc(IEX)%ZE(region)], 3, -1, -1)
+      end do
+      do region=BACK,FRONT
+         call append_cpml_job(jobs, job_count, Ez, sggMiEz, Hy, regBF(region)%Psi_Ezx, &
+               P_be_x, P_ce_x, g2, [b%Ez%XI,b%Ez%YI,b%Ez%ZI], &
+               [b%Hy%XI,b%Hy%YI,b%Hy%ZI], &
+               [lbound(regBF(region)%Psi_Ezx,1),lbound(regBF(region)%Psi_Ezx,2),lbound(regBF(region)%Psi_Ezx,3)], &
+               lbound(P_be_x,1),lbound(P_ce_x,1),0, &
+               [PMLc(IEZ)%XI(region),PMLc(IEZ)%YI(region),PMLc(IEZ)%ZI(region)], &
+               [PMLc(IEZ)%XE(region),PMLc(IEZ)%YE(region),PMLc(IEZ)%ZE(region)], 1, -1, 1)
+         call append_cpml_job(jobs, job_count, Ey, sggMiEy, Hz, regBF(region)%Psi_Eyx, &
+               P_be_x, P_ce_x, g2, [b%Ey%XI,b%Ey%YI,b%Ey%ZI], &
+               [b%Hz%XI,b%Hz%YI,b%Hz%ZI], &
+               [lbound(regBF(region)%Psi_Eyx,1),lbound(regBF(region)%Psi_Eyx,2),lbound(regBF(region)%Psi_Eyx,3)], &
+               lbound(P_be_x,1),lbound(P_ce_x,1),0, &
+               [PMLc(IEY)%XI(region),PMLc(IEY)%YI(region),PMLc(IEY)%ZI(region)], &
+               [PMLc(IEY)%XE(region),PMLc(IEY)%YE(region),PMLc(IEY)%ZE(region)], 1, -1, -1)
+      end do
+      call cuda_advance_cpml_jobs(jobs(:job_count))
+   end subroutine advance_electric_cpml_cuda
+
+   subroutine advance_magnetic_cpml_cuda(b, sggMiHx, sggMiHy, sggMiHz, gm2, &
+         Hx, Hy, Hz, Ex, Ey, Ez)
+      type(bounds_t), intent(in) :: b
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES), target, intent(in) :: &
+            sggMiHx(0:b%sggMiHx%NX-1,0:b%sggMiHx%NY-1,0:b%sggMiHx%NZ-1), &
+            sggMiHy(0:b%sggMiHy%NX-1,0:b%sggMiHy%NY-1,0:b%sggMiHy%NZ-1), &
+            sggMiHz(0:b%sggMiHz%NX-1,0:b%sggMiHz%NY-1,0:b%sggMiHz%NZ-1)
+      real(kind=RKIND), target, contiguous, intent(in) :: gm2(0:)
+      real(kind=RKIND), target, intent(inout) :: &
+            Hx(0:b%Hx%NX-1,0:b%Hx%NY-1,0:b%Hx%NZ-1), &
+            Hy(0:b%Hy%NX-1,0:b%Hy%NY-1,0:b%Hy%NZ-1), &
+            Hz(0:b%Hz%NX-1,0:b%Hz%NY-1,0:b%Hz%NZ-1)
+      real(kind=RKIND), target, intent(in) :: &
+            Ex(0:b%Ex%NX-1,0:b%Ex%NY-1,0:b%Ex%NZ-1), &
+            Ey(0:b%Ey%NX-1,0:b%Ey%NY-1,0:b%Ey%NZ-1), &
+            Ez(0:b%Ez%NX-1,0:b%Ez%NY-1,0:b%Ez%NZ-1)
+      type(cuda_cpml_job_t) :: jobs(12)
+      integer :: job_count, region
+
+      job_count = 0
+      do region=LEFT,RIGHT
+         call append_cpml_job(jobs, job_count, Hx, sggMiHx, Ez, regLR(region)%Psi_Hxy, &
+               P_bm_y, P_cm_y, gm2, [b%Hx%XI,b%Hx%YI,b%Hx%ZI], &
+               [b%Ez%XI,b%Ez%YI,b%Ez%ZI], &
+               [lbound(regLR(region)%Psi_Hxy,1),lbound(regLR(region)%Psi_Hxy,2),lbound(regLR(region)%Psi_Hxy,3)], &
+               lbound(P_bm_y,1),lbound(P_cm_y,1),0, &
+               [PMLc(IHX)%XI(region),PMLc(IHX)%YI(region),PMLc(IHX)%ZI(region)], &
+               [PMLc(IHX)%XE(region),PMLc(IHX)%YE(region),PMLc(IHX)%ZE(region)], 2, 1, -1)
+         call append_cpml_job(jobs, job_count, Hz, sggMiHz, Ex, regLR(region)%Psi_Hzy, &
+               P_bm_y, P_cm_y, gm2, [b%Hz%XI,b%Hz%YI,b%Hz%ZI], &
+               [b%Ex%XI,b%Ex%YI,b%Ex%ZI], &
+               [lbound(regLR(region)%Psi_Hzy,1),lbound(regLR(region)%Psi_Hzy,2),lbound(regLR(region)%Psi_Hzy,3)], &
+               lbound(P_bm_y,1),lbound(P_cm_y,1),0, &
+               [PMLc(IHZ)%XI(region),PMLc(IHZ)%YI(region),PMLc(IHZ)%ZI(region)], &
+               [PMLc(IHZ)%XE(region),PMLc(IHZ)%YE(region),PMLc(IHZ)%ZE(region)], 2, 1, 1)
+      end do
+      do region=DOWN,UP
+         call append_cpml_job(jobs, job_count, Hy, sggMiHy, Ex, regDU(region)%Psi_Hyz, &
+               P_bm_z, P_cm_z, gm2, [b%Hy%XI,b%Hy%YI,b%Hy%ZI], &
+               [b%Ex%XI,b%Ex%YI,b%Ex%ZI], &
+               [lbound(regDU(region)%Psi_Hyz,1),lbound(regDU(region)%Psi_Hyz,2),lbound(regDU(region)%Psi_Hyz,3)], &
+               lbound(P_bm_z,1),lbound(P_cm_z,1),0, &
+               [PMLc(IHY)%XI(region),PMLc(IHY)%YI(region),PMLc(IHY)%ZI(region)], &
+               [PMLc(IHY)%XE(region),PMLc(IHY)%YE(region),PMLc(IHY)%ZE(region)], 3, 1, -1)
+         call append_cpml_job(jobs, job_count, Hx, sggMiHx, Ey, regDU(region)%Psi_Hxz, &
+               P_bm_z, P_cm_z, gm2, [b%Hx%XI,b%Hx%YI,b%Hx%ZI], &
+               [b%Ey%XI,b%Ey%YI,b%Ey%ZI], &
+               [lbound(regDU(region)%Psi_Hxz,1),lbound(regDU(region)%Psi_Hxz,2),lbound(regDU(region)%Psi_Hxz,3)], &
+               lbound(P_bm_z,1),lbound(P_cm_z,1),0, &
+               [PMLc(IHX)%XI(region),PMLc(IHX)%YI(region),PMLc(IHX)%ZI(region)], &
+               [PMLc(IHX)%XE(region),PMLc(IHX)%YE(region),PMLc(IHX)%ZE(region)], 3, 1, 1)
+      end do
+      do region=BACK,FRONT
+         call append_cpml_job(jobs, job_count, Hz, sggMiHz, Ey, regBF(region)%Psi_Hzx, &
+               P_bm_x, P_cm_x, gm2, [b%Hz%XI,b%Hz%YI,b%Hz%ZI], &
+               [b%Ey%XI,b%Ey%YI,b%Ey%ZI], &
+               [lbound(regBF(region)%Psi_Hzx,1),lbound(regBF(region)%Psi_Hzx,2),lbound(regBF(region)%Psi_Hzx,3)], &
+               lbound(P_bm_x,1),lbound(P_cm_x,1),0, &
+               [PMLc(IHZ)%XI(region),PMLc(IHZ)%YI(region),PMLc(IHZ)%ZI(region)], &
+               [PMLc(IHZ)%XE(region),PMLc(IHZ)%YE(region),PMLc(IHZ)%ZE(region)], 1, 1, -1)
+         call append_cpml_job(jobs, job_count, Hy, sggMiHy, Ez, regBF(region)%Psi_Hyx, &
+               P_bm_x, P_cm_x, gm2, [b%Hy%XI,b%Hy%YI,b%Hy%ZI], &
+               [b%Ez%XI,b%Ez%YI,b%Ez%ZI], &
+               [lbound(regBF(region)%Psi_Hyx,1),lbound(regBF(region)%Psi_Hyx,2),lbound(regBF(region)%Psi_Hyx,3)], &
+               lbound(P_bm_x,1),lbound(P_cm_x,1),0, &
+               [PMLc(IHY)%XI(region),PMLc(IHY)%YI(region),PMLc(IHY)%ZI(region)], &
+               [PMLc(IHY)%XE(region),PMLc(IHY)%YE(region),PMLc(IHY)%ZE(region)], 1, 1, 1)
+      end do
+      call cuda_advance_cpml_jobs(jobs(:job_count))
+   end subroutine advance_magnetic_cpml_cuda
+#endif
 
 end module BORDERS_CPML_m
-
-

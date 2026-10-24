@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.15)
+cmake_minimum_required (VERSION 3.18)
 
 project(semba-fdtd LANGUAGES Fortran C)
 
@@ -11,6 +11,9 @@ message(STATUS "Compiler Id is: ${CMAKE_Fortran_COMPILER_ID}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 option(SEMBA_FDTD_ENABLE_MPI "Use MPI" OFF)
+option(SEMBA_FDTD_ENABLE_OPENMP "Use OpenMP" ON)
+option(SEMBA_FDTD_ENABLE_CUDA "Use native CUDA kernels for the Yee field updates" OFF)
+set(SEMBA_FDTD_CUDA_ARCHITECTURES "89" CACHE STRING "CUDA architectures to compile for")
 option(SEMBA_FDTD_ENABLE_MTLN "Use MTLN" ON)
 option(SEMBA_FDTD_ENABLE_SMBJSON "Use smbjson" ON)
 option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal8)" OFF)
@@ -31,6 +34,16 @@ endif()
 
 option(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION "When compiling in Release, enables the -xHost optimization flag (not supported in github actions)" OFF)
 option(SEMBA_FDTD_ENABLE_INTEL_IPO "When compiling in Release, enables the interprocedural optimization" OFF)
+set(SEMBA_FDTD_EXTRA_FORTRAN_FLAGS "" CACHE STRING "Extra Fortran flags appended to the Windows Intel Release flags")
+
+if(SEMBA_FDTD_ENABLE_CUDA)
+	if(NOT SEMBA_FDTD_MAIN_LIB)
+		message(FATAL_ERROR "SEMBA_FDTD_ENABLE_CUDA requires SEMBA_FDTD_MAIN_LIB.")
+	endif()
+	enable_language(CXX)
+	enable_language(CUDA)
+	find_package(CUDAToolkit REQUIRED)
+endif()
 
 if(SEMBA_FDTD_ENABLE_MPI)
 	set(HDF5_PREFER_PARALLEL TRUE)
@@ -65,8 +78,13 @@ else()
 endif()
 add_definitions(
 	-DCompileWithInt2
-	-DCompileWithOpenMP
 )
+if(SEMBA_FDTD_ENABLE_OPENMP)
+	add_definitions(-DCompileWithOpenMP)
+endif()
+if(SEMBA_FDTD_ENABLE_CUDA)
+	add_definitions(-DCompileWithCUDA)
+endif()
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
 	add_definitions(-DGNUCompiler)
@@ -87,8 +105,12 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 		set(CMAKE_C_STANDARD 17)
 		set(CMAKE_C_STANDARD_REQUIRED ON)
 		set(CMAKE_C_EXTENSIONS ON)
-		set(CMAKE_CXX_FLAGS "-fopenmp")
-		set(CMAKE_Fortran_FLAGS "-fopenmp -ffree-form -ffree-line-length-none -fdec -fallow-argument-mismatch")
+		if(SEMBA_FDTD_ENABLE_OPENMP)
+			set(CMAKE_CXX_FLAGS "-fopenmp")
+			set(CMAKE_Fortran_FLAGS "-fopenmp -ffree-form -ffree-line-length-none -fdec -fallow-argument-mismatch")
+		else()
+			set(CMAKE_Fortran_FLAGS "-ffree-form -ffree-line-length-none -fdec -fallow-argument-mismatch")
+		endif()
 		
 		set(CMAKE_C_FLAGS_RELEASE "-Ofast")
 		set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
@@ -110,8 +132,12 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
 		message(STATUS "Using IntelLLVM (ifx) flags")
 
-		set(CMAKE_CXX_FLAGS "-qopenmp")
-		set(CMAKE_Fortran_FLAGS "-qopenmp -fpp")
+		if(SEMBA_FDTD_ENABLE_OPENMP)
+			set(CMAKE_CXX_FLAGS "-qopenmp")
+			set(CMAKE_Fortran_FLAGS "-qopenmp -fpp")
+		else()
+			set(CMAKE_Fortran_FLAGS "-fpp")
+		endif()
 
 		if (CMAKE_BUILD_TYPE STREQUAL "Release")
 			set(CMAKE_C_FLAGS_RELEASE "-O3")
@@ -168,6 +194,9 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 		#add_compile_options($<$<COMPILE_LANGUAGE:Fortran>:/nofpp>)
 		#set(CMAKE_Fortran_FLAGS "/Qopenmp")
 		#set(CMAKE_CXX_FLAGS "/Qopenmp")
+		if(SEMBA_FDTD_ENABLE_OPENMP)
+			set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} /Qopenmp")
+		endif()
 
 		# Debug flags - enable full debugging support for breakpoints
 		set(CMAKE_Fortran_FLAGS_DEBUG "/debug:full /Od /traceback /check:all,nouninit /Zi /debug-parameters:all /warn:interfaces")
@@ -178,6 +207,12 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 		set(CMAKE_Fortran_FLAGS_RELEASE "/O3")
 		set(CMAKE_CXX_FLAGS_RELEASE "/O2")
 		set(CMAKE_C_FLAGS_RELEASE "/O2")
+		if(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION)
+			set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} /QxHost /fp:fast")
+		endif()
+		if(SEMBA_FDTD_EXTRA_FORTRAN_FLAGS)
+			set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} ${SEMBA_FDTD_EXTRA_FORTRAN_FLAGS}")
+		endif()
 
 	else()
 		message(FATAL_ERROR "Unrecognized compiler id:" ${CMAKE_Fortran_COMPILER_ID})
@@ -189,6 +224,19 @@ endif()
 # =========================================
 
 add_subdirectory(external)
+
+if(SEMBA_FDTD_ENABLE_CUDA)
+	add_library(semba-cuda src_main_pub/cuda_field_updates.cu)
+	set_target_properties(semba-cuda PROPERTIES
+		CUDA_ARCHITECTURES "${SEMBA_FDTD_CUDA_ARCHITECTURES}"
+		CUDA_STANDARD 17
+		CUDA_STANDARD_REQUIRED ON
+	)
+	target_link_libraries(semba-cuda PRIVATE CUDA::cudart)
+	if(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION)
+		target_compile_definitions(semba-cuda PRIVATE SEMBA_CUDA_DOUBLE_PRECISION)
+	endif()
+endif()
 
 add_library(semba-types 
 	"src_main_pub/nfde_types.F90"
@@ -258,6 +306,10 @@ add_library(semba-components
 	"src_wires_pub/wires.F90"
 	"src_wires_pub/wires_mtln.F90"
 )
+if(SEMBA_FDTD_ENABLE_CUDA)
+	target_sources(semba-components PRIVATE "src_main_pub/cuda_field_updates.F90")
+	target_link_libraries(semba-components semba-cuda CUDA::cudart)
+endif()
 target_link_libraries(semba-components semba-types semba-reports ${MTLN_LIBRARIES})
 if (SEMBA_FDTD_ENABLE_MTLN)
 	add_dependencies(semba-components mtlnsolver)
@@ -312,6 +364,9 @@ if(SEMBA_FDTD_EXECUTABLE)
 	)
 	target_link_libraries(semba-fdtd semba-main semba-reports)
 	target_link_libraries(semba-fdtd ${MPI_Fortran_LIBRARIES})
+	if(SEMBA_FDTD_EXECUTABLE_NAME)
+		set_target_properties(semba-fdtd PROPERTIES OUTPUT_NAME ${SEMBA_FDTD_EXECUTABLE_NAME})
+	endif()
 endif()
 
 

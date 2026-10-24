@@ -47,6 +47,35 @@ If you use intel oneapi compiler, make sure to run
 
 ### Compilation options
 
+#### NVIDIA GPU / CUDA
+
+`SEMBA_FDTD_ENABLE_CUDA` builds native CUDA kernels for the six regular Yee
+electric- and magnetic-field updates, CPML boundaries, and volumetric PML
+bodies. Other time-stepping physics remains on the CPU. The default CUDA
+architecture is `89` for Ada GPUs; override it with
+`SEMBA_FDTD_CUDA_ARCHITECTURES` when building for other NVIDIA devices. CUDA
+support is optional and the default CPU/OpenMP build does not require the CUDA
+Toolkit.
+
+On Windows, configure from a Visual Studio x64 developer environment so CMake
+can find the MSVC host compiler required by `nvcc`:
+
+```shell
+cmake -S . -B build-cuda -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CUDA_COMPILER="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/nvcc.exe" \
+  -DSEMBA_FDTD_ENABLE_CUDA=ON \
+  -DSEMBA_FDTD_ENABLE_TEST=OFF
+cmake --build build-cuda --parallel
+```
+
+Linux builds use the same option with the NVIDIA CUDA Toolkit and a supported
+Fortran compiler. The CUDA Yee kernels currently copy their inputs to the GPU and copy each
+updated field back to the host. CPML jobs are batched per electric or magnetic
+update to share transfers; PML-body node data is packed for each update. The
+broader solver does not yet keep its fields resident on the GPU between
+updates, so benchmark representative cases before expecting a speedup.
+
 #### HDF5 Libraries
 
 GNU builds use the system HDF5 installation by default.

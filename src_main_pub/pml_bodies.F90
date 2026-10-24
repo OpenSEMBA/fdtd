@@ -16,6 +16,10 @@ module PMLbodies_m
    use Report_m
 
    use FDETYPES_m
+#ifdef CompileWithCUDA
+   use, intrinsic :: iso_c_binding, only: c_int
+   use cuda_field_updates_m, only: cuda_advance_pml_body
+#endif
    implicit none
    private
    !structures needed by the PMLbody
@@ -533,27 +537,62 @@ contains
    subroutine AdvancePMLbodyE
       integer(kind=4) :: conta
       type(BerPML__t), pointer :: PML_
+#ifdef CompileWithCUDA
+      call advance_pmlbody_cuda(berpmlE, 1_c_int)
+#else
       do conta=1,berpmlE%numnodes
          PML_ => berpmlE%Nodes(conta) 
          PML_%Psi=PML_%P_be * PML_%Psi + PML_%P_ce * (PML_%Plus   - PML_%Minu)    
          PML_%field = PML_%field + PML_%gx2 * PML_%Psi 
       end do
+#endif
       return
    end subroutine AdvancePMLbodyE
-
 
 
    subroutine AdvancePMLbodyH
       integer(kind=4) :: conta
       type(BerPML__t), pointer :: PML_
+#ifdef CompileWithCUDA
+      call advance_pmlbody_cuda(berpmlH, -1_c_int)
+#else
       do conta=1,berpmlH%numnodes
          PML_ => berpmlH%Nodes(conta) 
          PML_%Psi=PML_%P_be * PML_%Psi + PML_%P_ce * (PML_%Plus   - PML_%Minu)    
          PML_%field = PML_%field - PML_%gx2 * PML_%Psi 
       end do
+#endif
       return
    end subroutine AdvancePMLbodyH
 
+#ifdef CompileWithCUDA
+   subroutine advance_pmlbody_cuda(pml, update_sign)
+      type(berpml_t), intent(inout) :: pml
+      integer(c_int), intent(in) :: update_sign
+      real(kind=RKIND), allocatable, target :: psi(:), coefficient_b(:), coefficient_c(:)
+      real(kind=RKIND), allocatable, target :: difference(:), coefficient_g(:), field(:)
+      integer :: node_index
+
+      if (pml%NumNodes <= 0) return
+      allocate(psi(pml%NumNodes), coefficient_b(pml%NumNodes), coefficient_c(pml%NumNodes), &
+            difference(pml%NumNodes), coefficient_g(pml%NumNodes), field(pml%NumNodes))
+      do node_index=1,pml%NumNodes
+         psi(node_index) = pml%Nodes(node_index)%Psi
+         coefficient_b(node_index) = pml%Nodes(node_index)%P_be
+         coefficient_c(node_index) = pml%Nodes(node_index)%P_ce
+         difference(node_index) = pml%Nodes(node_index)%Plus - pml%Nodes(node_index)%Minu
+         coefficient_g(node_index) = pml%Nodes(node_index)%gx2
+         field(node_index) = pml%Nodes(node_index)%field
+      end do
+
+      call cuda_advance_pml_body(psi, coefficient_b, coefficient_c, difference, &
+            coefficient_g, field, update_sign)
+      do node_index=1,pml%NumNodes
+         pml%Nodes(node_index)%Psi = psi(node_index)
+         pml%Nodes(node_index)%field = field(node_index)
+      end do
+   end subroutine advance_pmlbody_cuda
+#endif
 
 
 
