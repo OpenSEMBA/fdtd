@@ -1963,11 +1963,15 @@ contains
       end subroutine performFlushField
 
       subroutine updateAndFlush()
-         integer(kind=4) :: mindum
-         if (this%thereAre%Observation) then
-            if (this%n > 0 .and. mod(this%n, OUTPUT_TIME_BUFFER_SIZE) == 0) then
+         if (this%n > 0 .and. mod(this%n, OUTPUT_TIME_BUFFER_SIZE) == 0) then
+            if (this%thereAre%Observation) then
                call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, .FALSE.)
             end if
+#ifdef CompileWithMPI
+            if (this%control%num_procs > 1) call MPI_Barrier(SUBCOMM_MPI, ierr)
+#endif
+         end if
+         if (this%thereAre%Observation) then
             call update_outputs(this%control, this%sgg%time(this%n), this%n, fieldReference, this%sgg)
          end if
       end subroutine
