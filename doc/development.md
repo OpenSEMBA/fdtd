@@ -47,6 +47,31 @@ If you use intel oneapi compiler, make sure to run
 
 ### Compilation options
 
+#### GNU safe-math Release build
+
+GNU Release builds use `-Ofast` by default. Set
+`SEMBA_FDTD_ENABLE_GNU_SAFE_MATH=ON` to use
+`-O3 -fno-fast-math -ffp-contract=off` for C, C++, and Fortran instead.
+This disables fast-math assumptions and floating-point contraction without
+changing the selected real precision. For example, with GNU compilers,
+OpenMPI, and parallel HDF5 installed (including under Ubuntu WSL):
+
+```shell
+cmake -S . -B build-gnu-rls-mpi-omp-safe -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_Fortran_COMPILER=gfortran \
+  -DCMAKE_C_COMPILER=gcc \
+  -DCMAKE_CXX_COMPILER=g++ \
+  -DSEMBA_FDTD_ENABLE_GNU_SAFE_MATH=ON \
+  -DSEMBA_FDTD_ENABLE_OPENMP=ON \
+  -DSEMBA_FDTD_ENABLE_MPI=ON \
+  -DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=OFF
+cmake --build build-gnu-rls-mpi-omp-safe --parallel
+```
+
+This option affects GNU/Linux Release builds only. A WSL build produces a Linux
+executable, which must be launched inside WSL.
+
 #### NVIDIA GPU / CUDA
 
 `SEMBA_FDTD_ENABLE_CUDA` builds native CUDA kernels for the six regular Yee
