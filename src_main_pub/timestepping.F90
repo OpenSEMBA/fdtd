@@ -70,7 +70,9 @@ module Solver_m
 
    use EpsMuTimeScale_m
    use CALC_CONSTANTS_m
-   use conformal_timestepping_m
+   use conformal_sgbc_m, only: conformal_sgbc_state_t
+   use conformal_fields_m
+   use conformal_pec_m
 #ifdef CompileWithPrescale
    use P_rescale
 #endif              
@@ -83,6 +85,19 @@ module Solver_m
    use nvtx
 #endif
    implicit none
+
+   type :: conformal_surface_face_state_t
+      integer(kind=4), dimension(3) :: cell = 0
+      integer(kind=4) :: face_direction = 0
+      integer(kind=4) :: split_direction = 0
+      real(kind=rkind) :: lower_fraction = 0.0_RKIND
+      real(kind=rkind) :: lower_h = 0.0_RKIND
+      real(kind=rkind) :: upper_h = 0.0_RKIND
+      logical :: is_sgbc = .false.
+      integer(kind=4) :: surface_normal_sign = 0
+      type(conformal_sgbc_state_t) :: sgbc
+   end type conformal_surface_face_state_t
+
 
    type, public :: solver_t
       type(sim_control_t) :: control
@@ -113,6 +128,7 @@ module Solver_m
       logical :: finishedwithsuccess = .false.
       real(kind=rkind) :: eps0,mu0
       type(tagtype_t) :: tagtype
+      type(conformal_surface_face_state_t), allocatable :: conformal_surface_faces(:)
       type(conformal_fields_t) :: conformal_fields
 
 #ifdef CompileWithMTLN
@@ -144,13 +160,13 @@ module Solver_m
       procedure :: advanceNodalH => solver_advanceNodalH
       procedure :: advancePMLbodyH => solver_advancePMLbodyH
       procedure :: advanceMagneticCPML => solver_advanceMagneticCPML
+      procedure :: advanceSGBCE => solver_advanceSGBCE
+      procedure :: advanceSGBCH => solver_advanceSGBCH
       procedure :: advanceConformalE => solver_advanceConformalE
       procedure :: advanceConformalH => solver_advanceConformalH
       procedure :: advanceEDispersiveE => solver_advanceEDispersiveE
       procedure :: advanceMDispersiveH => solver_advanceMDispersiveH
       procedure :: MinusCloneMagneticPMC => solver_MinusCloneMagneticPMC
-      procedure :: advanceSGBCE => solver_advanceSGBCE
-      procedure :: advanceSGBCH => solver_advanceSGBCH
       procedure :: CloneMagneticPeriodic => solver_CloneMagneticPeriodic
       procedure :: advanceMagneticMUR => solver_advanceMagneticMUR
       procedure :: destroy_and_deallocate
@@ -1379,7 +1395,7 @@ contains
          integer :: ierr
          call MPI_Barrier(SUBCOMM_MPI, ierr)
 #endif
-         call initializeConformalFields(this)
+         call initializeConformalFields(this%sgg, this%conformal_fields, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
          ! call initializeConformalSurfaceStates(this)
       end subroutine initializeConformal
 
@@ -2453,41 +2469,12 @@ contains
 
    subroutine solver_advanceConformalH(this)
       class(solver_t) :: this
-      real (kind = rkind), pointer :: H, E1, E2, E3, E4
-      real(kind=rkind) :: id1, id2, corr
-      integer(kind=integersizeofmediamatrices) :: med
       integer(kind=4), dimension(3) :: c
       integer :: i, j, k, n
 
-      do n = 1, size(this%conformal_fields%faces)
-         corr = 0.0
-         c = this%conformal_fields%faces(n)%cell
-         i = c(1); j = c(2); k = c(3)
-         select case (this%conformal_fields%faces(n)%direction)
-         case (FACE_X); med = this%media%sggMiHx(i, j, k); id1 = this%Idze(k); id2 = this%Idye(j)
-         case (FACE_Y); med = this%media%sggMiHy(i, j, k); id1 = this%Idxe(i); id2 = this%Idze(k)
-         case (FACE_Z); med = this%media%sggMiHz(i, j, k); id1 = this%Idye(j); id2 = this%Idxe(i)
-         end select
-         !region 1
-         H  => this%conformal_fields%faces(n)%region_I_fields%H
-         E1 => this%conformal_fields%faces(n)%region_I_fields%E1
-         E2 => this%conformal_fields%faces(n)%region_I_fields%E2
-         E3 => this%conformal_fields%faces(n)%region_I_fields%E3
-         E4 => this%conformal_fields%faces(n)%region_I_fields%E4
-         H = this%g%gm1(med)*H + this%g%gm2(med)*((E2 - E4)*id1 - (E3 - E1)*id2)
-
-
-         !region 2
-         H  => this%conformal_fields%faces(n)%region_II_fields%H
-         E1 => this%conformal_fields%faces(n)%region_II_fields%E1
-         E2 => this%conformal_fields%faces(n)%region_II_fields%E2
-         E3 => this%conformal_fields%faces(n)%region_II_fields%E3
-         E4 => this%conformal_fields%faces(n)%region_II_fields%E4
-
-         corr = computeFaceRegionIICorrection(this%conformal_fields%faces(n))
-         H = this%g%gm1(med)*H + this%g%gm2(med)*corr*((E2 - E4)*id1 - (E3 - E1)*id2)
-
-      end do
+      call advanceConformalHPEC(this%conformal_fields, this%Idze, this%Idye, this%media%sggMiHx, this%g, FACE_X)
+      call advanceConformalHPEC(this%conformal_fields, this%Idxe, this%Idze, this%media%sggMiHy, this%g, FACE_Y)
+      call advanceConformalHPEC(this%conformal_fields, this%Idye, this%Idxe, this%media%sggMiHz, this%g, FACE_Z)
 
       ! The grid E of full edges outside the surface may have been modified after the conformal
       ! update (planewave injection, boundaries...). Their own copy is resynchronised with it.
@@ -2512,132 +2499,117 @@ contains
 
    subroutine solver_advanceConformalE(this)
       class(solver_t) :: this
-      real (kind = rkind), pointer :: E, H1, H2, H3, H4
-      real (kind = rkind) :: E_eff
-
-      real(kind=rkind) :: id1, id2, corr
-      integer(kind=integersizeofmediamatrices) :: med
-      integer(kind=4), dimension(3) :: c
-      integer :: i, j, k, n
-      do n = 1, size(this%conformal_fields%edges)
-         corr = 0.0
-         E_eff = 0.0
-         c = this%conformal_fields%edges(n)%cell
-         i = c(1); j = c(2); k = c(3)
-         select case (this%conformal_fields%edges(n)%direction)
-         case (EDGE_X); med = this%media%sggMiEx(i, j, k); id1 = this%Idze(k); id2 = this%Idye(j)
-         case (EDGE_Y); med = this%media%sggMiEy(i, j, k); id1 = this%Idxe(i); id2 = this%Idze(k)
-         case (EDGE_Z); med = this%media%sggMiEz(i, j, k); id1 = this%Idye(j); id2 = this%Idxe(i)
-         end select
-         !region 1
-         if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_I .or. &
-             this%conformal_fields%edges(n)%edge_region == EDGE_REGION_CONFORMAL) then 
-            E  => this%conformal_fields%edges(n)%region_I_fields%E
-            H1 => this%conformal_fields%edges(n)%region_I_fields%H1
-            H2 => this%conformal_fields%edges(n)%region_I_fields%H2
-            H3 => this%conformal_fields%edges(n)%region_I_fields%H3
-            H4 => this%conformal_fields%edges(n)%region_I_fields%H4
-            E = this%g%g1(med)*E + this%g%g2(med)*((H1 - H3)*id2 - (H4-H2)*id1)
-            E_eff = E
-
-         end if
-         !region 2
-         if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_II .or. &
-             this%conformal_fields%edges(n)%edge_region == EDGE_REGION_CONFORMAL) then 
-            E  => this%conformal_fields%edges(n)%region_II_fields%E
-            H1 => this%conformal_fields%edges(n)%region_II_fields%H1
-            H2 => this%conformal_fields%edges(n)%region_II_fields%H2
-            H3 => this%conformal_fields%edges(n)%region_II_fields%H3
-            H4 => this%conformal_fields%edges(n)%region_II_fields%H4
-
-            corr = computeEdgeRegionIICorrection(this%conformal_fields%edges(n))
-            E = this%g%g1(med)*E + this%g%g2(med)*corr*((H1 - H3)*id2 - (H4-H2)*id1)
-            E_eff = E_eff + E
-
-         end if
-         select case (this%conformal_fields%edges(n)%direction)
-         case (EDGE_X); this%Ex(i,j,k) = E_eff
-         case (EDGE_Y); this%Ey(i,j,k) = E_eff
-         case (EDGE_Z); this%Ez(i,j,k) = E_eff
-         end select
-
-      end do
-
+      call advanceConformalEPEC(this%conformal_fields, this%Idze, this%Idye, this%media%sggMiEx, this%Ex, this%g, EDGE_X)
+      call advanceConformalEPEC(this%conformal_fields, this%Idxe, this%Idze, this%media%sggMiEy, this%Ey, this%g, EDGE_Y)
+      call advanceConformalEPEC(this%conformal_fields, this%Idye, this%Idxe, this%media%sggMiEz, this%Ez, this%g, EDGE_Z)
    end subroutine
 
-   subroutine initializeConformalFields(this)
-      class(solver_t) :: this
-      type(face_t), pointer :: face, face_of_edge
-      type(edge_t), pointer :: edge
-      type(edge_t), dimension(:), allocatable :: aux_edges
-      type(conformal_maps_t) :: conformal_maps
-      type(map_key_t), dimension(4) :: edges_on_face, faces_on_edge
-      integer(kind=4), dimension(3) :: cell
-      integer :: i,j,k,n
+   ! subroutine initializeConformalSurfaceStates(this)
+   !    class(solver_t) :: this
+   !    type(conformal_surface_face_state_t), allocatable :: states(:), enlarged(:)
+   !    integer :: medium, feature, split_direction, transverse_direction
+   !    type(face_t) :: face
+   !    real(kind=rkind) :: lower_fraction, grid_step
+   !    logical :: medium_is_sgbc
 
-      n = 0
-      do i = 1, this%sgg%NumMedia
-         if (isConformalSurface(this%sgg%Med(i))) n = n + 1
-      end do
-      if (n == 0) then 
-         allocate(this%conformal_fields%faces(0))
-         allocate(this%conformal_fields%edges(0))
-         return 
-      end if
+   !    if (allocated(this%sgg%ConformalSGBCProfiles)) then
+   !       if (size(this%sgg%ConformalSGBCProfiles) > 0) then
+   !          if (this%control%num_procs > 1) then
+   !             call WarnErrReport('Conformal SGBC is not supported with more than one MPI rank.', .true.)
+   !             return
+   !          end if
+   !          if (this%control%resume) then
+   !             call WarnErrReport('Restart/resume is not supported for conformal SGBC.', .true.)
+   !             return
+   !          end if
+   !          if (.not. this%control%sgbccrank) then
+   !             call WarnErrReport('Conformal SGBC requires Crank-Nicolson time advancement.', .true.)
+   !             return
+   !          end if
+   !          if (this%control%stochastic) then
+   !             call WarnErrReport('Stochastic material deviations are not supported for conformal SGBC.', .true.)
+   !             return
+   !          end if
+   !       end if
+   !    end if
 
-      do i = 1, this%sgg%NumMedia
-         if (.not. (isConformalSurface(this%sgg%Med(i)))) cycle
-         call addConformalFaces(this%conformal_fields%faces, this%sgg%Med(i)%ConformalFace)
-         call addConformalEdges(this%conformal_fields%edges, this%sgg%Med(i)%ConformalEdge)
-      end do
+   !    allocate(states(0))
+   !    do medium = 1, this%sgg%NumMedia
+   !       if (.not. (this%sgg%Med(medium)%Is%ConformalPEC .or. &
+   !           this%sgg%Med(medium)%Is%ConformalSGBC) .or. &
+   !           .not. this%sgg%Med(medium)%Is%Surface) cycle
+   !       medium_is_sgbc = this%sgg%Med(medium)%Is%ConformalSGBC
+   !       if (.not. allocated(this%sgg%Med(medium)%ConformalFace)) cycle
+   !       do feature = 1, size(this%sgg%Med(medium)%ConformalFace)
+   !          face = this%sgg%Med(medium)%ConformalFace(feature)
+   !          if (.not. face%is_two_sided) cycle
+   !          split_direction = face%split_direction
+   !          lower_fraction = face%lower_fraction
+   !          if (lower_fraction <= 1.0e-5_RKIND .or. lower_fraction >= 1.0_RKIND-1.0e-5_RKIND) cycle
+   !          if (surfaceStateExists(states, face%cell, face%direction)) cycle
+   !          allocate(enlarged(size(states)+1))
+   !          if (size(states) > 0) enlarged(1:size(states)) = states
+   !          enlarged(size(enlarged))%cell = face%cell
+   !          enlarged(size(enlarged))%face_direction = face%direction
+   !          enlarged(size(enlarged))%split_direction = split_direction
+   !          enlarged(size(enlarged))%lower_fraction = lower_fraction
+   !          enlarged(size(enlarged))%is_sgbc = medium_is_sgbc
+   !          enlarged(size(enlarged))%surface_normal_sign = face%surface_normal_sign
+   !          if (medium_is_sgbc) then
+   !             if (face%sgbc_profile_index < 1 .or. &
+   !                 face%sgbc_profile_index > size(this%sgg%ConformalSGBCProfiles) .or. &
+   !                 face%surface_normal_sign == 0) then
+   !                call WarnErrReport('Conformal SGBC face has invalid material or winding metadata.', .true.)
+   !                return
+   !             end if
+   !             transverse_direction = 6-face%direction-split_direction
+   !             if (transverse_direction < 1 .or. transverse_direction > 3) then
+   !                call WarnErrReport('Conformal SGBC face has an invalid split topology.', .true.)
+   !                return
+   !             end if
+   !             select case(split_direction)
+   !             case(1); grid_step = 1.0_RKIND/this%Idxe(face%cell(1))
+   !             case(2); grid_step = 1.0_RKIND/this%Idye(face%cell(2))
+   !             case(3); grid_step = 1.0_RKIND/this%Idze(face%cell(3))
+   !             end select
+   !             call enlarged(size(enlarged))%sgbc%init( &
+   !                this%sgg%ConformalSGBCProfiles(face%sgbc_profile_index), this%sgg%dt, &
+   !                lower_fraction*grid_step, (1.0_RKIND-lower_fraction)*grid_step, &
+   !                this%control%sgbcFreq, this%control%sgbcresol, this%control%sgbcdepth, &
+   !                face%surface_normal_sign < 0)
+   !          end if
+   !          call move_alloc(enlarged, states)
+   !       end do
+   !    end do
+   !    call move_alloc(states, this%conformal_surface_faces)
+   ! end subroutine initializeConformalSurfaceStates
 
-      call buildConformalMaps(conformal_maps%face_map, & 
-                              conformal_maps%edge_map, & 
-                              this%conformal_fields%faces, &
-                              this%conformal_fields%edges)
+   ! logical function surfaceStateExists(states, cell, direction)
+   !    type(conformal_surface_face_state_t), dimension(:), intent(in) :: states
+   !    integer(kind=4), dimension(3), intent(in) :: cell
+   !    integer, intent(in) :: direction
+   !    integer :: n
+   !    surfaceStateExists = .false.
+   !    do n = 1, size(states)
+   !       if (states(n)%face_direction == direction .and. all(states(n)%cell == cell)) then
+   !          surfaceStateExists = .true.
+   !          return
+   !       end if
+   !    end do
+   ! end function surfaceStateExists
 
-      call addAdditionalConformalFeatures(conformal_maps, &
-                                          this%conformal_fields%edges)
-
-      do i = 1, size(conformal_maps%face_map%keys)
-         face => conformal_maps%face_map%getFace(conformal_maps%face_map%keys(i)%key)
-         allocate(face%region_I_fields%H)
-         face%region_I_fields%H = 0.0
-         allocate(face%region_II_fields%H)
-         face%region_II_fields%H = 0.0
-         if (.not. face%is_two_sided) cycle
-         edges_on_face = buildEdgesOnFace(face%cell, face%direction)
-         do j = 1, size(edges_on_face)
-
-            edge => conformal_maps%edge_map%getEdge(edges_on_face(j)%key)
-            if (.not. edge%is_two_sided) then 
-               call assignEdgeFieldsOnFace(this%Ex, this%Ey, this%Ez, face, edges_on_face(j), j)
-            else
-               call assignSplitEdgeFieldsOnFace(face, edge, j)
-            end if
-
-            faces_on_edge = buildFacesOnEdge(edge%cell, edge%direction)
-            do k = 1, size(faces_on_edge)
-               if (.not. conformal_maps%face_map%hasKey(faces_on_edge(k)%key)) then 
-                  cell = faces_on_edge(k)%key(1:3)
-                  call assignFaceFieldsOnEdge(this%Hx,this%Hy,this%Hz, edge, k, cell)
-               else
-                  face_of_edge => conformal_maps%face_map%getFace(faces_on_edge(k)%key)
-                  call assignSplitFaceFieldsOnEdge(face_of_edge, edge, k)
-               end if
-            end do
-
-         end do
-      end do
-   
-   end subroutine
-
-   logical function isConformalSurface(medium)
-      type(MediaData_t), intent(in) :: medium
-      isConformalSurface = medium%Is%ConformalPEC .and. & 
-                           medium%Is%Surface .and. &
-                           .not. medium%is%pml
-   end function
+   ! real(kind=rkind) function leviCivita(first, second, third) result(value)
+   !    integer, intent(in) :: first, second, third
+   !    if (first == second .or. second == third .or. first == third) then
+   !       value = 0.0_RKIND
+   !    else if ((first == 1 .and. second == 2 .and. third == 3) .or. &
+   !             (first == 2 .and. second == 3 .and. third == 1) .or. &
+   !             (first == 3 .and. second == 1 .and. third == 2)) then
+   !       value = 1.0_RKIND
+   !    else
+   !       value = -1.0_RKIND
+   !    end if
+   ! end function leviCivita
 
    subroutine solver_advanceEDispersiveE(this)
       class(solver_t) :: this
@@ -3017,6 +2989,7 @@ contains
       call DestroyPMLbodies(this%sgg)
       call DestroyMURBorders
       !Destroy the remaining
+      if (allocated(this%conformal_surface_faces)) deallocate(this%conformal_surface_faces)
       deallocate(this%sgg%Med,this%sgg%LineX,this%sgg%LineY,this%sgg%LineZ,this%sgg%DX,this%sgg%DY,this%sgg%DZ,this%sgg%time)
       call this%g%destroy()
       deallocate(this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)

@@ -1,10 +1,12 @@
-module conformal_timestepping_m
+module conformal_fields_m
     use conformal_types_m, only: map_key_t
     use geometry_m, only: buildEdgesOnFace, buildFacesOnEdge
-    use FDETypes_m, only: face_t, edge_t, FACE_X, FACE_Y, FACE_Z, EDGE_X, EDGE_Y, EDGE_Z, EDGE_REGION_CONFORMAL, EDGE_REGION_I, EDGE_REGION_II
+    use FDETypes_m, only: face_t, edge_t, FACE_X, FACE_Y, FACE_Z, EDGE_X, EDGE_Y, EDGE_Z, EDGE_REGION_CONFORMAL, EDGE_REGION_I, EDGE_REGION_II, MediaData_t, SGGFDTDINFO_t
     use NFDETypes_m, only: rkind
     use fhash, only: fhash_tbl_t, key=>fhash_key
     use Report_m
+
+    implicit none
 
     type, extends(fhash_tbl_t) :: face_map_t
         type(map_key_t), dimension(:), allocatable :: keys
@@ -31,9 +33,89 @@ module conformal_timestepping_m
     type, public :: conformal_fields_t
         type(face_t), dimension(:), allocatable :: faces
         type(edge_t), dimension(:), allocatable :: edges
+        integer, dimension(:,:), allocatable :: edges_id_list
+        integer, dimension(:,:), allocatable :: faces_id_list
     end type
 
 contains
+
+    subroutine initializeConformalFields(sgg, conformal_fields, Ex, Ey, Ez, Hx, Hy, Hz)
+        type(SGGFDTDINFO_t), intent(in) :: sgg
+        type(conformal_fields_t), intent(inout) :: conformal_fields
+        real(kind=rkind), pointer, dimension(:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
+        
+        type(face_t), pointer :: face, face_of_edge
+        type(edge_t), pointer :: edge
+        type(edge_t), dimension(:), allocatable :: aux_edges
+        type(conformal_maps_t) :: conformal_maps
+        type(map_key_t), dimension(4) :: edges_on_face, faces_on_edge
+        integer(kind=4), dimension(3) :: cell
+        integer :: i,j,k,n
+
+        n = 0
+        do i = 1, sgg%NumMedia
+            if (isConformalSurface(sgg%Med(i))) n = n + 1
+        end do
+        if (n == 0) then 
+            allocate(conformal_fields%faces(0))
+            allocate(conformal_fields%edges(0))
+            allocate(conformal_fields%edges_id_list(3,0), conformal_fields%faces_id_list(3,0))            
+            return 
+        end if
+
+        do i = 1, sgg%NumMedia
+            if (.not. (isConformalSurface(sgg%Med(i)))) cycle
+            call addConformalFaces(conformal_fields%faces, sgg%Med(i)%ConformalFace)
+            call addConformalEdges(conformal_fields%edges, sgg%Med(i)%ConformalEdge)
+        end do
+
+        call buildConformalMaps(conformal_maps%face_map, & 
+                                conformal_maps%edge_map, & 
+                                conformal_fields%faces, &
+                                conformal_fields%edges)
+
+        call addAdditionalConformalFeatures(conformal_maps, &
+                                            conformal_fields%edges)
+        call buildIndexLists(conformal_fields)
+        do i = 1, size(conformal_maps%face_map%keys)
+            face => conformal_maps%face_map%getFace(conformal_maps%face_map%keys(i)%key)
+            allocate(face%region_I_fields%H)
+            face%region_I_fields%H = 0.0
+            allocate(face%region_II_fields%H)
+            face%region_II_fields%H = 0.0
+            if (.not. face%is_two_sided) cycle
+            edges_on_face = buildEdgesOnFace(face%cell, face%direction)
+            do j = 1, size(edges_on_face)
+
+                edge => conformal_maps%edge_map%getEdge(edges_on_face(j)%key)
+                if (.not. edge%is_two_sided) then 
+                    call assignEdgeFieldsOnFace(Ex, Ey, Ez, face, edges_on_face(j), j)
+                else
+                    call assignSplitEdgeFieldsOnFace(face, edge, j)
+                end if
+
+                faces_on_edge = buildFacesOnEdge(edge%cell, edge%direction)
+                do k = 1, size(faces_on_edge)
+                    if (.not. conformal_maps%face_map%hasKey(faces_on_edge(k)%key)) then 
+                        cell = faces_on_edge(k)%key(1:3)
+                        call assignFaceFieldsOnEdge(Hx,Hy,Hz, edge, k, cell)
+                    else
+                        face_of_edge => conformal_maps%face_map%getFace(faces_on_edge(k)%key)
+                        call assignSplitFaceFieldsOnEdge(face_of_edge, edge, k)
+                    end if
+                end do
+
+            end do
+        end do
+    
+    end subroutine
+
+    logical function isConformalSurface(medium)
+        type(MediaData_t), intent(in) :: medium
+        isConformalSurface = (medium%Is%ConformalPEC .or. medium%Is%ConformalSGBC) .and. & 
+                            medium%Is%Surface .and. &
+                            .not. medium%is%pml
+    end function
 
     subroutine addAdditionalConformalFeatures(conf_maps, conformal_edges)
         type(conformal_maps_t), intent(inout) :: conf_maps
@@ -115,6 +197,43 @@ contains
                                               edge_on_face%key(4) == face%contour_inside_edges(l)%direction)
         end do
     end function
+
+    subroutine buildIndexLists(conformal_fields)
+        type(conformal_fields_t), intent(inout) :: conformal_fields
+        integer :: i, d
+        integer, dimension(3) :: n_edges, n_faces
+
+        n_edges = 0
+        do i = 1, size(conformal_fields%edges)
+            d = conformal_fields%edges(i)%direction
+            n_edges(d) = n_edges(d) + 1
+        end do
+        n_faces = 0
+        do i = 1, size(conformal_fields%faces)
+            d = conformal_fields%faces(i)%direction
+            n_faces(d) = n_faces(d) + 1
+        end do
+
+        if (allocated(conformal_fields%edges_id_list)) deallocate(conformal_fields%edges_id_list)
+        if (allocated(conformal_fields%faces_id_list)) deallocate(conformal_fields%faces_id_list)
+        allocate(conformal_fields%edges_id_list(3, maxval(n_edges)))
+        allocate(conformal_fields%faces_id_list(3, maxval(n_faces)))
+        conformal_fields%edges_id_list = 0
+        conformal_fields%faces_id_list = 0
+
+        n_edges = 0
+        do i = 1, size(conformal_fields%edges)
+            d = conformal_fields%edges(i)%direction
+            n_edges(d) = n_edges(d) + 1
+            conformal_fields%edges_id_list(d, n_edges(d)) = i
+        end do
+        n_faces = 0
+        do i = 1, size(conformal_fields%faces)
+            d = conformal_fields%faces(i)%direction
+            n_faces(d) = n_faces(d) + 1
+            conformal_fields%faces_id_list(d, n_faces(d)) = i
+        end do
+    end subroutine
 
     subroutine assignEdgeFieldsOnFace(Ex, Ey, Ez, face, edge_on_face, j)
         real(kind=rkind), pointer, dimension(:,:,:) :: Ex, Ey, Ez
