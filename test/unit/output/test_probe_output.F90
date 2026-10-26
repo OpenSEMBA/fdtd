@@ -152,6 +152,7 @@ integer function test_estimate_point_probe_memory() bind(c) result(err)
    test_err = test_err + assert_integer_equal(sum(counts), 1, 'Unexpected outputs counted')
    test_err = test_err + assert_true(bytes(POINT_PROBE_ID) == expectedBytes, 'Unexpected point probe buffer bytes')
 
+   call close_outputs()
    call remove_folder(testPath, ios)
    deallocate (sgg%Observation, outputs)
 
