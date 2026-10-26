@@ -112,5 +112,51 @@ contains
             H = g%gm1(med)*H + g%gm2(med)*corr*((E2 - E4)*Id1 - (E3 - E1)*Id2)
         end do
     end subroutine
-        
+
+    subroutine advanceConformalHSGBC(conformal_fields, Id_dir1, Id_dir2, sggMed, g, direction)
+        type(conformal_fields_t), intent(inout) :: conformal_fields
+        real(kind=rkind), pointer, dimension(:) :: Id_dir1, Id_dir2
+        integer(kind=INTEGERSIZEOFMEDIAMATRICES), allocatable, dimension(:,:,:) :: sggMed
+        type(constants_t), intent(in) :: g
+        integer(kind=4), intent(in) :: direction
+
+        real(kind=rkind), pointer :: H, E1, E2, E3, E4, Etan
+        real(kind=rkind) :: Id1, Id2, corr
+        integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: med
+        integer(kind=4), dimension(3) :: c
+        integer :: i, j, k, n, id
+
+        do n = 1, size(conformal_fields%faces_id_list, 2)
+            id = conformal_fields%faces_id_list(direction, n)
+            if (id == 0) exit
+            c = conformal_fields%faces(id)%cell
+            i = c(1); j = c(2); k = c(3)
+            med = sggMed(i, j, k)
+            select case (direction)
+                case (FACE_X); Id1 = Id_dir1(k); Id2 = Id_dir2(j)
+                case (FACE_Y); Id1 = Id_dir1(i); Id2 = Id_dir2(k)
+                case (FACE_Z); Id1 = Id_dir1(j); Id2 = Id_dir2(i)
+            end select
+
+            ! region 1
+            H  => conformal_fields%faces(id)%region_I_fields%H
+            E1 => conformal_fields%faces(id)%region_I_fields%E1
+            E2 => conformal_fields%faces(id)%region_I_fields%E2
+            E3 => conformal_fields%faces(id)%region_I_fields%E3
+            E4 => conformal_fields%faces(id)%region_I_fields%E4
+            Etan => conformal_fields%faces(id)%region_I_fields%Etan
+            H = g%gm1(med)*H + g%gm2(med)*((E2 - E4)*Id1 - (E3 - E1)*Id2) - g%gm2(med)*conformal_fields%faces(id)%length*Etan
+
+            ! region 2
+            H  => conformal_fields%faces(id)%region_II_fields%H
+            E1 => conformal_fields%faces(id)%region_II_fields%E1
+            E2 => conformal_fields%faces(id)%region_II_fields%E2
+            E3 => conformal_fields%faces(id)%region_II_fields%E3
+            E4 => conformal_fields%faces(id)%region_II_fields%E4
+            Etan => conformal_fields%faces(id)%region_II_fields%Etan
+            corr = computeFaceRegionIICorrection(conformal_fields%faces(id))
+            H = g%gm1(med)*H + g%gm2(med)*corr*((E2 - E4)*Id1 - (E3 - E1)*Id2) - g%gm2(med)*conformal_fields%faces(id)%length*Etan
+        end do
+    end subroutine
+
 end module
