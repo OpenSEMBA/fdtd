@@ -2034,6 +2034,96 @@ def test_conformal_sphere_rcs(tmp_path):
 
     assert np.corrcoef(rcs[5:150], rcs_interp[5:150])[0, 1] > 0.98
 
+@pytest.mark.conformal
+@pytest.mark.probes
+def test_conformal_panel(tmp_path):
+    """Verify conformal PEC panel transmits no field."""
+    case_name = "conformal_SE"
+    solver = FDTD(
+        input_filename=TEST_DATA_FOLDER + "cases/conformal/" + case_name + ".fdtd.json",
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path,
+    )
+    solver.cleanUp()
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+    back = Probe(solver.getSolvedProbeFolders("back")[0])
+
+    t = back['time']
+    dt = t[1] - t[0]
+    fq  = fftfreq(len(t))/dt
+    INC = fft(back['incident'])
+    BACK  = fft(back['field'])
+    S21 = BACK/INC
+
+    fmin = 1e7
+    fmax = 1e9
+    idx_min = (np.abs(fq - fmin)).argmin()
+    idx_max = (np.abs(fq - fmax)).argmin()
+    fdtd_s21 = S21[idx_min:idx_max]
+    assert np.all(back['field'] == 0.0)
+    assert np.all(np.abs(fdtd_s21) == 0.0)
+
+@pytest.mark.conformal
+@pytest.mark.probes
+def test_conformal_box(tmp_path):
+    """Verify conformal hollow and solid PEC box give the same reslts"""
+    case_name = "conformal_box"
+    solver = FDTD(
+        input_filename=TEST_DATA_FOLDER + "cases/conformal/" + case_name + ".fdtd.json",
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path,
+    )
+    solver["mesh"]["elements"][3]["subtype"] = "volume"
+    solver.cleanUp()
+    solver.run()
+
+    inside_volume = Probe(solver.getSolvedProbeFolders("back")[0])
+    outside_volume = Probe(solver.getSolvedProbeFolders("front")[0])
+
+    solver["mesh"]["elements"][3]["subtype"] = "surface"
+    solver.cleanUp()
+    solver.run()
+
+    inside_surface = Probe(solver.getSolvedProbeFolders("back")[0])
+    outside_surface = Probe(solver.getSolvedProbeFolders("front")[0])
+
+    #transmitted
+    assert np.all(inside_surface['field'] == 0.0)
+    assert np.all(inside_volume['field'] == 0.0)
+    #reflected
+    assert np.corrcoef(outside_surface['field'], outside_volume['field'])[0, 1] > 0.99
+
+@pytest.mark.conformal
+@pytest.mark.probes
+def test_conformal_sphere(tmp_path):
+    """Verify conformal hollow and solid PEC box give the same reslts"""
+    case_name = "conformal_sphere"
+    solver = FDTD(
+        input_filename=TEST_DATA_FOLDER + "cases/conformal/" + case_name + ".fdtd.json",
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path,
+    )
+    solver["mesh"]["elements"][0]["subtype"] = "volume"
+    solver.cleanUp()
+    solver.run()
+
+    inside_volume = Probe(solver.getSolvedProbeFolders("inside")[0])
+    outside_volume = Probe(solver.getSolvedProbeFolders("outside")[0])
+
+    solver["mesh"]["elements"][0]["subtype"] = "surface"
+    solver.cleanUp()
+    solver.run()
+
+    inside_surface = Probe(solver.getSolvedProbeFolders("inside")[0])
+    outside_surface = Probe(solver.getSolvedProbeFolders("outside")[0])
+
+    #transmitted
+    assert np.all(inside_surface['field'] == 0.0)
+    assert np.all(inside_volume['field'] == 0.0)
+    #reflected
+    assert np.corrcoef(outside_surface['field'], outside_volume['field'])[0, 1] > 0.98
 
 @pytest.mark.conformal
 @pytest.mark.probes
@@ -2078,6 +2168,20 @@ def test_conformal_delay(tmp_path):
         tdelta = t4 + 2 * (i * 1.0 / n) * 0.02 / 3e8
         assert np.abs(delay - tdelta) / tdelta < 0.01
 
+
+
+
+
+@pytest.mark.conformal
+def test_PEC_conformal_box_without_triangles(tmp_path):
+    fn = CASES_FOLDER + 'conformal/conformal_interval_box.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver.run()
+    Ein  = Probe(_get_solved_probe_folder(solver, "inside", contains="_Ex_"))
+    Eout = Probe(_get_solved_probe_folder(solver, "outside", contains="_Ex_"))
+    assert np.all(Ein["field"] == 0.0)
+    assert np.any(Eout["field"] != 0.0)
 
 @no_mtln_skip
 @pytest.mark.mtln
