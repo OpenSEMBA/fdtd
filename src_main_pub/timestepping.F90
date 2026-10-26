@@ -71,7 +71,8 @@ module Solver_m
    use EpsMuTimeScale_m
    use CALC_CONSTANTS_m
    use conformal_sgbc_m, only: conformal_sgbc_state_t
-   use conformal_timestepping_m
+   use conformal_fields_m
+   use conformal_pec_m
 #ifdef CompileWithPrescale
    use P_rescale
 #endif              
@@ -1394,7 +1395,7 @@ contains
          integer :: ierr
          call MPI_Barrier(SUBCOMM_MPI, ierr)
 #endif
-         call initializeConformalFields(this)
+         call initializeConformalFields(this%sgg, this%conformal_fields, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
          ! call initializeConformalSurfaceStates(this)
       end subroutine initializeConformal
 
@@ -2468,191 +2469,40 @@ contains
 
    subroutine solver_advanceConformalH(this)
       class(solver_t) :: this
-      real (kind = rkind), pointer :: H, E1, E2, E3, E4
-      real(kind=rkind) :: id1, id2, corr
-      integer(kind=integersizeofmediamatrices) :: med
       integer(kind=4), dimension(3) :: c
       integer :: i, j, k, n
 
-      do n = 1, size(this%conformal_fields%faces)
-         corr = 0.0
-         c = this%conformal_fields%faces(n)%cell
+      call advanceConformalHPEC(this%conformal_fields, this%Idze, this%Idye, this%media%sggMiHx, this%g, FACE_X)
+      call advanceConformalHPEC(this%conformal_fields, this%Idxe, this%Idze, this%media%sggMiHy, this%g, FACE_Y)
+      call advanceConformalHPEC(this%conformal_fields, this%Idye, this%Idxe, this%media%sggMiHz, this%g, FACE_Z)
+
+      ! The grid E of full edges outside the surface may have been modified after the conformal
+      ! update (planewave injection, boundaries...). Their own copy is resynchronised with it.
+      do n = 1, size(this%conformal_fields%edges)
+         c = this%conformal_fields%edges(n)%cell
          i = c(1); j = c(2); k = c(3)
-         select case (this%conformal_fields%faces(n)%direction)
-         case (FACE_X); med = this%media%sggMiHx(i, j, k); id1 = this%Idze(k); id2 = this%Idye(j)
-         case (FACE_Y); med = this%media%sggMiHy(i, j, k); id1 = this%Idxe(i); id2 = this%Idze(k)
-         case (FACE_Z); med = this%media%sggMiHz(i, j, k); id1 = this%Idye(j); id2 = this%Idxe(i)
-         end select
-         !region 1
-         H  => this%conformal_fields%faces(n)%region_I_fields%H
-         E1 => this%conformal_fields%faces(n)%region_I_fields%E1
-         E2 => this%conformal_fields%faces(n)%region_I_fields%E2
-         E3 => this%conformal_fields%faces(n)%region_I_fields%E3
-         E4 => this%conformal_fields%faces(n)%region_I_fields%E4
-         H = this%g%gm1(med)*H + this%g%gm2(med)*((E2 - E4)*id1 - (E3 - E1)*id2)
-
-
-         !region 2
-         H  => this%conformal_fields%faces(n)%region_II_fields%H
-         E1 => this%conformal_fields%faces(n)%region_II_fields%E1
-         E2 => this%conformal_fields%faces(n)%region_II_fields%E2
-         E3 => this%conformal_fields%faces(n)%region_II_fields%E3
-         E4 => this%conformal_fields%faces(n)%region_II_fields%E4
-
-         corr = computeFaceRegionIICorrection(this%conformal_fields%faces(n))
-         H = this%g%gm1(med)*H + this%g%gm2(med)*corr*((E2 - E4)*id1 - (E3 - E1)*id2)
-
+         if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_I) then 
+            select case (this%conformal_fields%edges(n)%direction)
+               case (EDGE_X); this%conformal_fields%edges(n)%region_I_fields%E = this%Ex(i,j,k)
+               case (EDGE_Y); this%conformal_fields%edges(n)%region_I_fields%E = this%Ey(i,j,k)
+               case (EDGE_Z); this%conformal_fields%edges(n)%region_I_fields%E = this%Ez(i,j,k)
+            end select
+         else if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_II) then 
+            select case (this%conformal_fields%edges(n)%direction)
+               case (EDGE_X); this%conformal_fields%edges(n)%region_II_fields%E = this%Ex(i,j,k)
+               case (EDGE_Y); this%conformal_fields%edges(n)%region_II_fields%E = this%Ey(i,j,k)
+               case (EDGE_Z); this%conformal_fields%edges(n)%region_II_fields%E = this%Ez(i,j,k)
+            end select
+         end if
       end do
-
-      ! ! The grid E of full edges outside the surface may have been modified after the conformal
-      ! ! update (planewave injection, boundaries...). Their own copy is resynchronised with it.
-      ! do n = 1, size(this%conformal_fields%edges)
-      !    c = this%conformal_fields%edges(n)%cell
-      !    i = c(1); j = c(2); k = c(3)
-      !    if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_I) then 
-      !       select case (this%conformal_fields%edges(n)%direction)
-      !          case (EDGE_X); this%conformal_fields%edges(n)%region_I_fields%E = this%Ex(i,j,k)
-      !          case (EDGE_Y); this%conformal_fields%edges(n)%region_I_fields%E = this%Ey(i,j,k)
-      !          case (EDGE_Z); this%conformal_fields%edges(n)%region_I_fields%E = this%Ez(i,j,k)
-      !       end select
-      !    else if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_II) then 
-      !       select case (this%conformal_fields%edges(n)%direction)
-      !          case (EDGE_X); this%conformal_fields%edges(n)%region_II_fields%E = this%Ex(i,j,k)
-      !          case (EDGE_Y); this%conformal_fields%edges(n)%region_II_fields%E = this%Ey(i,j,k)
-      !          case (EDGE_Z); this%conformal_fields%edges(n)%region_II_fields%E = this%Ez(i,j,k)
-      !       end select
-      !    end if
-      ! end do
    end subroutine
 
    subroutine solver_advanceConformalE(this)
       class(solver_t) :: this
-      real (kind = rkind), pointer :: E, H1, H2, H3, H4
-      real (kind = rkind) :: E_eff
-
-      real(kind=rkind) :: id1, id2, corr
-      integer(kind=integersizeofmediamatrices) :: med
-      integer(kind=4), dimension(3) :: c
-      integer :: i, j, k, n
-      do n = 1, size(this%conformal_fields%edges)
-         corr = 0.0
-         E_eff = 0.0
-         c = this%conformal_fields%edges(n)%cell
-         i = c(1); j = c(2); k = c(3)
-         select case (this%conformal_fields%edges(n)%direction)
-         case (EDGE_X); med = this%media%sggMiEx(i, j, k); id1 = this%Idze(k); id2 = this%Idye(j)
-         case (EDGE_Y); med = this%media%sggMiEy(i, j, k); id1 = this%Idxe(i); id2 = this%Idze(k)
-         case (EDGE_Z); med = this%media%sggMiEz(i, j, k); id1 = this%Idye(j); id2 = this%Idxe(i)
-         end select
-         !region 1
-         if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_I .or. &
-             this%conformal_fields%edges(n)%edge_region == EDGE_REGION_CONFORMAL) then 
-            E  => this%conformal_fields%edges(n)%region_I_fields%E
-            H1 => this%conformal_fields%edges(n)%region_I_fields%H1
-            H2 => this%conformal_fields%edges(n)%region_I_fields%H2
-            H3 => this%conformal_fields%edges(n)%region_I_fields%H3
-            H4 => this%conformal_fields%edges(n)%region_I_fields%H4
-            E = this%g%g1(med)*E + this%g%g2(med)*((H1 - H3)*id2 - (H4-H2)*id1)
-            E_eff = E
-
-         end if
-         !region 2
-         if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_II .or. &
-             this%conformal_fields%edges(n)%edge_region == EDGE_REGION_CONFORMAL) then 
-            E  => this%conformal_fields%edges(n)%region_II_fields%E
-            H1 => this%conformal_fields%edges(n)%region_II_fields%H1
-            H2 => this%conformal_fields%edges(n)%region_II_fields%H2
-            H3 => this%conformal_fields%edges(n)%region_II_fields%H3
-            H4 => this%conformal_fields%edges(n)%region_II_fields%H4
-
-            corr = computeEdgeRegionIICorrection(this%conformal_fields%edges(n))
-            E = this%g%g1(med)*E + this%g%g2(med)*corr*((H1 - H3)*id2 - (H4-H2)*id1)
-            E_eff = E_eff + E
-
-         end if
-         select case (this%conformal_fields%edges(n)%direction)
-         case (EDGE_X); this%Ex(i,j,k) = E_eff
-         case (EDGE_Y); this%Ey(i,j,k) = E_eff
-         case (EDGE_Z); this%Ez(i,j,k) = E_eff
-         end select
-
-      end do
-
+      call advanceConformalEPEC(this%conformal_fields, this%Idze, this%Idye, this%media%sggMiEx, this%Ex, this%g, EDGE_X)
+      call advanceConformalEPEC(this%conformal_fields, this%Idxe, this%Idze, this%media%sggMiEy, this%Ey, this%g, EDGE_Y)
+      call advanceConformalEPEC(this%conformal_fields, this%Idye, this%Idxe, this%media%sggMiEz, this%Ez, this%g, EDGE_Z)
    end subroutine
-
-   subroutine initializeConformalFields(this)
-      class(solver_t) :: this
-      type(face_t), pointer :: face, face_of_edge
-      type(edge_t), pointer :: edge
-      type(edge_t), dimension(:), allocatable :: aux_edges
-      type(conformal_maps_t) :: conformal_maps
-      type(map_key_t), dimension(4) :: edges_on_face, faces_on_edge
-      integer(kind=4), dimension(3) :: cell
-      integer :: i,j,k,n
-
-      n = 0
-      do i = 1, this%sgg%NumMedia
-         if (isConformalSurface(this%sgg%Med(i))) n = n + 1
-      end do
-      if (n == 0) then 
-         allocate(this%conformal_fields%faces(0))
-         allocate(this%conformal_fields%edges(0))
-         return 
-      end if
-
-      do i = 1, this%sgg%NumMedia
-         if (.not. (isConformalSurface(this%sgg%Med(i)))) cycle
-         call addConformalFaces(this%conformal_fields%faces, this%sgg%Med(i)%ConformalFace)
-         call addConformalEdges(this%conformal_fields%edges, this%sgg%Med(i)%ConformalEdge)
-      end do
-
-      call buildConformalMaps(conformal_maps%face_map, & 
-                              conformal_maps%edge_map, & 
-                              this%conformal_fields%faces, &
-                              this%conformal_fields%edges)
-
-      call addAdditionalConformalFeatures(conformal_maps, &
-                                          this%conformal_fields%edges)
-
-      do i = 1, size(conformal_maps%face_map%keys)
-         face => conformal_maps%face_map%getFace(conformal_maps%face_map%keys(i)%key)
-         allocate(face%region_I_fields%H)
-         face%region_I_fields%H = 0.0
-         allocate(face%region_II_fields%H)
-         face%region_II_fields%H = 0.0
-         if (.not. face%is_two_sided) cycle
-         edges_on_face = buildEdgesOnFace(face%cell, face%direction)
-         do j = 1, size(edges_on_face)
-
-            edge => conformal_maps%edge_map%getEdge(edges_on_face(j)%key)
-            if (.not. edge%is_two_sided) then 
-               call assignEdgeFieldsOnFace(this%Ex, this%Ey, this%Ez, face, edges_on_face(j), j)
-            else
-               call assignSplitEdgeFieldsOnFace(face, edge, j)
-            end if
-
-            faces_on_edge = buildFacesOnEdge(edge%cell, edge%direction)
-            do k = 1, size(faces_on_edge)
-               if (.not. conformal_maps%face_map%hasKey(faces_on_edge(k)%key)) then 
-                  cell = faces_on_edge(k)%key(1:3)
-                  call assignFaceFieldsOnEdge(this%Hx,this%Hy,this%Hz, edge, k, cell)
-               else
-                  face_of_edge => conformal_maps%face_map%getFace(faces_on_edge(k)%key)
-                  call assignSplitFaceFieldsOnEdge(face_of_edge, edge, k)
-               end if
-            end do
-
-         end do
-      end do
-   
-   end subroutine
-
-   logical function isConformalSurface(medium)
-      type(MediaData_t), intent(in) :: medium
-      isConformalSurface = (medium%Is%ConformalPEC .or. medium%Is%ConformalSGBC) .and. & 
-                           medium%Is%Surface .and. &
-                           .not. medium%is%pml
-   end function
 
    ! subroutine initializeConformalSurfaceStates(this)
    !    class(solver_t) :: this
