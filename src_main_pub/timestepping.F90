@@ -446,6 +446,7 @@ module Solver_m
       
       character(len=bufsize) :: dubuf
       logical :: attinformado = .false.
+      logical :: anyObservation
 
 ! #ifdef compileWithMPI
       integer(kind=4) :: dummyMin,dummyMax, ierr
@@ -638,9 +639,14 @@ module Solver_m
       this%n_info = 5 + this%initialtimestep
 
       write(dubuf,*) 'Init Timing...';  call print11(this%control%layoutnumber,dubuf)
-      if (this%thereAre%Observation) call report_outputs_memory(this%control%layoutnumber)
+      ! Collective on all ranks: thereAre%Observation is rank-local.
+      call report_outputs_memory(this%control%layoutnumber)
+      anyObservation = this%thereAre%Observation
+#ifdef CompileWithMPI
+      call MPI_AllReduce(this%thereAre%Observation, anyObservation, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
+#endif
       call InitTiming(this%sgg, this%control, this%control%time_desdelanzamiento, this%initialtimestep, this%control%maxSourceValue, &
-                      merge(OUTPUT_TIME_BUFFER_SIZE, 0, this%thereAre%Observation))
+                      merge(OUTPUT_TIME_BUFFER_SIZE, 0, anyObservation))
 
 
       call CLOSEWARNINGFILE(this%control%layoutnumber,this%control%num_procs,this%control%fatalerror,.false.,this%control%simu_devia) !here the stochastic is already split and there are two this%control%layoutnumber=0

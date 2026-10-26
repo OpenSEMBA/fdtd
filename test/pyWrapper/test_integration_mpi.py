@@ -245,3 +245,23 @@ def test_mtln_non_root_writer_publishes_data_without_metadata(tmp_path):
     probe_path = Path(solver.getSolvedProbeFolders("upper")[0])
     assert probe_path.is_file()
     assert probe_path.suffix == ".dat"
+
+
+@no_mpi_skip
+@pytest.mark.mpi
+@pytest.mark.probes
+def test_single_point_probe_outside_root_rank_does_not_deadlock(tmp_path):
+    fn = CASES_FOLDER + "planewave/pw-in-box.fdtd.json"
+    solver = FDTD(
+        fn,
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path,
+        # The memory report is collective: a rank skipping it used to hang the run.
+        mpi_command="timeout 300 mpirun -np 2",
+    )
+    solver["probes"][:] = [p for p in solver["probes"] if p["name"] == "after"]
+
+    solver.run()
+
+    assert "Probe buffer memory" in solver.output.stdout.decode()
+    assert Path(solver.getSolvedProbeFolders("after")[0]).is_file()
