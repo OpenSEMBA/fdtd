@@ -48,11 +48,10 @@ or collectively writes the rank-local data into the canonical files.
 
 | Probe type | Without MPI | With MPI |
 | --- | --- | --- |
-| `movie`, time domain | `P/P.bin`, `P/P.xdmf`, `P/P.h5`, `P/P_geometry.xdmf`, and `P/P_geometry.h5` | The same five files. |
+| `movie`, time domain | `P/P.xdmf`, `P/P.h5`, `P/P_geometry.xdmf`, and `P/P_geometry.h5` | The same four files. |
 | frequency slice (`movie`, frequency domain) | `P/P.xdmf`, `P/P.h5`, `P/P_geometry.xdmf`, and `P/P_geometry.h5` | The same four files. |
 
-Time-domain movie `.bin` files contain the sampled values.
-Frequency slices do not create a `.bin` file.
+Movies and frequency slices do not create a `.bin` file.
 They create field data in `P.xdmf` and `P.h5`, plus the geometry companion in
 `P_geometry.xdmf` and `P_geometry.h5`.
 The `.xdmf` files describe the corresponding data and geometry stored in HDF5.

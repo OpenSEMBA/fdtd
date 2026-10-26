@@ -10,7 +10,6 @@ module movieProbeOutput_m
    use outputCollective_m, only: OUTPUT_PUBLICATION_COLLECTIVE, OUTPUT_PUBLICATION_ROOT_AGGREGATION
    use outputTransport_m, only: output_transport_t, init_output_transport, relay_flush_batch, &
                                 OUTPUT_TRANSPORT_SUCCESS, OUTPUT_TRANSPORT_INVALID_CONTEXT
-   use outputBinary_m, only: validate_binary_layout, append_binary_real64, BINARY_WRITER_SUCCESS
    use outputVisualisation_m, only: initialise_movie_visualisation, begin_visualisation_step, &
                                    write_visualisation_attribute, write_visualisation_attribute_hyperslab, end_visualisation_step, &
                                  flush_visualisation, close_visualisation, visualisation_is_open, verify_volumetric_visualisation, &
@@ -20,7 +19,7 @@ module movieProbeOutput_m
                                     VISUALISATION_ATTRIBUTE_TAG_Z, VISUALISATION_ATTRIBUTE_MEDIA_X, &
                                     VISUALISATION_ATTRIBUTE_MEDIA_Y, VISUALISATION_ATTRIBUTE_MEDIA_Z
    use mapVTKOutput_m, only: write_geometry_companion
-   use directoryUtils_m, only: add_extension, create_file_with_path, create_folder, file_exists, &
+   use directoryUtils_m, only: create_folder, file_exists, &
                                get_last_component, join_path
 #ifdef CompileWithMPI
    use mpi
@@ -104,9 +103,6 @@ contains
           call create_folder(this%path, error)
           if (error /= 0) call log_msg(LOG_FATAL, 'OUTPUT', &
                                            'Unable to create movie output directory')
-          call create_bin_file(this%filesPath, error)
-          if (error /= 0) call log_msg(LOG_FATAL, 'OUTPUT', &
-                                           'Unable to create movie binary output')
        end if
        call synchronise_movie_participants(this, control)
        call write_geometry_companion(this%filesPath, this%mainCoords, this%auxCoords, problemInfo, &
@@ -130,12 +126,6 @@ contains
       call write_classification_attributes(this, transport)
 
    end subroutine init_movie_probe_output
-
-   subroutine create_bin_file(filePath, error)
-      character(len=*), intent(in) :: filePath
-      integer, intent(out) :: error
-      call create_file_with_path(add_extension(filePath, BINARYEXTENSION), error)
-   end subroutine
 
    subroutine synchronise_movie_participants(this, control)
       type(movie_probe_output_t), intent(in) :: this
@@ -166,24 +156,15 @@ contains
       this%metadata%ownership%participant_ranks = this%publication%participant_ranks
       this%metadata%ownership%scalar_writer_rank = this%publication%owner_rank
       if (allocated(this%metadata%artifacts)) deallocate (this%metadata%artifacts)
-      allocate (this%metadata%artifacts(5))
-      this%metadata%artifacts(1)%kindTag = OUTPUT_ARTIFACT_BINARY
-      this%metadata%artifacts(1)%relative_path = trim(base_name)//BINARYEXTENSION
-      this%metadata%artifacts(1)%byte_order = BINARY_ENDIAN_LITTLE
-      this%metadata%artifacts(1)%numeric_representation = BINARY_NUMERIC_REAL64
-      this%metadata%artifacts(1)%record_bytes = 56
-      this%metadata%artifacts(1)%component_order = 'time,x,y,z,Ex,Ey,Ez'
-      this%metadata%artifacts(2)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_METADATA
-      this%metadata%artifacts(2)%relative_path = trim(base_name)//'.xdmf'
-      this%metadata%artifacts(3)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_DATA
-      this%metadata%artifacts(3)%relative_path = trim(base_name)//'.h5'
-      this%metadata%artifacts(4)%kindTag = OUTPUT_ARTIFACT_GEOMETRY
-      this%metadata%artifacts(4)%relative_path = trim(base_name)//'_geometry.xdmf'
-      this%metadata%artifacts(5)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_DATA
-      this%metadata%artifacts(5)%relative_path = trim(base_name)//'_geometry.h5'
-
-      call validate_binary_layout(this%metadata%artifacts(1), error)
-      if (error /= BINARY_WRITER_SUCCESS) return
+      allocate (this%metadata%artifacts(4))
+      this%metadata%artifacts(1)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_METADATA
+      this%metadata%artifacts(1)%relative_path = trim(base_name)//'.xdmf'
+      this%metadata%artifacts(2)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_DATA
+      this%metadata%artifacts(2)%relative_path = trim(base_name)//'.h5'
+      this%metadata%artifacts(3)%kindTag = OUTPUT_ARTIFACT_GEOMETRY
+      this%metadata%artifacts(3)%relative_path = trim(base_name)//'_geometry.xdmf'
+      this%metadata%artifacts(4)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_DATA
+      this%metadata%artifacts(4)%relative_path = trim(base_name)//'_geometry.h5'
       error = 0
    end subroutine initialise_movie_metadata
 
@@ -331,7 +312,6 @@ contains
          call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to initialise movie output transport')
       end if
 
-      call write_bin_file(this, transport)
       call write_visualisation(this, transport)
       call flush_visualisation(this%visualisation, error, diagnostic)
       if (error /= VISUALISATION_SUCCESS) call log_msg(LOG_FATAL, 'OUTPUT', &
@@ -371,8 +351,7 @@ contains
       end if
 
       call verify_volumetric_visualisation(this%filesPath, error)
-      if (file_exists(add_extension(this%filesPath, BINARYEXTENSION)) .and. &
-          file_exists(trim(this%filesPath)//'_geometry.xdmf') .and. &
+      if (file_exists(trim(this%filesPath)//'_geometry.xdmf') .and. &
           file_exists(trim(this%filesPath)//'_geometry.h5') .and. &
           error == VISUALISATION_SUCCESS) then
          this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
@@ -389,40 +368,6 @@ contains
    !===========================
    ! Private routines
    !===========================
-
-   subroutine write_bin_file(this, transport)
-      type(movie_probe_output_t), intent(inout) :: this
-      type(output_transport_t), intent(in) :: transport
-      integer :: i, record_index, relay_status, source_rank, status, time_index
-      real(real64), allocatable :: local_records(:), rank_records(:)
-
-      allocate (local_records(7*this%nPoints))
-      do time_index = 1, this%nTime
-         record_index = 0
-         do i = 1, this%nPoints
-            local_records(record_index + 1:record_index + 7) = [real(this%timeStep(time_index), real64), &
-                                                                real(this%coords(1, i), real64), real(this%coords(2, i), real64), &
-                                                 real(this%coords(3, i), real64), real(this%xValueForTime(time_index, i), real64), &
-                                                                real(this%yValueForTime(time_index, i), real64), &
-                                                                real(this%zValueForTime(time_index, i), real64)]
-            record_index = record_index + 7
-         end do
-         ! Appending rank by rank keeps the gather order without holding every rank's records on the owner.
-         do source_rank = 0, transport%rank_count - 1
-            call relay_flush_batch(transport, source_rank, local_records, rank_records, relay_status)
-            if (relay_status /= OUTPUT_TRANSPORT_SUCCESS) then
-               call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to gather movie binary records')
-            end if
-            if (this%publication%local_is_owner) then
-               call append_binary_real64(add_extension(this%filesPath, BINARYEXTENSION), &
-                                         this%metadata%artifacts(1), rank_records, status)
-               if (status /= BINARY_WRITER_SUCCESS) then
-                  call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to append movie binary records')
-               end if
-            end if
-         end do
-      end do
-   end subroutine write_bin_file
 
    subroutine write_visualisation(this, transport)
       type(movie_probe_output_t), intent(inout) :: this

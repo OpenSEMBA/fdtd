@@ -459,57 +459,6 @@ integer function test_output_artifact_contract() bind(c) result(err)
    err = err + assert_integer_equal(lifecycle%state, OUTPUT_LIFECYCLE_DECLARED, 'Declared lifecycle state')
 end function
 
-integer function test_portable_binary_output() bind(c) result(err)
-   ! Verifies little-endian real64 output and rejects unsupported byte order.
-   use, intrinsic :: iso_fortran_env, only: int8, real64
-   use outputBinary_m, only: append_binary_real64, validate_binary_layout, BINARY_WRITER_SUCCESS, &
-                              BINARY_WRITER_INVALID_LAYOUT
-   use outputTypes_m, only: output_artifact_t, OUTPUT_ARTIFACT_BINARY, BINARY_ENDIAN_LITTLE, &
-                             BINARY_ENDIAN_BIG, BINARY_NUMERIC_REAL64, BINARY_COMPLEX_UNSPECIFIED
-   use assertionTools_m, only: assert_integer_equal, assert_true
-   use directoryUtils_m, only: remove_folder
-   use testOutputUtils_m, only: get_temp_folder
-   use directoryUtils_m, only: join_path
-   implicit none
-
-   type(output_artifact_t) :: artifact
-   integer(int8) :: bytes(16)
-   integer :: expected_bytes(16), ios, status, unit
-   character(len=4096) :: folder, path
-
-   err = 0
-   folder = join_path(get_temp_folder(), 'testing binary')
-   path = join_path(folder, 'payload.bin')
-   artifact%kindTag = OUTPUT_ARTIFACT_BINARY
-   artifact%byte_order = BINARY_ENDIAN_LITTLE
-   artifact%numeric_representation = BINARY_NUMERIC_REAL64
-   artifact%complex_representation = BINARY_COMPLEX_UNSPECIFIED
-   artifact%record_bytes = 16
-   artifact%component_order = 'time,value'
-   expected_bytes = [0, 0, 0, 0, 0, 0, -16, 63, 0, 0, 0, 0, 0, 0, 4, -64]
-
-   call validate_binary_layout(artifact, status)
-   err = err + assert_integer_equal(status, BINARY_WRITER_SUCCESS, 'Valid real64 layout was rejected')
-   call append_binary_real64(path, artifact, [1.0_real64, -2.5_real64], status)
-   err = err + assert_integer_equal(status, BINARY_WRITER_SUCCESS, 'Portable binary write failed')
-
-   open (newunit=unit, file=path, access='stream', form='unformatted', status='old', &
-         action='read', iostat=ios)
-   err = err + assert_integer_equal(ios, 0, 'Cannot read portable binary payload')
-   if (ios == 0) then
-      read (unit, iostat=ios) bytes
-      close (unit)
-      err = err + assert_integer_equal(ios, 0, 'Cannot read portable binary bytes')
-      err = err + assert_true(all(int(bytes) == expected_bytes), &
-                              'Payload is not little-endian IEEE real32')
-   end if
-
-   artifact%byte_order = BINARY_ENDIAN_BIG
-   call validate_binary_layout(artifact, status)
-   err = err + assert_integer_equal(status, BINARY_WRITER_INVALID_LAYOUT, 'Unsupported byte order was accepted')
-   call remove_folder(folder, ios)
-end function
-
 integer function test_declared_output_artifacts() bind(c) result(err)
    ! Verifies output artifact kinds and relative paths are declared.
    use outputTypes_m, only: probe_metadata_t, OUTPUT_ARTIFACT_TEXT, OUTPUT_ARTIFACT_GEOMETRY, &
@@ -1434,8 +1383,8 @@ integer function test_init_movie_probe() bind(c) result(err)
    expectedProbePath = trim(nInput)//WORDSEPARATION//'movieProbe_BC_2_2_2__5_5_5'
    test_err = test_err + assert_string_equal(outputs(1)%movieProbe%path, expectedProbePath, 'Unexpected path')
    test_err = test_err + assert_true(folder_exists(expectedProbePath), 'Movie folder do not exist')
-   test_err = test_err + assert_true(file_exists(trim(outputs(1)%movieProbe%filesPath)//'.bin'), &
-                                     'Movie binary payload was not created')
+   test_err = test_err + assert_true(.not. file_exists(trim(outputs(1)%movieProbe%filesPath)//'.bin'), &
+                                     'Movie binary payload was created')
    test_err = test_err + assert_true(.not. file_exists(trim(outputs(1)%movieProbe%filesPath)//'.json'), &
                                      'Movie JSON descriptor was created')
    test_err = test_err + assert_true(file_exists(trim(outputs(1)%movieProbe%filesPath)//'_geometry.xdmf'), &
@@ -1679,7 +1628,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
    character(len=BUFSIZE) :: testPath
    character(len=BUFSIZE) :: nInput
    character(len=BUFSIZE) :: expectedPath
-   integer :: binaryBytes, ios
+   integer :: ios
 
    testPath = join_path(get_temp_folder(), TEST_FOLDER)
    nInput = join_path(testPath, TEST_NAME)
@@ -1793,9 +1742,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
    call flush_outputs(dummysgg%time, 1_SINGLE, dummyControl, fields, dummyBound, .false.)
 
    expectedPath = trim(outputs(1)%movieProbe%filesPath)
-   test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.bin'), 'Movie binary payload does not exist')
-   inquire (file=trim(expectedPath)//'.bin', size=binaryBytes)
-   test_err = test_err + assert_integer_equal(binaryBytes, 8*56, 'Movie binary record layout changed')
+   test_err = test_err + assert_true(.not. file_exists(trim(expectedPath)//'.bin'), 'Movie binary payload was published')
    test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nTime, 0, 'Movie flush did not clear current samples')
    test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nTimesFlushed, 2, 'Movie flush did not count samples')
    test_err = test_err + assert_integer_equal(outputs(2)%movieProbe%nTime, 0, 'Electric movie flush did not clear samples')
