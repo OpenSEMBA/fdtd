@@ -5,7 +5,7 @@ module mesh_m
    
    use fhash, only: fhash_tbl_t, key=>fhash_key
    use cells_m
-   use geometry_m, only: triangle_t
+   use geometry_m, only: triangle_t, interval_t
    integer, private, parameter  :: MAX_LINE = 256
    integer, parameter :: REGION_TYPE_VOLUME = 3
    integer, parameter :: REGION_TYPE_SURFACE = 2
@@ -433,5 +433,6 @@ contains
       class(coordinate_t), intent(in) :: a, b
       coordinate_eq = all(a%position == b%position)
    end function
+
 #endif
 end module
