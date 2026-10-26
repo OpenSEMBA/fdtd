@@ -881,6 +881,89 @@ def test_sgbc_shielding_effectiveness(tmp_path):
 
     assert np.allclose(fdtd_s21_db, anal_s21_db, rtol=0.05)
 
+@pytest.mark.sgbc
+@pytest.mark.probes
+@pytest.mark.conformal
+def test_conformal_sgbc_shielding_effectiveness(tmp_path):
+    """Verify SGBC transmission agrees with the analytical slab response for a SGBC square parallel to but not alinged with a grid plane."""
+    def generate_debug_data():
+        plt.figure()
+        plt.plot(f, 20 * np.log10(np.abs(fdtd_s21)), ".-", label="FDTD S21")
+        plt.plot(f, 20 * np.log10(np.abs(slab.s[:, 0, 1])), ".-", label="Analytical S21")
+        plt.grid(which="both")
+        plt.xlim(f[0], f[-1])
+        plt.xscale("log")
+        plt.legend()
+        plt.savefig(tmp_path / "sgbc_s21_comparison.png")
+        plt.close()
+
+    fn = CASES_FOLDER + "conformal/shieldingEffectiveness.fdtd.json"
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    solver.run()
+
+    # FDTD results
+    back = Probe(_get_solved_probe_folder(solver, "back"))
+
+    t = back.data["time"]
+    dt = t[1] - t[0]
+    fq = fftfreq(len(t)) / dt
+    INC = fft(back.data["incident"])
+    BACK = fft(back.data["field"])
+    S21 = BACK / INC
+
+    fmin = 8e6
+    fmax = 1e9
+    idx_min = (np.abs(fq - fmin)).argmin()
+    idx_max = (np.abs(fq - fmax)).argmin()
+    f = fq[idx_min:idx_max]
+    fdtd_s21 = S21[idx_min:idx_max]
+
+    # Analytical results
+    from skrf.media import Freespace
+    from skrf.frequency import Frequency
+    import scipy.constants
+
+    freq = Frequency.from_f(f, unit="Hz")
+    air = Freespace(freq)
+
+    sigma = 100
+    width = 10e-3
+    mat_ep_r = 1 + sigma / (1j * freq.w * scipy.constants.epsilon_0)
+    conductive_material = Freespace(freq, ep_r=mat_ep_r)
+
+    slab = air.thru() ** conductive_material.line(width, unit="m") ** air.thru()
+
+    if is_debugging():
+        generate_debug_data()
+
+    fdtd_s21_db = 20 * np.log10(np.abs(fdtd_s21))
+    anal_s21_db = 20 * np.log10(np.abs(slab.s[:, 0, 1]))
+
+    assert np.allclose(fdtd_s21_db, anal_s21_db, rtol=0.05)
+
+@pytest.mark.sgbc
+@pytest.mark.probes
+@pytest.mark.conformal
+def test_conformal_sgbc_resistance(tmp_path):
+    """Verify SGBC resistance matches the analytical result if meshed conformal."""
+
+    fn = CASES_FOLDER + "conformal/lossyPlaneResistance.fdtd.json"
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    solver.run()
+
+    # FDTD results
+    probe = Probe(_get_solved_probe_folder(solver, "Wire_probe"))
+    L = 216.0
+    theta = np.deg2rad(30)
+    w = 120.0
+    d = 2.0
+    sigma = 20.0
+    R_th = L*(np.sin(theta)+np.cos(theta))/(sigma*w*d)
+    R_meas = 1.0/probe['current_0'][-1]
+    assert(np.abs(R_th-R_meas) < 1e-5)
+
 
 @pytest.mark.sgbc
 @pytest.mark.probes
