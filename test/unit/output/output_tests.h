@@ -42,6 +42,7 @@ extern "C" int test_multiple_flush_point_probe();
 extern "C" int test_init_movie_probe();
 extern "C" int test_update_movie_probe();
 extern "C" int test_time_buffer_capacity();
+extern "C" int test_flush_cadence_from_counts();
 extern "C" int test_flush_movie_probe();
 extern "C" int test_close_movie_probe();
 extern "C" int test_init_frequency_slice_probe();
@@ -121,6 +122,7 @@ TEST(output, test_init_movie_probe_for_pec_surface) { EXPECT_EQ(0, test_init_mov
 TEST(output, test_update_movie_probe_for_pec_surface) { EXPECT_EQ(0, test_update_movie_probe()); }
 // Sizes time buffers to the samples taken between periodic flushes.
 TEST(output, test_time_buffer_capacity) { EXPECT_EQ(0, test_time_buffer_capacity()); }
+TEST(output, test_flush_cadence_from_counts) { EXPECT_EQ(0, test_flush_cadence_from_counts()); }
 // Flushes movie data and creates HDF5 and XDMF artifacts without a binary payload.
 TEST(output, test_flush_movie_probe_data) { EXPECT_EQ(0, test_flush_movie_probe()); }
 // Closes a movie writer without publishing a JSON sidecar.

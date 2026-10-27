@@ -43,9 +43,9 @@ contains
       if (present(hasIncident)) this%hasIncident = hasIncident
 
       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
-         call alloc_and_init(this%timeStep, time_buffer_capacity(this%domain), 0.0_RKIND_TIME)
-         call alloc_and_init(this%valueForTime, time_buffer_capacity(this%domain), 0.0_RKIND)
-         if (this%hasIncident) call alloc_and_init(this%incidentForTime, time_buffer_capacity(this%domain), 0.0_RKIND)
+         call alloc_and_init(this%timeStep, time_buffer_capacity(this%domain, SMALL_PROBE_BUFFER_SIZE), 0.0_RKIND_TIME)
+         call alloc_and_init(this%valueForTime, time_buffer_capacity(this%domain, SMALL_PROBE_BUFFER_SIZE), 0.0_RKIND)
+         if (this%hasIncident) call alloc_and_init(this%incidentForTime, time_buffer_capacity(this%domain, SMALL_PROBE_BUFFER_SIZE), 0.0_RKIND)
       end if
       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
          this%nFreq = this%domain%fnum

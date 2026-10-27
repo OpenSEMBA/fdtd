@@ -447,6 +447,8 @@ module Solver_m
       character(len=bufsize) :: dubuf
       logical :: attinformado = .false.
       logical :: anyObservation
+      integer(kind=4) :: counts(0:MTLN_PROBE_ID)
+      integer :: smallFlushSteps, regularFlushSteps
 
 ! #ifdef compileWithMPI
       integer(kind=4) :: dummyMin,dummyMax, ierr
@@ -641,13 +643,13 @@ module Solver_m
 
       write(dubuf,*) 'Init Timing...';  call print11(this%control%layoutnumber,dubuf)
       ! Collective on all ranks: thereAre%Observation is rank-local.
-      call report_outputs_memory(this%control%layoutnumber)
+      call report_outputs_memory(this%control%layoutnumber, counts)
       anyObservation = this%thereAre%Observation
 #ifdef CompileWithMPI
       call MPI_AllReduce(this%thereAre%Observation, anyObservation, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
 #endif
-      call InitTiming(this%sgg, this%control, this%initialtimestep, &
-                      merge(OUTPUT_TIME_BUFFER_SIZE, 0, anyObservation))
+      call flush_cadence_from_counts(counts, smallFlushSteps, regularFlushSteps)
+      call InitTiming(this%sgg, this%control, this%initialtimestep, anyObservation, smallFlushSteps, regularFlushSteps)
 
 
       call CLOSEWARNINGFILE(this%control%layoutnumber,this%control%num_procs,this%control%fatalerror,.false.,this%control%simu_devia) !here the stochastic is already split and there are two this%control%layoutnumber=0
@@ -1889,7 +1891,7 @@ contains
                    end if
                    if (this%control%layoutnumber == 0) call log_msg(LOG_INFO, 'SOLVER', dubuf)
                    if (this%thereAre%Observation) then
-                      call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, flushFF)
+                      call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, flushFF, .TRUE.)
                    end if
                 end if
 
@@ -1972,7 +1974,8 @@ contains
       subroutine updateAndFlush()
          if (this%n > 0 .and. mod(this%n, OUTPUT_TIME_BUFFER_SIZE) == 0) then
             if (this%thereAre%Observation) then
-               call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, .FALSE.)
+               call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, .FALSE., &
+                                  mod(this%n, SMALL_PROBE_BUFFER_SIZE) == 0)
             end if
 #ifdef CompileWithMPI
             if (this%control%num_procs > 1) call MPI_Barrier(SUBCOMM_MPI, ierr)
@@ -2922,7 +2925,7 @@ contains
       call print11(this%control%layoutnumber,dubuf)
       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
       if (this%thereAre%Observation) then
-         call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, .TRUE.)
+         call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, .TRUE., .TRUE.)
       end if
 #ifdef CompileWithMTLN
       if (this%mtlnObservationInitialized) call CloseMTLNObservation()

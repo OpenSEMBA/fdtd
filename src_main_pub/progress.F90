@@ -93,12 +93,13 @@ contains
 
    end subroutine InitReporting
 
-   ! observationFlushSteps: step period of the probe buffer flush, 0 when there are no probes.
-   subroutine InitTiming(sgg, control, initialtimestep, observationFlushSteps)
+   ! anyObservation: some rank has probes. smallFlushSteps/regularFlushSteps: flush period of each probe group, 0 when absent.
+   subroutine InitTiming(sgg, control, initialtimestep, anyObservation, smallFlushSteps, regularFlushSteps)
       type(SGGFDTDINFO_t), intent(in) :: sgg
       type(sim_control_t) , intent(in):: control
       integer(kind=4), intent(in) :: initialtimestep
-      integer(kind=4), intent(in) :: observationFlushSteps
+      logical, intent(in) :: anyObservation
+      integer, intent(in) :: smallFlushSteps, regularFlushSteps
       type(time_t) :: time_out2
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
@@ -135,15 +136,29 @@ contains
          write(dubuf,'(a,i0,a)')  'Restart FIELDS flush: at the end, after ',control%maxCPUtime,' minutes'
       end if
       call print11(control%layoutnumber,dubuf)
-      if (observationFlushSteps == 0) then
+      if (.not. anyObservation) then
          dubuf = 'Observation DATA flush: no probes'
-      else if (control%flushsecondsDATA == 0 .or. control%flushsecondsDATA >= TOPCPUTIME*60) then
-         write(dubuf,'(a,i0,a)')  'Observation DATA flush: every ',observationFlushSteps,' steps; time-based: none'
+         call print11(control%layoutnumber,dubuf)
       else
-         write(dubuf,'(a,i0,a,i0,a)')  'Observation DATA flush: every ',observationFlushSteps, &
-                                       ' steps; time-based: every ',control%flushsecondsDATA/60,' minutes'
+         if (regularFlushSteps > 0) then
+            write(dubuf,'(a,i0,a)') 'Observation DATA flush: every ',regularFlushSteps,' steps (line, movie, frequency slice)'
+            call print11(control%layoutnumber,dubuf)
+         end if
+         if (smallFlushSteps > 0) then
+            write(dubuf,'(a,i0,a)') 'Observation DATA flush: every ',smallFlushSteps,' steps (point, wire, bulk)'
+            call print11(control%layoutnumber,dubuf)
+         end if
+         if (regularFlushSteps == 0 .and. smallFlushSteps == 0) then
+            dubuf = 'Observation DATA flush: at the end only'
+            call print11(control%layoutnumber,dubuf)
+         end if
+         if (control%flushsecondsDATA == 0 .or. control%flushsecondsDATA >= TOPCPUTIME*60) then
+            dubuf = 'Observation DATA flush: time-based: none'
+         else
+            write(dubuf,'(a,i0,a)') 'Observation DATA flush: time-based: every ',control%flushsecondsDATA/60,' minutes'
+         end if
+         call print11(control%layoutnumber,dubuf)
       end if
-      call print11(control%layoutnumber,dubuf)
       write(dubuf,'(a,i0,a)')  'Reporting simulation info every ',REPORTINGSECONDS/60,' minutes'
       call print11(control%layoutnumber,dubuf)
 
