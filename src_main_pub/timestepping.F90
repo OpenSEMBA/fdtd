@@ -1541,6 +1541,7 @@ contains
          call init_outputs(this%sgg, this%media, this%sinPML_fullsize, this%tag_numbers, this%bounds, &
                            this%control, this%thereAre%Observation, this%thereAre%wires, &
                            eps0_input=this%eps0, mu0_input=this%mu0)
+         if (this%control%resume) call load_outputs_dft_state(this%control%resume_time)
          l_auxinput=this%thereAre%Observation.or.this%thereAre%FarFields
          l_auxoutput=l_auxinput
 
@@ -1963,6 +1964,7 @@ contains
 
          call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nInputRoot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
          Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
+         call save_outputs_dft_state(this%sgg%time(this%n))
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -2910,6 +2912,7 @@ contains
          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
          call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nInputRoot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
          Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
+         call save_outputs_dft_state(this%sgg%time(this%n))
          write(dubuf,'(a,i9)')  ' DONE FINAL FLUSHING OF RESTARTING FIELDS N=',this%n
          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
          call print11(this%control%layoutnumber,dubuf)

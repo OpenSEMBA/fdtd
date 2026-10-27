@@ -38,7 +38,11 @@ module frequencySliceProbeOutput_m
    public :: update_frequency_slice_probe_output
    public :: flush_frequency_slice_probe_output
    public :: close_frequency_slice_probe_output
+   public :: save_frequency_slice_dft_state
+   public :: load_frequency_slice_dft_state
    !===========================
+
+   character(len=*), parameter :: DFT_STATE_EXTENSION = '.dft'
 
    !===========================
    !  Private interface summary
@@ -785,5 +789,51 @@ contains
       end if
 #endif
    end subroutine
+
+   function dft_state_path(this) result(path)
+      type(frequency_slice_probe_output_t), intent(in) :: this
+      character(len=BUFSIZE) :: path
+
+      write (path, '(a,a,i0,a,i0,a,i0,a)') trim(this%filesPath), '_at_', this%mainCoords%x, '_', this%mainCoords%y, &
+                                          '_', this%mainCoords%z, DFT_STATE_EXTENSION
+   end function dft_state_path
+
+   subroutine save_frequency_slice_dft_state(this, time)
+      type(frequency_slice_probe_output_t), intent(in) :: this
+      real(kind=RKIND_TIME), intent(in) :: time
+      integer :: unit, ioStatus
+
+      if (.not. this%publication%local_participates) return
+      open (newunit=unit, file=trim(dft_state_path(this)), form='unformatted', status='replace', &
+            action='write', iostat=ioStatus)
+      if (ioStatus /= 0) then
+         call log_msg(LOG_WARN, 'OUTPUT', 'Cannot save the frequency sums of '//trim(this%filesPath))
+         return
+      end if
+      write (unit) time, this%nFreq, this%nPoints
+      write (unit) this%xValueForFreq, this%yValueForFreq, this%zValueForFreq
+      close (unit)
+   end subroutine save_frequency_slice_dft_state
+
+   subroutine load_frequency_slice_dft_state(this, time)
+      type(frequency_slice_probe_output_t), intent(inout) :: this
+      real(kind=RKIND_TIME), intent(in) :: time
+      real(kind=RKIND_TIME) :: savedTime
+      integer :: unit, ioStatus, savedNFreq, savedNPoints
+
+      if (.not. this%publication%local_participates) return
+      open (newunit=unit, file=trim(dft_state_path(this)), form='unformatted', status='old', &
+            action='read', iostat=ioStatus)
+      if (ioStatus == 0) read (unit, iostat=ioStatus) savedTime, savedNFreq, savedNPoints
+      if (ioStatus /= 0 .or. savedNFreq /= this%nFreq .or. savedNPoints /= this%nPoints .or. &
+          abs(savedTime - time) > 1.0e-9_RKIND_TIME*abs(time)) then
+         call log_msg(LOG_WARN, 'OUTPUT', 'Frequency sums of '//trim(this%filesPath)//' not restored, starting from zero')
+         if (ioStatus == 0) close (unit)
+         return
+      end if
+      read (unit, iostat=ioStatus) this%xValueForFreq, this%yValueForFreq, this%zValueForFreq
+      close (unit)
+      if (ioStatus /= 0) call log_msg(LOG_WARN, 'OUTPUT', 'Frequency sums of '//trim(this%filesPath)//' are incomplete')
+   end subroutine load_frequency_slice_dft_state
 
 end module frequencySliceProbeOutput_m

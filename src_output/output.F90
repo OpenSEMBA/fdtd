@@ -40,6 +40,8 @@ module output_m
    public :: init_outputs
    public :: update_outputs
    public :: flush_outputs
+   public :: save_outputs_dft_state
+   public :: load_outputs_dft_state
    public :: close_outputs
    public :: delete_outputs
    public :: GetOutputPartition
@@ -781,6 +783,36 @@ contains
          end select
       end do
    end subroutine flush_outputs
+
+   subroutine save_outputs_dft_state(time)
+      real(kind=RKIND_TIME), intent(in) :: time
+      integer :: outIdx
+
+      if (.not. associated(outputs)) return
+      do outIdx = 1, size(outputs)
+         select case (outputs(outIdx)%outputID)
+         case (POINT_PROBE_ID)
+            call save_point_probe_dft_state(outputs(outIdx)%pointProbe, time)
+         case (FREQUENCY_SLICE_PROBE_ID)
+            call save_frequency_slice_dft_state(outputs(outIdx)%frequencySliceProbe, time)
+         end select
+      end do
+   end subroutine save_outputs_dft_state
+
+   subroutine load_outputs_dft_state(time)
+      real(kind=RKIND_TIME), intent(in) :: time
+      integer :: outIdx
+
+      if (.not. associated(outputs)) return
+      do outIdx = 1, size(outputs)
+         select case (outputs(outIdx)%outputID)
+         case (POINT_PROBE_ID)
+            call load_point_probe_dft_state(outputs(outIdx)%pointProbe, time)
+         case (FREQUENCY_SLICE_PROBE_ID)
+            call load_frequency_slice_dft_state(outputs(outIdx)%frequencySliceProbe, time)
+         end select
+      end do
+   end subroutine load_outputs_dft_state
 
    ! Solver-side probe buffers per outputID; HDF5/transport/metadata buffers are not counted.
    subroutine estimate_outputs_memory(bytes, counts)
