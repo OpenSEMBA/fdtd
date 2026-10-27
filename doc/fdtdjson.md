@@ -127,7 +127,7 @@ These objects must contain a `<type>` label which can be:
 
 ### `<mesh>`
 
-All the geometrical information of the simulation case is exclusively stored by the `mesh` object. It is a JSON object which contains three objects: a `<grid>`, a list of `[coordinates]` and a list of `[elements]`.
+All the geometrical information of the simulation case is exclusively stored by the `mesh` object. It is a JSON object which contains a `<grid>`, an optional list of `[coordinates]` and a list of `[elements]`.
 
 ```json
 "mesh": {
@@ -155,7 +155,7 @@ The following example describes a regular grid with $20$, $20$, and $22$ cells i
 
 #### `[coordinates]`
 
-This is an array of objects which represent Cartesian coordinates within the grid. Each object of the array must contain the following entries:
+This is an array of objects which represent Cartesian coordinates within the grid. These coordinates are referenced by `node` and `polyline` elements through their `<coordinateIds>` entries. Conformal elements do not use this list: they carry their own `coordinates` array, scoped to the element. Each object of the array must contain the following entries:
 
 + `<id>`: an integer number that must be unique within this array.
 + `<relativePosition>`: Containing an array of 3 numbers which can be integers or reals. The whole part of the number indicates the cell and the fractional part indicates the fractional position within that cell.
@@ -187,7 +187,7 @@ The `elements` entry contains an array of JSON objects, each of which represents
   + `node`, representing a point in space. Elements with this type include a `<coordinateIds>` entry which is an array of a single integer representing the `id` of a coordinate and which must exist in the within the `mesh` `coordinates` list.
   + `polyline`, representing an oriented collection of segments. It must contain a list `<coordinateIds>` with at least two coordinates.
   + `cell`, containing a list of one or more `<intervals>` defined following the [interval convention](#the-interval-convention).
-  + `conformal` represents a conformal PEC or multilayered-surface element which contains a list of `[intervals]` and a list of `<triangles>`. An axis-aligned line with integer endpoints, or a rectangular surface on an integer grid face, is treated as ordinary geometry. A rectangular surface with integer in-plane bounds and a non-integer constant coordinate is tessellated into conformal patches. Points, diagonal/non-grid-aligned lines, mixed-sign surface spans, and surfaces with non-integer in-plane bounds are invalid. The cells occupied by intervals and triangles can not contain both.
+  + `conformal` represents a conformal PEC or multilayered-surface element which contains a list of `[intervals]` and a list of `<triangles>`. When `<triangles>` is non-empty, the element must also contain its own `[coordinates]` array, using the same `<id>` and `<relativePosition>` schema as the mesh coordinates. Triangle vertices reference coordinate IDs scoped to that element; they are not resolved against `mesh.coordinates`. An axis-aligned line with integer endpoints, or a rectangular surface on an integer grid face, is treated as ordinary geometry. A rectangular surface with integer in-plane bounds and a non-integer constant coordinate is tessellated into conformal patches. Points, diagonal/non-grid-aligned lines, mixed-sign surface spans, and surfaces with non-integer in-plane bounds are invalid. The cells occupied by intervals and triangles can not contain both.
   It also must contain an entry `subtype`, which can be:
     + `surface`, the intervals and triangles will be treated as a surface, which can be open or closed.
     + `volume`, the intervals and triangles must define a closed surface with all normals pointing outwards.
@@ -208,9 +208,15 @@ Below there is an example of a mesh object which includes several types of eleme
     "elements": [
         {"id": 1, "type": "node", "coordinateIds": [2]},
         {"id": 2, "type": "polyline", "coordinateIds": [1, 2, 3] },
-        {"id": 3, "type": "cell", "intervals": [ [ [1, 1, 1], [19, 19, 21] ] ] }
+        {"id": 3, "type": "cell", "intervals": [ [ [1, 1, 1], [19, 19, 21] ] ] },
         {"id": 4, "type": "conformal", "subtype": "surface",
-            "intervals": [ [ [1, 1, 1], [19, 19, 1] ] ], "triangles" : [ [1,2,3] ] }
+            "intervals": [ [ [1, 1, 1], [19, 19, 1] ] ],
+            "coordinates": [
+                {"id": 1, "relativePosition": [1, 1, 1]},
+                {"id": 2, "relativePosition": [19, 1, 1]},
+                {"id": 3, "relativePosition": [19, 19, 1]}
+            ],
+            "triangles": [ [1, 2, 3] ]}
     ]
 }
 ```
@@ -263,7 +269,36 @@ An interval allows specifying regions within the grid which can be a point, an o
 ```
 ##### Triangles
 
-Each triangle is a list of three `<coordinateId>`, representing the vertices of the triangle. Vertices have to be oriented so the normal of each triangle points outwards the volume.
+Each triangle is a list of three `<coordinateId>` entries representing the vertices of the triangle. These IDs refer to the `coordinates` array contained in the same conformal element, not to the mesh-level `coordinates` array. Coordinate IDs may be reused by different conformal elements, and must be unique within each element. Vertices have to be oriented so the normal of each triangle points outwards the volume.
+
+```json
+"elements": [
+    {
+        "id": 10,
+        "type": "conformal",
+        "subtype": "surface",
+        "intervals": [],
+        "coordinates": [
+            {"id": 1, "relativePosition": [3.5, 2.0, 1.0]},
+            {"id": 2, "relativePosition": [4.0, 2.0, 1.0]},
+            {"id": 3, "relativePosition": [4.0, 3.0, 1.0]}
+        ],
+        "triangles": [ [1, 2, 3] ]
+    },
+    {
+        "id": 11,
+        "type": "conformal",
+        "subtype": "surface",
+        "intervals": [],
+        "coordinates": [
+            {"id": 1, "relativePosition": [8.5, 2.0, 1.0]},
+            {"id": 2, "relativePosition": [9.0, 2.0, 1.0]},
+            {"id": 3, "relativePosition": [9.0, 3.0, 1.0]}
+        ],
+        "triangles": [ [1, 2, 3] ]
+    }
+]
+```
 
 ## `[materials]`
 This entry is an array formed by all the physical models contained in the simulation. Each object within the array must contain:

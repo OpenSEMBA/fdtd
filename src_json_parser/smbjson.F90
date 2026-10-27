@@ -272,7 +272,7 @@ contains
                      call mesh%addCellRegion(id, cR)
                   end block
                case (J_ELEM_TYPE_CONFORMAL)
-                  call mesh%addConformalRegion(id, readConformalRegion(je, mesh))
+                  call mesh%addConformalRegion(id, readConformalRegion(je, id))
                case default
                   call log_msg(LOG_ERROR, 'SMBJSON', 'Invalid element type')
                end select
@@ -306,15 +306,16 @@ contains
          end do
       end function
 
-      function readTriangles(place, path) result(res)
+      function readTriangles(place, path, elementId) result(res)
          type(json_value), pointer, intent(in) :: place
          character(len=*), intent(in) :: path
+         integer, intent(in) :: elementId
          type(triangle_t), dimension(:), allocatable :: res
 
          type(json_value), pointer :: triangles, triangle_ptr
-         real, dimension(:), allocatable :: triangle
+         integer, dimension(:), allocatable :: triangle
          integer :: i, j, nTriangles
-         real, dimension(:), allocatable :: cellStart, cellEnd
+         character(len=256) :: message
 
          logical :: containsTriangles
          call this%core%get(place, path, triangles, found=containsTriangles)
@@ -327,6 +328,18 @@ contains
          do i = 1, nTriangles
             call this%core%get_child(triangles, i, triangle_ptr)
             call this%core%get(triangle_ptr, triangle)
+            if (.not. allocated(triangle)) then
+               write(message, '(A,I0,A,I0,A)') 'Conformal element ', elementId, &
+                  ': triangle ', i, ' must contain exactly three coordinate ids.'
+               call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
+               return
+            end if
+            if (size(triangle) /= 3) then
+               write(message, '(A,I0,A,I0,A)') 'Conformal element ', elementId, &
+                  ': triangle ', i, ' must contain exactly three coordinate ids.'
+               call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
+               return
+            end if
             do j = 1, 3
                res(i)%vertices(j)%id = triangle(j)
             end do
@@ -335,22 +348,94 @@ contains
 
       end function
 
-      function readConformalRegion(place, mesh) result(res)
+      subroutine readConformalCoordinates(place, elementId, coordinates, found)
          type(json_value), pointer, intent(in) :: place
-         type(mesh_t), intent(in) :: mesh
+         integer, intent(in) :: elementId
+         type(coordinate_table_t), intent(out) :: coordinates
+         logical, intent(out) :: found
+
+         type(json_value), pointer :: jcs, jc
+         integer :: id, i, nCoordinates
+         real, dimension(:), allocatable :: pos
+         type(coordinate_t) :: c
+         character(len=256) :: message
+
+         found = .false.
+         call this%core%get(place, J_COORDINATES, jcs, found=found)
+         if (.not. found) return
+
+         nCoordinates = this%core%count(jcs)
+         if (nCoordinates == 0) then
+            found = .false.
+            return
+         end if
+
+         call coordinates%allocate(100*nCoordinates)
+         do i = 1, nCoordinates
+            call this%core%get_child(jcs, i, jc)
+            id = this%getIntAt(jc, J_ID)
+            if (coordinates%check(id) == 0) then
+               write(message, '(A,I0,A,I0,A)') 'Conformal element ', elementId, &
+                  ': duplicate local coordinate id ', id, '.'
+               call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
+               return
+            end if
+            pos = this%getRealsAt(jc, J_COORDINATE_POS)
+            if (.not. allocated(pos)) then
+               write(message, '(A,I0,A,I0,A)') 'Conformal element ', elementId, &
+                  ': local coordinate ', id, ' is missing relativePosition.'
+               call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
+               return
+            end if
+            if (size(pos) /= 3) then
+               write(message, '(A,I0,A,I0,A)') 'Conformal element ', elementId, &
+                  ': local coordinate ', id, ' must contain three relativePosition values.'
+               call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
+               return
+            end if
+            c%position = pos(1:3)
+            call coordinates%add(id, c)
+         end do
+      end subroutine
+
+      function readConformalRegion(place, elementId) result(res)
+         type(json_value), pointer, intent(in) :: place
+         integer, intent(in) :: elementId
          type(conformal_region_t) :: res
 
+         type(coordinate_table_t) :: coordinates
          type(coordinate_t) :: c
          integer :: j, k
+         logical :: coordinatesFound, coordinateFound
          character (len=:), allocatable :: subtype
+         character(len=256) :: message
 
-         res%triangles = readTriangles(place, J_CONF_VOLUME_TRIANGLES)
-         do k = 1, size(res%triangles)
-            do j = 1, 3
-               c = mesh%getCoordinate(res%triangles(k)%vertices(j)%id)
-               res%triangles(k)%vertices(j)%position(1:3) = c%position(1:3)
+         res%triangles = readTriangles(place, J_CONF_VOLUME_TRIANGLES, elementId)
+         if (isFatalError()) return
+         if (size(res%triangles) > 0) then
+            call readConformalCoordinates(place, elementId, coordinates, coordinatesFound)
+            if (isFatalError()) return
+            if (.not. coordinatesFound) then
+               write(message, '(A,I0,A)') 'Conformal element ', elementId, &
+                  ": 'triangles' require an element-local 'coordinates' array; " // &
+                  'references to mesh.coordinates are no longer supported.'
+               call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
+               return
+            end if
+            do k = 1, size(res%triangles)
+               do j = 1, 3
+                  c = coordinates%get(res%triangles(k)%vertices(j)%id, coordinateFound)
+                  if (.not. coordinateFound) then
+                     write(message, '(A,I0,A,I0,A,I0,A,I0,A)') 'Conformal element ', elementId, &
+                        ', triangle ', k, ', vertex ', j, ': coordinate id ', &
+                        res%triangles(k)%vertices(j)%id, ' not found in element-local coordinates.'
+                     call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
+                     return
+                  end if
+                  res%triangles(k)%vertices(j)%position(1:3) = c%position(1:3)
+               end do
             end do
-         end do
+         end if
          call readConformalIntervals(place, res%intervals, res%triangles)
          subtype = this%getStrAt(place, J_SUBTYPE)
 
@@ -372,8 +457,8 @@ contains
          type(json_value), pointer :: intervalsPlace, interval
          real, dimension(:), allocatable :: ini, fin
          real, dimension(3) :: delta
-         integer :: i, nIntervals, nStructured, varying, normal, first, second
-         integer :: generatedId
+         integer :: i, j, k, nIntervals, nStructured, varying, normal, first, second
+         integer :: generatedId, minId
          logical :: found, integral
 
          call this%core%get(place, J_CELL_INTERVALS, intervalsPlace, found=found)
@@ -385,7 +470,13 @@ contains
          nIntervals = this%core%count(intervalsPlace)
          allocate(structured(nIntervals))
          nStructured = 0
-         generatedId = -1000000
+         minId = -1000000
+         do k = 1, size(triangles)
+            do j = 1, 3
+               minId = min(minId, triangles(k)%vertices(j)%id)
+            end do
+         end do
+         generatedId = minId - 1
          do i = 1, nIntervals
             call this%core%get_child(intervalsPlace, i, interval)
             ini = this%getRealsAt(interval, '(1)')

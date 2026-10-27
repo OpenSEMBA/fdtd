@@ -12,6 +12,10 @@ extern "C" int test_mesh_polyline_to_linel();
 extern "C" int test_parser_ctor();
 extern "C" int test_parser_read_mesh();
 extern "C" int test_parser_read_conformal_volume();
+extern "C" int test_parser_read_conformal_local_coordinates();
+extern "C" int test_parser_reject_conformal_missing_coordinates();
+extern "C" int test_parser_reject_conformal_unknown_coordinate();
+extern "C" int test_parser_reject_conformal_duplicate_coordinate();
 extern "C" int test_parser_reject_conformal_nonpec_material();
 
 extern "C" int test_read_planewave();
@@ -57,6 +61,10 @@ TEST(smbjson, mesh_polyline_to_linel)    { EXPECT_EQ(0, test_mesh_polyline_to_li
 TEST(smbjson, parser_ctor)               { EXPECT_EQ(0, test_parser_ctor()); }
 TEST(smbjson, parser_read_mesh)          { EXPECT_EQ(0, test_parser_read_mesh()); }
 TEST(smbjson, parser_read_conf_volume)   { EXPECT_EQ(0, test_parser_read_conformal_volume()); }
+TEST(smbjson, parser_read_conf_local_coordinates) { EXPECT_EQ(0, test_parser_read_conformal_local_coordinates()); }
+TEST(smbjson, parser_reject_conf_missing_coordinates) { EXPECT_EQ(0, test_parser_reject_conformal_missing_coordinates()); }
+TEST(smbjson, parser_reject_conf_unknown_coordinate) { EXPECT_EQ(0, test_parser_reject_conformal_unknown_coordinate()); }
+TEST(smbjson, parser_reject_conf_duplicate_coordinate) { EXPECT_EQ(0, test_parser_reject_conformal_duplicate_coordinate()); }
 TEST(smbjson, parser_reject_conformal_nonpec_material) { EXPECT_EQ(0, test_parser_reject_conformal_nonpec_material()); }
 TEST(smbjson, read_planewave)            { EXPECT_EQ(0, test_read_planewave()); }
 TEST(smbjson, read_planewave_empty_elementids) { EXPECT_EQ(0, test_read_planewave_empty_elementids()); }
