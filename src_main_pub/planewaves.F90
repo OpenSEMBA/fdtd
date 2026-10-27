@@ -149,7 +149,7 @@ contains
              (sgg%PlaneWave(jjj)%esqz2 >=  SINPML_fullsize(IHZ)%ZE)
              if (abortar) then
                 write (buff,'(a)') 'At least one of TF/SF planes must be 1 cell inside the simulation region. Aborting'
-                call stoponerror(layoutnumber,num_procs,buff)
+                call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
              end if
              !!!!!!!
 
@@ -272,9 +272,9 @@ contains
            end do
            deltaevol(jjj)=sgg%PlaneWave(jjj)%sourceFile%deltaSamples
            if (deltaevol(jjj) > sgg%dt) then
-              write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sgg%PlaneWave(jjj)%sourceFile%Name))// &
+              write (buff,'(a,e12.2e3)')  ''//trim(adjustl(sgg%PlaneWave(jjj)%sourceFile%Name))// &
               ' undersampled by a factor ',deltaevol(jjj)/sgg%dt
-              call WarnErrReport(buff)
+              call log_msg(LOG_WARN, 'PLANEWAVE', buff)
            end if
        end do
 !!
@@ -362,7 +362,7 @@ contains
                 YD0=sgg%Liney(min(sgg%PlaneWave(jjj)%esqy2+1,SINPML_fullsize(IHY)%YE))
                 ZD0=sgg%Linez(min(sgg%PlaneWave(jjj)%esqz2+1,SINPML_fullsize(IHZ)%ZE))
              else
-                call stoponerror(layoutnumber,num_procs,'buggy xo,yo,z0')
+                call log_msg(LOG_FATAL, 'PLANEWAVE', 'buggy xo,yo,z0')
              end if
              diagonalcaja=sqrt( (sgg%Linex(max(sgg%PlaneWave(jjj)%esqx1-1,SINPML_fullsize(IHX)%XI)) - sgg%Linex(min(sgg%PlaneWave(jjj)%esqx2+1,SINPML_fullsize(IHX)%XE)))**2.0_RKIND  + &
                                 (sgg%Liney(max(sgg%PlaneWave(jjj)%esqy1-1,SINPML_fullsize(IHY)%YI)) - sgg%Liney(min(sgg%PlaneWave(jjj)%esqy2+1,SINPML_fullsize(IHY)%YE)))**2.0_RKIND  + &
@@ -386,7 +386,7 @@ contains
                       if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -399,7 +399,7 @@ contains
                       if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -415,7 +415,7 @@ contains
                       if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -428,7 +428,7 @@ contains
                       if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -444,7 +444,7 @@ contains
                       if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -457,7 +457,7 @@ contains
                       if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -473,7 +473,7 @@ contains
                       if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -486,7 +486,7 @@ contains
                       if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -502,7 +502,7 @@ contains
                       if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -515,7 +515,7 @@ contains
                       if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -531,7 +531,7 @@ contains
                       if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -544,7 +544,7 @@ contains
                       if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -560,7 +560,7 @@ contains
                       if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -573,7 +573,7 @@ contains
                       if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -588,7 +588,7 @@ contains
                       if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -601,7 +601,7 @@ contains
                       if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -617,7 +617,7 @@ contains
                       if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -630,7 +630,7 @@ contains
                       if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -645,7 +645,7 @@ contains
                       if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -658,7 +658,7 @@ contains
                       if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -673,7 +673,7 @@ contains
                       if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -686,7 +686,7 @@ contains
                       if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -702,7 +702,7 @@ contains
                       if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -715,7 +715,7 @@ contains
                       if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k))%is%PEC)).and. .not. &
                       ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                       (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                      call stoponerror(layoutnumber,num_procs,buff)
+                      call log_msg(LOG_FATAL, 'PLANEWAVE', buff)
                    end if
                 end do
              end do
@@ -1444,9 +1444,7 @@ contains
          end do
        end do
       goto 635
-634   call print11(0,SEPARADOR//separador//separador)
-      call print11(0,'PLANEWAVES: ERROR WRITING RESTARTING FIELDS. IGNORING AND CONTINUING')
-      call print11(0,SEPARADOR//separador//separador)          
+634   call log_msg(LOG_WARN, 'PLANEWAVE', 'cannot write restarting fields, ignoring and continuing')
 635   return
     end subroutine storeplanewaves
 

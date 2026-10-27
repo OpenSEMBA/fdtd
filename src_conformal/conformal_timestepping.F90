@@ -482,7 +482,7 @@ contains
             end select
         else
             write(*,*) 'key: ', k
-            call WarnErrReport('Key not found in map ', .true.)
+            call log_msg(LOG_ERROR, 'CONFORMAL', 'Key not found in map ')
         end if
     end function
 

@@ -8,9 +8,8 @@ module movieProbeOutput_m
    use volumicProbeUtils_m
    use, intrinsic :: iso_fortran_env, only: int64, real64
    use outputCollective_m, only: OUTPUT_PUBLICATION_COLLECTIVE, OUTPUT_PUBLICATION_ROOT_AGGREGATION
-   use outputTransport_m, only: output_transport_t, init_output_transport, transfer_flush_batch, &
+   use outputTransport_m, only: output_transport_t, init_output_transport, relay_flush_batch, &
                                 OUTPUT_TRANSPORT_SUCCESS, OUTPUT_TRANSPORT_INVALID_CONTEXT
-   use outputBinary_m, only: validate_binary_layout, append_binary_real64, BINARY_WRITER_SUCCESS
    use outputVisualisation_m, only: initialise_movie_visualisation, begin_visualisation_step, &
                                    write_visualisation_attribute, write_visualisation_attribute_hyperslab, end_visualisation_step, &
                                  flush_visualisation, close_visualisation, visualisation_is_open, verify_volumetric_visualisation, &
@@ -20,7 +19,7 @@ module movieProbeOutput_m
                                     VISUALISATION_ATTRIBUTE_TAG_Z, VISUALISATION_ATTRIBUTE_MEDIA_X, &
                                     VISUALISATION_ATTRIBUTE_MEDIA_Y, VISUALISATION_ATTRIBUTE_MEDIA_Z
    use mapVTKOutput_m, only: write_geometry_companion
-   use directoryUtils_m, only: add_extension, create_file_with_path, create_folder, file_exists, &
+   use directoryUtils_m, only: create_folder, file_exists, &
                                get_last_component, join_path
 #ifdef CompileWithMPI
    use mpi
@@ -83,7 +82,7 @@ contains
       filename = get_last_component(this%path)
       this%filesPath = join_path(this%path, filename)
       call initialise_movie_metadata(this, error, control%mpidir)
-      if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+      if (error /= 0) call log_msg(LOG_FATAL, 'OUTPUT', &
                                        'Unable to initialise movie output metadata')
       this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_ACTIVE
 
@@ -102,40 +101,31 @@ contains
 
        if (publication%local_is_owner) then
           call create_folder(this%path, error)
-          if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+          if (error /= 0) call log_msg(LOG_FATAL, 'OUTPUT', &
                                            'Unable to create movie output directory')
-          call create_bin_file(this%filesPath, error)
-          if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
-                                           'Unable to create movie binary output')
        end if
        call synchronise_movie_participants(this, control)
        call write_geometry_companion(this%filesPath, this%mainCoords, this%auxCoords, problemInfo, &
                                      this%publication%communicator, geometry_status, geometry_diagnostic)
        if (this%publication%local_is_owner .and. geometry_status /= VISUALISATION_SUCCESS) then
-          call StopOnError(control%layoutnumber, control%num_procs, &
+          call log_msg(LOG_FATAL, 'OUTPUT', &
                            'Unable to create movie geometry: '//trim(geometry_diagnostic))
        end if
 
        if (publication%mode == OUTPUT_PUBLICATION_COLLECTIVE .or. publication%local_is_owner) then
          call create_movie_files(this, problemInfo, error)
-         if (error /= 0) call StopOnError(control%layoutnumber, control%num_procs, &
+         if (error /= 0) call log_msg(LOG_FATAL, 'OUTPUT', &
                                           'Unable to initialise movie HDF5 output')
       end if
       call init_output_transport(transport, root_rank=0, status=error, &
                                  communicator=this%publication%communicator)
       if (error /= OUTPUT_TRANSPORT_SUCCESS) then
-         call StopOnError(control%layoutnumber, control%num_procs, &
+         call log_msg(LOG_FATAL, 'OUTPUT', &
                           'Unable to initialise movie classification transport')
       end if
       call write_classification_attributes(this, transport)
 
    end subroutine init_movie_probe_output
-
-   subroutine create_bin_file(filePath, error)
-      character(len=*), intent(in) :: filePath
-      integer, intent(out) :: error
-      call create_file_with_path(add_extension(filePath, BINARYEXTENSION), error)
-   end subroutine
 
    subroutine synchronise_movie_participants(this, control)
       type(movie_probe_output_t), intent(in) :: this
@@ -145,7 +135,7 @@ contains
 
       if (this%publication%communicator_size > 1) then
          call MPI_Barrier(this%publication%communicator, error)
-         if (error /= MPI_SUCCESS) call StopOnError(control%layoutnumber, control%num_procs, &
+         if (error /= MPI_SUCCESS) call log_msg(LOG_FATAL, 'OUTPUT', &
                                                     'Unable to synchronise movie output participants')
       end if
 #endif
@@ -166,24 +156,15 @@ contains
       this%metadata%ownership%participant_ranks = this%publication%participant_ranks
       this%metadata%ownership%scalar_writer_rank = this%publication%owner_rank
       if (allocated(this%metadata%artifacts)) deallocate (this%metadata%artifacts)
-      allocate (this%metadata%artifacts(5))
-      this%metadata%artifacts(1)%kindTag = OUTPUT_ARTIFACT_BINARY
-      this%metadata%artifacts(1)%relative_path = trim(base_name)//BINARYEXTENSION
-      this%metadata%artifacts(1)%byte_order = BINARY_ENDIAN_LITTLE
-      this%metadata%artifacts(1)%numeric_representation = BINARY_NUMERIC_REAL64
-      this%metadata%artifacts(1)%record_bytes = 56
-      this%metadata%artifacts(1)%component_order = 'time,x,y,z,Ex,Ey,Ez'
-      this%metadata%artifacts(2)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_METADATA
-      this%metadata%artifacts(2)%relative_path = trim(base_name)//'.xdmf'
-      this%metadata%artifacts(3)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_DATA
-      this%metadata%artifacts(3)%relative_path = trim(base_name)//'.h5'
-      this%metadata%artifacts(4)%kindTag = OUTPUT_ARTIFACT_GEOMETRY
-      this%metadata%artifacts(4)%relative_path = trim(base_name)//'_geometry.xdmf'
-      this%metadata%artifacts(5)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_DATA
-      this%metadata%artifacts(5)%relative_path = trim(base_name)//'_geometry.h5'
-
-      call validate_binary_layout(this%metadata%artifacts(1), error)
-      if (error /= BINARY_WRITER_SUCCESS) return
+      allocate (this%metadata%artifacts(4))
+      this%metadata%artifacts(1)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_METADATA
+      this%metadata%artifacts(1)%relative_path = trim(base_name)//'.xdmf'
+      this%metadata%artifacts(2)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_DATA
+      this%metadata%artifacts(2)%relative_path = trim(base_name)//'.h5'
+      this%metadata%artifacts(3)%kindTag = OUTPUT_ARTIFACT_GEOMETRY
+      this%metadata%artifacts(3)%relative_path = trim(base_name)//'_geometry.xdmf'
+      this%metadata%artifacts(4)%kindTag = OUTPUT_ARTIFACT_VISUALISATION_DATA
+      this%metadata%artifacts(4)%relative_path = trim(base_name)//'_geometry.h5'
       error = 0
    end subroutine initialise_movie_metadata
 
@@ -249,7 +230,7 @@ contains
                                           this%publication%communicator, status, diagnostic)
       if (status /= VISUALISATION_SUCCESS) then
          error = 1
-         print *, trim(diagnostic)
+         call log_msg(LOG_ERROR, 'OUTPUT', trim(diagnostic))
       end if
    end subroutine create_movie_files
 
@@ -278,7 +259,7 @@ contains
          case (IMHC)
             call save_field_module(this, fieldsReference%H, request, step, problemInfo)
          case default
-            call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
+            call log_msg(LOG_FATAL, 'OUTPUT', "Volumic measure not supported")
          end select
       else if (any(VOLUMIC_X_MEASURE == request)) then
          select case (request)
@@ -289,7 +270,7 @@ contains
          case (IHXC)
             call save_field_component(this, this%xValueForTime, fieldsReference%H%x, step, problemInfo, IHX)
          case default
-            call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
+            call log_msg(LOG_FATAL, 'OUTPUT', "Volumic measure not supported")
          end select
       else if (any(VOLUMIC_Y_MEASURE == request)) then
          select case (request)
@@ -300,7 +281,7 @@ contains
          case (IHYC)
             call save_field_component(this, this%yValueForTime, fieldsReference%H%y, step, problemInfo, IHY)
          case default
-            call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
+            call log_msg(LOG_FATAL, 'OUTPUT', "Volumic measure not supported")
          end select
       else if (any(VOLUMIC_Z_MEASURE == request)) then
          select case (request)
@@ -311,7 +292,7 @@ contains
          case (IHZC)
             call save_field_component(this, this%zValueForTime, fieldsReference%H%z, step, problemInfo, IHZ)
          case default
-            call StopOnError(control%layoutnumber, control%num_procs, "Volumic measure not supported")
+            call log_msg(LOG_FATAL, 'OUTPUT', "Volumic measure not supported")
          end select
       end if
    end subroutine update_movie_probe_output
@@ -328,13 +309,12 @@ contains
       call init_output_transport(transport, root_rank=0, status=error, &
                                  communicator=this%publication%communicator)
       if (error /= OUTPUT_TRANSPORT_SUCCESS) then
-         call StopOnError(0, 0, 'Unable to initialise movie output transport')
+         call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to initialise movie output transport')
       end if
 
-      call write_bin_file(this, transport)
       call write_visualisation(this, transport)
       call flush_visualisation(this%visualisation, error, diagnostic)
-      if (error /= VISUALISATION_SUCCESS) call StopOnError(0, 0, &
+      if (error /= VISUALISATION_SUCCESS) call log_msg(LOG_FATAL, 'OUTPUT', &
                                                            'Unable to flush movie HDF5 output: '//trim(diagnostic))
       call clear_memory_data(this)
    end subroutine flush_movie_probe_output
@@ -352,12 +332,12 @@ contains
       end if
       call close_visualisation(this%visualisation, error, diagnostic)
       if (error /= VISUALISATION_SUCCESS) then
-         call StopOnError(0, 0, 'Unable to close movie HDF5 output: '//trim(diagnostic))
+         call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to close movie HDF5 output: '//trim(diagnostic))
       end if
 #ifdef CompileWithMPI
       if (this%publication%owns_communicator .and. this%publication%local_participates) then
          call MPI_Comm_free(this%publication%communicator, error)
-         if (error /= MPI_SUCCESS) call StopOnError(0, 0, 'Unable to free movie output communicator')
+         if (error /= MPI_SUCCESS) call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to free movie output communicator')
          this%publication%owns_communicator = .false.
          this%publication%communicator = MPI_COMM_NULL
       end if
@@ -371,8 +351,7 @@ contains
       end if
 
       call verify_volumetric_visualisation(this%filesPath, error)
-      if (file_exists(add_extension(this%filesPath, BINARYEXTENSION)) .and. &
-          file_exists(trim(this%filesPath)//'_geometry.xdmf') .and. &
+      if (file_exists(trim(this%filesPath)//'_geometry.xdmf') .and. &
           file_exists(trim(this%filesPath)//'_geometry.h5') .and. &
           error == VISUALISATION_SUCCESS) then
          this%metadata%lifecycle%state = OUTPUT_LIFECYCLE_COMPLETE
@@ -382,45 +361,13 @@ contains
          this%metadata%lifecycle%diagnostic = 'Required movie output artifacts are incomplete'
       end if
       if (this%metadata%lifecycle%state == OUTPUT_LIFECYCLE_FAILED) then
-         call StopOnError(0, 0, trim(this%metadata%lifecycle%diagnostic))
+         call log_msg(LOG_FATAL, 'OUTPUT', trim(this%metadata%lifecycle%diagnostic))
       end if
    end subroutine close_movie_probe_output
 
    !===========================
    ! Private routines
    !===========================
-
-   subroutine write_bin_file(this, transport)
-      type(movie_probe_output_t), intent(inout) :: this
-      type(output_transport_t), intent(in) :: transport
-      integer :: counts_status, i, record_index, status, time_index
-      integer, allocatable :: counts(:), displacements(:)
-      real(real64), allocatable :: gathered_records(:), local_records(:)
-
-      allocate (local_records(7*this%nPoints))
-      do time_index = 1, this%nTime
-         record_index = 0
-         do i = 1, this%nPoints
-            local_records(record_index + 1:record_index + 7) = [real(this%timeStep(time_index), real64), &
-                                                                real(this%coords(1, i), real64), real(this%coords(2, i), real64), &
-                                                 real(this%coords(3, i), real64), real(this%xValueForTime(time_index, i), real64), &
-                                                                real(this%yValueForTime(time_index, i), real64), &
-                                                                real(this%zValueForTime(time_index, i), real64)]
-            record_index = record_index + 7
-         end do
-         call transfer_flush_batch(transport, local_records, gathered_records, counts, displacements, counts_status)
-         if (counts_status /= OUTPUT_TRANSPORT_SUCCESS) then
-            call StopOnError(0, 0, 'Unable to gather movie binary records')
-         end if
-         if (this%publication%local_is_owner) then
-            call append_binary_real64(add_extension(this%filesPath, BINARYEXTENSION), &
-                                      this%metadata%artifacts(1), gathered_records, status)
-            if (status /= BINARY_WRITER_SUCCESS) then
-               call StopOnError(0, 0, 'Unable to append movie binary records')
-            end if
-         end if
-      end do
-   end subroutine write_bin_file
 
    subroutine write_visualisation(this, transport)
       type(movie_probe_output_t), intent(inout) :: this
@@ -548,14 +495,14 @@ contains
       case (OUTPUT_PUBLICATION_ROOT_AGGREGATION)
          call gather_global_dense(this, local_values, transport, global_values, transport_status)
          if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
-            call StopOnError(0, 0, 'Unable to aggregate movie HDF5 values')
+            call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to aggregate movie HDF5 values')
          end if
          if (this%publication%local_is_owner) then
             call write_visualisation_attribute(this%visualisation, attribute, global_values, status, diagnostic)
             call require_visualisation_success(status, diagnostic, 'Movie HDF5 write failed: ')
          end if
       case default
-         call StopOnError(0, 0, 'Unsupported movie output publication mode')
+         call log_msg(LOG_FATAL, 'OUTPUT', 'Unsupported movie output publication mode')
       end select
    end subroutine publish_dense_attribute
 
@@ -564,7 +511,7 @@ contains
       character(len=*), intent(in) :: diagnostic, context
 
       if (status /= VISUALISATION_SUCCESS) then
-         call StopOnError(0, 0, context//trim(diagnostic))
+         call log_msg(LOG_FATAL, 'OUTPUT', context//trim(diagnostic))
       end if
    end subroutine require_visualisation_success
 
@@ -575,52 +522,50 @@ contains
       real(real64), allocatable, intent(out) :: global_values(:)
       integer, intent(out) :: status
 
-      integer, allocatable :: counts(:), displacements(:)
-      real(real64), allocatable :: gathered_values(:), local_batch(:)
-      integer(int64) :: global_shape(3), offset(3), shapeValue(3)
-      integer :: global_index, i, j, k, local_index, rank_index, value_start
+      real(real64), allocatable :: local_batch(:), rank_batch(:)
+      integer(int64) :: global_index, global_shape(3), i, j, k, local_index, offset(3), shapeValue(3)
+      integer :: source_rank
 
       allocate (local_batch(6 + size(local_values)))
       local_batch(1:3) = real(this%publication%file_offset, real64)
       local_batch(4:6) = real(this%publication%local_shape, real64)
       local_batch(7:) = local_values
-      call transfer_flush_batch(transport, local_batch, gathered_values, counts, displacements, status)
-      if (status /= OUTPUT_TRANSPORT_SUCCESS) return
-
-      if (transport%rank /= transport%root_rank) then
-         allocate (global_values(0))
-         return
-      end if
 
       global_shape = [ &
                      int(this%publication%global_upper%x, int64) - int(this%publication%global_lower%x, int64) + 1_int64, &
                      int(this%publication%global_upper%y, int64) - int(this%publication%global_lower%y, int64) + 1_int64, &
                      int(this%publication%global_upper%z, int64) - int(this%publication%global_lower%z, int64) + 1_int64]
-      allocate (global_values(int(product(global_shape))))
-      global_values = 0.0_real64
-      do rank_index = 1, transport%rank_count
-         if (counts(rank_index) < 6) then
+      if (transport%rank == transport%root_rank) then
+         allocate (global_values(product(global_shape)))
+         global_values = 0.0_real64
+      else
+         allocate (global_values(0))
+      end if
+
+      ! The root receives one rank's slab at a time instead of a gathered copy of the whole frame.
+      do source_rank = 0, transport%rank_count - 1
+         call relay_flush_batch(transport, source_rank, local_batch, rank_batch, status)
+         if (status /= OUTPUT_TRANSPORT_SUCCESS) return
+         if (transport%rank /= transport%root_rank) cycle
+         if (size(rank_batch) < 6) then
             status = OUTPUT_TRANSPORT_INVALID_CONTEXT
             return
          end if
-         value_start = displacements(rank_index)
-         offset = nint(gathered_values(value_start + 1:value_start + 3), kind=int64)
-         shapeValue = nint(gathered_values(value_start + 4:value_start + 6), kind=int64)
+         offset = nint(rank_batch(1:3), kind=int64)
+         shapeValue = nint(rank_batch(4:6), kind=int64)
          if (any(shapeValue <= 0_int64) .or. any(offset < 0_int64) .or. &
              any(offset + shapeValue > global_shape) .or. &
-             int(counts(rank_index) - 6, int64) /= product(shapeValue)) then
+             size(rank_batch, kind=int64) - 6_int64 /= product(shapeValue)) then
             status = OUTPUT_TRANSPORT_INVALID_CONTEXT
             return
          end if
-         do k = 1, int(shapeValue(3))
-         do j = 1, int(shapeValue(2))
-         do i = 1, int(shapeValue(1))
-            local_index = i + (j - 1)*int(shapeValue(1)) + &
-                          (k - 1)*int(shapeValue(1)*shapeValue(2))
-            global_index = int(offset(1)) + i + &
-                           (int(offset(2)) + j - 1)*int(global_shape(1)) + &
-                           (int(offset(3)) + k - 1)*int(global_shape(1)*global_shape(2))
-            global_values(global_index) = gathered_values(value_start + 6 + local_index)
+         do k = 1, shapeValue(3)
+         do j = 1, shapeValue(2)
+         do i = 1, shapeValue(1)
+            local_index = i + (j - 1)*shapeValue(1) + (k - 1)*shapeValue(1)*shapeValue(2)
+            global_index = offset(1) + i + (offset(2) + j - 1)*global_shape(1) + &
+                           (offset(3) + k - 1)*global_shape(1)*global_shape(2)
+            global_values(global_index) = rank_batch(6 + local_index)
          end do
          end do
          end do

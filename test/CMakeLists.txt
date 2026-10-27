@@ -40,6 +40,9 @@ set(BORDER_TESTS_LIBRARY border_tests)
 add_subdirectory(unit/preprocess)
 set(PREPROCESS_TESTS_LIBRARY preprocess_tests)
 
+add_subdirectory(unit/report)
+set(REPORT_TESTS_LIBRARY report_tests)
+
 add_subdirectory(healer)
 set(HEALER_TESTS_LIBRARY healer_tests)
 
@@ -56,6 +59,7 @@ target_link_libraries(fdtd_tests
     ${CONFORMAL_TESTS_LIBRARY}
     ${BORDER_TESTS_LIBRARY}
     ${PREPROCESS_TESTS_LIBRARY}
+    ${REPORT_TESTS_LIBRARY}
     ${ROTATE_TESTS_LIBRARY}
     ${OUTPUT_TESTS_LIBRARY}
     ${VTK_API_TESTS_LIBRARY}

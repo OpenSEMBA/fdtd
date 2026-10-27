@@ -2129,7 +2129,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2165,7 +2165,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2201,7 +2201,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2237,7 +2237,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2275,7 +2275,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2311,7 +2311,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2347,7 +2347,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2383,7 +2383,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2421,7 +2421,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2457,7 +2457,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2493,7 +2493,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2529,7 +2529,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2571,7 +2571,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2607,7 +2607,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2643,7 +2643,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2679,7 +2679,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2717,7 +2717,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2753,7 +2753,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2789,7 +2789,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2825,7 +2825,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2863,7 +2863,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2899,7 +2899,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2935,7 +2935,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr
@@ -2971,7 +2971,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= extraMedium%elementIndex).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + extraMedium%sigma ).or.(newsigmam /= oldsigmam + extraMedium%sigmam))) then
-                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call log_msg(LOG_FATAL, 'PREPROCESS', 'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(extraMedium%elementIndex)%epr    = oldepr

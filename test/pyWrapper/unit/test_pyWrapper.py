@@ -249,7 +249,7 @@ PROBE_TYPES: dict = {
         "type": {"code": "_ExC_", "expected": "movie"},
         "region": {"code": "1_2_3__4_5_6", "expected": ([1, 2, 3], [4, 5, 6])},
         "domain": {"code": "_tm", "expected": "time"},
-        "expected_extensions": [".bin", ".xdmf", ".h5"],
+        "expected_extensions": [".xdmf", ".h5"],
         "extra_outputs": ["_geometry.xdmf", "_geometry.h5"],
         "expected_dat_columns": None,
     },

@@ -35,6 +35,12 @@ cmake --build --preset rls -j
 
 ## Running Tests
 
+**Rule for agents:** running full test suites locally during development is
+forbidden (they take very long). Run only individual tests, e.g.
+`./build-rls/bin/fdtd_tests --gtest_filter=Suite.Test` or
+`pytest test/path/test_file.py::test_name`. Full suites are left to CI or to
+the user.
+
 **C++/Fortran unit tests (GoogleTest):**
 ```bash
 ./build-rls/bin/fdtd_tests
@@ -116,6 +122,9 @@ semba-fdtd        executable entry point
 - **Output**: ASCII probe `.dat` files, XDMF+HDF5 movies/snapshots, and VTK;
   see `doc/output.md`
 - Test data and example cases live under `testData/`
+- **Logs**: warnings, errors, diagnostics and fatal aborts go through
+  `log_msg` in `Report_m` (`LOG_FATAL` replaces the removed `StopOnError`);
+  see `doc/logging.md`
 
 ### Optional Features and Conditional Compilation
 

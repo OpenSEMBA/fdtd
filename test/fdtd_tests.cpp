@@ -18,6 +18,7 @@
 #include "conformal/conformal_tests.h"
 #include "borders/border_tests.h"
 #include "unit/preprocess/preprocess_tests.h"
+#include "unit/report/report_tests.h"
 #include "healer/healer_tests.h"
 #include "sgbc/sgbc_tests.h"
 

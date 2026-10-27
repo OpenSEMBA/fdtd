@@ -210,6 +210,7 @@ module outputTypes_m
    end type abstract_probe_t
    type, extends(abstract_probe_t) :: abstract_time_probe_t
       character(len=BUFSIZE) :: filePathTime
+      integer :: fileUnitTime = 0
       integer(kind=SINGLE) :: nTime = 0_SINGLE
       integer(kind=SINGLE) :: nTimesFlushed = 0_SINGLE !times alredy writen in disk
       real(kind=RKIND_TIME), allocatable :: timeStep(:)
@@ -225,6 +226,7 @@ module outputTypes_m
 
    type, extends(abstract_probe_t) :: abstract_time_frequency_probe_t
       character(len=BUFSIZE) :: filePathTime, filePathFreq
+      integer :: fileUnitTime = 0, fileUnitFreq = 0
       integer(kind=SINGLE) :: nTime = 0_SINGLE, nFreq = 0_SINGLE
       real(kind=RKIND_TIME) :: quadratureDt = 0.0_RKIND_TIME
       real(kind=RKIND_TIME), allocatable :: timeStep(:)
