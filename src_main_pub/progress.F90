@@ -94,12 +94,10 @@ contains
    end subroutine InitReporting
 
    ! observationFlushSteps: step period of the probe buffer flush, 0 when there are no probes.
-   subroutine InitTiming(sgg, c, t, initialtimestep, maxSourceValue, observationFlushSteps)
+   subroutine InitTiming(sgg, control, initialtimestep, observationFlushSteps)
       type(SGGFDTDINFO_t), intent(in) :: sgg
-      type(sim_control_t) , intent(in):: c
-      real(kind=8), intent(in) :: t
+      type(sim_control_t) , intent(in):: control
       integer(kind=4), intent(in) :: initialtimestep
-      real(kind=RKIND), intent(in) :: maxSourceValue
       integer(kind=4), intent(in) :: observationFlushSteps
       type(time_t) :: time_out2
 #ifdef CompileWithMPI
@@ -107,9 +105,9 @@ contains
 #endif
       character(len=BUFSIZE) :: whoami
       character(len=BUFSIZE) :: dubuf
-      write(whoami,'(a,i5,a,i5,a)') '(',c%layoutnumber+1,'/',c%num_procs,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',control%layoutnumber+1,'/',control%num_procs,') '
 
-      time_launch=t
+      time_launch=control%time_desdelanzamiento
       snapLevel=1.0e25_RKIND
       snapStep=1
       snapHowMany=1
@@ -127,39 +125,39 @@ contains
 #endif
 
       write(dubuf,*)  'Total Mcells: ',total_mega_cells
-      call print11(c%layoutnumber,dubuf)
+      call print11(control%layoutnumber,dubuf)
 
-      if (c%flushsecondsFIELDS/=0) then
-         write(dubuf,'(a,i0,a)')  'Restart FIELDS flush: every ',c%flushsecondsFIELDS/60,' minutes'
-      else if (c%maxCPUtime == TOPCPUTIME) then
+      if (control%flushsecondsFIELDS/=0) then
+         write(dubuf,'(a,i0,a)')  'Restart FIELDS flush: every ',control%flushsecondsFIELDS/60,' minutes'
+      else if (control%maxCPUtime == TOPCPUTIME) then
          dubuf = 'Restart FIELDS flush: none scheduled'
       else
-         write(dubuf,'(a,i0,a)')  'Restart FIELDS flush: at the end, after ',c%maxCPUtime,' minutes'
+         write(dubuf,'(a,i0,a)')  'Restart FIELDS flush: at the end, after ',control%maxCPUtime,' minutes'
       end if
-      call print11(c%layoutnumber,dubuf)
+      call print11(control%layoutnumber,dubuf)
       if (observationFlushSteps == 0) then
          dubuf = 'Observation DATA flush: no probes'
-      else if (c%flushsecondsDATA == 0 .or. c%flushsecondsDATA >= TOPCPUTIME*60) then
+      else if (control%flushsecondsDATA == 0 .or. control%flushsecondsDATA >= TOPCPUTIME*60) then
          write(dubuf,'(a,i0,a)')  'Observation DATA flush: every ',observationFlushSteps,' steps; time-based: none'
       else
          write(dubuf,'(a,i0,a,i0,a)')  'Observation DATA flush: every ',observationFlushSteps, &
-                                       ' steps; time-based: every ',c%flushsecondsDATA/60,' minutes'
+                                       ' steps; time-based: every ',control%flushsecondsDATA/60,' minutes'
       end if
-      call print11(c%layoutnumber,dubuf)
+      call print11(control%layoutnumber,dubuf)
       write(dubuf,'(a,i0,a)')  'Reporting simulation info every ',REPORTINGSECONDS/60,' minutes'
-      call print11(c%layoutnumber,dubuf)
+      call print11(control%layoutnumber,dubuf)
 
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
       call get_secnds(time_out2)
-      call print11(c%layoutnumber,SEPARADOR//SEPARADOR//SEPARADOR)
+      call print11(control%layoutnumber,SEPARADOR//SEPARADOR//SEPARADOR)
       write(dubuf,'(a,i7,a,e19.9e3,a,i9,a,e19.9e3)')  'Simulation from n=',initialtimestep,', t=',sgg%time(initialtimestep),&
-                                                      ' to n=',c%finaltimestep,', t=',sgg%time(c%finaltimestep)
-      call print11(c%layoutnumber,dubuf)
+                                                      ' to n=',control%finaltimestep,', t=',sgg%time(control%finaltimestep)
+      call print11(control%layoutnumber,dubuf)
       write(dubuf,*)  'Date/time ', time_out2%fecha(7: 8),'/',time_out2%fecha(5: 6),'/',time_out2%fecha(1:4),'   ', &
                                     time_out2%hora(1: 2), ':',time_out2%hora(3: 4),':',time_out2%hora(5: 6)
-      call print11(c%layoutnumber,dubuf)
+      call print11(control%layoutnumber,dubuf)
       time_begin_absolute = time_out2%segundos
       time_begin = time_begin_absolute
       time_begin2 = time_begin_absolute

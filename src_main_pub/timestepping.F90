@@ -646,7 +646,7 @@ module Solver_m
 #ifdef CompileWithMPI
       call MPI_AllReduce(this%thereAre%Observation, anyObservation, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
 #endif
-      call InitTiming(this%sgg, this%control, this%control%time_desdelanzamiento, this%initialtimestep, this%control%maxSourceValue, &
+      call InitTiming(this%sgg, this%control, this%initialtimestep, &
                       merge(OUTPUT_TIME_BUFFER_SIZE, 0, anyObservation))
 
 
