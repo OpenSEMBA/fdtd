@@ -621,6 +621,8 @@ contains
       if (a%K    /= b%K)    return
       if (a%dir  /= b%dir)  return
       if (a%Or   /= b%Or)   return
+      if (a%normal /= b%normal) return
+      if (a%isSurface .neqv. b%isSurface) return
       if (a%tag  /= b%tag)  return
       res = .true.
    end function ThinSlotComp_eq

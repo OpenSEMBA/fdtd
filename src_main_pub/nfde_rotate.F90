@@ -680,7 +680,7 @@ contains
       integer(kind=4) :: mpidir    
       type(ThinSlots_t), pointer :: old_tSlots    
       integer(kind=4) :: tama,tama2,i,ii
-      integer(kind=4) :: oldx, oldy, oldz
+      integer(kind=4) :: oldx, oldy, oldz, oldnormal
       
       tama = this%tSlots%n_Tg
       allocate(old_tSlots,source=this%tSlots)
@@ -704,6 +704,15 @@ contains
                         case (IEZ)
                           this%tSlots%Tg(i)%TgC(ii)%dir = IEX
                        end select
+                       oldnormal = old_tsLots%Tg(i)%TgC(ii)%normal
+                       select case (abs(oldnormal))
+                        case (IEX)
+                          this%tSlots%Tg(i)%TgC(ii)%normal = sign(IEY, oldnormal)
+                        case (IEY)
+                          this%tSlots%Tg(i)%TgC(ii)%normal = sign(IEZ, oldnormal)
+                        case (IEZ)
+                          this%tSlots%Tg(i)%TgC(ii)%normal = sign(IEX, oldnormal)
+                       end select
               else if (MPIDIR==1) then
                        oldx = this%tSlots%Tg(i)%TgC(ii)%i
                        oldy = this%tSlots%Tg(i)%TgC(ii)%j
@@ -720,6 +729,15 @@ contains
                           this%tSlots%Tg(i)%TgC(ii)%dir = IEX
                         case (IEZ)
                           this%tSlots%Tg(i)%TgC(ii)%dir = IEY
+                       end select
+                       oldnormal = old_tsLots%Tg(i)%TgC(ii)%normal
+                       select case (abs(oldnormal))
+                        case (IEX)
+                          this%tSlots%Tg(i)%TgC(ii)%normal = sign(IEZ, oldnormal)
+                        case (IEY)
+                          this%tSlots%Tg(i)%TgC(ii)%normal = sign(IEX, oldnormal)
+                        case (IEZ)
+                          this%tSlots%Tg(i)%TgC(ii)%normal = sign(IEY, oldnormal)
                        end select
               end if
         end do

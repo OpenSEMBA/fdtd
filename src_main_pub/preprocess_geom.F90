@@ -2640,6 +2640,9 @@ contains
                if ((i1 >= BoundingBox%XI) .AND. (i1 < BoundingBox%XE) .AND. &
                &    (j1 >= BoundingBox%YI) .AND. (j1 < BoundingBox%YE) .AND. &
                &    (k1 >= BoundingBox%ZI) .AND. (k1 < BoundingBox%ZE)) then
+                  if (this%tSlots%Tg(j)%TgC(i)%isSurface) then
+                     orientationIndex = this%tSlots%Tg(j)%TgC(i)%normal
+                  else
                   !find the orientation of the conductive plane containing the Slot
                   oriX = (direccion == IEY) .AND. isThinSlotHostMedium(media%sggMiHx(i1, j1, k1))
                   oriX4 = (direccion == IEZ) .AND. isThinSlotHostMedium(media%sggMiHx(i1, j1, k1))
@@ -2707,8 +2710,20 @@ contains
                      !careful, with nfde you cannot make staircase Slots because the orientation of the planes cannot be determined
                      !in the common sections. Therefore I could not test the anisotropic electric shared ones, only the magnetic ones
                   end if
+                  end if
 
                   thinSlotData(j)%normal(i) = orientationIndex
+                  if (this%tSlots%Tg(j)%TgC(i)%isSurface) then
+                     select case (Abs(orientationIndex))
+                      case (IEX)
+                        medium1 = media%sggMiHx(i1,j1,k1)
+                      case (IEY)
+                        medium1 = media%sggMiHy(i1,j1,k1)
+                      case (IEZ)
+                        medium1 = media%sggMiHz(i1,j1,k1)
+                     end select
+                     medium2 = medium1
+                  else
                   medium2=-1
                   medium1=-1
                   select case (Abs(orientationIndex))
@@ -2734,6 +2749,7 @@ contains
                         medium2=medium1
                      end if
                   end select
+                  end if
 
                   if ( (isThinSlotHostMedium(medium1).or.(sgg%Med(medium1)%Is%DIELECTRIC).or.(medium1 ==1 )).and. &
                      (isThinSlotHostMedium(medium2).or.(sgg%Med(medium2)%Is%DIELECTRIC).or.(medium2 ==1 )) ) then
@@ -4745,6 +4761,9 @@ contains
          integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: ownMedium, minusMedium, plusMedium
 
          do a = 1, this%tSlots%Tg(slot)%n_tgc
+            ! Surface-defined slots are validated by the embedded mesher, which
+            ! already enforces the sheet-perimeter rule before export.
+            if (this%tSlots%Tg(slot)%TgC(a)%isSurface) cycle
             if (.not. getThinSlotParallelLines(this%tSlots%Tg(slot)%TgC(a), &
                                                thinSlotData(slot)%normal(a), &
                                                ownMedium, minusMedium, plusMedium)) cycle

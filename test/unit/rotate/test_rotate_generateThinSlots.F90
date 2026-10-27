@@ -105,4 +105,46 @@ subroutine cleanup_thin_slot_test(this)
     deallocate(this%tslots)
 end subroutine cleanup_thin_slot_test
 
+integer function test_rotate_generate_thin_slots_surface() bind(C) result(err)
+    type(Parseador_t) :: this
+    integer :: test_err = 0
+
+    call setup_surface_thin_slot_test(this)
+    call rotate_generateThinSlots(this, 2)
+    call expect_eq_int(test_err, 3, this%tslots%tg(1)%tgc(1)%i, "surface rotate: i mpidir2 error")
+    call expect_eq_int(test_err, 1, this%tslots%tg(1)%tgc(1)%j, "surface rotate: j mpidir2 error")
+    call expect_eq_int(test_err, 2, this%tslots%tg(1)%tgc(1)%k, "surface rotate: k mpidir2 error")
+    call expect_eq_int(test_err, IEZ, this%tslots%tg(1)%tgc(1)%dir, "surface rotate: dir mpidir2 error")
+    call expect_eq_int(test_err, +IEX, this%tslots%tg(1)%tgc(1)%normal, "surface rotate: normal mpidir2 error")
+    call cleanup_thin_slot_test(this)
+
+    call setup_surface_thin_slot_test(this)
+    call rotate_generateThinSlots(this, 1)
+    call expect_eq_int(test_err, 2, this%tslots%tg(1)%tgc(1)%i, "surface rotate: i mpidir1 error")
+    call expect_eq_int(test_err, 3, this%tslots%tg(1)%tgc(1)%j, "surface rotate: j mpidir1 error")
+    call expect_eq_int(test_err, 1, this%tslots%tg(1)%tgc(1)%k, "surface rotate: k mpidir1 error")
+    call expect_eq_int(test_err, IEX, this%tslots%tg(1)%tgc(1)%dir, "surface rotate: dir mpidir1 error")
+    call expect_eq_int(test_err, +IEY, this%tslots%tg(1)%tgc(1)%normal, "surface rotate: normal mpidir1 error")
+    call cleanup_thin_slot_test(this)
+
+    err = test_err
+end function test_rotate_generate_thin_slots_surface
+
+subroutine setup_surface_thin_slot_test(this)
+    type(Parseador_t), intent(inout) :: this
+
+    allocate(this%tslots)
+    this%tslots%n_tg = 1
+    this%tslots%n_tg_max = 1
+    allocate(this%tslots%tg(1))
+    allocate(this%tslots%tg(1)%tgc(1))
+    this%tslots%tg(1)%n_tgc = 1
+    this%tslots%tg(1)%n_tgc_max = 1
+    this%tslots%tg(1)%width = 0.1d0
+    call init_thin_slot_component(this, 1, 1, 1, 2, 3, IEY, "surface-slot")
+    this%tslots%tg(1)%tgc(1)%Or = +IEY
+    this%tslots%tg(1)%tgc(1)%normal = +IEZ
+    this%tslots%tg(1)%tgc(1)%isSurface = .true.
+end subroutine setup_surface_thin_slot_test
+
 end module test_rotate_generateThinSlots_m 

@@ -441,10 +441,12 @@ module NFDETypes_m
       integer(kind=4) :: K = 0
       ! dir is the unsigned axis used by the Yee-material routines, while Or
       ! keeps the signed traversal of the source linel (Or = dir or -dir).
-      ! The PEC plane normal that contains the slot is derived later, during
-      ! preprocessing, and is not stored in the parsed component.
       integer(kind=4) :: dir = - 1
       integer(kind=4) :: Or = - 1
+      ! Surface-defined thin slots carry the host face normal explicitly.
+      ! Line-defined slots leave normal at zero and derive it in preprocessing.
+      integer(kind=4) :: normal = 0
+      logical :: isSurface = .false.
       character(len=BUFSIZE) :: tag
    end type ThinSlotComp_t
    !--------------------------------------------------------------------------
