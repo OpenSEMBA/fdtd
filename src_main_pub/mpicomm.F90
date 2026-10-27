@@ -1422,10 +1422,11 @@ contains
       !---------------- ends InitMPI_Cray -----------------------------------------------------------
       return
    end subroutine InitMPI_Cray
-   subroutine wait_requests_timed(reqs)
+   subroutine wait_requests_timed(reqs, peer)
    !Waits for the requests without blocking forever: a neighbour that stops answering aborts the run.
    !shortcut: busy polling keeps one core at 100% while waiting, as the blocking wait did, add a short sleep between polls if idle CPU matters.
       integer, dimension(:), intent(inout) :: reqs
+      integer, intent(in), optional :: peer
       real(kind=8) :: t0
       character(len=BUFSIZE) :: buff
       integer :: ierr
@@ -1436,8 +1437,13 @@ contains
       do while (.not. done)
          call MPI_Testall(size(reqs), reqs, done, MPI_STATUSES_IGNORE, ierr)
          if (.not. done .and. MPI_Wtime() - t0 > sync_timeout_s()) then
-            write (buff, '(a,f0.1,a)') 'No answer from a neighbour rank after ', sync_timeout_s(), &
-               ' s during the halo exchange. Set SEMBA_FDTD_SYNC_TIMEOUT_S to change the limit.'
+            if (present(peer)) then
+               write (buff, '(a,i0,a,f0.1,a)') 'No answer from a neighbour rank ', peer, ' after ', sync_timeout_s(), &
+                  ' s during the halo exchange. Set SEMBA_FDTD_SYNC_TIMEOUT_S to change the limit.'
+            else
+               write (buff, '(a,f0.1,a)') 'No answer from a neighbour rank after ', sync_timeout_s(), &
+                  ' s during the halo exchange. Set SEMBA_FDTD_SYNC_TIMEOUT_S to change the limit.'
+            end if
             call log_msg(LOG_FATAL, 'MPI', buff)
          end if
       end do
@@ -1488,15 +1494,15 @@ contains
       ! jag: I check that there has been Rx of all my receptions with MPI_TEST
       ! if so I continue. I do not think there is much difference
       if(databuf_SetH%syncDown .OR. databuf_SetH%pbcDown) then
-         call wait_requests_timed(req2)
+         call wait_requests_timed(req2, databuf_Down%ip_target)
          if(databuf_Down%FlushExtraInfo) then
-            call wait_requests_timed(req2b)
+            call wait_requests_timed(req2b, databuf_Down%ip_target)
          end if
       end if
       if(databuf_SetH%syncUp .OR. databuf_SetH%pbcUp) then
-         call wait_requests_timed(req1)
+         call wait_requests_timed(req1, databuf_Up%ip_target)
          if(databuf_Up%FlushExtraInfo) then
-            call wait_requests_timed(req1b)
+            call wait_requests_timed(req1b, databuf_Up%ip_target)
          end if
       end if
       !   call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1569,14 +1575,14 @@ contains
       !------------------------------------------->
       if(databuf_SetE%syncDown .OR. databuf_SetE%pbcDown .or. databuf_down%FlushExtraInfo) then
          if(databuf_Down%FlushExtraInfo) then
-            call wait_requests_timed(req2)
-            call wait_requests_timed(req2b)
+            call wait_requests_timed(req2, databuf_Down%ip_target)
+            call wait_requests_timed(req2b, databuf_Down%ip_target)
          end if
       end if
       if(databuf_SetE%syncUp .OR. databuf_SetE%pbcUp .or. databuf_up%FlushExtraInfo) then
          if(databuf_Up%FlushExtraInfo) then
-            call wait_requests_timed(req1)
-            call wait_requests_timed(req1b)
+            call wait_requests_timed(req1, databuf_Up%ip_target)
+            call wait_requests_timed(req1b, databuf_Up%ip_target)
          end if
       end if
       !   call MPI_Barrier(SUBCOMM_MPI,ierr)
