@@ -125,6 +125,26 @@ def test_airplane_movie_is_published_canonically_with_mpi(tmp_path):
 
 @no_mpi_skip
 @pytest.mark.mpi
+@pytest.mark.movie
+def test_movies_with_different_participants_do_not_deadlock_and_match_serial(tmp_path):
+    fn = CASES_FOLDER + "planewave/pw-in-box-with-partial-movies.fdtd.json"
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path, mpi_command="mpirun -np 4")
+    solver.run()
+
+    serial_folder = tmp_path / "serial"
+    serial_folder.mkdir()
+    serial_solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=serial_folder)
+    serial_solver.run()
+
+    names = ["electric_field_movie", "electric_field_movie_low", "electric_field_movie_high"]
+    for name in names:
+        probe = Probe(solver.getSolvedProbeFolders(name)[0])
+        serial_probe = Probe(serial_solver.getSolvedProbeFolders(name)[0])
+        assert_same_h5_datasets(probe.getH5File(), serial_probe.getH5File())
+
+
+@no_mpi_skip
+@pytest.mark.mpi
 @pytest.mark.probes
 @pytest.mark.hdf
 def test_frequency_slice_is_published_canonically_with_mpi(tmp_path):
