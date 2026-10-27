@@ -2045,7 +2045,7 @@ contains
 
 #ifdef CompileWithMPI
       if (this%control%num_procs>1) then
-         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call barrier_timed(SUBCOMM_MPI)
          call FlushMPI_E_Cray
       end if
 #endif
@@ -2082,7 +2082,7 @@ contains
       !and I suspect the current Block too, going by the following comment
       !I include an initial flush before entering the loop so that resuming is correct
       if (this%control%num_procs>1) then
-         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call barrier_timed(SUBCOMM_MPI)
          call FlushMPI_H_Cray
       end if
       if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &

@@ -62,6 +62,7 @@ module MPIcomm_m
    type(t_databuf_Set_t),save, target :: databuf_SetH
    type(t_databuf_Set_t),save, target :: databuf_SetE
    public FlushMPI_E_Cray,FlushMPI_H_Cray,InitMPI_Cray
+   public barrier_timed,wait_requests_timed
 
    public InitExtraFlushMPI_Cray
 
@@ -1421,15 +1422,54 @@ contains
       !---------------- ends InitMPI_Cray -----------------------------------------------------------
       return
    end subroutine InitMPI_Cray
-   !**************************************************************************************************
+   subroutine wait_requests_timed(reqs)
+   !Waits for the requests without blocking forever: a neighbour that stops answering aborts the run.
+   !shortcut: busy polling keeps one core at 100% while waiting, as the blocking wait did, add a short sleep between polls if idle CPU matters.
+      integer, dimension(:), intent(inout) :: reqs
+      real(kind=8) :: t0
+      character(len=BUFSIZE) :: buff
+      integer :: ierr
+      logical :: done
+      call MPI_Testall(size(reqs), reqs, done, MPI_STATUSES_IGNORE, ierr)
+      if (done) return
+      t0 = MPI_Wtime()
+      do while (.not. done)
+         call MPI_Testall(size(reqs), reqs, done, MPI_STATUSES_IGNORE, ierr)
+         if (.not. done .and. MPI_Wtime() - t0 > sync_timeout_s()) then
+            write (buff, '(a,f0.1,a)') 'No answer from a neighbour rank after ', sync_timeout_s(), &
+               ' s during the halo exchange. Set SEMBA_FDTD_SYNC_TIMEOUT_S to change the limit.'
+            call log_msg(LOG_FATAL, 'MPI', buff)
+         end if
+      end do
+   end subroutine wait_requests_timed
+   subroutine barrier_timed(comm)
+   !Barrier with the same timeout as wait_requests_timed.
+      integer, intent(in) :: comm
+      integer, dimension(1) :: req
+      integer :: ierr
+      call MPI_Ibarrier(comm, req(1), ierr)
+      call wait_requests_timed(req)
+   end subroutine barrier_timed
+   real(kind=8) function sync_timeout_s()
+   !Seconds to wait for a neighbour before aborting. Default 600, override with SEMBA_FDTD_SYNC_TIMEOUT_S.
+      real(kind=8), save :: cached = -1.0_8
+      character(len=32) :: text
+      integer :: status, iostatus
+      if (cached < 0.0_8) then
+         cached = 600.0_8
+         call get_environment_variable('SEMBA_FDTD_SYNC_TIMEOUT_S', text, status=status)
+         if (status == 0) then
+            read (text, *, iostat=iostatus) cached
+            if (iostatus /= 0) cached = 600.0_8
+         end if
+      end if
+      sync_timeout_s = cached
+   end function sync_timeout_s
    subroutine FlushMPI_H_Cray
       !---------------- local variables ------------------------------------------------------------
       type(t_databuf_t), pointer :: databuf_Up, databuf_Down
-      integer :: ierr
       integer, dimension(4) :: req1, req2
       integer, dimension(2) :: req1b, req2b
-      integer, dimension(MPI_STATUS_SIZE, 4) :: status1, status2
-      integer, dimension(MPI_STATUS_SIZE, 2) :: status1b, status2b
       !---------------- starts FlushMPI_H -----------------------------------------------------------
       databuf_Up => databuf_SetH%databuf_Up
       databuf_Down => databuf_SetH%databuf_Down
@@ -1448,15 +1488,15 @@ contains
       ! jag: I check that there has been Rx of all my receptions with MPI_TEST
       ! if so I continue. I do not think there is much difference
       if(databuf_SetH%syncDown .OR. databuf_SetH%pbcDown) then
-         call MPI_WAITALL(4_4, req2, status2, ierr)
+         call wait_requests_timed(req2)
          if(databuf_Down%FlushExtraInfo) then
-            call MPI_WAITALL(2_4, req2b, status2b, ierr)
+            call wait_requests_timed(req2b)
          end if
       end if
       if(databuf_SetH%syncUp .OR. databuf_SetH%pbcUp) then
-         call MPI_WAITALL(4_4, req1, status1, ierr)
+         call wait_requests_timed(req1)
          if(databuf_Up%FlushExtraInfo) then
-            call MPI_WAITALL(2_4, req1b, status1b, ierr)
+            call wait_requests_timed(req1b)
          end if
       end if
       !   call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1510,11 +1550,8 @@ contains
    subroutine FlushMPI_E_Cray
       !---------------- local variables ------------------------------------------------------------
       type(t_databuf_t), pointer :: databuf_Up, databuf_Down
-      integer :: ierr
       integer, dimension(2) :: req1, req2
       integer, dimension(4) :: req1b, req2b
-      integer, dimension(MPI_STATUS_SIZE, 2) :: status1, status2
-      integer, dimension(MPI_STATUS_SIZE, 4) :: status1b, status2b
       !---------------- starts FlushMPI_E -----------------------------------------------------------
       databuf_Up => databuf_SetE%databuf_Up
       databuf_Down => databuf_SetE%databuf_Down
@@ -1532,14 +1569,14 @@ contains
       !------------------------------------------->
       if(databuf_SetE%syncDown .OR. databuf_SetE%pbcDown .or. databuf_down%FlushExtraInfo) then
          if(databuf_Down%FlushExtraInfo) then
-            call MPI_WAITALL(2_4, req2, status2, ierr)
-            call MPI_WAITALL(4_4, req2b, status2b, ierr)
+            call wait_requests_timed(req2)
+            call wait_requests_timed(req2b)
          end if
       end if
       if(databuf_SetE%syncUp .OR. databuf_SetE%pbcUp .or. databuf_up%FlushExtraInfo) then
          if(databuf_Up%FlushExtraInfo) then
-            call MPI_WAITALL(2_4, req1, status1, ierr)
-            call MPI_WAITALL(4_4, req1b, status1b, ierr)
+            call wait_requests_timed(req1)
+            call wait_requests_timed(req1b)
          end if
       end if
       !   call MPI_Barrier(SUBCOMM_MPI,ierr)
