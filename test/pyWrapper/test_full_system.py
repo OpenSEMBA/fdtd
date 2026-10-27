@@ -2148,17 +2148,14 @@ def test_conformal_delay(tmp_path):
     t4 = t[front["field"].argmin()]
 
     solver["materialAssociations"][0]["elementIds"] = [5]
+    coordinate_id_to_position = {
+        coordinate["id"]: coordinate["relativePosition"]
+        for coordinate in solver["mesh"]["elements"][4]["coordinates"]
+    }
     n = 4
     for i in range(1, n):
-        solver["mesh"]["coordinates"][6]["relativePosition"][2] = 4.0 + i * 1.0 / n
-        solver["mesh"]["coordinates"][7]["relativePosition"][2] = 4.0 + i * 1.0 / n
-        solver["mesh"]["coordinates"][8]["relativePosition"][2] = 4.0 + i * 1.0 / n
-        solver["mesh"]["coordinates"][9]["relativePosition"][2] = 4.0 + i * 1.0 / n
-        solver["mesh"]["coordinates"][15]["relativePosition"][2] = 4.0 + i * 1.0 / n
-        solver["mesh"]["coordinates"][16]["relativePosition"][2] = 4.0 + i * 1.0 / n
-        solver["mesh"]["coordinates"][17]["relativePosition"][2] = 4.0 + i * 1.0 / n
-        solver["mesh"]["coordinates"][18]["relativePosition"][2] = 4.0 + i * 1.0 / n
-        solver["mesh"]["coordinates"][19]["relativePosition"][2] = 4.0 + i * 1.0 / n
+        for coordinate_id in (7, 8, 9, 10, 16, 17, 18, 19, 20):
+            coordinate_id_to_position[coordinate_id][2] = 4.0 + i * 1.0 / n
 
         solver.cleanUp()
         solver.run()

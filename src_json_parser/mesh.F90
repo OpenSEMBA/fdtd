@@ -32,9 +32,22 @@ module mesh_m
       generic, public :: operator(==) => coordinate_eq
    end type
 
+   ! Map of coordinate IDs to relative positions. Used both by the mesh-level
+   ! coordinate list and by element-local conformal coordinate lists.
+   type, public :: coordinate_table_t
+      private
+      type(fhash_tbl_t) :: entries
+   contains
+      procedure :: allocate => coordinate_table_allocate
+      procedure :: add => coordinate_table_add
+      procedure :: get => coordinate_table_get
+      procedure :: check => coordinate_table_check
+      procedure :: stats => coordinate_table_stats
+   end type
+
    type, public :: mesh_t
       private
-      type(fhash_tbl_t) :: coordinates ! Map of CoordinateIds to relative coordinates.
+      type(coordinate_table_t) :: coordinates ! Map of CoordinateIds to relative coordinates.
       type(fhash_tbl_t) :: elements    ! Map of ElementIds to elements/cellsRegions.    
    contains
       procedure :: addCoordinate => mesh_addCoordinate
@@ -71,6 +84,54 @@ module mesh_m
 
 
 contains
+   ! __________________________________________________________________
+   ! Coordinate table procedures
+   subroutine coordinate_table_allocate(this, buck)
+      class(coordinate_table_t) :: this
+      integer, intent(in) :: buck
+      call this%entries%allocate(buck)
+   end subroutine
+
+   subroutine coordinate_table_add(this, id, coordinate)
+      class(coordinate_table_t) :: this
+      integer, intent(in) :: id
+      type(coordinate_t), intent(in) :: coordinate
+      call this%entries%set(key(id), value=coordinate)
+   end subroutine
+
+   function coordinate_table_get(this, id, found) result(res)
+      class(coordinate_table_t) :: this
+      type(coordinate_t) :: res
+      integer, intent(in) :: id
+      integer :: stat
+      logical, intent(out), optional :: found
+      class(*), allocatable :: d
+
+      if (present(found)) found = .false.
+
+      call this%entries%get_raw(key(id), d, stat)
+      if (stat /= 0) return
+
+      select type(d)
+         type is (coordinate_t)
+         res = d
+         if (present(found)) found = .true.
+      end select
+   end function
+
+   function coordinate_table_check(this, id) result(stat)
+      class(coordinate_table_t) :: this
+      integer, intent(in) :: id
+      integer :: stat
+      call this%entries%check_key(key(id), stat)
+   end function
+
+   subroutine coordinate_table_stats(this, num_buckets, num_items, num_collisions, max_depth)
+      class(coordinate_table_t) :: this
+      integer, intent(out) :: num_buckets, num_items, num_collisions, max_depth
+      call this%entries%stats(num_buckets, num_items, num_collisions, max_depth)
+   end subroutine
+
    ! __________________________________________________________________
    ! Mesh procedures
    subroutine mesh_allocateCoordinates(this, buck)
@@ -110,7 +171,7 @@ contains
       class(mesh_t) :: this
       integer, intent(in) :: id
       integer :: stat
-      call this%coordinates%check_key(key(id), stat)
+      stat = this%coordinates%check(id)
    end function
 
    
@@ -125,7 +186,7 @@ contains
       class(mesh_t) :: this
       integer, intent(in) :: id
       type(coordinate_t), intent(in) :: coordinate
-      call this%coordinates%set(key(id), value=coordinate)
+      call this%coordinates%add(id, coordinate)
    end subroutine
 
    subroutine mesh_addElement(this, id, e)
@@ -153,21 +214,9 @@ contains
       class(mesh_t) :: this
       type(coordinate_t) :: res
       integer, intent(in) :: id
-      integer :: stat
       logical, intent(out), optional :: found
-      class(*), allocatable :: d
 
-      if (present(found)) found = .false.
-
-      call this%coordinates%get_raw(key(id), d, stat)
-      if (stat /= 0) return
-
-      select type(d)
-         type is (coordinate_t)
-         res = d
-         if (present(found)) found = .true.
-      end select
-
+      res = this%coordinates%get(id, found)
    end function
 
    function mesh_getNode(this, id, found) result(res)

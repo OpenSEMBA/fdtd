@@ -783,17 +783,25 @@ def test_fill_mixed_conformal_volume_and_surfaces(tmp_path):
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
 
-    solver['mesh']['coordinates'].extend([
-        {"id": 28, "relativePosition": [5.5, 5, 5]},
-        {"id": 29, "relativePosition": [5.5, 6, 5]},
-        {"id": 30, "relativePosition": [5.5, 5, 6]},
-        {"id": 31, "relativePosition": [7.5, 5, 5]},
-        {"id": 32, "relativePosition": [7.5, 6, 5]},
-        {"id": 33, "relativePosition": [7.5, 5, 6]},
-    ])
     solver['mesh']['elements'].extend([
-        {"id": 5, "type": "conformal", "subtype": "surface", "intervals": [], "triangles": [[28, 29, 30]]},
-        {"id": 6, "type": "conformal", "subtype": "surface", "intervals": [], "triangles": [[31, 32, 33]]},
+        {
+            "id": 5, "type": "conformal", "subtype": "surface", "intervals": [],
+            "coordinates": [
+                {"id": 1, "relativePosition": [5.5, 5, 5]},
+                {"id": 2, "relativePosition": [5.5, 6, 5]},
+                {"id": 3, "relativePosition": [5.5, 5, 6]},
+            ],
+            "triangles": [[1, 2, 3]],
+        },
+        {
+            "id": 6, "type": "conformal", "subtype": "surface", "intervals": [],
+            "coordinates": [
+                {"id": 1, "relativePosition": [7.5, 5, 5]},
+                {"id": 2, "relativePosition": [7.5, 6, 5]},
+                {"id": 3, "relativePosition": [7.5, 5, 6]},
+            ],
+            "triangles": [[1, 2, 3]],
+        },
     ])
     solver['materialAssociations'][0]['elementIds'].extend([5, 6])
 
@@ -818,7 +826,7 @@ def test_partial_triangle_on_grid_face_is_conformal(tmp_path):
         2: [8, 1, 0],
         4: [8, 0, 1],
     }
-    for coordinate in solver['mesh']['coordinates']:
+    for coordinate in solver['mesh']['elements'][0]['coordinates']:
         if coordinate['id'] in positions:
             coordinate['relativePosition'] = positions[coordinate['id']]
     solver['mesh']['elements'][0]['triangles'] = [[1, 2, 4]]

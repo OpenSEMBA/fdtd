@@ -1,0 +1,34 @@
+{
+    "mesh": {
+        "grid": {
+            "numberOfCells": [5, 5, 5],
+            "steps": {"x": [0.1], "y": [0.1], "z": [0.1]}
+        },
+        "elements": [
+            {
+                "id": 10,
+                "type": "conformal",
+                "subtype": "surface",
+                "intervals": [],
+                "coordinates": [
+                    {"id": 1, "relativePosition": [1.0, 1.0, 1.0]},
+                    {"id": 2, "relativePosition": [2.0, 1.0, 1.0]},
+                    {"id": 3, "relativePosition": [2.0, 2.0, 1.0]}
+                ],
+                "triangles": [[1, 2, 3]]
+            },
+            {
+                "id": 11,
+                "type": "conformal",
+                "subtype": "surface",
+                "intervals": [],
+                "coordinates": [
+                    {"id": 1, "relativePosition": [3.0, 3.0, 2.0]},
+                    {"id": 2, "relativePosition": [4.0, 3.0, 2.0]},
+                    {"id": 3, "relativePosition": [4.0, 4.0, 2.0]}
+                ],
+                "triangles": [[1, 2, 3]]
+            }
+        ]
+    }
+}
