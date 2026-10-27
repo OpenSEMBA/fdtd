@@ -7,6 +7,10 @@ set_target_properties(output_mpi_integration_test PROPERTIES LINKER_LANGUAGE For
 add_executable(output_transport_mpi_test "test_output_transport.F90")
 target_link_libraries(output_transport_mpi_test PRIVATE fdtd-output MPI::MPI_Fortran)
 set_target_properties(output_transport_mpi_test PROPERTIES LINKER_LANGUAGE Fortran)
+# Manual reproducer that blocks by design: built but deliberately not registered with add_test.
+add_executable(output_relay_hang_test "test_output_relay_hang.F90")
+target_link_libraries(output_relay_hang_test PRIVATE fdtd-output MPI::MPI_Fortran)
+set_target_properties(output_relay_hang_test PROPERTIES LINKER_LANGUAGE Fortran)
 
 add_test(
     NAME output_mpi_collective_and_root_aggregation
