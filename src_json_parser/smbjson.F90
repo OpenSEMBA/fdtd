@@ -334,13 +334,13 @@ contains
             if (.not. allocated(triangle)) then
                write(message, '(A,I0,A,I0,A)') 'Conformal element ', elementId, &
                   ': triangle ', i, ' must contain exactly three coordinate ids.'
-               call WarnErrReport(trim(message), .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
                return
             end if
             if (size(triangle) /= 3) then
                write(message, '(A,I0,A,I0,A)') 'Conformal element ', elementId, &
                   ': triangle ', i, ' must contain exactly three coordinate ids.'
-               call WarnErrReport(trim(message), .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
                return
             end if
             do j = 1, 3
@@ -380,20 +380,20 @@ contains
             if (coordinates%check(id) == 0) then
                write(message, '(A,I0,A,I0,A)') 'Conformal element ', elementId, &
                   ': duplicate local coordinate id ', id, '.'
-               call WarnErrReport(trim(message), .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
                return
             end if
             pos = this%getRealsAt(jc, J_COORDINATE_POS)
             if (.not. allocated(pos)) then
                write(message, '(A,I0,A,I0,A)') 'Conformal element ', elementId, &
                   ': local coordinate ', id, ' is missing relativePosition.'
-               call WarnErrReport(trim(message), .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
                return
             end if
             if (size(pos) /= 3) then
                write(message, '(A,I0,A,I0,A)') 'Conformal element ', elementId, &
                   ': local coordinate ', id, ' must contain three relativePosition values.'
-               call WarnErrReport(trim(message), .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
                return
             end if
             c%position = pos(1:3)
@@ -422,7 +422,7 @@ contains
                write(message, '(A,I0,A)') 'Conformal element ', elementId, &
                   ": 'triangles' require an element-local 'coordinates' array; " // &
                   'references to mesh.coordinates are no longer supported.'
-               call WarnErrReport(trim(message), .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
                return
             end if
             do k = 1, size(res%triangles)
@@ -432,7 +432,7 @@ contains
                      write(message, '(A,I0,A,I0,A,I0,A,I0,A)') 'Conformal element ', elementId, &
                         ', triangle ', k, ', vertex ', j, ': coordinate id ', &
                         res%triangles(k)%vertices(j)%id, ' not found in element-local coordinates.'
-                     call WarnErrReport(trim(message), .true.)
+                     call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
                      return
                   end if
                   res%triangles(k)%vertices(j)%position(1:3) = c%position(1:3)
