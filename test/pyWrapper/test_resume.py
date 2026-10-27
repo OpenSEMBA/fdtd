@@ -1,4 +1,5 @@
 from test.utils.utils import *
+import filecmp
 import re
 import signal
 import subprocess
@@ -68,3 +69,48 @@ def test_resume_after_sigkill_keeps_previous_movies(tmp_path):
         for path in (previous, folder / f"{folder.name}.h5"):
             with h5py.File(path, "r"):
                 pass
+
+
+@pytest.mark.slow
+@pytest.mark.hdf
+def test_resume_after_sigkill_reproduces_uninterrupted_probes(tmp_path):
+    reference = tmp_path / "reference"
+    interrupted = tmp_path / "interrupted"
+    case_folder = os.path.join(CASES_FOLDER, "planewave")
+    for folder in (reference, interrupted):
+        folder.mkdir()
+        for name in ("pw-in-box.fdtd.json", "gauss_1GHz.exc"):
+            shutil.copy(os.path.join(case_folder, name), folder)
+    case_reference = str(reference / "pw-in-box.fdtd.json")
+    case_interrupted = str(interrupted / "pw-in-box.fdtd.json")
+
+    _set_steps(case_interrupted, 100_000_000)
+    solver = subprocess.Popen(
+        [SEMBA_EXE, "-i", case_interrupted, "-flush", "1"],
+        cwd=interrupted, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    try:
+        deadline = time.time() + 180
+        while not list(interrupted.glob("*.fields")):
+            assert solver.poll() is None, "solver ended before writing restart fields"
+            assert time.time() < deadline, "restart fields were not written"
+            time.sleep(1)
+        time.sleep(2)  # let the writer finish the file
+    finally:
+        solver.send_signal(signal.SIGKILL)
+        solver.wait()
+
+    _set_steps(case_interrupted, 1)
+    probe = _run(case_interrupted, "-r", "-n", "1")
+    saved_step = int(re.search(r"Last executed time step\s+(\d+)", probe.stdout).group(1))
+    steps = saved_step + 2000
+
+    uninterrupted = _run(case_reference, "-n", str(steps))
+    assert uninterrupted.returncode == 0, uninterrupted.stdout[-2000:]
+    resumed = _run(case_interrupted, "-r", "-n", str(steps))
+    assert resumed.returncode == 0, resumed.stdout[-2000:]
+
+    # Energy is reported on wall-clock intervals, so only the deterministic outputs are compared
+    for name in ("before_Ex_3_3_1_tm", "after_Ex_3_3_5_tm", "inbox_Ex_3_3_3_tm", "inbox_Ex_3_3_3_fq"):
+        expected = reference / f"pw-in-box.fdtd_{name}.dat"
+        assert filecmp.cmp(expected, interrupted / expected.name, shallow=False), name

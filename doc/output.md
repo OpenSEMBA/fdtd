@@ -64,6 +64,12 @@ The HDF5 writer cannot append to an existing file. When a run is resumed
 writes new files, so the frames written before the resume are kept but are not
 joined to the new ones. Scalar `.dat` probes are appended instead.
 
+The frequency sums of point probes are saved with each restart checkpoint in
+`<probe>_fq.dat.dft`, and those of frequency slices in `<slice folder>/..._at_x_y_z.dft`
+(one per MPI participant), and restored on resume, so a resumed output matches an
+uninterrupted run. A resumed run must be given the same step count with `-n`,
+the solver step count, as the run it resumes.
+
 ## Geometry Map Output
 
 The `-mapvtk` option creates a geometry map rather than a JSON
