@@ -129,6 +129,7 @@ contains
          call create_folder(this%path, error)
          if (error /= 0) call log_msg(LOG_FATAL, 'OUTPUT', &
                                           'Unable to create frequency slice output directory')
+         if (control%resume) call keep_previous_run_files(this%path, filename)
       end if
 #ifdef CompileWithMPI
       call MPI_Barrier(this%publication%communicator, mpi_error)

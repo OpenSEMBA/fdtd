@@ -18,6 +18,7 @@ extern "C" int test_output_point_interface_owner();
 extern "C" int test_output_collective_contract();
 extern "C" int test_output_publication_contract();
 extern "C" int test_output_metadata_contract_edges();
+extern "C" int test_keep_previous_run_files();
 extern "C" int test_output_transport_serial();
 
 // Artifact metadata and binary layout.
@@ -85,6 +86,8 @@ TEST(output, test_metadata_contract_edges) { EXPECT_EQ(0, test_output_metadata_c
 TEST(output, test_transport_serial) { EXPECT_EQ(0, test_output_transport_serial()); }
 // Replaces a completed file without exposing a partial target.
 TEST(output, test_atomic_file_replacement) { EXPECT_EQ(0, test_atomic_file_replacement()); }
+// Moves the files of the previous run aside when a run is resumed.
+TEST(output, test_keep_previous_run_files) { EXPECT_EQ(0, test_keep_previous_run_files()); }
 // Selects the highest supported native precision for mixed-value records.
 TEST(output, test_binary_native_precision) { EXPECT_EQ(0, test_output_binary_native_precision()); }
 // Registers a point probe and its declared output paths.

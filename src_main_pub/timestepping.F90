@@ -562,6 +562,7 @@ module Solver_m
          end if
 #endif
          this%initialtimestep=this%lastexecutedtimestep+1
+         this%control%resume_time = this%lastexecutedtime
          write(dubuf,*) '[OK] processing resuming data. Last executed time step ',this%lastexecutedtimestep
          call print11(this%control%layoutnumber,dubuf)
       end if

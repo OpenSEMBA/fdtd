@@ -182,6 +182,7 @@ contains
       mu0 = MU_VACUUM
       if (present(eps0_input)) eps0 = eps0_input
       if (present(mu0_input)) mu0 = mu0_input
+      if (control%resume) call set_resume_trim_time(control%resume_time)
       requestedOutputs = get_required_output_count(sgg)
 
       problemInfo%geometryToMaterialData => media

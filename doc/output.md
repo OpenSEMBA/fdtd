@@ -56,6 +56,12 @@ They create field data in `P.xdmf` and `P.h5`, plus the geometry companion in
 `P_geometry.xdmf` and `P_geometry.h5`.
 The `.xdmf` files describe the corresponding data and geometry stored in HDF5.
 
+The HDF5 writer cannot append to an existing file. When a run is resumed
+(`-r`), the `P.xdmf` and `P.h5` of the previous run are moved to
+`P/before_resume_K/` (`K` is the first unused number) and the resumed run
+writes new files, so the frames written before the resume are kept but are not
+joined to the new ones. Scalar `.dat` probes are appended instead.
+
 ## Geometry Map Output
 
 The `-mapvtk` option creates a geometry map rather than a JSON

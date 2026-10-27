@@ -15,8 +15,9 @@ module directoryUtils_m
    public :: file_has_samples
    public :: delete_file
    public :: list_files
-    public :: create_file_with_path
-    public :: atomic_replace_file
+   public :: create_file_with_path
+   public :: atomic_replace_file
+   public :: set_aside_previous_files
    public :: get_path_separator
 
    abstract interface
@@ -37,15 +38,15 @@ module directoryUtils_m
          character(kind=c_char), intent(in) :: path(*)
       end function fdtd_remove_tree
 
-       integer(c_int) function fdtd_delete_file(path) bind(C, name='fdtd_delete_file')
+      integer(c_int) function fdtd_delete_file(path) bind(C, name='fdtd_delete_file')
          import :: c_char, c_int
          character(kind=c_char), intent(in) :: path(*)
-       end function fdtd_delete_file
+      end function fdtd_delete_file
 
-       integer(c_int) function fdtd_atomic_replace(source, targetValue) bind(C, name='fdtd_atomic_replace')
-          import :: c_char, c_int
-          character(kind=c_char), intent(in) :: source(*), targetValue(*)
-       end function fdtd_atomic_replace
+      integer(c_int) function fdtd_atomic_replace(source, targetValue) bind(C, name='fdtd_atomic_replace')
+         import :: c_char, c_int
+         character(kind=c_char), intent(in) :: source(*), targetValue(*)
+      end function fdtd_atomic_replace
    end interface
 
 contains
@@ -54,10 +55,10 @@ contains
    ! Add an extension to a filename
    !------------------------------------------------------------
    function add_extension(filename, ext) result(fullname)
-       character(len=*), intent(in) :: filename, ext
-       character(len=:), allocatable :: fullname
+      character(len=*), intent(in) :: filename, ext
+      character(len=:), allocatable :: fullname
 
-       fullname = trim(filename) // trim(ext)
+      fullname = trim(filename)//trim(ext)
    end function add_extension
 
    !------------------------------------------------------------
@@ -85,24 +86,24 @@ contains
    ! Remove the final extension from a filename
    !------------------------------------------------------------
    function remove_extension(filename) result(base)
-       character(len=*), intent(in) :: filename
-       character(len=BUFSIZE) :: base
-       integer :: last_dot, n, i
+      character(len=*), intent(in) :: filename
+      character(len=BUFSIZE) :: base
+      integer :: last_dot, n, i
 
-       base = trim(filename)
-       n = len_trim(base)
-       last_dot = 0
+      base = trim(filename)
+      n = len_trim(base)
+      last_dot = 0
 
-       do i = n, 1, -1
-           if (base(i:i) == '.') then
-               last_dot = i
-               exit
-           end if
-       end do
+      do i = n, 1, -1
+         if (base(i:i) == '.') then
+            last_dot = i
+            exit
+         end if
+      end do
 
-       if (last_dot > 0) then
-           base = base(:last_dot-1)
-       end if
+      if (last_dot > 0) then
+         base = base(:last_dot - 1)
+      end if
    end function remove_extension
 
    !------------------------------------------------------------
@@ -114,21 +115,17 @@ contains
       character(len=1) :: sep
       integer :: n
 
-
       sep = get_path_separator()
-
 
       fullpath = trim(base)
       n = len_trim(fullpath)
 
-
       if (n > 0) then
-      if (fullpath(n:n) /= sep) fullpath = fullpath // sep
+         if (fullpath(n:n) /= sep) fullpath = fullpath//sep
       end if
 
-
-      fullpath = fullpath // trim(child)
-      end function join_path
+      fullpath = fullpath//trim(child)
+   end function join_path
 
    !------------------------------------------------------------
    ! Get the last component of a path (file or folder)
@@ -145,7 +142,7 @@ contains
          if (component(n:n) == get_path_separator()) component = component(:n - 1)
       end if
 
-      last_slash = scan(component, get_path_separator(),.TRUE.)
+      last_slash = scan(component, get_path_separator(), .TRUE.)
 
       if (last_slash > 0) then
          component = component(last_slash + 1:)
@@ -164,7 +161,7 @@ contains
          return
       end if
 
-       call call_native_path_operation(path, fdtd_create_directories, ios)
+      call call_native_path_operation(path, fdtd_create_directories, ios)
    end subroutine create_folder
 
    !------------------------------------------------------------
@@ -179,7 +176,7 @@ contains
          return
       end if
 
-       call call_native_path_operation(path, fdtd_remove_tree, ios)
+      call call_native_path_operation(path, fdtd_remove_tree, ios)
 
    end subroutine remove_folder
 
@@ -236,7 +233,7 @@ contains
          return
       end if
 
-       call call_native_path_operation(path, fdtd_delete_file, ios)
+      call call_native_path_operation(path, fdtd_delete_file, ios)
 
    end subroutine delete_file
 
@@ -291,7 +288,7 @@ contains
    !------------------------------------------------------------
    ! Create a file, creating its folder if needed
    !------------------------------------------------------------
-     subroutine create_file_with_path(fullpath, ios)
+   subroutine create_file_with_path(fullpath, ios)
       character(len=*), intent(in) :: fullpath
       integer, intent(out) :: ios
       integer :: unit
@@ -301,7 +298,7 @@ contains
 
       ios = 0
       ! Find last slash or backslash
-       pos = scan(trim(fullpath), '/\\', BACK=.true.)
+      pos = scan(trim(fullpath), '/\\', BACK=.true.)
 
       if (pos > 0) then
          folder = adjustl(fullpath(:pos - 1))
@@ -311,27 +308,66 @@ contains
       open (newunit=unit, file=trim(adjustl(fullpath)), status='replace', iostat=ios)
       if (ios == 0) close (unit)
 
-     end subroutine create_file_with_path
+   end subroutine create_file_with_path
 
-    subroutine atomic_replace_file(source, targetValue, ios)
-       character(len=*), intent(in) :: source, targetValue
-       integer, intent(out) :: ios
-       character(kind=c_char), allocatable :: c_source(:), c_target(:)
-       integer :: i, source_length, target_length
+   ! Moves the files of folder that exist into folder/before_resume_<k>, with k the first unused number,
+   ! so that a resumed run does not overwrite what the previous run wrote. aside_folder is empty when
+   ! none of them existed.
+   subroutine set_aside_previous_files(folder, file_names, aside_folder, ios)
+      character(len=*), intent(in) :: folder, file_names(:)
+      character(len=*), intent(out) :: aside_folder
+      integer, intent(out) :: ios
+      character(len=BUFSIZE) :: source, destination
+      character(len=16) :: number
+      integer :: i, k
+      logical :: any_existing
 
-       source_length = len_trim(source)
-       target_length = len_trim(targetValue)
-       allocate(c_source(source_length + 1), c_target(target_length + 1))
-       do i = 1, source_length
-          c_source(i) = source(i:i)
-       end do
-       do i = 1, target_length
-          c_target(i) = targetValue(i:i)
-       end do
-       c_source(source_length + 1) = c_null_char
-       c_target(target_length + 1) = c_null_char
-       ios = fdtd_atomic_replace(c_source, c_target)
-    end subroutine atomic_replace_file
+      aside_folder = ''
+      ios = 0
+      any_existing = .false.
+      do i = 1, size(file_names)
+         source = join_path(folder, file_names(i))
+         if (file_exists(source)) any_existing = .true.
+      end do
+      if (.not. any_existing) return
+      k = 1
+      do
+         write (number, '(i0)') k
+         destination = join_path(folder, 'before_resume_'//trim(number))
+         if (.not. folder_exists(destination)) exit
+         k = k + 1
+      end do
+      call create_folder(destination, ios)
+      if (ios /= 0) return
+      aside_folder = destination
+      do i = 1, size(file_names)
+         source = join_path(folder, file_names(i))
+         if (.not. file_exists(source)) cycle
+         destination = join_path(aside_folder, file_names(i))
+         call atomic_replace_file(source, destination, ios)
+         if (ios /= 0) return
+      end do
+   end subroutine set_aside_previous_files
+
+   subroutine atomic_replace_file(source, targetValue, ios)
+      character(len=*), intent(in) :: source, targetValue
+      integer, intent(out) :: ios
+      character(kind=c_char), allocatable :: c_source(:), c_target(:)
+      integer :: i, source_length, target_length
+
+      source_length = len_trim(source)
+      target_length = len_trim(targetValue)
+      allocate (c_source(source_length + 1), c_target(target_length + 1))
+      do i = 1, source_length
+         c_source(i) = source(i:i)
+      end do
+      do i = 1, target_length
+         c_target(i) = targetValue(i:i)
+      end do
+      c_source(source_length + 1) = c_null_char
+      c_target(target_length + 1) = c_null_char
+      ios = fdtd_atomic_replace(c_source, c_target)
+   end subroutine atomic_replace_file
 
    subroutine call_native_path_operation(path, operation, ios)
       character(len=*), intent(in) :: path
@@ -341,7 +377,7 @@ contains
       integer :: i, path_length
 
       path_length = len_trim(path)
-      allocate(c_path(path_length + 1))
+      allocate (c_path(path_length + 1))
       do i = 1, path_length
          c_path(i) = path(i:i)
       end do
@@ -349,7 +385,7 @@ contains
       ios = operation(c_path)
    end subroutine call_native_path_operation
 
-    function get_path_separator() result(sep)
+   function get_path_separator() result(sep)
       character(len=1) :: sep
 
 #ifdef __WIN32__
