@@ -326,9 +326,7 @@ contains
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
       goto 635
-634   call print11(0,SEPARADOR//separador//separador)
-      call print11(0,'RESUMING FLUSHSAVEANDRESUME: ERROR WRITING RESTARTING FIELDS. IGNORING AND CONTINUING')
-      call print11(0,SEPARADOR//separador//separador)          
+634   call log_msg(LOG_WARN, 'RESUMING', 'flushsaveandresume: cannot write restarting fields, ignoring and continuing')
 635   return
       return
    end subroutine flush_and_save_resume
@@ -434,9 +432,7 @@ contains
       end do
 
       goto 635
-634   call print11(0,SEPARADOR//separador//separador)
-      call print11(0,'RESUMING STOREFIELDS: ERROR WRITING RESTARTING FIELDS. IGNORING AND CONTINUING')
-      call print11(0,SEPARADOR//separador//separador)          
+634   call log_msg(LOG_WARN, 'RESUMING', 'storefields: cannot write restarting fields, ignoring and continuing')
 635   return
    end subroutine
 

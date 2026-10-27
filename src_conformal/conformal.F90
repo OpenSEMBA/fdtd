@@ -1,6 +1,6 @@
 module conformal_m
 
-   use Report_m, only: WarnErrReport
+   use Report_m, only: log_msg, LOG_ERROR
    use geometry_m
    use cell_map_m
    use NFDETypes_m, only: ConformalPECRegions_t, ConformalPECElements_t, ConformalMedia_t, &
@@ -369,7 +369,7 @@ contains
          if ((diff(first_direction) < 0) .neqv. (diff(second_direction) < 0)) then
             write(message, '(A,I0,A)') 'interval ', interval_index, &
                ' has mixed-sign directions; both varying directions must have the same sign'
-            call WarnErrReport(trim(message), .true.)
+            call log_msg(LOG_ERROR, 'CONFORMAL', trim(message))
             is_valid = .false.
             return
          end if

@@ -322,8 +322,7 @@ contains
                 sgg%Med(jmed)%sigma = sigmaeff !returns the effective one to the main one to correctly make lossy connections with thin wires 120123
                 sgg%Med(jmed)%sigmareasignado=.true.
             else
-                print *,'error buggy: reasignando sigma en un lumped'
-                stop
+                call log_msg(LOG_FATAL, 'LUMPED', 'Internal bug: reasignando sigma en un lumped')
             end if
 !ORIGINALS COMMENTED OUT 151222 by others equivalent to simplify the stoch implementation            
 !           G1=(1.0_RKIND  - SigmaEff * sgg%dt / (2.0_RKIND * epsilonEff) ) / &
@@ -373,8 +372,8 @@ contains
                 lumped_%diodeB    = -lumped_%diodeB * alignedDeltaE / 2.0_RKIND
                 lumped_%diodepreA = -DiodIsat * G2 / ( transversalDeltaHa * transversalDeltaHb) 
             else
-                write(buff, *)    'Buggy ERROR: In lumped orientations. '
-                call WarnErrReport (buff,.TRUE.)
+                write(buff, *)    'Internal bug: In lumped orientations. '
+                call log_msg(LOG_ERROR, 'LUMPED', buff)
             end if   
         
 #ifdef CompileWithStochastic
@@ -403,9 +402,7 @@ contains
          end if
 #endif
       goto 635
-634   call print11(0,SEPARADOR//separador//separador)
-      call print11(0,'LUMPED: ERROR WRITING RESTARTING FIELDS. IGNORING AND CONTINUING')
-      call print11(0,SEPARADOR//separador//separador)          
+634   call log_msg(LOG_WARN, 'LUMPED', 'cannot write restarting fields, ignoring and continuing')
 635   return
    end subroutine StoreFieldsLumpeds
 

@@ -1,6 +1,7 @@
 module nfde_rotate_m
     !       
    use NFDETypes_m
+   use Report_m, only: log_msg, LOG_FATAL
 
    !
    implicit none
@@ -578,8 +579,7 @@ contains
       type(Parseador_t), intent(inout) :: this
       integer(kind=4) :: mpidir    
       if ((mpidir/=1).and.(this%ANIMATS%nvols+this%ANIMATS%nsurfs+this%ANIMATS%nlins/=0)) then
-           print *,'Rotations in anisotropic unsupported'
-           stop
+           call log_msg(LOG_FATAL, 'ROTATE', 'Rotations in anisotropic unsupported')
            return
       end if
    !if there ever were one it is a cut and paste of rotate_generateNONMetals and to which the rotation of the media matrix must be added 
@@ -922,8 +922,8 @@ contains
               TYI=old_MasSonda%Ytrancos
               TZI=old_MasSonda%Ztrancos
               if ((OOR/=NP_COR_EX).AND.(OOR/=NP_COR_EY).AND.(OOR/=NP_COR_EZ).AND. &
-              (OOR/=NP_COR_HX).AND.(OOR/=NP_COR_HY).AND.(OOR/=NP_COR_HZ)) return
-              !!THE IW AND THE VG ARE NOT ROTATED
+              (OOR/=NP_COR_HX).AND.(OOR/=NP_COR_HY).AND.(OOR/=NP_COR_HZ)) cycle
+              !!THE IW AND THE VG ARE NOT ROTATED, BUT LATER FIELD PROBES MUST STILL BE ROTATED
               if (MPIDIR==2) then
                  this%Sonda%collection(i)%cordinates(ii)%XI=OZI   
                  this%Sonda%collection(i)%cordinates(ii)%XE=OZE

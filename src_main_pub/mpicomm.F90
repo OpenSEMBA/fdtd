@@ -204,7 +204,7 @@ contains
       if (padding >= minval(trancos)) then
          buff='Number of cells per processor less than 2. Decrease the number of MPI processors'
 !I try to recover from this error
-         call stoponerror(layoutnumber,num_procs,buff,.true.); 
+         call log_msg(LOG_FATAL, 'MPI', buff); 
          if (associated(cZe)) deallocate(cZe,cZi)
          if (associated(mpizcom)) deallocate(mpizcom,mpizfin)
          if (associated(trancos)) deallocate(trancos)
@@ -213,7 +213,7 @@ contains
       end if
       if (minval(trancos) <= 2) then
          buff='Number of cells per processor less than 2. Decrease the number of MPI processors'
-         call stoponerror(layoutnumber,num_procs,buff,.true.)
+         call log_msg(LOG_FATAL, 'MPI', buff)
          if (associated(cZe)) deallocate(cZe,cZi)
          if (associated(mpizcom)) deallocate(mpizcom,mpizfin)
          if (associated(trancos)) deallocate(trancos)
@@ -278,7 +278,7 @@ contains
          if (resume.and.(Slices /= SlicesOriginales)) then
             buff='Different resumed/original MPI slices: ' &
             //trim(adjustl(Slices))//' '//trim(adjustl(SlicesOriginales))
-            call StopOnError(layoutnumber,num_procs,buff)
+            call log_msg(LOG_FATAL, 'MPI', buff)
          end if
          call print11(layoutnumber,trim(adjustl(slices)))
          do ilay=0,num_procs-1
@@ -296,7 +296,7 @@ contains
              (mpiZfin(layoutnumber)-mpiZcom(layoutnumber)<=minval(sggPMLNumLayers_original))) then
            write(buff,'(a,i3,i3)') trim(adjustl(whoami))//' Minimum slice sizes along MPI should be larger that PML number of layers ', &
               mpiZfin(layoutnumber)-mpiZcom(layoutnumber), minval(sggPMLNumLayers_original)
-            call StopOnError(layoutnumber,num_procs,buff)
+            call log_msg(LOG_FATAL, 'MPI', buff)
       end if
       deallocate(cZE,cZI,trancos,mpizcom,mpizfin)
 
@@ -509,7 +509,7 @@ contains
 
       if (ierr1+ierr2+ierr3+ierr4+ierr5+ierr6+ierr7+ierr8+ierr9+ierr10+ierr11+ierr12+ierr100+ierr100b+ &
       jerr1+jerr2+jerr3+jerr4+jerr5+jerr6+jerr7+jerr8+jerr9+jerr10+jerr11+jerr12+jerr100+jerr100b /= 0) &
-      call StopOnError(layoutnumber,num_procs,'FLUSHMPI')
+      call log_msg(LOG_FATAL, 'MPI', 'FLUSHMPI')
 
       return
    end subroutine
@@ -581,7 +581,7 @@ contains
 
       if (ierr1+ierr2+ierr3+ierr4+ierr5+ierr6+ierr7+ierr8+ierr9+ierr10+ierr11+ierr12+ierr100+ierr100b+ &
       jerr1+jerr2+jerr3+jerr4+jerr5+jerr6+jerr7+jerr8+jerr9+jerr10+jerr11+jerr12+jerr100+jerr100b /= 0) &
-      call StopOnError(layoutnumber,num_procs,'FLUSHMPI')
+      call log_msg(LOG_FATAL, 'MPI', 'FLUSHMPI')
 
       return
    end subroutine
@@ -850,15 +850,15 @@ contains
       !
       if ((layoutnumber/=0    ).and.(ierr1+ierr2+ierr3+ierr4 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr1,ierr2,ierr3,ierr4',LAYOUTNUMBER+1_4,ierr1,ierr2,ierr3,ierr4
-         call stoponerror (layoutnumber,num_procs,buff)
+         call log_msg(LOG_FATAL, 'MPI', buff)
       end if
       if ((layoutnumber/=num_procs-1).and.(ierr5+ierr6+ierr7+ierr8 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr5,ierr6,ierr7,ierr8',LAYOUTNUMBER+1_4,ierr5,ierr6,ierr7,ierr8
-         call stoponerror (layoutnumber,num_procs,buff)
+         call log_msg(LOG_FATAL, 'MPI', buff)
       end if
       if (ierr9+ierr10+ierr11+ierr12 /= 0) then
          write(buff,*) 'FLUSHMPI ierr9,ierr10,ierr11,ierr12',LAYOUTNUMBER+1_4,ierr9,ierr10,ierr11,ierr12
-         call stoponerror (layoutnumber,num_procs,buff)
+         call log_msg(LOG_FATAL, 'MPI', buff)
       end if
       return
    end subroutine newFlushWiresMPIorigindexInfo
@@ -918,15 +918,15 @@ contains
       !
       if ((layoutnumber/=0    ).and.(ierr1+ierr2+ierr3+ierr4 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr1,ierr2,ierr3,ierr4',LAYOUTNUMBER+1_4,ierr1,ierr2,ierr3,ierr4
-         call stoponerror (layoutnumber,num_procs,buff)
+         call log_msg(LOG_FATAL, 'MPI', buff)
       end if
       if ((layoutnumber/=num_procs-1).and.(ierr5+ierr6+ierr7+ierr8 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr5,ierr6,ierr7,ierr8',LAYOUTNUMBER+1_4,ierr5,ierr6,ierr7,ierr8
-         call stoponerror (layoutnumber,num_procs,buff)
+         call log_msg(LOG_FATAL, 'MPI', buff)
       end if
       if (ierr9+ierr10+ierr11+ierr12 /= 0) then
          write(buff,*) 'FLUSHMPI ierr9,ierr10,ierr11,ierr12',LAYOUTNUMBER+1_4,ierr9,ierr10,ierr11,ierr12
-         call stoponerror (layoutnumber,num_procs,buff)
+         call log_msg(LOG_FATAL, 'MPI', buff)
       end if
       return
    end subroutine newFlushWiresMPI
@@ -988,15 +988,15 @@ contains
       !
       if ((layoutnumber/=0    ).and.(ierr1+ierr2+ierr3+ierr4 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr1,ierr2,ierr3,ierr4',LAYOUTNUMBER+1_4,ierr1,ierr2,ierr3,ierr4
-         call stoponerror (layoutnumber,num_procs,buff)
+         call log_msg(LOG_FATAL, 'MPI', buff)
       end if
       if ((layoutnumber/=num_procs-1).and.(ierr5+ierr6+ierr7+ierr8 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr5,ierr6,ierr7,ierr8',LAYOUTNUMBER+1_4,ierr5,ierr6,ierr7,ierr8
-         call stoponerror (layoutnumber,num_procs,buff)
+         call log_msg(LOG_FATAL, 'MPI', buff)
       end if
       if (ierr9+ierr10+ierr11+ierr12 /= 0) then
          write(buff,*) 'FLUSHMPI ierr9,ierr10,ierr11,ierr12',LAYOUTNUMBER+1_4,ierr9,ierr10,ierr11,ierr12
-         call stoponerror (layoutnumber,num_procs,buff)
+         call log_msg(LOG_FATAL, 'MPI', buff)
       end if
       return
    end subroutine
@@ -1745,7 +1745,8 @@ module build_t_linea_mpi_m
 #ifdef CompileWithMPI
    !
    use NFDETypes_m
-   
+   use Report_m, only: log_msg, LOG_ERROR
+
 contains
 
 
@@ -1780,7 +1781,7 @@ contains
     call MPI_Type_create_struct(number,block_lengths,displacements,&
                     typelist,mesg_mpi_t_line,ierr)
     if (ierr /= 0) then
-        print *, 'got an error in type create: ', ierr
+        call log_msg(LOG_ERROR, 'MPI', 'MPI_Type_create_struct failed for the message line type')
         call MPI_Abort(SUBCOMM_MPI, ierr, ierr)
     end if
 
@@ -1788,7 +1789,7 @@ contains
     ! for communication
     call MPI_TYPE_COMMIT(mesg_mpi_t_line,ierr)
     if (ierr /= 0) then
-        print *, 'got an error in type commit: ', ierr
+        call log_msg(LOG_ERROR, 'MPI', 'MPI_Type_commit failed for the message line type')
         call MPI_Abort(SUBCOMM_MPI, ierr, ierr)
     end if
 

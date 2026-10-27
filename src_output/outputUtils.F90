@@ -3,6 +3,7 @@ module outputUtils_m
    use outputTypes_m
    use domain_m
    use report_m
+   use directoryUtils_m, only: create_file_with_path
    implicit none
    integer(kind=SINGLE), parameter :: FILE_UNIT = 400
 
@@ -31,6 +32,8 @@ module outputUtils_m
    public :: computeJ2
    public :: fieldo
    public :: create_data_file
+   public :: open_data_file
+   public :: open_append_data_file
    public :: currentType
    public :: getMediaIndex
    public :: get_media_from_coord_and_h_neighbours
@@ -131,7 +134,7 @@ contains
       else if (mpidir == 1) then
          ext = trim(adjustl(chark))//'_'//trim(adjustl(chari))//'_'//trim(adjustl(charj))
       else
-         call stoponerror(0, 0, 'Buggy error in mpidir. ')
+         call log_msg(LOG_FATAL, 'OUTPUT', 'Buggy error in mpidir. ')
       end if
 #else
       ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))
@@ -165,7 +168,7 @@ contains
          ext = trim(adjustl(chark))//'_'//trim(adjustl(chari))//'_'//trim(adjustl(charj))//'__'// &
                trim(adjustl(chark2))//'_'//trim(adjustl(chari2))//'_'//trim(adjustl(charj2))
       else
-         call stoponerror(0, 0, 'Buggy error in mpidir. ')
+         call log_msg(LOG_FATAL, 'OUTPUT', 'Buggy error in mpidir. ')
       end if
 #else
       ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))//'__'// &
@@ -265,7 +268,7 @@ contains
          case default; prefixExtension = prefix(field)
          end select
       else
-         call stoponerror(0, 0, "Buggy error in mpidir.")
+         call log_msg(LOG_FATAL, 'OUTPUT', "Buggy error in mpidir.")
       end if
       return
    end function get_rotated_prefix
@@ -409,7 +412,7 @@ contains
       case (IHX); getBlockCurrentDirection = ICURX
       case (IHY); getBlockCurrentDirection = ICURY
       case (IHZ); getBlockCurrentDirection = ICURZ
-      case default; call StopOnError(0, 0, 'field is not H field')
+      case default; call log_msg(LOG_FATAL, 'OUTPUT', 'field is not H field')
       end select
    end function
 
@@ -623,7 +626,7 @@ contains
       case (IHX); currentType = IBLOQUEJX
       case (IHY); currentType = IBLOQUEJY
       case (IHZ); currentType = IBLOQUEJZ
-      case default; call StopOnError(0, 0, 'field is not a E or H field')
+      case default; call log_msg(LOG_FATAL, 'OUTPUT', 'field is not a E or H field')
       end select
    end function
 
@@ -643,7 +646,7 @@ contains
       case (IHYC); get_volumetric_classification_field = IHY
       case (IHZC); get_volumetric_classification_field = IHZ
       case default
-         call StopOnError(0, 0, 'Unsupported volumetric classification component')
+         call log_msg(LOG_FATAL, 'OUTPUT', 'Unsupported volumetric classification component')
       end select
    end function get_volumetric_classification_field
 
@@ -825,23 +828,75 @@ contains
    end function get_delta
 
    subroutine create_data_file(filePathReference, probePathReference, domainTypeReference, fileExtension, header)
-      use directoryUtils_m
       character(len=*), intent(out) :: filePathReference
       character(len=*), intent(in) :: probePathReference
       character(len=*), intent(in) :: domainTypeReference
       character(len=*), intent(in) :: fileExtension
       character(len=*), intent(in), optional :: header
 
-      character(len=1) :: sep = '_'
-      integer :: err, unit
+      integer :: unit
 
-      filePathReference = trim(probePathReference)//sep//trim(domainTypeReference)//fileExtension
-      call create_file_with_path(filePathReference, err)
-      if (err /= 0 .or. .not. present(header)) return
-      open (newunit=unit, file=filePathReference, status='old', action='write', position='append', iostat=err)
-      if (err /= 0) return
-      write (unit, '(A)', iostat=err) trim(header)
-      close (unit)
+      call open_data_file(filePathReference, probePathReference, domainTypeReference, fileExtension, &
+                          header, unit)
+      if (unit /= 0) close (unit)
    end subroutine
+
+   ! Opens a text probe file and leaves it open. A fresh run truncates the file and writes
+   ! its header; a resumed run appends to an existing file without duplicating the header.
+   ! Keeping this unit open avoids reopening probe files on every output flush.
+   subroutine open_data_file(filePathReference, probePathReference, domainTypeReference, fileExtension, &
+                             header, unit, append)
+      character(len=*), intent(out) :: filePathReference
+      character(len=*), intent(in) :: probePathReference
+      character(len=*), intent(in) :: domainTypeReference
+      character(len=*), intent(in) :: fileExtension
+      character(len=*), intent(in), optional :: header
+      integer, intent(out) :: unit
+      logical, intent(in), optional :: append
+
+      character(len=1), parameter :: SEP = '_'
+      logical :: appendExisting
+      integer :: err, fileSize
+      logical :: exists
+
+      unit = 0
+      filePathReference = trim(probePathReference)//SEP//trim(domainTypeReference)//fileExtension
+      appendExisting = .false.
+      if (present(append)) then
+         inquire (file=trim(filePathReference), exist=exists, size=fileSize)
+         appendExisting = append .and. exists .and. fileSize > 0
+      end if
+
+      if (.not. appendExisting) then
+         call create_file_with_path(filePathReference, err)
+         if (err /= 0) return
+      end if
+
+      open (newunit=unit, file=trim(filePathReference), status='old', action='write', position='append', iostat=err)
+      if (err /= 0) then
+         unit = 0
+         return
+      end if
+
+      if (.not. appendExisting .and. present(header)) then
+         write (unit, '(A)', iostat=err) trim(header)
+         if (err /= 0) then
+            close (unit)
+            unit = 0
+            return
+         end if
+         flush (unit)
+      end if
+   end subroutine
+
+   subroutine open_append_data_file(unit, filePath, iostat)
+      integer, intent(out) :: unit
+      character(len=*), intent(in) :: filePath
+      integer, intent(out) :: iostat
+
+      unit = 0
+      open (newunit=unit, file=trim(filePath), status='old', action='write', position='append', iostat=iostat)
+      if (iostat /= 0) unit = 0
+   end subroutine open_append_data_file
 
 end module outputUtils_m

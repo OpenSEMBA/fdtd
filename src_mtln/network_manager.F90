@@ -2,6 +2,7 @@ module network_manager_m
 
     use network_m
     use circuit_m
+    use Report_m, only: log_msg, LOG_ERROR
     ! use mtln_types_m, only: node_source_t
     use FDETYPES_m, only: RKIND, RKIND_TIME
 
@@ -155,17 +156,17 @@ contains
             do j = 1, this%networks(i)%number_of_nodes
                 info_ptr = get_vector_info(trim(this%networks(i)%nodes(j)%name)//c_null_char)
                 if (.not. c_associated(info_ptr)) then
-                    call WarnErrReport('Ngspice returned null vector info for '//trim(this%networks(i)%nodes(j)%name), .true.)
+                    call log_msg(LOG_ERROR, 'MTLN', 'Ngspice returned null vector info for '//trim(this%networks(i)%nodes(j)%name))
                     return
                 end if
 
                 call c_f_pointer(info_ptr, info)
                 if (.not. c_associated(info%vRealData)) then
-                    call WarnErrReport('Ngspice returned null vector data for '//trim(this%networks(i)%nodes(j)%name), .true.)
+                    call log_msg(LOG_ERROR, 'MTLN', 'Ngspice returned null vector data for '//trim(this%networks(i)%nodes(j)%name))
                     return
                 end if
                 if (info%vLength <= 0) then
-                    call WarnErrReport('Ngspice returned empty vector for '//trim(this%networks(i)%nodes(j)%name), .true.)
+                    call log_msg(LOG_ERROR, 'MTLN', 'Ngspice returned empty vector for '//trim(this%networks(i)%nodes(j)%name))
                     return
                 end if
 

@@ -181,7 +181,7 @@ class Probe:
             _ProbeType.LINE_INTEGRAL: [".dat"],
             _ProbeType.POINT: [".dat"],
             _ProbeType.FAR_FIELD: [".dat"],
-            _ProbeType.MOVIE: [".bin", ".xdmf", ".h5", "_geometry.xdmf", "_geometry.h5"],
+            _ProbeType.MOVIE: [".xdmf", ".h5", "_geometry.xdmf", "_geometry.h5"],
             _ProbeType.MTLN: [".dat"],
         }[self._type]
 
