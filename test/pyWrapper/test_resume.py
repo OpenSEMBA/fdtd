@@ -1,7 +1,6 @@
 from test.utils.utils import *
 import filecmp
 import re
-import signal
 import subprocess
 import time
 
@@ -47,7 +46,7 @@ def test_resume_after_sigkill_keeps_previous_movies(tmp_path):
             time.sleep(1)
         time.sleep(2)  # let the writer finish the file
     finally:
-        solver.send_signal(signal.SIGKILL)
+        solver.kill()  # SIGKILL on POSIX, TerminateProcess on Windows (signal.SIGKILL does not exist there)
         solver.wait()
 
     # a resume cannot end before the saved step; the failed attempt reports it
@@ -97,7 +96,7 @@ def test_resume_after_sigkill_reproduces_uninterrupted_probes(tmp_path):
             time.sleep(1)
         time.sleep(2)  # let the writer finish the file
     finally:
-        solver.send_signal(signal.SIGKILL)
+        solver.kill()  # SIGKILL on POSIX, TerminateProcess on Windows (signal.SIGKILL does not exist there)
         solver.wait()
 
     _set_steps(case_interrupted, 1)
