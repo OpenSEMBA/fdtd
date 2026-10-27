@@ -665,12 +665,16 @@ module  FDETYPES_m
       integer(kind=4) :: direction = -1
       real(kind=rkind) :: ratio = -1
       logical :: is_two_sided = .false.
-      type(edge_t), dimension(:), allocatable :: contour_inside_edges
       real(kind=RKIND), dimension(3) :: normal
-      integer(kind=4) :: sgbc_profile_index = 0
-      integer(kind=4) :: surface_normal_sign = 0
+      ! integer(kind=4) :: surface_normal_sign = 0
+      type(edge_t), dimension(:), allocatable :: contour_inside_edges
       type(conformal_face_fields_t) :: region_I_fields, region_II_fields
+      ! !!!
+      ! type(conformal_sgbc_state_t) :: sgbc
+      logical :: is_sgbc = .false.
+      integer(kind=4) :: sgbc_profile_index = 0
    end type
+
 
    type, public, extends(conformal_feature_t) :: conformal_edge_media_t
       type(edge_t), dimension(:), allocatable :: edges

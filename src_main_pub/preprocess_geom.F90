@@ -5603,7 +5603,7 @@ contains
                end select
                next_face = next_face+1
                combined_faces(next_face) = conformal_media%face_media(j)%faces(k)
-               if (is_sgbc) combined_faces(next_face)%sgbc_profile_index = profile_index
+               ! if (is_sgbc) combined_faces(next_face)%sgbc_profile_index = profile_index
             end do
             call move_alloc(combined_faces, sgg%Med(face_media)%ConformalFace)
          end do

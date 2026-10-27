@@ -1,7 +1,8 @@
 module conformal_fields_m
     use conformal_types_m, only: map_key_t
     use geometry_m, only: buildEdgesOnFace, buildFacesOnEdge
-    use FDETypes_m, only: face_t, edge_t, FACE_X, FACE_Y, FACE_Z, EDGE_X, EDGE_Y, EDGE_Z, EDGE_REGION_CONFORMAL, EDGE_REGION_I, EDGE_REGION_II, MediaData_t, SGGFDTDINFO_t
+    use FDETypes_m, only: face_t, edge_t, FACE_X, FACE_Y, FACE_Z, EDGE_X, EDGE_Y, EDGE_Z, EDGE_REGION_CONFORMAL, EDGE_REGION_I, EDGE_REGION_II, MediaData_t, SGGFDTDINFO_t, sim_control_t, SGBCMaterialProfile_t, RKIND_TIME
+    use conformal_sgbc_m, only: conformal_sgbc_state_t
     use NFDETypes_m, only: rkind
     use fhash, only: fhash_tbl_t, key=>fhash_key
     use Report_m
@@ -30,20 +31,30 @@ module conformal_fields_m
         type(edge_map_t) :: edge_map
     end type
 
+    type, public, extends(face_t) :: sgbc_face_t
+       type(conformal_sgbc_state_t) :: sgbc
+    !    logical :: is_sgbc = .false.
+    !    integer(kind=4) :: sgbc_profile_index = 0
+    end type
+
     type, public :: conformal_fields_t
         type(face_t), dimension(:), allocatable :: faces
+        type(sgbc_face_t), dimension(:), allocatable :: sgbc_faces
         type(edge_t), dimension(:), allocatable :: edges
         integer, dimension(:,:), allocatable :: edges_id_list
         integer, dimension(:,:), allocatable :: faces_id_list
     end type
 
+
+
 contains
 
-    subroutine initializeConformalFields(sgg, conformal_fields, Ex, Ey, Ez, Hx, Hy, Hz)
+    subroutine initializeConformalFields(sgg, conformal_fields, Ex, Ey, Ez, Hx, Hy, Hz, idx, idy, idz, control)
         type(SGGFDTDINFO_t), intent(in) :: sgg
         type(conformal_fields_t), intent(inout) :: conformal_fields
         real(kind=rkind), pointer, dimension(:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
-        
+        real(kind=rkind), dimension(:), pointer :: idx, idy, idz
+        type(sim_control_t), intent(in) :: control
         type(face_t), pointer :: face, face_of_edge
         type(edge_t), pointer :: edge
         type(edge_t), dimension(:), allocatable :: aux_edges
@@ -65,7 +76,9 @@ contains
 
         do i = 1, sgg%NumMedia
             if (.not. (isConformalSurface(sgg%Med(i)))) cycle
-            call addConformalFaces(conformal_fields%faces, sgg%Med(i)%ConformalFace)
+            if (sgg%Med(i)%is%ConformalPEC) call addConformalFaces(conformal_fields%faces, sgg%Med(i)%ConformalFace)
+            if (sgg%Med(i)%is%ConformalSGBC) call addConformalSGBCFaces(conformal_fields%sgbc_faces, sgg%Med(i)%ConformalFace)
+            ! if (sgg%Med(i)%is%ConformalSGBC) call addConformalSGBCFaces(conformal_fields%sgbc_faces, sgg%Med(i)%ConformalFace, sgg%ConformalSGBCProfiles(face%sgbc_profile_index), control)
             call addConformalEdges(conformal_fields%edges, sgg%Med(i)%ConformalEdge)
         end do
 
@@ -76,6 +89,19 @@ contains
 
         call addAdditionalConformalFeatures(conformal_maps, &
                                             conformal_fields%edges)
+
+
+        call initConformalSGBCStates(conformal_fields%sgbc_faces, conformal_maps%edge_map, sgg%ConformalSGBCProfiles, sgg%dt, control, idx, idy, idz)
+
+        ! do i = 1, sgg%NumMedia
+        !     if (.not. (isConformalSurface(sgg%Med(i)))) cycle
+        !     if (sgg%Med(i)%is%ConformalSGBC) call addConformalSGBCFaces(conformal_fields%sgbc_faces, &
+        !                                                                 conformal_maps, &
+        !                                                                 sgg%Med(i)%ConformalFace, & 
+        !                                                                 sgg%ConformalSGBCProfiles(face%sgbc_profile_index), & 
+        !                                                                 control, sgg%dt)
+        ! end do
+                                            
         call buildIndexLists(conformal_fields)
         do i = 1, size(conformal_maps%face_map%keys)
             face => conformal_maps%face_map%getFace(conformal_maps%face_map%keys(i)%key)
@@ -116,6 +142,41 @@ contains
                             medium%Is%Surface .and. &
                             .not. medium%is%pml
     end function
+
+    subroutine initConformalSGBCStates(faces, edge_map, profiles, dt, control, idx, idy, idz)
+        type(sgbc_face_t), dimension(:), allocatable, intent(inout) :: faces
+        type(edge_map_t), intent(in) :: edge_map
+        type(SGBCMaterialProfile_t), dimension(:), allocatable, intent(in) :: profiles
+        real(kind=RKIND_TIME), intent(in) :: dt
+        type(sim_control_t), intent(in) :: control
+        real(kind=RKIND), dimension(:), pointer :: idx, idy, idz
+        integer :: i, j, key(4)
+        type(edge_t), pointer :: edge
+        real(kind=rkind) :: lower, upper, step
+        logical :: reverse = .false.
+        lower = 0.0
+        upper = 0.0
+        do i = 1, size(faces)
+            do j = 1, size(faces(i)%contour_inside_edges)
+                step = 0.0
+                key(1:3) = faces(i)%contour_inside_edges(j)%cell(1:3)
+                key(4) = faces(i)%contour_inside_edges(j)%direction
+                edge => edge_map%getEdge(key)
+                if (.not. edge%is_two_sided) cycle
+                if (edge%edge_region == EDGE_REGION_CONFORMAL) then 
+                select case(edge%direction)
+                    case(1); step = 1.0_RKIND/idx(edge%cell(1))
+                    case(2); step = 1.0_RKIND/idy(edge%cell(2))
+                    case(3); step = 1.0_RKIND/idz(edge%cell(3))
+                end select
+                lower = lower + 0.5*edge%ratio*step
+                upper = upper + 0.5*(1.0-edge%ratio)*step
+                end if
+            end do
+            call faces(i)%sgbc%init(profiles(faces(i)%sgbc_profile_index), dt, lower, upper, control%sgbcFreq, control%sgbcresol, control%sgbcdepth, reverse)
+        end do
+    end subroutine
+
 
     subroutine addAdditionalConformalFeatures(conf_maps, conformal_edges)
         type(conformal_maps_t), intent(inout) :: conf_maps
@@ -649,6 +710,53 @@ contains
         allocate(faces(size(aux_faces)))
         faces = aux_faces
     end subroutine
+
+    subroutine addConformalSGBCFaces(faces, media_faces)
+        type(sgbc_face_t), dimension(:), allocatable, intent(inout) :: faces
+        ! type(conformal_maps_t), intent(in) :: maps
+        type(face_t), dimension(:), allocatable, intent(in) :: media_faces
+        ! type(SGBCMaterialProfile_t) :: profile
+        ! type(sim_control_t), intent(in) :: control
+        ! real(kind=RKIND_TIME), intent(in) :: dt
+        type(sgbc_face_t), dimension(:), allocatable :: aux_faces
+        integer :: i, n
+        if (.not. allocated(faces)) allocate(faces(0))
+        if (.not. allocated(media_faces)) return
+        if (size(media_faces) == 0) return
+        n = 0
+        do i = 1, size(media_faces)
+            if (media_faces(i)%is_two_sided) n = n + 1
+        end do
+
+        allocate(aux_faces(size(faces) + n))
+        aux_faces(1:size(faces)) = faces
+        n = 0
+        do i = 1, size(media_faces)
+            if (media_faces(i)%is_two_sided) then 
+                n = n + 1
+                
+                aux_faces(size(faces) + n) = SGBCFace(media_faces(i))
+            end if
+        end do
+        deallocate(faces)
+        allocate(faces(size(aux_faces)))
+        faces = aux_faces
+    end subroutine
+
+    function SGBCFace(face) result(res)
+        type(face_t), intent(in) :: face
+        type(sgbc_face_t) :: res
+        
+
+        res%cell = face%cell
+        res%direction = face%direction
+        res%ratio = face%ratio
+        res%is_two_sided = face%is_two_sided
+        res%normal = face%normal
+        res%contour_inside_edges = face%contour_inside_edges
+        res%sgbc_profile_index = face%sgbc_profile_index
+        res%is_sgbc = .true.
+    end function
 
     subroutine addConformalEdges(edges, media_edges)
         type(edge_t), dimension(:), allocatable, intent(inout) :: edges

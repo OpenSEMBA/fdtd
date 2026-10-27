@@ -1395,7 +1395,7 @@ contains
          integer :: ierr
          call MPI_Barrier(SUBCOMM_MPI, ierr)
 #endif
-         call initializeConformalFields(this%sgg, this%conformal_fields, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
+         call initializeConformalFields(this%sgg, this%conformal_fields, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz, Idxe, Idye, Idze, this%control)
          ! call initializeConformalSurfaceStates(this)
       end subroutine initializeConformal
 
