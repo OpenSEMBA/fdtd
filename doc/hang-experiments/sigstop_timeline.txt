@@ -1,0 +1,21 @@
+# experiment: pause pid 92243 (rank1-owner-of-probe)
+11:06:28 phase=baseline rank0(pid=92242 state=R utime=2562) rank1(pid=92243 state=R utime=2564) probe_rows_owner1=757121 probe_rows_owner0=757377
+11:06:33 phase=baseline rank0(pid=92242 state=R utime=3056) rank1(pid=92243 state=R utime=3061) probe_rows_owner1=904961 probe_rows_owner0=905217
+11:06:38 phase=baseline rank0(pid=92242 state=R utime=3554) rank1(pid=92243 state=R utime=3557) probe_rows_owner1=1049985 probe_rows_owner0=1050241
+11:06:43 phase=baseline rank0(pid=92242 state=R utime=4050) rank1(pid=92243 state=R utime=4056) probe_rows_owner1=1193217 probe_rows_owner0=1193473
+11:06:48 phase=baseline rank0(pid=92242 state=R utime=4546) rank1(pid=92243 state=R utime=4555) probe_rows_owner1=1340545 probe_rows_owner0=1340801
+11:06:53 phase=baseline rank0(pid=92242 state=R utime=5045) rank1(pid=92243 state=R utime=5053) probe_rows_owner1=1486721 probe_rows_owner0=1486977
+11:06:58 SIGSTOP sent to 92243
+11:06:58 phase=paused rank0(pid=92242 state=R utime=5545) rank1(pid=92243 state=T utime=5546) probe_rows_owner1=1627393 probe_rows_owner0=1627393
+11:07:04 phase=paused rank0(pid=92242 state=R utime=6050) rank1(pid=92243 state=T utime=5546) probe_rows_owner1=1627393 probe_rows_owner0=1627393
+11:07:09 phase=paused rank0(pid=92242 state=R utime=6555) rank1(pid=92243 state=T utime=5546) probe_rows_owner1=1627393 probe_rows_owner0=1627393
+11:07:14 phase=paused rank0(pid=92242 state=R utime=7058) rank1(pid=92243 state=T utime=5546) probe_rows_owner1=1627393 probe_rows_owner0=1627393
+11:07:19 phase=paused rank0(pid=92242 state=R utime=7561) rank1(pid=92243 state=T utime=5546) probe_rows_owner1=1627393 probe_rows_owner0=1627393
+11:07:24 phase=paused rank0(pid=92242 state=R utime=8065) rank1(pid=92243 state=T utime=5546) probe_rows_owner1=1627393 probe_rows_owner0=1627393
+11:07:29 SIGCONT sent to 92243
+11:07:29 phase=resumed rank0(pid=92242 state=R utime=8568) rank1(pid=92243 state=R utime=5547) probe_rows_owner1=1628033 probe_rows_owner0=1628417
+11:07:34 phase=resumed rank0(pid=92242 state=R utime=9067) rank1(pid=92243 state=R utime=6041) probe_rows_owner1=1787905 probe_rows_owner0=1788289
+11:07:39 phase=resumed rank0(pid=92242 state=R utime=9562) rank1(pid=92243 state=R utime=6539) probe_rows_owner1=1938049 probe_rows_owner0=1938689
+11:07:44 phase=resumed rank0(pid=92242 state=R utime=10062) rank1(pid=92243 state=R utime=7040) probe_rows_owner1=2085633 probe_rows_owner0=2086145
+11:07:49 phase=resumed rank0(pid=92242 state=R utime=10558) rank1(pid=92243 state=R utime=7537) probe_rows_owner1=2243585 probe_rows_owner0=2243969
+11:07:54 phase=resumed rank0(pid=92242 state=R utime=11057) rank1(pid=92243 state=R utime=8034) probe_rows_owner1=2392705 probe_rows_owner0=2393089
