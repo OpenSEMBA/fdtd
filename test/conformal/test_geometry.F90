@@ -56,7 +56,7 @@ integer function test_geometry_coord_position() bind(C) result(err)
 end function
 
 integer function test_geometry_closed_surface_orientation() bind(C) result(err)
-    use conformal_m
+    use conformal_media_m
     use NFDETypes_m, only: ConformalPECElements_t
     implicit none
 
@@ -144,7 +144,7 @@ integer function test_geometry_closed_surface_orientation() bind(C) result(err)
 end function test_geometry_closed_surface_orientation
 
 integer function test_geometry_combined_surface_topology() bind(C) result(err)
-    use conformal_m
+    use conformal_media_m
     use NFDETypes_m, only: ConformalPECElements_t
     use Report_m, only: isFatalError, resetFatalError
     implicit none

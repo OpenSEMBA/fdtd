@@ -57,7 +57,7 @@ integer function test_conformal_sgbc_layer_orientation() bind(C) result(err)
 end function test_conformal_sgbc_layer_orientation
 
 integer function test_conformal_sgbc_geometry_winding() bind(C) result(err)
-   use conformal_m, only: buildSGBCSurfaceMedia
+   use conformal_media_m, only: buildSGBCSurfaceMedia
    use NFDETypes_m, only: ConformalPECElements_t, ConformalMedia_t
    use conformal_types_m, only: coord_t, triangle_t
    implicit none
@@ -96,7 +96,7 @@ contains
 end function test_conformal_sgbc_geometry_winding
 
 integer function test_conformal_sgbc_rejects_unsplit_geometry() bind(C) result(err)
-   use conformal_m, only: buildSGBCSurfaceMedia
+   use conformal_media_m, only: buildSGBCSurfaceMedia
    use NFDETypes_m, only: ConformalPECElements_t, ConformalMedia_t
    use conformal_types_m, only: coord_t, triangle_t
    use Report_m, only: isFatalError, resetFatalError

@@ -610,10 +610,17 @@ module  FDETYPES_m
    ! Conformal edge/face data is shared by FDETYPES and NFDETypes. Keep the
    ! definitions in this foundational module so MediaData_t does not depend on
    ! the module that already USEs FDETYPES.
-   type :: conformal_field_t
-      real(kind=rkind), pointer :: p => null()
-      real(kind=rkind), allocatable :: owned
-   end type
+
+   ! type, public :: conformal_sgbc_state_t
+   !    logical :: initialized = .false.
+   !    integer :: n = 0
+   !    real(kind=RKIND), allocatable :: e_old(:), h(:), rhs(:)
+   !    real(kind=RKIND), pointer :: e(:)
+   !    real(kind=RKIND), allocatable :: e_ga(:), e_gb(:), h_ga(:), h_gb(:)
+   !    real(kind=RKIND), allocatable :: lower_diag(:), diagonal(:), upper_diag(:)
+   !    real(kind=RKIND), allocatable :: rhs_coeff(:,:)
+   !    real(kind=RKIND), allocatable :: upper_prime(:), rhs_prime(:)
+   ! end type
 
    type :: conformal_edge_fields_t
       real(kind=rkind), pointer :: E
@@ -629,11 +636,19 @@ module  FDETYPES_m
       real(kind=rkind), pointer :: E2 => null()
       real(kind=rkind), pointer :: E3 => null()
       real(kind=rkind), pointer :: E4 => null()
+      real(kind=rkind), pointer :: Etan => null()
    end type
 
    type :: conformal_feature_t
       real(kind=rkind) :: ratio
       integer(kind=4) :: size
+   end type
+
+   type :: intersect_t
+      real(kind=rkind), dimension(3) :: init = [0.0,0.0,0.0], end = [0.0,0.0,0.0]
+      integer :: direction = -1
+   contains
+      procedure :: compute_length_ratio
    end type
 
    ! Nominal, non-dispersive material profile used by both the JSON parser and
@@ -664,17 +679,14 @@ module  FDETYPES_m
       integer(kind=4), dimension(3) :: cell
       integer(kind=4) :: direction = -1
       real(kind=rkind) :: ratio = -1
+      type(intersect_t) :: intersect
       logical :: is_two_sided = .false.
       real(kind=RKIND), dimension(3) :: normal
-      ! integer(kind=4) :: surface_normal_sign = 0
       type(edge_t), dimension(:), allocatable :: contour_inside_edges
       type(conformal_face_fields_t) :: region_I_fields, region_II_fields
-      ! !!!
-      ! type(conformal_sgbc_state_t) :: sgbc
       logical :: is_sgbc = .false.
       integer(kind=4) :: sgbc_profile_index = 0
    end type
-
 
    type, public, extends(conformal_feature_t) :: conformal_edge_media_t
       type(edge_t), dimension(:), allocatable :: edges
@@ -843,6 +855,18 @@ module  FDETYPES_m
    !**************************************************************************************************
 
 contains
+
+   function compute_length_ratio(this, steps) result(res)
+      class(intersect_t) :: this
+      real(kind=rkind), dimension(3), intent(in) :: steps
+      real(kind=rkind) :: res
+      res = norm2((this%end - this%init)*steps)
+      select case(this%direction)
+      case(EDGE_X); res = res/(steps(2)*steps(3))
+      case(EDGE_Y); res = res/(steps(1)*steps(3))
+      case(EDGE_Z); res = res/(steps(1)*steps(2))
+      end select
+   end function
 
    subroutine constants_destroy(this)
       class(constants_t) :: this

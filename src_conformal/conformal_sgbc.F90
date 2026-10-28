@@ -1,21 +1,22 @@
 module conformal_sgbc_m
 
-   use FDETYPES_m, only: RKIND, RKIND_TIME, SGBCMaterialProfile_t, EPSILON_VACUUM, MU_VACUUM
+   use FDETYPES_m, only: RKIND, RKIND_TIME, SGBCMaterialProfile_t, EPSILON_VACUUM, MU_VACUUM, edge_t, intersect_t
    use Report_m, only: WarnErrReport
-   ! use conformal_fields_m, only:sgbc_face_t, edge_map_t
    implicit none
 
-   
+
    private
 
    type, public :: conformal_sgbc_state_t
       logical :: initialized = .false.
       integer :: n = 0
-      real(kind=RKIND), allocatable :: e(:), e_old(:), h(:), rhs(:)
+      real(kind=RKIND), allocatable :: e_old(:), h(:), rhs(:), e(:)
       real(kind=RKIND), allocatable :: e_ga(:), e_gb(:), h_ga(:), h_gb(:)
       real(kind=RKIND), allocatable :: lower_diag(:), diagonal(:), upper_diag(:)
       real(kind=RKIND), allocatable :: rhs_coeff(:,:)
       real(kind=RKIND), allocatable :: upper_prime(:), rhs_prime(:)
+      real(kind=RKIND), pointer :: e_1, e_n, h_0, h_n
+      real(kind=RKIND) :: length_ratio = 0.0
    contains
       procedure :: init => conformal_sgbc_init
       procedure :: advance => conformal_sgbc_advance
@@ -24,53 +25,22 @@ module conformal_sgbc_m
       procedure :: destroy => conformal_sgbc_destroy
    end type conformal_sgbc_state_t
 
+   type, public :: sgbc_t
+      integer(kind=4), dimension(3) :: cell
+      integer(kind=4) :: direction = -1
+      real(kind=rkind) :: ratio = -1
+      type(intersect_t) :: intersect
+      logical :: is_two_sided = .false.
+      real(kind=RKIND), dimension(3) :: normal
+      type(edge_t), dimension(:), allocatable :: contour_inside_edges
+      logical :: is_sgbc = .false.
+      integer(kind=4) :: sgbc_profile_index = 0
+      real(kind=rkind) :: lower = 0.0_RKIND, upper = 0.0_RKIND
+      type(conformal_sgbc_state_t) :: state
+   end type sgbc_t
+
+
 contains
-
-   ! subroutine advanceConformalHSGBC(conformal_fields, Id_dir1, Id_dir2, sggMed, g, direction)
-   !    type(conformal_fields_t), intent(inout) :: conformal_fields
-   !    real(kind=rkind), pointer, dimension(:) :: Id_dir1, Id_dir2
-   !    integer(kind=INTEGERSIZEOFMEDIAMATRICES), allocatable, dimension(:,:,:) :: sggMed
-   !    type(constants_t), intent(in) :: g
-   !    integer(kind=4), intent(in) :: direction
-
-   !    real(kind=rkind), pointer :: H, E1, E2, E3, E4, Etan
-   !    real(kind=rkind) :: Id1, Id2, corr
-   !    integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: med
-   !    integer(kind=4), dimension(3) :: c
-   !    integer :: i, j, k, n, id
-
-   !    do n = 1, size(conformal_fields%faces_id_list, 2)
-   !       id = conformal_fields%faces_id_list(direction, n)
-   !       if (id == 0) exit
-   !       c = conformal_fields%faces(id)%cell
-   !       i = c(1); j = c(2); k = c(3)
-   !       med = sggMed(i, j, k)
-   !       select case (direction)
-   !             case (FACE_X); Id1 = Id_dir1(k); Id2 = Id_dir2(j)
-   !             case (FACE_Y); Id1 = Id_dir1(i); Id2 = Id_dir2(k)
-   !             case (FACE_Z); Id1 = Id_dir1(j); Id2 = Id_dir2(i)
-   !       end select
-
-   !       ! region 1
-   !       H  => conformal_fields%faces(id)%region_I_fields%H
-   !       E1 => conformal_fields%faces(id)%region_I_fields%E1
-   !       E2 => conformal_fields%faces(id)%region_I_fields%E2
-   !       E3 => conformal_fields%faces(id)%region_I_fields%E3
-   !       E4 => conformal_fields%faces(id)%region_I_fields%E4
-   !       Etan => conformal_fields%faces(id)%region_I_fields%Etan
-   !       H = g%gm1(med)*H + g%gm2(med)*((E2 - E4)*Id1 - (E3 - E1)*Id2) - g%gm2(med)*conformal_fields%faces(id)%length*Etan
-
-   !       ! region 2
-   !       H  => conformal_fields%faces(id)%region_II_fields%H
-   !       E1 => conformal_fields%faces(id)%region_II_fields%E1
-   !       E2 => conformal_fields%faces(id)%region_II_fields%E2
-   !       E3 => conformal_fields%faces(id)%region_II_fields%E3
-   !       E4 => conformal_fields%faces(id)%region_II_fields%E4
-   !       Etan => conformal_fields%faces(id)%region_II_fields%Etan
-   !       corr = computeFaceRegionIICorrection(conformal_fields%faces(id))
-   !       H = g%gm1(med)*H + g%gm2(med)*corr*((E2 - E4)*Id1 - (E3 - E1)*Id2) - g%gm2(med)*conformal_fields%faces(id)%length*Etan
-   !    end do
-   ! end subroutine
 
    subroutine conformal_sgbc_init(this, profile, dt, lower_distance, upper_distance, maximum_frequency, resolution, depth, reverse_layers)
       class(conformal_sgbc_state_t), intent(inout) :: this
@@ -163,6 +133,8 @@ contains
       this%h = 0.0_RKIND
       this%rhs = 0.0_RKIND
       this%initialized = .true.
+
+      ! this%e_first => this%e(0)
    end subroutine conformal_sgbc_init
 
    integer function layer_subdivisions(profile, layer, maximum_frequency, resolution, depth) result(count)
@@ -237,11 +209,17 @@ contains
 
    subroutine conformal_sgbc_advance(this, lower_h, upper_h)
       class(conformal_sgbc_state_t), intent(inout) :: this
-      real(kind=RKIND), intent(in) :: lower_h, upper_h
+      real(kind=RKIND), intent(in), optional :: lower_h, upper_h
       integer :: index
       if (.not. this%initialized) return
-      this%h(0) = lower_h
-      this%h(this%n) = upper_h
+      this%h(0) = this%h_0
+      this%h(this%n) = this%h_n
+      ! if (this%h(0) /= 0) then 
+      !    call sleep(1)
+      ! end if
+      if (present(lower_h)) this%h(0) = lower_h
+      if (present(upper_h)) this%h(this%n) = upper_h
+      
       do index = 1, this%n
          this%rhs(index) = this%rhs_coeff(1,index)*this%h(index-1)- &
             this%rhs_coeff(2,index)*this%h(index)+this%rhs_coeff(3,index)*this%e(index)
@@ -255,6 +233,10 @@ contains
          this%h(index) = this%h_ga(index)*this%h(index)+0.5_RKIND*this%h_gb(index)* &
             (this%e(index)-this%e(index+1)+this%e_old(index)-this%e_old(index+1))
       end do
+      this%e_1 = this%e(1)
+      this%e_n = this%e(this%n)
+      ! this%e_1 = this%e(1)*this%length_ratio
+      ! this%e_n = this%e(this%n)*this%length_ratio
    end subroutine conformal_sgbc_advance
 
    subroutine solve_tridiagonal(lower, diagonal, upper, rhs, solution, upper_prime, rhs_prime)
@@ -291,7 +273,7 @@ contains
 
    subroutine conformal_sgbc_destroy(this)
       class(conformal_sgbc_state_t), intent(inout) :: this
-      if (allocated(this%e)) deallocate(this%e)
+      ! if (allocated(this%e)) deallocate(this%e)
       if (allocated(this%e_old)) deallocate(this%e_old)
       if (allocated(this%h)) deallocate(this%h)
       if (allocated(this%rhs)) deallocate(this%rhs)

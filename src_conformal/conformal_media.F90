@@ -1,10 +1,10 @@
-module conformal_m
+module conformal_media_m
 
    use Report_m, only: WarnErrReport
    use geometry_m
    use cell_map_m
    use NFDETypes_m, only: ConformalPECRegions_t, ConformalPECElements_t, ConformalMedia_t, &
-                        edge_t, face_t, &
+                        edge_t, face_t, intersect_t, &
                         conformal_face_media_t, conformal_edge_media_t, rkind
    use FDETYPES_m, only: XYZlimit_t, IHX, IHY, IHZ
 
@@ -53,7 +53,7 @@ contains
       end if
       if (present(sgbc_surfaces)) then
          if (associated(conformalRegs%sgbc_surfaces)) then
-            sgbc_surfaces = buildSGBCSurfaceMedia(conformalRegs%sgbc_surfaces)
+            sgbc_surfaces = buildSGBCSurfaceMedia(conformalRegs%sgbc_surfaces, BODY_TYPE_SURFACE)
          else
             allocate(sgbc_surfaces(0))
          end if
@@ -76,48 +76,49 @@ contains
       end do
    end function buildSurfaceMedia
 
-   function buildSGBCSurfaceMedia(elements) result(res)
+   function buildSGBCSurfaceMedia(elements, body_type) result(res)
       type(ConformalPECElements_t), dimension(:), pointer, intent(in) :: elements
+      integer(kind=4), optional :: body_type
       type(ConformalMedia_t), dimension(:), allocatable :: res
       type(side_t), dimension(:), allocatable :: local_sides
       real(kind=rkind), dimension(3) :: oriented_normal
       integer :: i, j, k, side_index, split_direction
 
-      ! allocate(res(size(elements)))
-      ! do i = 1, size(elements)
-      !    ! SGBC layer ordering is defined by user winding, so unlike PEC closed
-      !    ! surfaces this path must not canonicalize triangle orientation.
-      !    res(i) = buildMediaFromElement(elements(i))
-      !    res(i)%is_sgbc = .true.
-      !    res(i)%sgbc_profile = elements(i)%sgbc_profile
-      !    block
-      !       type(cell_map_t) :: cell_map
-      !       call buildCellMap(cell_map, elements(i))
-      !       do j = 1, res(i)%n_faces_media
-      !          do k = 1, res(i)%face_media(j)%size
-      !             split_direction = res(i)%face_media(j)%faces(k)%split_direction
-      !             local_sides = cell_map%getSidesInCell(res(i)%face_media(j)%faces(k)%cell)
-      !             oriented_normal = 0.0_RKIND
-      !             do side_index = 1, size(local_sides)
-      !                oriented_normal = oriented_normal+local_sides(side_index)%normal
-      !             end do
-      !             if (.not. res(i)%face_media(j)%faces(k)%is_two_sided .or. split_direction == 0 .or. &
-      !                 res(i)%face_media(j)%faces(k)%lower_fraction <= TOPOLOGY_TOLERANCE .or. &
-      !                 res(i)%face_media(j)%faces(k)%lower_fraction >= 1.0_RKIND-TOPOLOGY_TOLERANCE) then
-      !                call WarnErrReport('Conformal SGBC geometry must split each affected magnetic face into two subfaces.', .true.)
-      !                res(i)%face_media(j)%faces(k)%surface_normal_sign = 0
-      !             else if (abs(oriented_normal(split_direction)) <= TOPOLOGY_TOLERANCE) then
-      !                call WarnErrReport('Conformal SGBC triangle winding does not define an unambiguous layer direction.', .true.)
-      !                res(i)%face_media(j)%faces(k)%surface_normal_sign = 0
-      !             else if (oriented_normal(split_direction) > 0.0_RKIND) then
-      !                res(i)%face_media(j)%faces(k)%surface_normal_sign = 1
-      !             else
-      !                res(i)%face_media(j)%faces(k)%surface_normal_sign = -1
-      !             end if
-      !          end do
-      !       end do
-      !    end block
-      ! end do
+      allocate(res(size(elements)))
+      do i = 1, size(elements)
+         ! SGBC layer ordering is defined by user winding, so unlike PEC closed
+         ! surfaces this path must not canonicalize triangle orientation.
+         res(i) = buildMediaFromElement(elements(i), body_type)
+         res(i)%is_sgbc = .true.
+         res(i)%sgbc_profile = elements(i)%sgbc_profile
+         ! block
+         !    type(cell_map_t) :: cell_map
+         !    call buildCellMap(cell_map, elements(i))
+         !    do j = 1, res(i)%n_faces_media
+         !       do k = 1, res(i)%face_media(j)%size
+         !          split_direction = res(i)%face_media(j)%faces(k)%split_direction
+         !          local_sides = cell_map%getSidesInCell(res(i)%face_media(j)%faces(k)%cell)
+         !          oriented_normal = 0.0_RKIND
+         !          do side_index = 1, size(local_sides)
+         !             oriented_normal = oriented_normal+local_sides(side_index)%normal
+         !          end do
+         !          if (.not. res(i)%face_media(j)%faces(k)%is_two_sided .or. split_direction == 0 .or. &
+         !              res(i)%face_media(j)%faces(k)%lower_fraction <= TOPOLOGY_TOLERANCE .or. &
+         !              res(i)%face_media(j)%faces(k)%lower_fraction >= 1.0_RKIND-TOPOLOGY_TOLERANCE) then
+         !             call WarnErrReport('Conformal SGBC geometry must split each affected magnetic face into two subfaces.', .true.)
+         !             res(i)%face_media(j)%faces(k)%surface_normal_sign = 0
+         !          else if (abs(oriented_normal(split_direction)) <= TOPOLOGY_TOLERANCE) then
+         !             call WarnErrReport('Conformal SGBC triangle winding does not define an unambiguous layer direction.', .true.)
+         !             res(i)%face_media(j)%faces(k)%surface_normal_sign = 0
+         !          else if (oriented_normal(split_direction) > 0.0_RKIND) then
+         !             res(i)%face_media(j)%faces(k)%surface_normal_sign = 1
+         !          else
+         !             res(i)%face_media(j)%faces(k)%surface_normal_sign = -1
+         !          end if
+         !       end do
+         !    end do
+         ! end block
+      end do
    end function buildSGBCSurfaceMedia
 
    subroutine validateConformalSurface(element, is_valid, message)
@@ -1241,6 +1242,7 @@ contains
       type(edge_t), dimension(:), allocatable :: edges_inside
       type(face_t), dimension(:), allocatable :: faces
       logical, intent(in) :: is_two_sided
+      type(intersect_t) :: intersect
       real(kind=rkind) :: area
       integer :: face
       integer, dimension(3) :: cell
@@ -1250,9 +1252,12 @@ contains
       face = findContourFace(contour)
       normal = computeNormalFromSidesOnFace(contour)
       edges_inside =  getEdgesFromInside(contour)
+      intersect%init = contour(1)%startNode%position
+      intersect%end =  contour(1)%endNode%position
+      intersect%direction =  face
       if (size(contour) /= 0) then
          area = 1.0 - contourArea(contour)
-         call addFace(faces, cell, face, area, is_two_sided, normal, edges_inside)
+         call addFace(faces, cell, face, area, is_two_sided, normal, edges_inside, intersect)
       end if
    end subroutine
 
@@ -1421,7 +1426,7 @@ contains
       edges = aux
    end subroutine
 
-   subroutine addFace(faces, cell, face, ratio, is_two_sided, normal, edges_inside)
+   subroutine addFace(faces, cell, face, ratio, is_two_sided, normal, edges_inside, intersect)
       type(face_t), dimension(:), allocatable, intent(inout) :: faces
       type(face_t), dimension(:), allocatable :: aux
       integer(kind=4), dimension(3), intent(in) :: cell
@@ -1431,6 +1436,7 @@ contains
       logical, optional, intent(in) :: is_two_sided
       real(kind=RKIND), dimension(3), optional :: normal
       type(edge_t), dimension(:), allocatable, optional :: edges_inside
+      type(intersect_t), optional :: intersect
       type(edge_t), dimension(:), allocatable :: inside
       real(kind=RKIND), dimension(3) :: n
       logical :: split
@@ -1438,18 +1444,7 @@ contains
 
       n = [0.0,0.0,0.0]
       split = .false.
-      ! logical :: split_candidate
 
-      ! split_candidate = .false.
-      ! if (present(is_two_sided)) split_candidate = is_two_sided
-
-      ! do i = 1, size(faces)
-      !    if (all(faces(i)%cell == cell) .and. faces(i)%direction == face) then
-      !       faces(i)%ratio = min(faces(i)%ratio, ratio)
-      !       faces(i)%is_two_sided = faces(i)%is_two_sided .and. split_candidate
-      !       return
-      !    end if
-      ! end do
       if (present(is_two_sided)) split = is_two_sided
       if (present(normal)) n = normal
       if (present(edges_inside)) then 
@@ -1461,6 +1456,7 @@ contains
       aux(1:size(faces)) = faces
       new_face%cell = cell
       new_face%ratio = ratio
+      if (present(intersect)) new_face%intersect = intersect
       new_face%direction = face
       new_face%is_two_sided = split
       new_face%normal = n
@@ -1573,4 +1569,4 @@ contains
    end function
 
 
-end module conformal_m
+end module conformal_media_m

@@ -10,7 +10,7 @@ integer function test_conformal_filling_off_face_triangle_x() bind(C) result(err
 !   |  /        ||//|  /
 !   |/__________1___|/
 
-    use conformal_m
+    use conformal_media_m
     implicit none
 
     type(triangle_t) :: t
@@ -95,7 +95,7 @@ integer function test_conformal_filling_off_face_triangle_x() bind(C) result(err
 end function
 
 integer function test_conformal_surface_complementary_ratios() bind(C) result(err)
-    use conformal_m
+    use conformal_media_m
     implicit none
     real(kind=rkind), dimension(3) :: fractions
     real(kind=rkind) :: fraction, forward_ratio, reverse_ratio
@@ -158,7 +158,7 @@ integer function test_conformal_surface_complementary_ratios() bind(C) result(er
 end function test_conformal_surface_complementary_ratios
 
 integer function test_conformal_partial_triangle_on_grid_face() bind(C) result(err)
-    use conformal_m
+    use conformal_media_m
     implicit none
 
     type(coord_t), dimension(4) :: coords
@@ -230,7 +230,7 @@ integer function test_conformal_filling_off_face_triangle_y() bind(C) result(err
 !   |  /           | /
 !   |/_____________|/
 
-    use conformal_m
+    use conformal_media_m
     implicit none
 
     type(triangle_t) :: t
@@ -318,7 +318,7 @@ integer function test_conformal_filling_off_face_triangle_z() bind(C) result(err
 !   |  /           |  /
 !   |/_____________|/
 
-    use conformal_m
+    use conformal_media_m
     implicit none
 
     type(triangle_t) :: t
@@ -401,7 +401,7 @@ integer function test_conformal_filling_open() bind(C) result(err)
 !   |  /           |  /
 !   |/________1____|/
 
-    use conformal_m
+    use conformal_media_m
     implicit none
 
     type(triangle_t) :: t
@@ -462,7 +462,7 @@ integer function test_conformal_detect_split_face() bind(C) result(err)
 !   |  /      \\ //  | /
 !   |/__________1____|/
 
-    use conformal_m
+    use conformal_media_m
     implicit none
 
     type(triangle_t) :: t
@@ -512,7 +512,7 @@ integer function test_conformal_edges_from_contour_inside() bind(C) result(err)
 !   |  /      \\ //  | /
 !   |/__________1____|/
 
-    use conformal_m
+    use conformal_media_m
     implicit none
 
     type(side_t), dimension(:), allocatable :: sides_on_face, contour
@@ -590,7 +590,7 @@ integer function test_conformal_split_faces() bind(C) result(err)
 !   |  /           |  /
 !   4/________1____|/
 
-    use conformal_m
+    use conformal_media_m
     implicit none
 
     type(triangle_t) :: t
@@ -667,7 +667,7 @@ integer function test_conformal_filling_closed() bind(C) result(err)
 !   |  /           |  /
 !   4/________1____|/
 
-    use conformal_m
+    use conformal_media_m
     implicit none
 
     type(triangle_t) :: t
@@ -723,7 +723,7 @@ end function
 
 
 integer function  test_conformal_edge_next_cell() bind(C) result(err)
-    use conformal_m
+    use conformal_media_m
     implicit none
 
     type(triangle_t) :: t
@@ -796,7 +796,7 @@ integer function test_conformal_filling_closed_corner() bind(C) result(err)
 !   |  /        \  |  /
 !   1/_____________2/
 
-    use conformal_m
+    use conformal_media_m
     implicit none
 
     type(triangle_t) :: t
@@ -879,7 +879,7 @@ integer function test_conformal_filling_block_and_corner() bind(C) result(err)
 !   |    /         |    /
 !   |  /           |  /
 !   1/______2______ /
-    use conformal_m
+    use conformal_media_m
     implicit none
 
     type(triangle_t) :: t
@@ -984,7 +984,7 @@ integer function test_conformal_filling_cylinder_base_on_grid_plane() bind(C) re
 !   |  /        \  |  /
 !   1/_____________2/
 
-    use conformal_m
+    use conformal_media_m
     implicit none
 
     type(triangle_t) :: t

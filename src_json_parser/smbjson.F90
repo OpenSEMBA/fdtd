@@ -18,7 +18,7 @@ module smbjson_m
    use json_kinds
 
    use conformal_types_m
-   use conformal_m, only: validateConformalSurface, validateConformalVolume, validateClosedSurfaceTopology
+   use conformal_media_m, only: validateConformalSurface, validateConformalVolume, validateClosedSurfaceTopology
 
    use, intrinsic :: iso_fortran_env , only: error_unit
 

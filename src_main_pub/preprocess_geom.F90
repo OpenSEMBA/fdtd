@@ -20,7 +20,7 @@ module Preprocess_m
    use FDETYPES_m
    use DMMA_m
    use directoryUtils_m, only: file_has_samples
-   use conformal_m, F_X => FACE_X, F_Y => FACE_Y, F_Z => FACE_Z, E_X => EDGE_X, E_Y => EDGE_Y, E_Z => EDGE_Z
+   use conformal_media_m, F_X => FACE_X, F_Y => FACE_Y, F_Z => FACE_Z, E_X => EDGE_X, E_Y => EDGE_Y, E_Z => EDGE_Z
    implicit none
 !!!module global variables
    real(kind=RKIND), save           :: cluz,zvac
@@ -5603,7 +5603,7 @@ contains
                end select
                next_face = next_face+1
                combined_faces(next_face) = conformal_media%face_media(j)%faces(k)
-               ! if (is_sgbc) combined_faces(next_face)%sgbc_profile_index = profile_index
+               if (is_sgbc) combined_faces(next_face)%sgbc_profile_index = profile_index
             end do
             call move_alloc(combined_faces, sgg%Med(face_media)%ConformalFace)
          end do
