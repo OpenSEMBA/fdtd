@@ -28,10 +28,11 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
 PARAVIEW_SCRIPT = Path(__file__).with_name("paraview_scene.py")
-# <case>.fdtd_<name>_<component>_<i>_<j>_<k>[__<i>_<j>_<k>]_<tm|fq>.dat
+# <case>.fdtd_<name>_<component>[_<i>_<j>_<k>][__<i>_<j>_<k>][_s<node>]_<tm|fq>.dat
+# Components: E/H point fields, J/M bulk current and circulation, W/Q wire current and charge, LI line integral.
 PROBE_FILE = re.compile(
-    r"\.fdtd_(?P<name>.+)_(?P<component>[EHJ][xyz])_(?P<i>\d+)_(?P<j>\d+)_(?P<k>\d+)"
-    r"(?:__\d+_\d+_\d+)?_(?P<domain>tm|fq)\.dat$"
+    r"\.fdtd_(?P<name>.+?)_(?P<component>[EHJMWQ][xyz]|LI)"
+    r"(?:_(?P<i>\d+)_(?P<j>\d+)_(?P<k>\d+))?(?:__\d+_\d+_\d+)?(?:_s\d+)?_(?P<domain>tm|fq)\.dat$"
 )
 
 
@@ -40,7 +41,7 @@ class Probe:
     path: Path
     name: str
     component: str
-    index: tuple
+    index: tuple  # None for line integrals, which have no single cell
     domain: str
 
 
@@ -54,9 +55,18 @@ class Series:
 def parse_probe(path):
     match = PROBE_FILE.search(path.name)
     if match is None:
-        return None
-    index = tuple(int(match[axis]) for axis in "ijk")
+        return mtln_probe(path)
+    index = tuple(int(match[axis]) for axis in "ijk") if match["i"] else None
     return Probe(path, match["name"], match["component"], index, match["domain"])
+
+
+def mtln_probe(path):
+    """MTLN wire outputs are named <case>.fdtd_<probe>_<bundle>.dat and start with a 'time' column."""
+    with path.open(encoding="utf-8") as stream:
+        header = stream.readline().split()
+    if not header or header[0] != "time" or ".fdtd_" not in path.name:
+        return None
+    return Probe(path, path.name.split(".fdtd_", 1)[1].removesuffix(".dat"), "", None, "tm")
 
 
 def load_series(probe):
@@ -92,21 +102,26 @@ def traces(series):
 
 
 def plot_series(series_list, title, domain, output):
-    figure, axis = plt.subplots(figsize=(8, 4.5), layout="constrained")
+    """One subplot per quantity (e.g. field and incident), sharing the x axis."""
+    quantities = {}
     for series in series_list:
-        x = series.data[:, 0]
-        for i, column in traces(series):
-            axis.plot(x, series.data[:, i], label=f"{series.probe.name} {series.probe.component} {column}")
-    if domain == "tm":
-        axis.set_xlabel("Time (s)")
-        axis.set_ylabel("Value")
-    else:
-        axis.set_xlabel("Frequency (Hz)")
-        axis.set_ylabel("Magnitude")
-        axis.set_yscale("log")
-    axis.set_title(title)
-    axis.grid(alpha=0.3)
-    axis.legend(fontsize=8)
+        for i, name in traces(series):
+            quantities.setdefault(name, []).append((series, i))
+
+    figure, axes = plt.subplots(
+        len(quantities), 1, figsize=(8, 3.2 * len(quantities)), sharex=True, squeeze=False, layout="constrained"
+    )
+    for axis, (name, members) in zip(axes[:, 0], quantities.items()):
+        for series, i in members:
+            axis.plot(series.data[:, 0], series.data[:, i], label=f"{series.probe.name} {series.probe.component}")
+        axis.set_title(name, fontsize=10)
+        axis.set_ylabel("Magnitude" if domain == "fq" else "Value")
+        if domain == "fq":
+            axis.set_yscale("log")
+        axis.grid(alpha=0.3)
+        axis.legend(fontsize=8)
+    axes[-1, 0].set_xlabel("Frequency (Hz)" if domain == "fq" else "Time (s)")
+    figure.suptitle(title)
     output.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(output, dpi=150)
     plt.close(figure)
@@ -177,8 +192,11 @@ def probe_csv(source_dir, output):
     for series in load_all(source_dir):
         if series.probe.domain != "tm":
             continue
+        if series.probe.index is None:
+            continue
+        # Column 1 is the field or current; incident and voltage columns have other units.
         key = (series.probe.name, series.probe.index)
-        peaks[key] = max(peaks.get(key, 0.0), float(np.abs(series.data[:, 1:]).max()))
+        peaks[key] = max(peaks.get(key, 0.0), float(np.abs(series.data[:, 1]).max()))
     if not peaks:
         raise SystemExit(f"No time-domain probe files in {source_dir}")
 
