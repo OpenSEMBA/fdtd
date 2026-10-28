@@ -1,9 +1,14 @@
 module cell_map_m
 
-    use geometry_m, only: triangle_t, side_t, interval_t, FACE_X, FACE_Y, FACE_Z, isNewSide
+    use geometry_m, only: triangle_t, side_t, interval_t, map_key_t, FACE_X, FACE_Y, FACE_Z, EDGE_X, EDGE_Y, EDGE_Z, isNewSide, coord_t, point_t
     use fhash, only: fhash_tbl_t, key=>fhash_key
     use NFDETypes_m, only: rkind, ConformalPECElements_t
+    use FDETypes_m, only: face_t, edge_t
     implicit none
+
+    integer(kind=4), parameter :: BODY_TYPE_UNDEFINED  = -1
+    integer(kind=4), parameter :: BODY_TYPE_SURFACE  = 1
+    integer(kind=4), parameter :: BODY_TYPE_VOLUME  = 2
 
 
     type :: element_set_t
@@ -32,6 +37,7 @@ module cell_map_m
 
     type, extends(fhash_tbl_t) :: cell_map_t
         type(cell_t), dimension(:), allocatable :: keys
+        integer(kind=4) :: body_type = BODY_TYPE_UNDEFINED
     contains
         procedure :: hasKey => cell_hasKey
         procedure :: getTrianglesInCell
@@ -57,12 +63,9 @@ module cell_map_m
     end type
 
     !!!!
-    type :: side_dir_t
-        integer, dimension(4) :: side_dir
-    end type
 
     type, extends(fhash_tbl_t) :: side_tris_map_t
-        type(side_dir_t), dimension(:), allocatable :: keys
+        type(map_key_t), dimension(:), allocatable :: keys
     contains
         procedure :: hasKey => side_hasKey
         procedure :: getTrianglesFromSide
@@ -73,16 +76,19 @@ module cell_map_m
         procedure :: addTriangleToSide
     end type
 
-
 contains
 
-    subroutine buildSideToTrisMap(res, triangles)
+
+
+    subroutine buildSideToTrisMap(res, triangles, intervals)
         type(side_triangle_map_t), intent(inout) :: res
         type(triangle_t), dimension(:), allocatable :: triangles
+        type(triangle_t), dimension(2) :: triangles_from_interval
+        type(interval_t), dimension(:), allocatable :: intervals
         type(side_t), dimension(:), allocatable :: sides
         type(side_t) :: aux_side
 
-        integer :: i, j
+        integer :: i, j, t
         if (.not. allocated(res%keys)) allocate(res%keys(0))
         do i = 1, size(triangles)
             sides = triangles(i)%getSides()
@@ -92,7 +98,68 @@ contains
                 end if
             end do
         end do
+        do i = 1, size(intervals)
+            triangles_from_interval = getTrisFromInterval(intervals(i))
+            do t = 1, 2
+                sides = triangles_from_interval(t)%getSides()
+                do j = 1, 3
+                    if (sides(j)%isOnAnyEdge()) then 
+                        call res%addTriangleToSide(sides(j), triangles_from_interval(t))
+                    end if
+                end do
+            end do
+        end do
     end subroutine
+
+    function getTrisFromInterval(interval) result(res)
+        type(interval_t), intent(in) :: interval
+        type(triangle_t), dimension(2) :: res
+        integer :: delta(3), lower(3), c(4,3), tmp(3)
+        integer :: face
+
+        delta = interval%endNode%cell - interval%startNode%cell
+
+        if (.not. (all(delta >= 0) .or. all(delta <= 0))) then
+            error stop 'getTrisFromInterval: interval must be uniformly oriented'
+        end if
+
+        face = minloc(abs(interval%endNode%cell - interval%startNode%cell), dim=1)
+        lower = min(interval%startNode%cell, interval%endNode%cell)
+
+        select case (face)
+        case (FACE_X)
+            c(1,1:3) = lower(1:3)
+            c(2,1:3) = lower(1:3) + [0, 1, 0]
+            c(3,1:3) = lower(1:3) + [0, 1, 1]
+            c(4,1:3) = lower(1:3) + [0, 0, 1]
+        case (FACE_Y)
+            c(1,1:3) = lower(1:3)
+            c(2,1:3) = lower(1:3) + [0, 0, 1]
+            c(3,1:3) = lower(1:3) + [1, 0, 1]
+            c(4,1:3) = lower(1:3) + [1, 0, 0]
+        case (FACE_Z)
+            c(1,1:3) = lower(1:3)
+            c(2,1:3) = lower(1:3) + [1, 0, 0]
+            c(3,1:3) = lower(1:3) + [1, 1, 0]
+            c(4,1:3) = lower(1:3) + [0, 1, 0]
+        end select
+
+        ! reverse the rectangle winding if the interval is negative
+        if (all(delta <= 0)) then
+            tmp(1:3) = c(2,1:3)
+            c(2,1:3) = c(4,1:3)
+            c(4,1:3) = tmp(1:3)
+        end if
+
+        res(1) = triangle_t(vertices=[coord_t(position=real(c(1,1:3))), &
+                                        coord_t(position=real(c(2,1:3))), &
+                                        coord_t(position=real(c(3,1:3)))])
+        res(2) = triangle_t(vertices=[coord_t(position=real(c(1,1:3))), &
+                                        coord_t(position=real(c(3,1:3))), &
+                                        coord_t(position=real(c(4,1:3)))])
+    end function getTrisFromInterval
+
+
 
     subroutine addTriangleToSide(this, side, triangle)
         class(side_triangle_map_t) :: this
@@ -100,13 +167,13 @@ contains
         type(triangle_t), intent(in) :: triangle
         class(*), allocatable :: alloc_list
         type(element_set_t) :: aux_list
-        integer(kind=4), dimension(4) :: side_dir
-        type(side_dir_t), dimension(:), allocatable :: aux_keys
-        side_dir(1:3) = side%getCell()
-        side_dir(4) = side%getEdge()
-        if (this%hasKey(side_dir)) then 
+        integer(kind=4), dimension(4) :: map_key
+        type(map_key_t), dimension(:), allocatable :: aux_keys
+        map_key(1:3) = side%getCell()
+        map_key(4) = side%getEdge()
+        if (this%hasKey(map_key)) then 
 
-            call this%get_raw(key(side_dir), alloc_list)
+            call this%get_raw(key(map_key), alloc_list)
             select type(alloc_list)
             type is(element_set_t)
                 allocate(aux_list%triangles(size(alloc_list%triangles) + 1))
@@ -115,17 +182,17 @@ contains
                 deallocate(alloc_list%triangles)
                 allocate(alloc_list%triangles(size(aux_list%triangles)))
                 alloc_list%triangles = aux_list%triangles
-                call this%set(key(side_dir), value = alloc_list)
+                call this%set(key(map_key), value = alloc_list)
             end select
 
         else 
             allocate(aux_list%triangles(1))
             aux_list%triangles(1) = triangle
-            call this%set(key(side_dir), value = aux_list)
+            call this%set(key(map_key), value = aux_list)
 
             allocate(aux_keys(size(this%keys) + 1))
             aux_keys(1:size(this%keys)) = this%keys
-            aux_keys(size(this%keys) + 1)%side_dir = side_dir
+            aux_keys(size(this%keys) + 1)%key = map_key
             deallocate(this%keys)
             allocate(this%keys(size(aux_keys)))
             this%keys = aux_keys
@@ -134,25 +201,27 @@ contains
 
     end subroutine
 
-    subroutine buildSideMap(res, triangles)
+    subroutine buildSideMap(res, triangles, intervals)
         type(side_tris_map_t), intent(inout) :: res
         type(triangle_t), dimension(:), allocatable :: triangles
+        type(interval_t), dimension(:), allocatable :: intervals
         type(side_triangle_map_t) :: tri_map
-        type(side_dir_t), dimension(:), allocatable :: keys
+        type(map_key_t), dimension(:), allocatable :: keys
         type(element_set_t) :: elems
         integer(kind=4) :: i
-        call buildSideToTrisMap(tri_map, triangles)
+        call buildSideToTrisMap(tri_map, triangles, intervals)
         keys = tri_map%keys
         do i = 1, size(keys)
-            elems%triangles = tri_map%getTrianglesFromSide(keys(i)%side_dir)
-            call res%set(key(keys(i)%side_dir), value=elems)
+            elems%triangles = tri_map%getTrianglesFromSide(keys(i)%key)
+            call res%set(key(keys(i)%key), value=elems)
         end do
         res%keys = keys
     end subroutine
 
-    subroutine buildCellMap(res, volume)
+    subroutine buildCellMap(res, volume, body_type)
         type(cell_map_t), intent(inout) :: res
         type(ConformalPECElements_t), intent(in) :: volume
+        integer(kind=4), optional :: body_type
         type(triangle_map_t) :: tri_map
         type(interval_map_t) :: interval_map
         type(side_map_t) :: side_map, side_map_on
@@ -174,6 +243,7 @@ contains
             call res%set(key(keys(i)%cell), value=elems)
         end do
         res%keys = keys
+        if (present(body_type)) res%body_type = body_type
     end subroutine
 
     function mergeKeys(tri_keys, side_keys) result(res)
@@ -229,7 +299,6 @@ contains
         end do
     end subroutine
     
-
     subroutine buildMapOfIntervals(res, intervals)
         type(interval_map_t), intent(inout) :: res
         type(interval_t), dimension(:), allocatable :: intervals

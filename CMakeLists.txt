@@ -113,9 +113,9 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 			set(CMAKE_Fortran_FLAGS "-ffree-form -ffree-line-length-none -fdec -fallow-argument-mismatch")
 		endif()
 		
-		set(CMAKE_C_FLAGS_RELEASE "-Ofast")
-		set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
-		set(CMAKE_Fortran_FLAGS_RELEASE "-Ofast")
+		set(CMAKE_C_FLAGS_RELEASE       "-Ofast -fno-unsafe-math-optimizations")
+		set(CMAKE_CXX_FLAGS_RELEASE     "-Ofast -fno-unsafe-math-optimizations")
+		set(CMAKE_Fortran_FLAGS_RELEASE "-Ofast -fno-unsafe-math-optimizations")
 		if(SEMBA_FDTD_ENABLE_GNU_SAFE_MATH)
 			set(CMAKE_C_FLAGS_RELEASE "-O3 -fno-fast-math -ffp-contract=off")
 			set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fno-fast-math -ffp-contract=off")
@@ -256,6 +256,7 @@ target_link_libraries(semba-types ${MPI_Fortran_LIBRARIES})
 
 add_library(semba-reports
 	"src_main_pub/errorreport.F90"
+	"src_main_pub/progress.F90"
 	"src_main_pub/snapxdmf.F90"
 )
 target_link_libraries(semba-reports semba-types XDMF::HDF5)
@@ -358,6 +359,7 @@ add_library(semba-main
  target_link_libraries(semba-main
 		semba-outputs
 		fdtd-utils
+		conformal
 		${OUTPUT_LIBRARIES}
 		${VTK_API_LIBRARIES}
 		${SMBJSON_LIBRARIES}
@@ -368,7 +370,14 @@ if(SEMBA_FDTD_EXECUTABLE)
 	add_executable(semba-fdtd
 		"src_main_pub/launcher.F90"
 	)
-	target_link_libraries(semba-fdtd semba-main semba-reports)
+	# Intel LLVM on Linux does not rescan semba-main for module dependencies
+	# that are defined later in the same static archive.  RESCAN is unsupported
+	# by the Windows linker used by Intel oneAPI there.
+	if (UNIX AND CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
+		target_link_libraries(semba-fdtd "$<LINK_GROUP:RESCAN,semba-main>" semba-reports)
+	else()
+		target_link_libraries(semba-fdtd semba-main semba-reports)
+	endif()
 	target_link_libraries(semba-fdtd ${MPI_Fortran_LIBRARIES})
 	if(SEMBA_FDTD_EXECUTABLE_NAME)
 		set_target_properties(semba-fdtd PROPERTIES OUTPUT_NAME ${SEMBA_FDTD_EXECUTABLE_NAME})

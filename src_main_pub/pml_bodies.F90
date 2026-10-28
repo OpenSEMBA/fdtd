@@ -206,8 +206,8 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!
       ThereArePMLbodies=ThereArePMLbodies.and.(conta /=0)
       if (.not.therearePMLbodies) then
-         write(buff, *)    'Buggy ERROR: In PMLbodies. fields exist withouth Hfields. '
-        call WarnErrReport (buff,.TRUE.)
+         write(buff, *)    'Internal bug: In PMLbodies. fields exist withouth Hfields. '
+        call log_msg(LOG_ERROR, 'PML', buff)
       end if
       berpmlH%NumNodes=conta
       allocate (berpmlH%Nodes(1 : berpmlH%NumNodes))
@@ -245,8 +245,8 @@ contains
                      PML_%maxTotal=maxZ(jmed)
                      PML_%posi=k1
                   case DEFAULT
-                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
-                     call WarnErrReport (buff,.TRUE.)
+                     write(buff, *)    'Internal bug: In PMLbodies. '
+                     call log_msg(LOG_ERROR, 'PML', buff)
                   end select
                   !call calc_pmlbodypar
                 end if
@@ -286,8 +286,8 @@ contains
                      PML_%maxTotal=maxX(jmed)
                      PML_%posi=i1
                    case DEFAULT
-                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
-                     call WarnErrReport (buff,.TRUE.)
+                     write(buff, *)    'Internal bug: In PMLbodies. '
+                     call log_msg(LOG_ERROR, 'PML', buff)
                   end select
                   !call calc_pmlbodypar
                 end if
@@ -327,8 +327,8 @@ contains
                      PML_%maxTotal=maxY(jmed)
                      PML_%posi=j1
                    case DEFAULT
-                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
-                     call WarnErrReport (buff,.TRUE.)
+                     write(buff, *)    'Internal bug: In PMLbodies. '
+                     call log_msg(LOG_ERROR, 'PML', buff)
                   end select
                   !call calc_pmlbodypar
                 end if
@@ -373,8 +373,8 @@ contains
                      PML_%maxTotal=maxZ(jmed)
                      PML_%posi=k1+0.5
                   case DEFAULT
-                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
-                     call WarnErrReport (buff,.TRUE.)
+                     write(buff, *)    'Internal bug: In PMLbodies. '
+                     call log_msg(LOG_ERROR, 'PML', buff)
                   end select
                   !call calc_pmlbodypar
                 end if
@@ -414,8 +414,8 @@ contains
                      PML_%maxTotal=maxX(jmed)
                      PML_%posi=i1+0.5
                    case DEFAULT
-                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
-                     call WarnErrReport (buff,.TRUE.)
+                     write(buff, *)    'Internal bug: In PMLbodies. '
+                     call log_msg(LOG_ERROR, 'PML', buff)
                   end select
                   !call calc_pmlbodypar
                 end if
@@ -455,8 +455,8 @@ contains
                      PML_%maxTotal=maxY(jmed)
                      PML_%posi=j1+0.5
                    case DEFAULT
-                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
-                     call WarnErrReport (buff,.TRUE.)
+                     write(buff, *)    'Internal bug: In PMLbodies. '
+                     call log_msg(LOG_ERROR, 'PML', buff)
                   end select
                   !call calc_pmlbodypar
                 end if
@@ -604,9 +604,7 @@ contains
             write (14,err=634) (berpmlH%Nodes(conta)%Psi,conta=1,berpmlH%numnodes)
 
       goto 635
-634   call print11(0,SEPARADOR//separador//separador)
-      call print11(0,'PMLBODIES: ERROR WRITING RESTARTING FIELDS. IGNORING AND CONTINUING')
-      call print11(0,SEPARADOR//separador//separador)          
+634   call log_msg(LOG_WARN, 'PML', 'cannot write restarting fields, ignoring and continuing')
 635   return
    end subroutine StorefieldsPMLbodies
 

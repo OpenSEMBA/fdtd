@@ -18,6 +18,7 @@ module Solver_m
    use logUtils_m
    use FDETYPES_m
    use Report_m
+   use progress_m
    use ilumina_m
    use output_m
    use outputTypes_m
@@ -73,6 +74,7 @@ module Solver_m
 #ifdef CompileWithCUDA
    use cuda_field_updates_m, only: cuda_advance_field, CUDA_EX, CUDA_EY, CUDA_EZ, CUDA_HX, CUDA_HY, CUDA_HZ
 #endif
+   use conformal_timestepping_m
 #ifdef CompileWithPrescale
    use P_rescale
 #endif              
@@ -85,7 +87,6 @@ module Solver_m
    use nvtx
 #endif
    implicit none
-
 
    type, public :: solver_t
       type(sim_control_t) :: control
@@ -116,6 +117,7 @@ module Solver_m
       logical :: finishedwithsuccess = .false.
       real(kind=rkind) :: eps0,mu0
       type(tagtype_t) :: tagtype
+      type(conformal_fields_t) :: conformal_fields
 
 #ifdef CompileWithMTLN
       type(mtln_t) :: mtln_parsed
@@ -146,11 +148,13 @@ module Solver_m
       procedure :: advanceNodalH => solver_advanceNodalH
       procedure :: advancePMLbodyH => solver_advancePMLbodyH
       procedure :: advanceMagneticCPML => solver_advanceMagneticCPML
-      procedure :: advanceSGBCE => solver_advanceSGBCE
-      procedure :: advanceSGBCH => solver_advanceSGBCH
+      procedure :: advanceConformalE => solver_advanceConformalE
+      procedure :: advanceConformalH => solver_advanceConformalH
       procedure :: advanceEDispersiveE => solver_advanceEDispersiveE
       procedure :: advanceMDispersiveH => solver_advanceMDispersiveH
       procedure :: MinusCloneMagneticPMC => solver_MinusCloneMagneticPMC
+      procedure :: advanceSGBCE => solver_advanceSGBCE
+      procedure :: advanceSGBCH => solver_advanceSGBCH
       procedure :: CloneMagneticPeriodic => solver_CloneMagneticPeriodic
       procedure :: advanceMagneticMUR => solver_advanceMagneticMUR
       procedure :: destroy_and_deallocate
@@ -445,6 +449,7 @@ module Solver_m
       
       character(len=bufsize) :: dubuf
       logical :: attinformado = .false.
+      logical :: anyObservation
 
 ! #ifdef compileWithMPI
       integer(kind=4) :: dummyMin,dummyMax, ierr
@@ -464,9 +469,9 @@ module Solver_m
       J=this%sgg%Alloc(IEX)%YI
       K=this%sgg%Alloc(IEX)%ZI
       do field=IEY,6
-         if (this%sgg%Alloc(field)%XI /= I) call stoponerror(this%control%layoutnumber,this%control%num_procs,'OFFSETS IN INITIAL COORD NOT ALLOWED')
-         if (this%sgg%Alloc(field)%YI /= J) call stoponerror(this%control%layoutnumber,this%control%num_procs,'OFFSETS IN INITIAL COORD NOT ALLOWED')
-         if (this%sgg%Alloc(field)%ZI /= K) call stoponerror(this%control%layoutnumber,this%control%num_procs,'OFFSETS IN INITIAL COORD NOT ALLOWED')
+         if (this%sgg%Alloc(field)%XI /= I) call log_msg(LOG_FATAL, 'SOLVER', 'OFFSETS IN INITIAL COORD NOT ALLOWED')
+         if (this%sgg%Alloc(field)%YI /= J) call log_msg(LOG_FATAL, 'SOLVER', 'OFFSETS IN INITIAL COORD NOT ALLOWED')
+         if (this%sgg%Alloc(field)%ZI /= K) call log_msg(LOG_FATAL, 'SOLVER', 'OFFSETS IN INITIAL COORD NOT ALLOWED')
       end do
 
       write(whoami,'(a,i5,a,i5,a)') '(',this%control%layoutnumber+1,'/',this%control%num_procs,') '
@@ -526,7 +531,7 @@ module Solver_m
             if (this%control%resume_fromold) then
                close (14)
                write(dubuf,*) 'Incoherence between MPI saved steps for resuming.', dummyMin,dummyMax,this%lastexecutedtimesteP
-               call stoponerror (this%control%layoutnumber,this%control%num_procs,BUFF,.true.) !so that it returns
+               call log_msg(LOG_FATAL, 'SOLVER', BUFF) !so that it returns
                call this%destroy_and_deallocate()
                return
             else
@@ -541,7 +546,7 @@ module Solver_m
                call MPI_AllReduce(this%lastexecutedtimestep, dummyMax, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
                if ((dummyMax /= this%lastexecutedtimestep).or.(dummyMin /= this%lastexecutedtimestep)) then
                   write(DUbuf,*) 'NO success. fields.old MPI are also incoherent for resuming.', dummyMin,dummyMax,this%lastexecutedtimestep
-                  call stoponerror (this%control%layoutnumber,this%control%num_procs,DUBUF,.true.) !so that it returns
+                  call log_msg(LOG_FATAL, 'SOLVER', DUBUF) !so that it returns
                   call this%destroy_and_deallocate()
                   return
                else
@@ -553,7 +558,7 @@ module Solver_m
             close (14)
 
             write(dubuf,*) 'Incoherence between MPI saved steps for resuming.',dummyMin,dummyMax,this%lastexecutedtimestep
-            call stoponerror (this%control%layoutnumber,this%control%num_procs,dubuf,.true.) !so that it returns
+            call log_msg(LOG_FATAL, 'SOLVER', dubuf) !so that it returns
             call this%destroy_and_deallocate()
             return
 #endif
@@ -565,7 +570,7 @@ module Solver_m
       end if
 
       if (this%initialtimestep>this%control%finaltimestep) then
-          call stoponerror (this%control%layoutnumber,this%control%num_procs,'Initial time step greater than final one',.true.) !so that it returns
+          call log_msg(LOG_FATAL, 'SOLVER', 'Initial time step greater than final one') !so that it returns
           call this%destroy_and_deallocate()
           return
       end if
@@ -609,6 +614,8 @@ module Solver_m
       call initializeAnisotropic()
       call initializeSGBC()
       call initializeMultiports()
+      call initializeConformalElements()
+      call initializeConformal()
       
       call initializeEDispersives()
       call initializeMDispersives()
@@ -635,14 +642,21 @@ module Solver_m
       this%n_info = 5 + this%initialtimestep
 
       write(dubuf,*) 'Init Timing...';  call print11(this%control%layoutnumber,dubuf)
-      call InitTiming(this%sgg, this%control, this%control%time_desdelanzamiento, this%initialtimestep, this%control%maxSourceValue)
+      ! Collective on all ranks: thereAre%Observation is rank-local.
+      call report_outputs_memory(this%control%layoutnumber)
+      anyObservation = this%thereAre%Observation
+#ifdef CompileWithMPI
+      call MPI_AllReduce(this%thereAre%Observation, anyObservation, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
+#endif
+      call InitTiming(this%sgg, this%control, this%control%time_desdelanzamiento, this%initialtimestep, this%control%maxSourceValue, &
+                      merge(OUTPUT_TIME_BUFFER_SIZE, 0, anyObservation))
 
 
       call CLOSEWARNINGFILE(this%control%layoutnumber,this%control%num_procs,this%control%fatalerror,.false.,this%control%simu_devia) !here the stochastic is already split and there are two this%control%layoutnumber=0
 
       if (this%control%fatalerror) then
          dubuf='FATAL ERRORS. Revise *Warnings.txt file. ABORTING...'
-         call stoponerror(this%control%layoutnumber,this%control%num_procs,dubuf,.true.) !so that it returns
+         call log_msg(LOG_FATAL, 'SOLVER', dubuf) !so that it returns
          call this%destroy_and_deallocate()
          return
       end if
@@ -973,7 +987,7 @@ contains
                   !!
                   write(buff,'(a,2e10.2e3)') ' Composites stabilization att. factor=',this%control%attfactorc,this%sgg%Med(i)%SigmaM
 
-                  call WarnErrReport(buff)
+                  call log_msg(LOG_INFO, 'SOLVER', buff)
                   !!
                   fmax=1.0_RKIND / (10.0_RKIND * this%sgg%dt)
                   skin_depth=1.0_RKIND / (Sqrt(2.0_RKIND)*fmax*Pi*(epr*this%eps0**2*(4*mur*this%mu0**2.0_RKIND + this%sgg%Med(i)%Sigmam**2/(fmax**2*Pi**2.0_RKIND )))**0.25_RKIND * &
@@ -982,14 +996,14 @@ contains
                   -(0.0001295712360834271997*AIMAG(fmax*Sqrt((epr*((0,-2.825225e7) + &
                   8.8757061047382236e6*mur + this%control%attfactorc*((0,2.825225e7) + 8.8757061047382236e6*mur)))/ &
                   (1.124121310242e12 + 1.124121310242e12*this%control%attfactorc))*min(deltaespmax,skin_depth)))
-                  if (this%control%layoutnumber == 0) call WarnErrReport(buff)
+                  if (this%control%layoutnumber == 0) call log_msg(LOG_INFO, 'SOLVER', buff)
                   if (fmax > 3e9) then
                      fmax=3e9
                      write(buff,'(a,e9.2e2,a,e10.2e3)') '             At f=',fmax,',Max Att(dB)=', &
                      -(0.0001295712360834271997*AIMAG(fmax*Sqrt((epr*((0,-2.825225e7) + &
                      8.8757061047382236e6*mur + this%control%attfactorc*((0,2.825225e7) + 8.8757061047382236e6*mur)))/ &
                      (1.124121310242e12 + 1.124121310242e12*this%control%attfactorc))*min(deltaespmax,skin_depth)))
-                     if (this%control%layoutnumber == 0) call WarnErrReport(buff)
+                     if (this%control%layoutnumber == 0) call log_msg(LOG_INFO, 'SOLVER', buff)
                   end if
                   att=.true.
                end if
@@ -1008,7 +1022,7 @@ contains
                   this%sgg%Med(i)%Sigma =(-2.0_RKIND * (-1.0_RKIND + this%control%attfactorw)*this%eps0)/((1 + this%control%attfactorw)*this%sgg%dt)
                   if (.not.att) then
                      write(buff,'(a,2e10.2e3)') ' WIREs stabilization att. factors=',this%control%attfactorw,this%sgg%Med(i)%Sigma
-                     if (this%control%layoutnumber == 0) call WarnErrReport(buff)
+                     if (this%control%layoutnumber == 0) call log_msg(LOG_INFO, 'SOLVER', buff)
                      att=.true.
                   end if
                end if
@@ -1031,29 +1045,29 @@ contains
          character(len=BUFSIZE) :: buff   
          if ((this%control%layoutnumber == 0).and.this%control%verbose) then
             write(buff,'(a,3e9.2e2)') 'CPML  alpha, alphaorder, kappa factors= ', this%control%alphamaxpar,this%control%alphaOrden,this%control%kappamaxpar
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             if (this%control%extraMedium%exists) then
                write(buff,'(a,i5,e9.2e2)') 'CPML correction size,factor to scale sigmamax = ', &
                this%control%extraMedium%pml_size,this%control%extraMedium%sigma
-               call WarnErrReport(buff)
+               call log_msg(LOG_INFO, 'SOLVER', buff)
             end if
             write(buff,*) 'saveall=',this%control%saveall,', flushsecondsFields=',this%control%flushsecondsFields,', flushsecondsData=',this%control%flushsecondsData,', maxCPUtime=',this%control%maxCPUtime,', singlefilewrite=',this%control%singlefilewrite
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'TAPARRABOS=',this%control%TAPARRABOS,', wiresflavor=',trim(adjustl(this%control%wiresflavor)),', mindistwires=',this%control%mindistwires,', wirecrank=',this%control%wirecrank , 'makeholes=',this%control%makeholes
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'connectendings=',this%control%connectendings,', isolategroupgroups=',this%control%isolategroupgroups
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'wirethickness ', this%control%wirethickness, 'stableradholland=',this%control%stableradholland,'mtlnberenger=',this%control%mtlnberenger,' inductance_model=',trim(adjustl(this%control%inductance_model)), &
                         ', inductance_order=',this%control%inductance_order,', groundwires=',this%control%groundwires,' ,fieldtotl=',this%control%fieldtotl,' noSlantedcrecepelo =',this%control%noSlantedcrecepelo 
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'sgbc=',this%control%sgbc,', mibc=',this%control%mibc,', attfactorc=',this%control%attfactorc,', attfactorw=',this%control%attfactorw
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'NOcompomur=',this%control%NOcompomur,', ADE=',this%control%ADE,', conformalskin=',this%control%conformalskin,', sgbcFreq=',this%control%sgbcFreq,', sgbcresol=',this%control%sgbcresol,', sgbccrank=',this%control%sgbccrank,', sgbcDepth=',this%control%sgbcdepth
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'mur_second=',this%control%mur_second,', murafterpml=',this%control%murafterpml,', facesNF2FF%tr=',this%control%facesNF2FF%tr,', facesNF2FF%fr=',this%control%facesNF2FF%fr,', facesNF2FF%iz=',this%control%facesNF2FF%iz
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
             write(buff,*) 'facesNF2FF%de=',this%control%facesNF2FF%de,', facesNF2FF%ab=',this%control%facesNF2FF%ab,', facesNF2FF%ar=',this%control%facesNF2FF%ar,', NF2FFDecim=',this%control%NF2FFDecim
-            call WarnErrReport(buff)
+            call log_msg(LOG_INFO, 'SOLVER', buff)
          end if
       end subroutine
 
@@ -1267,19 +1281,19 @@ contains
          dtcritico=newdtcritico
 #endif
          if (this%sgg%dt <= dtcritico) then
-            write(buff,'(a,e10.2e3)')  'WIR_INFO: deltat for stability OK: ',dtcritico
-            if ((this%control%layoutnumber==0).and.this%control%verbose) call WarnErrReport(buff)
+            write(buff,'(a,e10.2e3)')  'deltat for stability OK: ',dtcritico
+            if ((this%control%layoutnumber==0).and.this%control%verbose) call log_msg(LOG_INFO, 'SOLVER', buff)
          else
             if (.not.(this%control%resume.and.this%control%permitscaling)) then !do not abort, only warn if permittivity scaling
 #ifdef CompileWithMTLN
-               write(buff,'(a,e10.2e3)')  'WIR_ERROR: Possibly UNSTABLE dt, make dt < ',dtcritico
+               write(buff,'(a,e10.2e3)')  'Possibly UNSTABLE dt, make dt < ',dtcritico
 #else
-               write(buff,'(a,e10.2e3)')  'WIR_ERROR: Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs, use -stableradholland or make dt < ',dtcritico
+               write(buff,'(a,e10.2e3)')  'Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs, use -stableradholland or make dt < ',dtcritico
 #endif
-               if (this%control%layoutnumber==0) call WarnErrReport(buff,.true.)
+               if (this%control%layoutnumber==0) call log_msg(LOG_ERROR, 'SOLVER', buff)
             else
-               write(buff,'(a,e10.2e3)')  'WIR_WARNING: Resume and Pscaling with wires. Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs: dt is over ',dtcritico
-               if (this%control%layoutnumber==0) call WarnErrReport(buff,.false.)
+               write(buff,'(a,e10.2e3)')  'Resume and Pscaling with wires. Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs: dt is over ',dtcritico
+               if (this%control%layoutnumber==0) call log_msg(LOG_WARN, 'SOLVER', buff)
             end if
          end if
       !!!
@@ -1371,6 +1385,46 @@ contains
          end if
 #endif
       end subroutine initializeMultiports
+
+      subroutine initializeConformal()
+#ifdef CompileWithMPI
+         integer :: ierr
+         call MPI_Barrier(SUBCOMM_MPI, ierr)
+#endif
+         call initializeConformalFields(this)
+         ! call initializeConformalSurfaceStates(this)
+      end subroutine initializeConformal
+
+      subroutine initializeConformalElements()
+         character(len=BUFSIZE) :: dubuf
+         logical :: l_auxinput, l_auxoutput
+#ifdef CompileWithMPI
+         integer(kind=4) :: ierr
+#endif
+
+#ifdef CompileWithConformal
+         if (input_conformal_flag) then
+#ifdef CompileWithMPI
+            call MPI_Barrier(SUBCOMM_MPI, ierr)
+#endif
+            write(dubuf,*) 'Init Conformal Elements ...'; call print11(this%control%layoutnumber,dubuf)
+            call initialize_memory_FDTD_conf_fields(this%sgg,this%media%sggMiEx, &
+               this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, &
+               Ex,Ey,Ez,Hx,Hy,Hz,this%control%layoutnumber,this%control%num_procs,this%control%verbose)
+            l_auxinput = input_conformal_flag
+            l_auxoutput = l_auxinput
+#ifdef CompileWithMPI
+            call MPI_Barrier(SUBCOMM_MPI,ierr)
+            call MPI_AllReduce(l_auxinput,l_auxoutput,1_4,MPI_LOGICAL,MPI_LOR,MPI_COMM_WORLD,ierr)
+#endif
+            if (l_auxoutput) then
+               write(dubuf,*) '----> there are conformal elements'; call print11(this%control%layoutnumber,dubuf)
+            else
+               write(dubuf,*) '----> no conformal elements found'; call print11(this%control%layoutnumber,dubuf)
+            end if
+         end if
+#endif
+      end subroutine initializeConformalElements
 
       subroutine initializeEDispersives()
          character(len=bufsize) :: dubuf
@@ -1758,6 +1812,11 @@ contains
       integer :: i
       real(kind=rkind) :: pscale_alpha
       character(len=bufsize) :: dubuf
+#ifdef CompileWithConformal
+#ifdef CompileWithMPI
+      call this%init_MPIConformalProbes()
+#endif
+#endif
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
@@ -1795,7 +1854,7 @@ contains
       fieldReference%H%deltaz => this%dzh
 
       ciclo_temporal :  do while (this%n <= this%control%finaltimestep)
-      
+         call set_log_step(this%n)
          call this%step()
          call updateAndFlush()
 
@@ -1810,36 +1869,40 @@ contains
          call MPI_Barrier(MPI_COMM_WORLD,ierr) !050619 included to address stochastic stopflushing problems
 #endif
          
-         if (call_timing) then
-            call Timing(this%sgg,this%bounds,this%n,this%n_info,this%control%layoutnumber,this%control%num_procs, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,this%initialtimestep, &
-            this%control%finaltimestep,this%perform,this%parar,.FALSE., &
-            Ex,Ey,Ez,this%everflushed,this%control%nInputRoot,this%control%maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
+          if (call_timing) then
+             call Timing(this%sgg, this%bounds, this%n, this%n_info, this%control%layoutnumber, &
+                         this%control%num_procs, this%control%maxCPUtime, this%control%flushsecondsFields, &
+                         this%control%flushsecondsData, this%initialtimestep, this%control%finaltimestep, &
+                         this%perform, this%parar, .false., Ex, Ey, Ez, this%everflushed, &
+                         this%control%nInputRoot, this%control%maxSourceValue, this%control%opcionestotales, &
+                         this%control%simu_devia, this%control%dontwritevtk, this%control%permitscaling)
 
-            if (.not.this%parar) then !!! if it is due to a stop it is handled at the end
-               if (this%perform%flushFIELDS) then
-                  call performFlushField()
-               end if
+             if (.not. this%parar) then
+                if (this%perform%flushFIELDS) then
+                   call performFlushField()
+                end if
 
-               if (this%perform%isFlush()) then
-                      !
-                      flushFF=this%perform%postprocess
-                      if (this%thereAre%FarFields.and.flushFF) then
-                          write(dubuf,'(a,i9)')  ' INIT OBSERVATION DATA FLUSHING and Near-to-Far field n= ',this%n
-                      else
-                          write(dubuf,'(a,i9)')  ' INIT OBSERVATION DATA FLUSHING n= ',this%n
-                      end if
-                      call printMessageWithSeparator(this%control%layoutnumber,dubuf)
-                      if (this%thereAre%Observation) call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, flushFF)
-                 end if !of the if (this%performflushDATA.or....
-                  if (this%control%singlefilewrite.and.this%perform%unpackFlag) call singleUnpack()
-                  if ((this%control%singlefilewrite.and.this%perform%unpackFlag).or.this%perform%isFlush()) then
-                     write(dubuf,'(a,i9)')  ' Continuing simulation at n= ',this%n
-                     call printMessageWithSeparator(this%control%layoutnumber,dubuf)
-                  end if
+                if (this%perform%isFlush()) then
+                   flushFF=this%perform%postprocess
+                   if (this%thereAre%FarFields .and. flushFF) then
+                      write(dubuf, '(a, i9)') 'INIT OBSERVATION DATA FLUSHING and Near-to-Far field n= ', this%n
+                   else
+                      write(dubuf, '(a, i9)') 'INIT OBSERVATION DATA FLUSHING n= ', this%n
+                   end if
+                   if (this%control%layoutnumber == 0) call log_msg(LOG_INFO, 'SOLVER', dubuf)
+                   if (this%thereAre%Observation) then
+                      call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, flushFF)
+                   end if
+                end if
 
-                end if !!!of the if (.not.this%parar)
-             end if !!!of the if(n >= n_info
-!          !!!!!!!!all the previous must be together
+                if (this%control%singlefilewrite .and. this%perform%unpackFlag) call singleUnpack()
+                if ((this%control%singlefilewrite .and. this%perform%unpackFlag) .or. this%perform%isFlush()) then
+                   write(dubuf, '(a, i9)') 'Continuing simulation at n= ', this%n
+                   if (this%control%layoutnumber == 0) call log_msg(LOG_INFO, 'SOLVER', dubuf)
+                end if
+
+             end if
+          end if
               
          this%control%fatalerror=.false.
          if (this%parar) then
@@ -1869,14 +1932,9 @@ contains
 #endif
       end if
 #endif
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         !!!  Increase time step
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         ! write(*write(*,*) 'timestepping: ', n
          this%n=this%n+1 !increase iteration
       end do ciclo_temporal ! End of the time-stepping loop
-
-
+      call set_log_step(-1_4)
 contains
 
 #ifdef CompileWithMPI
@@ -1914,11 +1972,15 @@ contains
       end subroutine performFlushField
 
       subroutine updateAndFlush()
-         integer(kind=4) :: mindum
-         if (this%thereAre%Observation) then
-            if (this%n > 0 .and. mod(this%n, OUTPUT_TIME_BUFFER_SIZE) == 0) then
+         if (this%n > 0 .and. mod(this%n, OUTPUT_TIME_BUFFER_SIZE) == 0) then
+            if (this%thereAre%Observation) then
                call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, .FALSE.)
             end if
+#ifdef CompileWithMPI
+            if (this%control%num_procs > 1) call MPI_Barrier(SUBCOMM_MPI, ierr)
+#endif
+         end if
+         if (this%thereAre%Observation) then
             call update_outputs(this%control, this%sgg%time(this%n), this%n, fieldReference, this%sgg)
          end if
       end subroutine
@@ -1964,6 +2026,10 @@ contains
       call flushPlanewaveOff(planewave_switched_off, this%still_planewave_time, thereareplanewave)
       call this%AdvanceAnisotropicE()
       call this%advanceE()
+      call this%advanceConformalE()
+#ifdef CompileWithConformal
+      if (this%control%input_conformal_flag) call conformal_advance_E()
+#endif
 
       call this%advanceWiresE()
 #ifdef CompileWithMTLN
@@ -1988,10 +2054,14 @@ contains
 
       call this%advanceAnisotropicH()
       call this%advanceH()
+      call this%advanceConformalH()
       call this%advancePMLbodyH()
       call this%AdvanceMagneticCPML()
       call this%MinusCloneMagneticPMC()
       call this%CloneMagneticPeriodic()
+#ifdef CompileWithConformal
+      if (this%control%input_conformal_flag) call conformal_advance_H()
+#endif
       call this%AdvancesgbcH()
       call this%AdvanceMDispersiveH()
 #ifdef CompileWithNIBC
@@ -2426,6 +2496,193 @@ contains
       return
    end subroutine advanceHz
 
+   subroutine solver_advanceConformalH(this)
+      class(solver_t) :: this
+      real (kind = rkind), pointer :: H, E1, E2, E3, E4
+      real(kind=rkind) :: id1, id2, corr
+      integer(kind=integersizeofmediamatrices) :: med
+      integer(kind=4), dimension(3) :: c
+      integer :: i, j, k, n
+
+      do n = 1, size(this%conformal_fields%faces)
+         corr = 0.0
+         c = this%conformal_fields%faces(n)%cell
+         i = c(1); j = c(2); k = c(3)
+         select case (this%conformal_fields%faces(n)%direction)
+         case (FACE_X); med = this%media%sggMiHx(i, j, k); id1 = this%Idze(k); id2 = this%Idye(j)
+         case (FACE_Y); med = this%media%sggMiHy(i, j, k); id1 = this%Idxe(i); id2 = this%Idze(k)
+         case (FACE_Z); med = this%media%sggMiHz(i, j, k); id1 = this%Idye(j); id2 = this%Idxe(i)
+         end select
+         !region 1
+         H  => this%conformal_fields%faces(n)%region_I_fields%H
+         E1 => this%conformal_fields%faces(n)%region_I_fields%E1
+         E2 => this%conformal_fields%faces(n)%region_I_fields%E2
+         E3 => this%conformal_fields%faces(n)%region_I_fields%E3
+         E4 => this%conformal_fields%faces(n)%region_I_fields%E4
+         H = this%g%gm1(med)*H + this%g%gm2(med)*((E2 - E4)*id1 - (E3 - E1)*id2)
+
+
+         !region 2
+         H  => this%conformal_fields%faces(n)%region_II_fields%H
+         E1 => this%conformal_fields%faces(n)%region_II_fields%E1
+         E2 => this%conformal_fields%faces(n)%region_II_fields%E2
+         E3 => this%conformal_fields%faces(n)%region_II_fields%E3
+         E4 => this%conformal_fields%faces(n)%region_II_fields%E4
+
+         corr = computeFaceRegionIICorrection(this%conformal_fields%faces(n))
+         H = this%g%gm1(med)*H + this%g%gm2(med)*corr*((E2 - E4)*id1 - (E3 - E1)*id2)
+
+      end do
+
+      ! The grid E of full edges outside the surface may have been modified after the conformal
+      ! update (planewave injection, boundaries...). Their own copy is resynchronised with it.
+      do n = 1, size(this%conformal_fields%edges)
+         c = this%conformal_fields%edges(n)%cell
+         i = c(1); j = c(2); k = c(3)
+         if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_I) then 
+            select case (this%conformal_fields%edges(n)%direction)
+               case (EDGE_X); this%conformal_fields%edges(n)%region_I_fields%E = this%Ex(i,j,k)
+               case (EDGE_Y); this%conformal_fields%edges(n)%region_I_fields%E = this%Ey(i,j,k)
+               case (EDGE_Z); this%conformal_fields%edges(n)%region_I_fields%E = this%Ez(i,j,k)
+            end select
+         else if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_II) then 
+            select case (this%conformal_fields%edges(n)%direction)
+               case (EDGE_X); this%conformal_fields%edges(n)%region_II_fields%E = this%Ex(i,j,k)
+               case (EDGE_Y); this%conformal_fields%edges(n)%region_II_fields%E = this%Ey(i,j,k)
+               case (EDGE_Z); this%conformal_fields%edges(n)%region_II_fields%E = this%Ez(i,j,k)
+            end select
+         end if
+      end do
+   end subroutine
+
+   subroutine solver_advanceConformalE(this)
+      class(solver_t) :: this
+      real (kind = rkind), pointer :: E, H1, H2, H3, H4
+      real (kind = rkind) :: E_eff
+
+      real(kind=rkind) :: id1, id2, corr
+      integer(kind=integersizeofmediamatrices) :: med
+      integer(kind=4), dimension(3) :: c
+      integer :: i, j, k, n
+      do n = 1, size(this%conformal_fields%edges)
+         corr = 0.0
+         E_eff = 0.0
+         c = this%conformal_fields%edges(n)%cell
+         i = c(1); j = c(2); k = c(3)
+         select case (this%conformal_fields%edges(n)%direction)
+         case (EDGE_X); med = this%media%sggMiEx(i, j, k); id1 = this%Idze(k); id2 = this%Idye(j)
+         case (EDGE_Y); med = this%media%sggMiEy(i, j, k); id1 = this%Idxe(i); id2 = this%Idze(k)
+         case (EDGE_Z); med = this%media%sggMiEz(i, j, k); id1 = this%Idye(j); id2 = this%Idxe(i)
+         end select
+         !region 1
+         if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_I .or. &
+             this%conformal_fields%edges(n)%edge_region == EDGE_REGION_CONFORMAL) then 
+            E  => this%conformal_fields%edges(n)%region_I_fields%E
+            H1 => this%conformal_fields%edges(n)%region_I_fields%H1
+            H2 => this%conformal_fields%edges(n)%region_I_fields%H2
+            H3 => this%conformal_fields%edges(n)%region_I_fields%H3
+            H4 => this%conformal_fields%edges(n)%region_I_fields%H4
+            E = this%g%g1(med)*E + this%g%g2(med)*((H1 - H3)*id2 - (H4-H2)*id1)
+            E_eff = E
+
+         end if
+         !region 2
+         if (this%conformal_fields%edges(n)%edge_region == EDGE_REGION_II .or. &
+             this%conformal_fields%edges(n)%edge_region == EDGE_REGION_CONFORMAL) then 
+            E  => this%conformal_fields%edges(n)%region_II_fields%E
+            H1 => this%conformal_fields%edges(n)%region_II_fields%H1
+            H2 => this%conformal_fields%edges(n)%region_II_fields%H2
+            H3 => this%conformal_fields%edges(n)%region_II_fields%H3
+            H4 => this%conformal_fields%edges(n)%region_II_fields%H4
+
+            corr = computeEdgeRegionIICorrection(this%conformal_fields%edges(n))
+            E = this%g%g1(med)*E + this%g%g2(med)*corr*((H1 - H3)*id2 - (H4-H2)*id1)
+            E_eff = E_eff + E
+
+         end if
+         select case (this%conformal_fields%edges(n)%direction)
+         case (EDGE_X); this%Ex(i,j,k) = E_eff
+         case (EDGE_Y); this%Ey(i,j,k) = E_eff
+         case (EDGE_Z); this%Ez(i,j,k) = E_eff
+         end select
+
+      end do
+
+   end subroutine
+
+   subroutine initializeConformalFields(this)
+      class(solver_t) :: this
+      type(face_t), pointer :: face, face_of_edge
+      type(edge_t), pointer :: edge
+      type(edge_t), dimension(:), allocatable :: aux_edges
+      type(conformal_maps_t) :: conformal_maps
+      type(map_key_t), dimension(4) :: edges_on_face, faces_on_edge
+      integer(kind=4), dimension(3) :: cell
+      integer :: i,j,k,n
+
+      n = 0
+      do i = 1, this%sgg%NumMedia
+         if (isConformalSurface(this%sgg%Med(i))) n = n + 1
+      end do
+      if (n == 0) then 
+         allocate(this%conformal_fields%faces(0))
+         allocate(this%conformal_fields%edges(0))
+         return 
+      end if
+
+      do i = 1, this%sgg%NumMedia
+         if (.not. (isConformalSurface(this%sgg%Med(i)))) cycle
+         call addConformalFaces(this%conformal_fields%faces, this%sgg%Med(i)%ConformalFace)
+         call addConformalEdges(this%conformal_fields%edges, this%sgg%Med(i)%ConformalEdge)
+      end do
+
+      call buildConformalMaps(conformal_maps%face_map, & 
+                              conformal_maps%edge_map, & 
+                              this%conformal_fields%faces, &
+                              this%conformal_fields%edges)
+
+      call addAdditionalConformalFeatures(conformal_maps, &
+                                          this%conformal_fields%edges)
+
+      do i = 1, size(conformal_maps%face_map%keys)
+         face => conformal_maps%face_map%getFace(conformal_maps%face_map%keys(i)%key)
+         allocate(face%region_I_fields%H)
+         face%region_I_fields%H = 0.0
+         allocate(face%region_II_fields%H)
+         face%region_II_fields%H = 0.0
+         if (.not. face%is_two_sided) cycle
+         edges_on_face = buildEdgesOnFace(face%cell, face%direction)
+         do j = 1, size(edges_on_face)
+
+            edge => conformal_maps%edge_map%getEdge(edges_on_face(j)%key)
+            if (.not. edge%is_two_sided) then 
+               call assignEdgeFieldsOnFace(this%Ex, this%Ey, this%Ez, face, edges_on_face(j), j)
+            else
+               call assignSplitEdgeFieldsOnFace(face, edge, j)
+            end if
+
+            faces_on_edge = buildFacesOnEdge(edge%cell, edge%direction)
+            do k = 1, size(faces_on_edge)
+               if (.not. conformal_maps%face_map%hasKey(faces_on_edge(k)%key)) then 
+                  cell = faces_on_edge(k)%key(1:3)
+                  call assignFaceFieldsOnEdge(this%Hx,this%Hy,this%Hz, edge, k, cell)
+               else
+                  face_of_edge => conformal_maps%face_map%getFace(faces_on_edge(k)%key)
+                  call assignSplitFaceFieldsOnEdge(face_of_edge, edge, k)
+               end if
+            end do
+
+         end do
+      end do
+   
+   end subroutine
+
+   logical function isConformalSurface(medium)
+      type(MediaData_t), intent(in) :: medium
+      isConformalSurface = medium%Is%ConformalPEC .and. & 
+                           medium%Is%Surface .and. &
+                           .not. medium%is%pml
+   end function
 
    subroutine solver_advanceEDispersiveE(this)
       class(solver_t) :: this
@@ -2812,7 +3069,78 @@ contains
       return
    end subroutine destroy_and_deallocate
 
-   
-   
+   subroutine reportmedia(sgg)
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      integer(kind=4) :: j
+      character(len=BUFSIZE) :: buff
+
+      do j = 0, sgg%NumMedia
+         write(buff,*) '_____________________________'
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'MEDIO :  ', j
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Priority ', sgg%Med(j)%Priority
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Epr ', sgg%Med(j)%Epr
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Sigma ', sgg%Med(j)%Sigma
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Mur ', sgg%Med(j)%Mur
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'SigmaM ', sgg%Med(j)%SigmaM
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is PML ', sgg%Med(j)%Is%PML
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is PEC ', sgg%Med(j)%Is%PEC
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is ThinWIRE ', sgg%Med(j)%Is%ThinWire
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is MULTIWIRE ', sgg%Med(j)%Is%Multiwire
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is SlantedWIRE ', sgg%Med(j)%Is%SlantedWire
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is EDispersive ', sgg%Med(j)%Is%EDispersive
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is EDispersiveaANIS', sgg%Med(j)%Is%EDispersiveANIS
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is MDispersive ', sgg%Med(j)%Is%MDispersive
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is MDispersiveANIS ', sgg%Med(j)%Is%MDispersiveANIS
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is SGBC ', sgg%Med(j)%Is%SGBC
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is Lossy ', sgg%Med(j)%Is%Lossy
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is Multiport ', sgg%Med(j)%Is%multiport
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is AnisMultiport ', sgg%Med(j)%Is%anismultiport
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is MultiportPadding ', sgg%Med(j)%Is%multiportpadding
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is Dielectric ', sgg%Med(j)%Is%DIELECTRIC
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is Anisotropic ', sgg%Med(j)%Is%Anisotropic
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is Needed ', sgg%Med(j)%Is%Needed
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is already_YEEadvanced_byconformal ', sgg%Med(j)%Is%already_YEEadvanced_byconformal
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Iss split_and_useless ', sgg%Med(j)%Is%split_and_useless
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is Volume ', sgg%Med(j)%Is%Volume
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is Surface ', sgg%Med(j)%Is%Surface
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) 'Is Line ', sgg%Med(j)%Is%Line
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+         write(buff,*) '_____________________________'
+         call log_msg(LOG_INFO, 'MEDIA', Trim(buff))
+      end do
+      return
+   end subroutine reportmedia
 
 end module

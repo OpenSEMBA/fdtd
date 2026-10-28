@@ -57,8 +57,8 @@ contains
       ! Preconditions
       if (any(integrationBox%minBound >= innerRegionBox%minBound) .or. &
           any(integrationBox%maxBound <= innerRegionBox%maxBound)) then       
-         call WarnErrReport( &
-            "Error in mutipolar expansion innerRegion must be fully contained within the integration Box", .true.)
+         call log_msg(LOG_ERROR, 'MTLN', &
+            "Error in mutipolar expansion innerRegion must be fully contained within the integration Box")
          return
       end if
 
@@ -67,8 +67,8 @@ contains
          innerRegionSize = innerRegionBox%maxBound - innerRegionBox%minBound
          integrationBoxSize = integrationBox%maxBound - integrationBox%minBound
          if (any(integrationBoxSize < innerRegionSize * 1.25)) then
-            call WarnErrReport( &
-               "Error in multipolar expansion: integration box is too small for the inner region", .true.)
+            call log_msg(LOG_ERROR, 'MTLN', &
+               "Error in multipolar expansion: integration box is too small for the inner region")
             return
          end if
       end block

@@ -11,6 +11,7 @@ module output_m
    use movieProbeOutput_m
    use frequencySliceProbeOutput_m
    use farFieldOutput_m
+   use farfield_m, only: farfield_buffer_bytes
    use mapVTKOutput_m
    use outputDecomposition_m, only: output_partition_t, build_output_partition, point_is_owned_by_rank, &
                                     OUTPUT_PARTITION_SUCCESS, OUTPUT_PARTITION_INVALID_ARGUMENT
@@ -42,6 +43,7 @@ module output_m
    public :: close_outputs
    public :: delete_outputs
    public :: GetOutputPartition
+   public :: estimate_outputs_memory, report_outputs_memory
    public :: POINT_PROBE_ID, WIRE_CURRENT_PROBE_ID, WIRE_CHARGE_PROBE_ID, BULK_PROBE_ID, &
              MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID, FAR_FIELD_PROBE_ID, LINE_PROBE_ID, MTLN_PROBE_ID
    !===========================
@@ -61,6 +63,10 @@ module output_m
                                       FREQUENCY_SLICE_PROBE_ID = 6, &
                                       FAR_FIELD_PROBE_ID = 7, &
                                       MAPVTK_ID = 8, LINE_PROBE_ID = 9, MTLN_PROBE_ID = 10
+
+   character(len=*), parameter :: OUTPUT_KIND_NAMES(0:MTLN_PROBE_ID) = [character(len=16) :: &
+                                  'point', 'wire current', 'wire charge', 'bulk current', '', 'movie', &
+                                  'frequency slice', 'far field', 'map VTK', 'line', 'MTLN']
 
    real(kind=RKIND), save           ::  eps0, mu0
    real(kind=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
@@ -107,6 +113,11 @@ module output_m
    end interface
 
    interface close_solver_output
+      module procedure close_point_probe_output
+      module procedure close_wire_current_probe_output
+      module procedure close_wire_charge_probe_output
+      module procedure close_bulk_probe_output
+      module procedure close_line_probe_output
       module procedure close_movie_probe_output
       module procedure close_frequency_slice_probe_output
    end interface
@@ -202,11 +213,11 @@ contains
          mtln_solver => GetSolverPtr()
          if (.not. allocated(mtln_solver%bundles)) then
             if (control%layoutnumber == 0) then
-               call print11(0, 'WARNING: mtln solver has not bundles allocated. No MTLN bundle requests were found.')
+               call log_msg(LOG_WARN, 'OUTPUT', 'mtln solver has not bundles allocated. No MTLN bundle requests were found.')
             end if
          else if (size(mtln_solver%bundles) == 0) then
             if (control%layoutnumber == 0) then
-               call print11(0, 'WARNING: mtln solver has not bundles registered. No MTLN bundle requests were found.')
+               call log_msg(LOG_WARN, 'OUTPUT', 'mtln solver has not bundles registered. No MTLN bundle requests were found.')
             end if
          else
             mtlnObservationExist: do i = 1, size(mtln_solver%bundles)
@@ -255,13 +266,13 @@ contains
                   call MPI_Allreduce(localMapMinimum, globalMapMinimum, 3, MPI_INTEGER, MPI_MIN, &
                                      SUBCOMM_MPI, mpiError)
                   if (mpiError /= MPI_SUCCESS) then
-                     call StopOnError(control%layoutnumber, control%num_procs, &
+                     call log_msg(LOG_FATAL, 'OUTPUT', &
                                       'Unable to determine distributed geometry map lower bounds')
                   end if
                   call MPI_Allreduce(localMapMaximum, globalMapMaximum, 3, MPI_INTEGER, MPI_MAX, &
                                      SUBCOMM_MPI, mpiError)
                   if (mpiError /= MPI_SUCCESS) then
-                     call StopOnError(control%layoutnumber, control%num_procs, &
+                     call log_msg(LOG_FATAL, 'OUTPUT', &
                                       'Unable to determine distributed geometry map upper bounds')
                   end if
                   globalMapLower = cell_coordinate_t(globalMapMinimum(1), globalMapMinimum(2), globalMapMinimum(3))
@@ -286,12 +297,12 @@ contains
                   call MPI_Allgather(localMapPath, BUFSIZE, MPI_CHARACTER, mapPiecePaths, BUFSIZE, &
                                      MPI_CHARACTER, SUBCOMM_MPI, mpiError)
                   if (mpiError /= MPI_SUCCESS) then
-                     call StopOnError(control%layoutnumber, control%num_procs, &
+                     call log_msg(LOG_FATAL, 'OUTPUT', &
                                       'Unable to collect distributed geometry map paths')
                   end if
                   call MPI_Barrier(SUBCOMM_MPI, mpiError)
                   if (mpiError /= MPI_SUCCESS) then
-                     call StopOnError(control%layoutnumber, control%num_procs, &
+                     call log_msg(LOG_FATAL, 'OUTPUT', &
                                       'Unable to synchronize distributed geometry map output')
                   end if
                   if (control%layoutnumber == 0) then
@@ -308,15 +319,18 @@ contains
                outputs(outputCount)%outputID = POINT_PROBE_ID
 
                allocate (outputs(outputCount)%pointProbe)
-                 call init_solver_output(outputs(outputCount)%pointProbe, lowerBound, outputRequestType, domain, outputTypeExtension, control%mpidir, sgg%dt, &
-                                       sgg%NumPlaneWaves >= 1)
+                 call init_solver_output(outputs(outputCount)%pointProbe, lowerBound, outputRequestType, domain, &
+                                       outputTypeExtension, control%mpidir, sgg%dt, sgg%NumPlaneWaves >= 1, &
+                                       append_to_file=control%resume)
             case (IJX, IJY, IJZ)
                if (wiresExists) then
                   outputCount = outputCount + 1
                   outputs(outputCount)%outputID = WIRE_CURRENT_PROBE_ID
 
                   allocate (outputs(outputCount)%wireCurrentProbe)
-                   call init_solver_output(outputs(outputCount)%wireCurrentProbe, lowerBound, NODE, outputRequestType, domain, problemInfo%materialList, outputTypeExtension, control%mpidir, control%wiresflavor)
+                   call init_solver_output(outputs(outputCount)%wireCurrentProbe, lowerBound, NODE, outputRequestType, &
+                                           domain, problemInfo%materialList, outputTypeExtension, control%mpidir, &
+                                           control%wiresflavor, append_to_file=control%resume)
                end if
 
             case (IQX, IQY, IQZ)
@@ -324,25 +338,29 @@ contains
                outputs(outputCount)%outputID = WIRE_CHARGE_PROBE_ID
 
                allocate (outputs(outputCount)%wireChargeProbe)
-                 call init_solver_output(outputs(outputCount)%wireChargeProbe, lowerBound, NODE, outputRequestType, domain, outputTypeExtension, control%mpidir, control%wiresflavor)
+                 call init_solver_output(outputs(outputCount)%wireChargeProbe, lowerBound, NODE, outputRequestType, &
+                                         domain, outputTypeExtension, control%mpidir, control%wiresflavor, &
+                                         append_to_file=control%resume)
 
             case (IBLOQUEJX, IBLOQUEJY, IBLOQUEJZ, IBLOQUEMX, IBLOQUEMY, IBLOQUEMZ)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = BULK_PROBE_ID
 
                allocate (outputs(outputCount)%bulkCurrentProbe)
-                 call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control%mpidir)
+                 call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, &
+                                         domain, outputTypeExtension, control%mpidir, append_to_file=control%resume)
 
             case (LINEINTEGRAL)
                if (domain%domainType /= TIME_DOMAIN) then
-                  call stoponerror(0, 0, 'Line probes only support the time domain')
+                  call log_msg(LOG_FATAL, 'OUTPUT', 'Line probes only support the time domain')
                else
                   outputCount = outputCount + 1
                   outputs(outputCount)%outputID = LINE_PROBE_ID
                   allocate (outputs(outputCount)%lineProbe)
                   call init_line_probe_output(outputs(outputCount)%lineProbe, sgg%observation(ii)%P(i)%line, domain, &
                                               trim(outputTypeExtension)//'_LI', &
-                                              sgg%Sweep, control%layoutnumber, control%num_procs)
+                                              sgg%Sweep, control%layoutnumber, control%num_procs, &
+                                              append_to_file=control%resume)
                end if
 
             case (ICUR, IMEC, IMHC, ICURX, ICURY, ICURZ, IEXC, IEYC, IEZC, IHXC, IHYC, IHZC)
@@ -384,7 +402,7 @@ contains
 #endif
                                        eps0, mu0)
             case default
-               call stoponerror(0, 0, 'OutputRequestType type not implemented yet on new observations')
+               call log_msg(LOG_FATAL, 'OUTPUT', 'OutputRequestType type not implemented yet on new observations')
             end select
          end do
       end do
@@ -468,7 +486,7 @@ contains
             call MPI_Allgather(outputPartitions(output_index)%has_data, 1, MPI_LOGICAL, rank_has_data, 1, &
                                MPI_LOGICAL, SUBCOMM_MPI, ierr)
             if (ierr /= MPI_SUCCESS) then
-               call StopOnError(control%layoutnumber, control%num_procs, &
+               call log_msg(LOG_FATAL, 'OUTPUT', &
                                 'Unable to identify distributed output participants')
             end if
          else
@@ -495,7 +513,7 @@ contains
                                                       collective_status)
          end if
          if (collective_status /= OUTPUT_COLLECTIVE_SUCCESS) then
-            call StopOnError(control%layoutnumber, control%num_procs, &
+            call log_msg(LOG_FATAL, 'OUTPUT', &
                              'Unable to configure distributed output publication')
          end if
 
@@ -513,7 +531,7 @@ contains
             if (publication%local_participates) color = 0
             call MPI_Comm_split(SUBCOMM_MPI, color, control%layoutnumber, publication%communicator, ierr)
             if (ierr /= MPI_SUCCESS) then
-               call StopOnError(control%layoutnumber, control%num_procs, &
+               call log_msg(LOG_FATAL, 'OUTPUT', &
                                 'Unable to create distributed output communicator')
             end if
             if (publication%local_participates) then
@@ -630,9 +648,10 @@ contains
       logical :: timeSampleDue
 
       do i = 1, size(outputs)
+         timeSampleDue = time_sample_due(outputs(i), timeIndx, discreteTime)
          select case (outputs(i)%outputID)
          case (POINT_PROBE_ID)
-            timeSampleDue = is_time_sample_due(outputs(i)%pointProbe%domain, timeIndx, discreteTime)
+            ! Called every step: its frequency-domain DFT accumulates regardless of time sampling.
             fieldComponent => get_field_component(outputs(i)%pointProbe%component, fieldsReference) !Each component requires different values but I don't know how to obtain them
             if (present(sgg)) then
                call update_solver_output(outputs(i)%pointProbe, discreteTime, fieldComponent, sgg, timeSampleDue)
@@ -641,20 +660,20 @@ contains
                                          saveTimeSample=timeSampleDue)
             end if
          case (WIRE_CURRENT_PROBE_ID)
-            if (.not. is_time_sample_due(outputs(i)%wireCurrentProbe%domain, timeIndx, discreteTime)) cycle
+            if (.not. timeSampleDue) cycle
             call update_solver_output(outputs(i)%wireCurrentProbe, discreteTime, control, InvEps, InvMu)
          case (WIRE_CHARGE_PROBE_ID)
-            if (.not. is_time_sample_due(outputs(i)%wireChargeProbe%domain, timeIndx, discreteTime)) cycle
+            if (.not. timeSampleDue) cycle
             call update_solver_output(outputs(i)%wireChargeProbe, discreteTime)
          case (BULK_PROBE_ID)
-            if (.not. is_time_sample_due(outputs(i)%bulkCurrentProbe%domain, timeIndx, discreteTime)) cycle
+            if (.not. timeSampleDue) cycle
             fieldReference = get_field_reference(outputs(i)%bulkCurrentProbe%component, fieldsReference)
             call update_solver_output(outputs(i)%bulkCurrentProbe, discreteTime, fieldReference)
          case (LINE_PROBE_ID)
-            if (.not. is_time_sample_due(outputs(i)%lineProbe%domain, timeIndx, discreteTime)) cycle
+            if (.not. timeSampleDue) cycle
             call update_solver_output(outputs(i)%lineProbe, discreteTime, fieldsReference%E)
          case (MOVIE_PROBE_ID)
-            if (.not. is_time_sample_due(outputs(i)%movieProbe%domain, timeIndx, discreteTime)) cycle
+            if (.not. timeSampleDue) cycle
             call update_solver_output(outputs(i)%movieProbe, discreteTime, fieldsReference, control, problemInfo)
          case (FREQUENCY_SLICE_PROBE_ID)
             call update_solver_output(outputs(i)%frequencySliceProbe, discreteTime, fieldsReference, control, problemInfo)
@@ -663,11 +682,50 @@ contains
          case (MAPVTK_ID)
          case (MTLN_PROBE_ID)
          case default
-            call stoponerror(0, 0, 'Output update not implemented')
+            call log_msg(LOG_FATAL, 'OUTPUT', 'Output update not implemented')
          end select
       end do
 
    end subroutine update_outputs
+
+   ! Single sampling rule for every time-domain probe. Also guards the buffers sized by
+   ! time_buffer_capacity, which assume outputs are flushed every OUTPUT_TIME_BUFFER_SIZE steps.
+   logical function time_sample_due(output, timeIndex, discreteTime) result(sampleDue)
+      type(solver_output_t), intent(in) :: output
+      integer(kind=SINGLE), intent(in) :: timeIndex
+      real(kind=RKIND_TIME), intent(in) :: discreteTime
+
+      select case (output%outputID)
+      case (POINT_PROBE_ID)
+         sampleDue = is_time_sample_due(output%pointProbe%domain, timeIndex, discreteTime)
+         if (sampleDue) call check_time_buffer(output%pointProbe%nTime, output%pointProbe%timeStep)
+      case (WIRE_CURRENT_PROBE_ID)
+         sampleDue = is_time_sample_due(output%wireCurrentProbe%domain, timeIndex, discreteTime)
+         if (sampleDue) call check_time_buffer(output%wireCurrentProbe%nTime, output%wireCurrentProbe%timeStep)
+      case (WIRE_CHARGE_PROBE_ID)
+         sampleDue = is_time_sample_due(output%wireChargeProbe%domain, timeIndex, discreteTime)
+         if (sampleDue) call check_time_buffer(output%wireChargeProbe%nTime, output%wireChargeProbe%timeStep)
+      case (BULK_PROBE_ID)
+         sampleDue = is_time_sample_due(output%bulkCurrentProbe%domain, timeIndex, discreteTime)
+         if (sampleDue) call check_time_buffer(output%bulkCurrentProbe%nTime, output%bulkCurrentProbe%timeStep)
+      case (LINE_PROBE_ID)
+         sampleDue = is_time_sample_due(output%lineProbe%domain, timeIndex, discreteTime)
+         if (sampleDue) call check_time_buffer(output%lineProbe%nTime, output%lineProbe%timeStep)
+      case (MOVIE_PROBE_ID)
+         sampleDue = is_time_sample_due(output%movieProbe%domain, timeIndex, discreteTime)
+         if (sampleDue) call check_time_buffer(output%movieProbe%nTime, output%movieProbe%timeStep)
+      case default
+         sampleDue = .false.
+      end select
+   end function time_sample_due
+
+   subroutine check_time_buffer(nTime, timeStep)
+      integer(kind=SINGLE), intent(in) :: nTime
+      real(kind=RKIND_TIME), allocatable, intent(in) :: timeStep(:)
+      if (.not. allocated(timeStep)) return
+      if (nTime >= size(timeStep)) call log_msg(LOG_FATAL, 'OUTPUT', &
+                                                    'Probe time buffer full: flush outputs every OUTPUT_TIME_BUFFER_SIZE steps')
+   end subroutine check_time_buffer
 
    logical function is_time_sample_due(domain, timeIndex, discreteTime) result(sampleDue)
       type(domain_t), intent(in) :: domain
@@ -721,6 +779,122 @@ contains
       end do
    end subroutine flush_outputs
 
+   ! Solver-side probe buffers per outputID; HDF5/transport/metadata buffers are not counted.
+   subroutine estimate_outputs_memory(bytes, counts)
+      integer(kind=8), intent(out) :: bytes(0:MTLN_PROBE_ID)
+      integer(kind=4), intent(out) :: counts(0:MTLN_PROBE_ID)
+      integer :: i, id
+
+      bytes = 0_8
+      counts = 0_4
+      if (.not. associated(outputs)) return
+      do i = 1, size(outputs)
+         id = outputs(i)%outputID
+         if (id < 0 .or. id > MTLN_PROBE_ID) cycle
+         counts(id) = counts(id) + 1_4
+         select case (id)
+         case (POINT_PROBE_ID)
+            associate (p => outputs(i)%pointProbe)
+               bytes(id) = bytes(id) + array_bytes(p%timeStep) + array_bytes(p%frequencySlice) + &
+                           array_bytes(p%auxExp_E) + array_bytes(p%auxExp_H) + array_bytes(p%valueForTime) + &
+                           array_bytes(p%incidentForTime) + array_bytes(p%valueForFreq) + &
+                           array_bytes(p%incidentForFreq) + array_bytes(p%normalizationForFreq)
+            end associate
+         case (WIRE_CURRENT_PROBE_ID)
+            associate (p => outputs(i)%wireCurrentProbe)
+               bytes(id) = bytes(id) + array_bytes(p%timeStep) + array_bytes(p%currentValues)
+            end associate
+         case (WIRE_CHARGE_PROBE_ID)
+            associate (p => outputs(i)%wireChargeProbe)
+               bytes(id) = bytes(id) + array_bytes(p%timeStep) + array_bytes(p%chargeValue)
+            end associate
+         case (BULK_PROBE_ID)
+            associate (p => outputs(i)%bulkCurrentProbe)
+               bytes(id) = bytes(id) + array_bytes(p%timeStep) + array_bytes(p%valueForTime)
+            end associate
+         case (LINE_PROBE_ID)
+            associate (p => outputs(i)%lineProbe)
+               bytes(id) = bytes(id) + array_bytes(p%timeStep) + array_bytes(p%valueForTime) + array_bytes(p%segments)
+            end associate
+         case (MOVIE_PROBE_ID)
+            associate (p => outputs(i)%movieProbe)
+               bytes(id) = bytes(id) + array_bytes(p%timeStep) + array_bytes(p%coords) + array_bytes(p%tagNumber) + &
+                           array_bytes(p%mediaType) + array_bytes(p%xValueForTime) + &
+                           array_bytes(p%yValueForTime) + array_bytes(p%zValueForTime)
+            end associate
+         case (FREQUENCY_SLICE_PROBE_ID)
+            associate (p => outputs(i)%frequencySliceProbe)
+               bytes(id) = bytes(id) + array_bytes(p%frequencySlice) + array_bytes(p%auxExp_E) + &
+                           array_bytes(p%auxExp_H) + array_bytes(p%coords) + array_bytes(p%tagNumber) + &
+                           array_bytes(p%mediaType) + array_bytes(p%xValueForFreq) + array_bytes(p%yValueForFreq) + &
+                           array_bytes(p%zValueForFreq) + array_bytes(p%globalCoords)
+            end associate
+         case (FAR_FIELD_PROBE_ID)
+            ! All far-field probes share the single FF accumulator in farfield_m.
+            bytes(id) = farfield_buffer_bytes()
+         case (MAPVTK_ID)
+            associate (p => outputs(i)%mapvtkOutput)
+               bytes(id) = bytes(id) + array_bytes(p%coords) + array_bytes(p%currentType) + &
+                           array_bytes(p%materialTag) + array_bytes(p%mediaType)
+            end associate
+         end select
+      end do
+#ifdef CompileWithMTLN
+      block
+         type(mtln_solver_t), pointer :: mtln_solver
+         integer :: j
+         mtln_solver => GetSolverPtr()
+         if (.not. allocated(mtln_solver%bundles)) return
+         do i = 1, size(mtln_solver%bundles)
+            if (.not. allocated(mtln_solver%bundles(i)%probes)) cycle
+            do j = 1, size(mtln_solver%bundles(i)%probes)
+               associate (p => mtln_solver%bundles(i)%probes(j))
+                  if (p%output_writer_rank < 0) cycle
+                  counts(MTLN_PROBE_ID) = counts(MTLN_PROBE_ID) + 1_4
+                  bytes(MTLN_PROBE_ID) = bytes(MTLN_PROBE_ID) + array_bytes(p%t) + array_bytes(p%val)
+               end associate
+            end do
+         end do
+      end block
+#endif
+   end subroutine estimate_outputs_memory
+
+   ! An unallocated allocatable actual argument arrives as an absent optional dummy.
+   pure integer(kind=8) function array_bytes(values)
+      class(*), intent(in), optional :: values(..)
+      array_bytes = 0_8
+      if (present(values)) array_bytes = size(values, kind=8)*storage_size(values, kind=8)/8_8
+   end function array_bytes
+
+   subroutine report_outputs_memory(layoutnumber)
+      integer(kind=4), intent(in) :: layoutnumber
+      integer(kind=8) :: bytes(0:MTLN_PROBE_ID)
+      integer(kind=4) :: counts(0:MTLN_PROBE_ID)
+      character(len=BUFSIZE) :: dubuf
+      integer :: id
+#ifdef CompileWithMPI
+      integer(kind=8) :: localBytes(0:MTLN_PROBE_ID)
+      integer(kind=4) :: localCounts(0:MTLN_PROBE_ID), ierr
+#endif
+
+      call estimate_outputs_memory(bytes, counts)
+#ifdef CompileWithMPI
+      ! shortcut: a probe split across ranks is counted once per rank, fine for sizing memory.
+      localBytes = bytes
+      localCounts = counts
+      call MPI_AllReduce(localBytes, bytes, size(bytes), MPI_INTEGER8, MPI_SUM, SUBCOMM_MPI, ierr)
+      call MPI_AllReduce(localCounts, counts, size(counts), MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
+#endif
+      call print11(layoutnumber, 'Probe buffer memory (estimate, all ranks):')
+      do id = 0, MTLN_PROBE_ID
+         if (counts(id) == 0) cycle
+         write (dubuf, '(a16,i8,a,f14.2,a)') OUTPUT_KIND_NAMES(id), counts(id), ' probes', bytes(id)/1048576.0d0, ' MB'
+         call print11(layoutnumber, dubuf)
+      end do
+      write (dubuf, '(a16,i8,a,f14.2,a)') 'total           ', sum(counts), ' probes', sum(bytes)/1048576.0d0, ' MB'
+      call print11(layoutnumber, dubuf)
+   end subroutine report_outputs_memory
+
    subroutine remove_unused_outputs(output_list)
       implicit none
       type(solver_output_t), pointer, intent(inout) :: output_list(:)
@@ -756,6 +930,16 @@ contains
       integer :: i
       do i = 1, size(outputs)
          select case (outputs(i)%outputID)
+         case (POINT_PROBE_ID)
+            call close_solver_output(outputs(i)%pointProbe)
+         case (WIRE_CURRENT_PROBE_ID)
+            call close_solver_output(outputs(i)%wireCurrentProbe)
+         case (WIRE_CHARGE_PROBE_ID)
+            call close_solver_output(outputs(i)%wireChargeProbe)
+         case (BULK_PROBE_ID)
+            call close_solver_output(outputs(i)%bulkCurrentProbe)
+         case (LINE_PROBE_ID)
+            call close_solver_output(outputs(i)%lineProbe)
          case (MOVIE_PROBE_ID)
             call close_solver_output(outputs(i)%movieProbe)
          case (FREQUENCY_SLICE_PROBE_ID)

@@ -8,16 +8,23 @@ import pyvista as pv
 from test.utils.utils import *
 
 
-def movie_binary_records(movie_probe):
-    binary_path = movie_probe.getBinFile()
-    assert binary_path is not None
-    records = np.fromfile(binary_path, dtype="<f8")
-    assert records.size % 7 == 0
-    return records.reshape(-1, 7)
+def h5_datasets(h5_path):
+    datasets = {}
+    with h5py.File(h5_path, "r") as h5_file:
+        h5_file.visititems(
+            lambda name, item: datasets.__setitem__(name, item[()])
+            if isinstance(item, h5py.Dataset)
+            else None
+        )
+    return datasets
 
 
-def movie_binary_coordinates(movie_probe):
-    return movie_binary_records(movie_probe)[:, 1:4].astype(int)
+def assert_same_h5_datasets(h5_path, reference_h5_path):
+    datasets = h5_datasets(h5_path)
+    reference = h5_datasets(reference_h5_path)
+    assert datasets.keys() == reference.keys()
+    for name in reference:
+        np.testing.assert_allclose(datasets[name], reference[name], err_msg=name)
 
 
 def assert_static_point_attributes(xdmf_path, attribute_names):
@@ -106,25 +113,14 @@ def test_airplane_movie_is_published_canonically_with_mpi(tmp_path):
         ),
     )
 
-    movie_coordinates = np.unique(movie_binary_coordinates(probe), axis=0)
-    assert np.all(movie_coordinates >= probe.cell_init)
-    assert np.all(movie_coordinates <= probe.cell_end)
-
-    assert np.all(movie_coordinates[:, 0] >= 40)
-    assert np.all(movie_coordinates[:, 0] <= 49)
-    assert np.all(movie_coordinates[:, 1] == 26)
-    assert np.all(movie_coordinates[:, 2] >= 10)
-    assert np.all(movie_coordinates[:, 2] <= 36)
-    assert len(np.unique(movie_coordinates, axis=0)) == len(movie_coordinates)
-    assert np.array_equal(np.unique(movie_coordinates[:, 2]), np.arange(10, 37))
-
+    assert not list(Path(probe.folder).glob("*.bin"))
 
     serial_folder = tmp_path / "serial"
     serial_folder.mkdir()
     serial_solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=serial_folder)
     serial_solver.run()
     serial_probe = Probe(serial_solver.getSolvedProbeFolders("Movie")[0])
-    np.testing.assert_allclose(movie_binary_records(probe), movie_binary_records(serial_probe))
+    assert_same_h5_datasets(probe.getH5File(), serial_probe.getH5File())
 
 
 @no_mpi_skip
@@ -249,3 +245,23 @@ def test_mtln_non_root_writer_publishes_data_without_metadata(tmp_path):
     probe_path = Path(solver.getSolvedProbeFolders("upper")[0])
     assert probe_path.is_file()
     assert probe_path.suffix == ".dat"
+
+
+@no_mpi_skip
+@pytest.mark.mpi
+@pytest.mark.probes
+def test_single_point_probe_outside_root_rank_does_not_deadlock(tmp_path):
+    fn = CASES_FOLDER + "planewave/pw-in-box.fdtd.json"
+    solver = FDTD(
+        fn,
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path,
+        # The memory report is collective: a rank skipping it used to hang the run.
+        mpi_command="timeout 300 mpirun -np 2",
+    )
+    solver["probes"][:] = [p for p in solver["probes"] if p["name"] == "after"]
+
+    solver.run()
+
+    assert "Probe buffer memory" in solver.output.stdout.decode()
+    assert Path(solver.getSolvedProbeFolders("after")[0]).is_file()

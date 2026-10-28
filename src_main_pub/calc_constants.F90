@@ -110,8 +110,8 @@ module CALC_CONSTANTS_m
                g%gm1(r)=0.0_RKIND !will be overwritten by own values created by InitMDispersives !when written this routine
                g%gm2(r)=0.0_RKIND !will be overwritten by own values created by InitMDispersives
             else if  ((sgg%Med(r)%Is%MdispersiveANIS).OR.(sgg%Med(r)%Is%EdispersiveANIS)) then
-               BUFF='ERROR: ANISOTROPIC DISPERSIVE CURRENTLY UNSUPPORTED IN THE ENGINE'
-               call StopOnError (0,0,buff)  !it should report and stop earlier in SEMBA_FDTD.F90 !remove some day so that it does not slow things down 170719
+               BUFF='ANISOTROPIC DISPERSIVE CURRENTLY UNSUPPORTED IN THE ENGINE'
+               call log_msg(LOG_FATAL, 'SOLVER', buff)  !it should report and stop earlier in SEMBA_FDTD.F90 !remove some day so that it does not slow things down 170719
             else
                g%g1(r)=(1 -  Sigma * sgg%dt / (2.0_RKIND * epsilonValue ) ) / (1.0_RKIND + Sigma * sgg%dt / (2.0_RKIND * epsilonValue ))
                g%g2(r)=sgg%dt /epsilonValue                        / (1.0_RKIND + Sigma * sgg%dt / (2.0_RKIND * epsilonValue ))
@@ -209,4 +209,3 @@ end module CALC_CONSTANTS_m
 
 
    
-

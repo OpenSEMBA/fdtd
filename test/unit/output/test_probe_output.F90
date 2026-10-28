@@ -83,18 +83,88 @@ integer function test_init_point_probe() bind(c) result(err)
                                      'Point probe created a probe-specific folder')
 
    ! Cleanup
+   call close_outputs()
    call remove_folder(testPath, ios)
    deallocate (sgg%Observation, outputs)
 
    err = test_err
 end function
 
+integer function test_estimate_point_probe_memory() bind(c) result(err)
+   ! Verifies the memory estimate counts one time buffer of OUTPUT_TIME_BUFFER_SIZE samples.
+   use FDETYPES_m
+   use fdetypes_tools_m
+   use output_m
+   use outputTypes_m
+   use testOutputUtils_m
+   use sggMethods_m
+   use assertionTools_m
+   use directoryUtils_m
+   implicit none
+
+   character(len=*), parameter :: TEST_FOLDER = 'testing folder'
+   character(len=*), parameter :: TEST_NAME = 'estimatePointProbeMemory'
+
+   character(len=BUFSIZE) :: testPath, nInput
+   type(SGGFDTDINFO_t)              :: sgg
+   type(sim_control_t)            :: control
+   type(bounds_t)                 :: bounds
+   type(media_matrices_t)         :: media
+   type(limit_t), allocatable     :: sinpml(:)
+   type(XYZlimit_t)               :: sweep(6)
+   type(solver_output_t), pointer :: outputs(:)
+   type(MediaData_t), allocatable, target :: materials(:)
+   type(MediaData_t), pointer     :: materialsPtr(:)
+   type(taglist_t)                :: tagNumbers
+   real(kind=RKIND_TIME), pointer :: timeArray(:)
+   real(kind=RKIND_TIME)          :: dt = 0.1_RKIND_TIME
+   integer(kind=SINGLE)           :: nSteps = 100_SINGLE
+   integer(kind=8) :: bytes(0:MTLN_PROBE_ID), expectedBytes
+   integer(kind=4) :: counts(0:MTLN_PROBE_ID)
+   type(Obses_t) :: probe
+   logical :: outputRequested
+   logical :: hasWires = .false.
+   integer(kind=SINGLE) :: test_err = 0
+   integer :: ios
+
+   testPath = join_path(get_temp_folder(), TEST_FOLDER)
+   nInput = join_path(testPath, TEST_NAME)
+
+   call sgg_init(sgg)
+   call init_time_array(timeArray, nSteps, dt)
+   call sggSetTime(sgg, timeArray)
+   call sgg_set_dt(sgg, dt)
+   call init_simulation_material_list(materials)
+   materialsPtr => materials
+   call sgg_set_Med(sgg, materialsPtr)
+   sweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Sweep(sgg, sweep)
+   probe = create_point_probe_observation(4, 4, 4)
+   call sgg_add_observation(sgg, probe)
+   control = create_control_flags(mpidir=3, nInputRoot=trim(nInput), wiresflavor='holland')
+
+   call init_outputs(sgg, media, sinpml, tagNumbers, bounds, control, outputRequested, hasWires)
+   outputs => GetOutputs()
+   call estimate_outputs_memory(bytes, counts)
+
+   expectedBytes = int(OUTPUT_TIME_BUFFER_SIZE, 8)*(storage_size(0.0_RKIND_TIME) + storage_size(0.0_RKIND))/8
+   test_err = test_err + assert_integer_equal(counts(POINT_PROBE_ID), 1, 'Point probe not counted')
+   test_err = test_err + assert_integer_equal(sum(counts), 1, 'Unexpected outputs counted')
+   test_err = test_err + assert_true(bytes(POINT_PROBE_ID) == expectedBytes, 'Unexpected point probe buffer bytes')
+
+   call close_outputs()
+   call remove_folder(testPath, ios)
+   deallocate (sgg%Observation, outputs)
+
+   err = test_err
+end function test_estimate_point_probe_memory
+
 integer function test_init_point_probe_with_incident() bind(c) result(err)
    ! Verifies incident point probes preserve their text header without a binary sidecar.
    use FDETYPES_m
    use fdetypes_tools_m
    use outputTypes_m, only: point_probe_output_t, domain_t, cell_coordinate_t, TIME_DOMAIN, OUTPUT_ARTIFACT_UNDEFINED
-   use pointProbeOutput_m, only: init_point_probe_output
+   use pointProbeOutput_m, only: init_point_probe_output, close_point_probe_output
    use assertionTools_m, only: assert_true, assert_string_equal
    use directoryUtils_m, only: delete_file, file_exists, join_path
    use testOutputUtils_m, only: get_temp_folder
@@ -111,6 +181,7 @@ integer function test_init_point_probe_with_incident() bind(c) result(err)
    domain%domainType = TIME_DOMAIN
    coordinates = cell_coordinate_t(1, 1, 1)
    call init_point_probe_output(probe, coordinates, IEX, domain, path, 3, 0.1_RKIND_TIME, .true.)
+   call close_point_probe_output(probe)
 
    err = err + assert_true(probe%hasIncident .and. allocated(probe%incidentForTime), &
                            'Incident point probe did not allocate incident samples')
@@ -275,7 +346,8 @@ integer function test_line_probe_dat_output() bind(c) result(err)
    ! Verifies line-probe flush retains every sample in one text file.
    use FDETYPES_m, only: RKIND, RKIND_TIME, direction_t, IEX
    use outputTypes_m, only: line_probe_output_t, field_data_t, domain_t, TIME_DOMAIN
-   use lineProbeOutput_m, only: init_line_probe_output, update_line_probe_output, flush_line_probe_output
+   use lineProbeOutput_m, only: init_line_probe_output, update_line_probe_output, flush_line_probe_output, &
+                                close_line_probe_output
    use assertionTools_m, only: assert_integer_equal, assert_true
    use directoryUtils_m, only: delete_file, file_exists
    use testOutputUtils_m, only: get_temp_folder
@@ -296,6 +368,7 @@ integer function test_line_probe_dat_output() bind(c) result(err)
    domain%domainType = TIME_DOMAIN
    segments(1) = direction_t(1, 1, 1, IEX)
    call init_line_probe_output(probe, segments, domain, path)
+   err = err + assert_true(probe%fileUnitTime /= 0, 'Line output was not kept open after init')
    ex = 2.0_RKIND
    ey = 0.0_RKIND
    ez = 0.0_RKIND
@@ -309,6 +382,8 @@ integer function test_line_probe_dat_output() bind(c) result(err)
    call update_line_probe_output(probe, 0.0_RKIND_TIME, electric_field)
    call update_line_probe_output(probe, 0.1_RKIND_TIME, electric_field)
    call flush_line_probe_output(probe)
+   err = err + assert_true(probe%fileUnitTime /= 0, 'Line output was closed after flush')
+   call close_line_probe_output(probe)
 
    text_records = 0
    open (newunit=text_unit, file=trim(path)//'_tm.dat', status='old', action='read', iostat=ios)
@@ -383,57 +458,6 @@ integer function test_output_artifact_contract() bind(c) result(err)
    err = err + assert_integer_equal(artifact%complex_representation, BINARY_COMPLEX_REAL_IMAG, &
                                     'Complex representation')
    err = err + assert_integer_equal(lifecycle%state, OUTPUT_LIFECYCLE_DECLARED, 'Declared lifecycle state')
-end function
-
-integer function test_portable_binary_output() bind(c) result(err)
-   ! Verifies little-endian real64 output and rejects unsupported byte order.
-   use, intrinsic :: iso_fortran_env, only: int8, real64
-   use outputBinary_m, only: append_binary_real64, validate_binary_layout, BINARY_WRITER_SUCCESS, &
-                              BINARY_WRITER_INVALID_LAYOUT
-   use outputTypes_m, only: output_artifact_t, OUTPUT_ARTIFACT_BINARY, BINARY_ENDIAN_LITTLE, &
-                             BINARY_ENDIAN_BIG, BINARY_NUMERIC_REAL64, BINARY_COMPLEX_UNSPECIFIED
-   use assertionTools_m, only: assert_integer_equal, assert_true
-   use directoryUtils_m, only: remove_folder
-   use testOutputUtils_m, only: get_temp_folder
-   use directoryUtils_m, only: join_path
-   implicit none
-
-   type(output_artifact_t) :: artifact
-   integer(int8) :: bytes(16)
-   integer :: expected_bytes(16), ios, status, unit
-   character(len=4096) :: folder, path
-
-   err = 0
-   folder = join_path(get_temp_folder(), 'testing binary')
-   path = join_path(folder, 'payload.bin')
-   artifact%kindTag = OUTPUT_ARTIFACT_BINARY
-   artifact%byte_order = BINARY_ENDIAN_LITTLE
-   artifact%numeric_representation = BINARY_NUMERIC_REAL64
-   artifact%complex_representation = BINARY_COMPLEX_UNSPECIFIED
-   artifact%record_bytes = 16
-   artifact%component_order = 'time,value'
-   expected_bytes = [0, 0, 0, 0, 0, 0, -16, 63, 0, 0, 0, 0, 0, 0, 4, -64]
-
-   call validate_binary_layout(artifact, status)
-   err = err + assert_integer_equal(status, BINARY_WRITER_SUCCESS, 'Valid real64 layout was rejected')
-   call append_binary_real64(path, artifact, [1.0_real64, -2.5_real64], status)
-   err = err + assert_integer_equal(status, BINARY_WRITER_SUCCESS, 'Portable binary write failed')
-
-   open (newunit=unit, file=path, access='stream', form='unformatted', status='old', &
-         action='read', iostat=ios)
-   err = err + assert_integer_equal(ios, 0, 'Cannot read portable binary payload')
-   if (ios == 0) then
-      read (unit, iostat=ios) bytes
-      close (unit)
-      err = err + assert_integer_equal(ios, 0, 'Cannot read portable binary bytes')
-      err = err + assert_true(all(int(bytes) == expected_bytes), &
-                              'Payload is not little-endian IEEE real32')
-   end if
-
-   artifact%byte_order = BINARY_ENDIAN_BIG
-   call validate_binary_layout(artifact, status)
-   err = err + assert_integer_equal(status, BINARY_WRITER_INVALID_LAYOUT, 'Unsupported byte order was accepted')
-   call remove_folder(folder, ios)
 end function
 
 integer function test_declared_output_artifacts() bind(c) result(err)
@@ -870,6 +894,18 @@ integer function test_update_time_probe_ranges() bind(c) result(err)
    test_err = test_err + assert_integer_equal(outputs(LINE_OUTPUT)%outputID, LINE_PROBE_ID, &
                                                'Unexpected line output id')
 
+   ! tstep = 2*dt, so buffers only need ceil(OUTPUT_TIME_BUFFER_SIZE/2) samples between flushes.
+   test_err = test_err + assert_integer_equal(size(outputs(CURRENT_OUTPUT)%wireCurrentProbe%timeStep), 64, &
+                                               'Wire-current buffer not sized to its sampling stride')
+   test_err = test_err + assert_integer_equal(size(outputs(CURRENT_OUTPUT)%wireCurrentProbe%currentValues), 64, &
+                                               'Wire-current values not sized to its sampling stride')
+   test_err = test_err + assert_integer_equal(size(outputs(CHARGE_OUTPUT)%wireChargeProbe%chargeValue), 64, &
+                                               'Wire-charge buffer not sized to its sampling stride')
+   test_err = test_err + assert_integer_equal(size(outputs(BULK_OUTPUT)%bulkCurrentProbe%valueForTime), 64, &
+                                               'Bulk buffer not sized to its sampling stride')
+   test_err = test_err + assert_integer_equal(size(outputs(LINE_OUTPUT)%lineProbe%valueForTime), 64, &
+                                               'Line buffer not sized to its sampling stride')
+
    test_err = test_err + assert_integer_equal(outputs(CURRENT_OUTPUT)%wireCurrentProbe%nTime, 2, &
                                                'Wire-current probe ignored its time range')
    test_err = test_err + assert_integer_equal(outputs(CHARGE_OUTPUT)%wireChargeProbe%nTime, 2, &
@@ -971,6 +1007,10 @@ integer function test_flush_point_probe() bind(c) result(err)
 
    test_err = test_err + assert_integer_equal(size(probe%artifacts), 2, &
                                                'Point probe did not declare both text domains')
+   test_err = test_err + assert_true(probe%fileUnitTime /= 0, &
+                                     'Point time output was not kept open after init')
+   test_err = test_err + assert_true(probe%fileUnitFreq /= 0, &
+                                     'Point frequency output was not kept open after init')
 
    ! A declared scalar artifact remains discoverable when no sample is recorded.
    call flush_point_probe_output(probe)
@@ -996,6 +1036,10 @@ integer function test_flush_point_probe() bind(c) result(err)
    call flush_point_probe_output(probe)
 
    ! Assertions
+   test_err = test_err + assert_true(probe%fileUnitTime /= 0, &
+                                     'Point time output was closed after flush')
+   test_err = test_err + assert_true(probe%fileUnitFreq /= 0, &
+                                     'Point frequency output was closed after flush')
    test_err = test_err + assert_written_output_file(probe%filePathTime)
    test_err = test_err + assert_written_output_file(probe%filePathFreq)
    test_err = test_err + assert_true(.not. file_exists(trim(probe%path)//'_tm.bin'), &
@@ -1016,6 +1060,7 @@ integer function test_flush_point_probe() bind(c) result(err)
    end if
 
    !Cleanup
+   call close_point_probe_output(probe)
    call remove_folder(testPath, ios)
 
    err = test_err
@@ -1024,7 +1069,8 @@ end function
 integer function test_flush_wire_probe_dat() bind(c) result(err)
    use FDETYPES_m, only: RKIND, RKIND_TIME
    use outputTypes_m, only: wire_current_probe_output_t, wire_charge_probe_output_t, OUTPUT_ARTIFACT_TEXT
-   use wireProbeOutput_m, only: flush_wire_current_probe_output, flush_wire_charge_probe_output
+   use wireProbeOutput_m, only: flush_wire_current_probe_output, flush_wire_charge_probe_output, &
+                                close_wire_current_probe_output, close_wire_charge_probe_output
    use assertionTools_m, only: assert_true
    use directoryUtils_m, only: create_file_with_path, delete_file, file_exists
    use testOutputUtils_m, only: get_temp_folder
@@ -1044,9 +1090,11 @@ integer function test_flush_wire_probe_dat() bind(c) result(err)
    allocate (current_probe%timeStep(1))
    current_probe%nTime = 1
    current_probe%timeStep(1) = 1.0_RKIND_TIME
+   allocate (current_probe%currentValues(1))
    current_probe%currentValues(1)%current = 2.0_RKIND
    call create_file_with_path(current_probe%filePathTime, ios)
    call flush_wire_current_probe_output(current_probe)
+   call close_wire_current_probe_output(current_probe)
    inquire (file=current_probe%filePathTime, size=current_size, iostat=ios)
    err = err + assert_true(ios == 0 .and. current_size > 0, 'Wire-current text record was not published')
    err = err + assert_true(.not. file_exists(join_path(folder, 'current_tm.bin')), &
@@ -1061,6 +1109,7 @@ integer function test_flush_wire_probe_dat() bind(c) result(err)
    charge_probe%chargeValue(1) = 2.0_RKIND
    call create_file_with_path(charge_probe%filePathTime, ios)
    call flush_wire_charge_probe_output(charge_probe)
+   call close_wire_charge_probe_output(charge_probe)
    inquire (file=charge_probe%filePathTime, size=charge_size, iostat=ios)
    err = err + assert_true(ios == 0 .and. charge_size > 0, 'Wire-charge text record was not published')
    err = err + assert_true(.not. file_exists(join_path(folder, 'charge_tm.bin')), &
@@ -1073,7 +1122,7 @@ end function test_flush_wire_probe_dat
 integer function test_flush_bulk_probe_dat() bind(c) result(err)
    use FDETYPES_m, only: RKIND, RKIND_TIME
    use outputTypes_m, only: bulk_current_probe_output_t, OUTPUT_ARTIFACT_TEXT
-   use bulkProbeOutput_m, only: flush_bulk_probe_output
+   use bulkProbeOutput_m, only: flush_bulk_probe_output, close_bulk_probe_output
    use assertionTools_m, only: assert_true
    use directoryUtils_m, only: create_file_with_path, delete_file, file_exists
    use testOutputUtils_m, only: get_temp_folder
@@ -1095,6 +1144,7 @@ integer function test_flush_bulk_probe_dat() bind(c) result(err)
    probe%valueForTime(1) = 2.0_RKIND
    call create_file_with_path(probe%filePathTime, ios)
    call flush_bulk_probe_output(probe)
+   call close_bulk_probe_output(probe)
    inquire (file=probe%filePathTime, size=text_size, iostat=ios)
    err = err + assert_true(ios == 0 .and. text_size > 0, 'Bulk text record was not published')
    err = err + assert_true(.not. file_exists(join_path(folder, 'probe_tm.bin')), &
@@ -1187,6 +1237,7 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
 
    probe%nTime = n
    call flush_point_probe_output(probe)
+   call close_point_probe_output(probe)
 
    ! Assertions
    unit = 1
@@ -1327,14 +1378,14 @@ integer function test_init_movie_probe() bind(c) result(err)
 
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, MOVIE_PROBE_ID, 'Unexpected probe id')
    test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nPoints, expectedNumMeasurments, 'Unexpected number of measurements')
-   test_err = test_err + assert_integer_equal(size(outputs(1)%movieProbe%xValueForTime), expectedNumMeasurments*OUTPUT_TIME_BUFFER_SIZE, 'Unexpected allocation size')
-   test_err = test_err + assert_integer_equal(size(outputs(1)%movieProbe%timeStep), OUTPUT_TIME_BUFFER_SIZE, 'Unexpected timestep buffer size')
+   test_err = test_err + assert_integer_equal(size(outputs(1)%movieProbe%xValueForTime), expectedNumMeasurments*time_buffer_capacity(outputs(1)%movieProbe%domain), 'Unexpected allocation size')
+   test_err = test_err + assert_integer_equal(size(outputs(1)%movieProbe%timeStep), time_buffer_capacity(outputs(1)%movieProbe%domain), 'Unexpected timestep buffer size')
 
    expectedProbePath = trim(nInput)//WORDSEPARATION//'movieProbe_BC_2_2_2__5_5_5'
    test_err = test_err + assert_string_equal(outputs(1)%movieProbe%path, expectedProbePath, 'Unexpected path')
    test_err = test_err + assert_true(folder_exists(expectedProbePath), 'Movie folder do not exist')
-   test_err = test_err + assert_true(file_exists(trim(outputs(1)%movieProbe%filesPath)//'.bin'), &
-                                     'Movie binary payload was not created')
+   test_err = test_err + assert_true(.not. file_exists(trim(outputs(1)%movieProbe%filesPath)//'.bin'), &
+                                     'Movie binary payload was created')
    test_err = test_err + assert_true(.not. file_exists(trim(outputs(1)%movieProbe%filesPath)//'.json'), &
                                      'Movie JSON descriptor was created')
    test_err = test_err + assert_true(file_exists(trim(outputs(1)%movieProbe%filesPath)//'_geometry.xdmf'), &
@@ -1511,7 +1562,9 @@ integer function test_update_movie_probe() bind(c) result(err)
                                             errormessage='Stored a non-surface Z current component')
 
    test_err = test_err + assert_integer_equal( &
-              size(outputs(1)%movieProbe%timeStep), OUTPUT_TIME_BUFFER_SIZE, 'Unexpected timestep buffer size')
+              size(outputs(1)%movieProbe%timeStep), 64, 'Movie buffer not sized to its sampling stride')
+   test_err = test_err + assert_integer_equal( &
+              size(outputs(1)%movieProbe%yValueForTime, 1), 64, 'Movie value buffer not sized to its sampling stride')
    test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nTime, 1, 'Movie update did not buffer a timestep')
    test_err = test_err + assert_true(outputs(1)%movieProbe%timeStep(1) == dummysgg%time(3), &
                                       'Movie update stored an incorrect timestep')
@@ -1576,7 +1629,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
    character(len=BUFSIZE) :: testPath
    character(len=BUFSIZE) :: nInput
    character(len=BUFSIZE) :: expectedPath
-   integer :: binaryBytes, ios
+   integer :: ios
 
    testPath = join_path(get_temp_folder(), TEST_FOLDER)
    nInput = join_path(testPath, TEST_NAME)
@@ -1690,9 +1743,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
    call flush_outputs(dummysgg%time, 1_SINGLE, dummyControl, fields, dummyBound, .false.)
 
    expectedPath = trim(outputs(1)%movieProbe%filesPath)
-   test_err = test_err + assert_true(file_exists(trim(expectedPath)//'.bin'), 'Movie binary payload does not exist')
-   inquire (file=trim(expectedPath)//'.bin', size=binaryBytes)
-   test_err = test_err + assert_integer_equal(binaryBytes, 8*56, 'Movie binary record layout changed')
+   test_err = test_err + assert_true(.not. file_exists(trim(expectedPath)//'.bin'), 'Movie binary payload was published')
    test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nTime, 0, 'Movie flush did not clear current samples')
    test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nTimesFlushed, 2, 'Movie flush did not count samples')
    test_err = test_err + assert_integer_equal(outputs(2)%movieProbe%nTime, 0, 'Electric movie flush did not clear samples')
@@ -2097,4 +2148,22 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    call remove_folder(testPath, ios)
 
    err = test_err
+end function
+
+integer function test_time_buffer_capacity() bind(c) result(err)
+   ! Verifies time buffers hold exactly the samples a probe can take between flushes.
+   use outputTypes_m, only: domain_t, time_buffer_capacity
+   use assertionTools_m, only: assert_integer_equal
+   implicit none
+
+   type(domain_t) :: domain
+   integer :: i
+   integer, parameter :: strides(5) = [1, 3, 10, 128, 200]
+   integer, parameter :: expected(5) = [128, 43, 13, 1, 1]
+
+   err = 0
+   do i = 1, size(strides)
+      domain%tstride = strides(i)
+      err = err + assert_integer_equal(time_buffer_capacity(domain), expected(i), 'Unexpected time buffer capacity')
+   end do
 end function

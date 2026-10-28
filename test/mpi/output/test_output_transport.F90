@@ -2,13 +2,13 @@ program test_output_transport
    use, intrinsic :: iso_fortran_env, only: real64
    use mpi
     use outputTransport_m, only: output_transport_t, init_output_transport, transfer_flush_batch, &
-                                 OUTPUT_TRANSPORT_SUCCESS
+                                 relay_flush_batch, OUTPUT_TRANSPORT_SUCCESS
    implicit none
 
    integer, parameter :: ROOT_RANK = 0
-   integer :: ierr, rank, rank_count, status, failures, i
+   integer :: ierr, rank, rank_count, status, failures, i, source_rank
    integer, allocatable :: counts(:), displacements(:)
-    real(real64), allocatable :: local_batch(:), gathered_batch(:)
+    real(real64), allocatable :: local_batch(:), gathered_batch(:), relayed_batch(:)
    type(output_transport_t) :: transport
 
     call MPI_Init(ierr)
@@ -35,6 +35,22 @@ program test_output_transport
          if (gathered_batch(i) /= real(10 * rank_for_index(i) + local_index(i), real64)) failures = failures + 1
       end do
    end if
+
+   do source_rank = 0, rank_count - 1
+      call relay_flush_batch(transport, source_rank, local_batch, relayed_batch, status)
+      if (status /= OUTPUT_TRANSPORT_SUCCESS) failures = failures + 1
+      if (rank == root_rank) then
+         if (size(relayed_batch) /= source_rank + 1) then
+            failures = failures + 1
+         else
+            do i = 1, size(relayed_batch)
+               if (relayed_batch(i) /= real(10 * source_rank + i, real64)) failures = failures + 1
+            end do
+         end if
+      else if (size(relayed_batch) /= 0) then
+         failures = failures + 1
+      end if
+   end do
 
     call MPI_Allreduce(MPI_IN_PLACE, failures, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
    call MPI_Finalize(ierr)
