@@ -24,8 +24,9 @@ def assert_same_h5_datasets(h5_path, reference_h5_path):
     reference = h5_datasets(reference_h5_path)
     assert datasets.keys() == reference.keys()
     for name in reference:
-        # shortcut: atol scaled to the reference peak absorbs float32 round-off on near-zero values, revisit if real fields need tighter checks
-        atol = 1e-5 * np.max(np.abs(reference[name]))
+        # shortcut: atol scaled to the peak of either array absorbs float32 round-off on near-zero values (an all-zero reference would give atol=0), revisit if real fields need tighter checks
+        scale = max(np.max(np.abs(reference[name])), np.max(np.abs(datasets[name])))
+        atol = 1e-5 * scale
         np.testing.assert_allclose(datasets[name], reference[name], rtol=1e-5, atol=atol, err_msg=name)
 
 
