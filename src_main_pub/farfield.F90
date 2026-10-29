@@ -28,23 +28,23 @@ module farfield_m
       type(ijk_t) :: TrFr,IzDe,AbAr
       logical  :: farfieldTr,farfieldFr,farfieldIz,farfieldDe,farfieldAr,farfieldAb
 
-      logical  :: farfieldTr_ClonePEC_Front,farfieldTr_ClonePEC_Left,farfieldTr_ClonePEC_Right,farfieldTr_ClonePEC_Up,farfieldTr_ClonePEC_Down
-      logical  :: farfieldTr_ClonePMC_Front,farfieldTr_ClonePMC_Left,farfieldTr_ClonePMC_Right,farfieldTr_ClonePMC_Up,farfieldTr_ClonePMC_Down
+      logical  :: farfieldTr_ClonePEC_Front = .false.,farfieldTr_ClonePEC_Left = .false.,farfieldTr_ClonePEC_Right = .false.,farfieldTr_ClonePEC_Up = .false.,farfieldTr_ClonePEC_Down = .false.
+      logical  :: farfieldTr_ClonePMC_Front = .false.,farfieldTr_ClonePMC_Left = .false.,farfieldTr_ClonePMC_Right = .false.,farfieldTr_ClonePMC_Up = .false.,farfieldTr_ClonePMC_Down = .false.
 
-      logical  :: farfieldFr_ClonePEC_Back,farfieldFr_ClonePEC_Left,farfieldFr_ClonePEC_Right,farfieldFr_ClonePEC_Up,farfieldFr_ClonePEC_Down
-      logical  :: farfieldFr_ClonePMC_Back,farfieldFr_ClonePMC_Left,farfieldFr_ClonePMC_Right,farfieldFr_ClonePMC_Up,farfieldFr_ClonePMC_Down
+      logical  :: farfieldFr_ClonePEC_Back = .false.,farfieldFr_ClonePEC_Left = .false.,farfieldFr_ClonePEC_Right = .false.,farfieldFr_ClonePEC_Up = .false.,farfieldFr_ClonePEC_Down = .false.
+      logical  :: farfieldFr_ClonePMC_Back = .false.,farfieldFr_ClonePMC_Left = .false.,farfieldFr_ClonePMC_Right = .false.,farfieldFr_ClonePMC_Up = .false.,farfieldFr_ClonePMC_Down = .false.
 
-      logical  :: farfieldIz_ClonePEC_Back,farfieldIz_ClonePEC_Front,farfieldIz_ClonePEC_Right,farfieldIz_ClonePEC_Up,farfieldIz_ClonePEC_Down
-      logical  :: farfieldIz_ClonePMC_Back,farfieldIz_ClonePMC_Front,farfieldIz_ClonePMC_Right,farfieldIz_ClonePMC_Up,farfieldIz_ClonePMC_Down
+      logical  :: farfieldIz_ClonePEC_Back = .false.,farfieldIz_ClonePEC_Front = .false.,farfieldIz_ClonePEC_Right = .false.,farfieldIz_ClonePEC_Up = .false.,farfieldIz_ClonePEC_Down = .false.
+      logical  :: farfieldIz_ClonePMC_Back = .false.,farfieldIz_ClonePMC_Front = .false.,farfieldIz_ClonePMC_Right = .false.,farfieldIz_ClonePMC_Up = .false.,farfieldIz_ClonePMC_Down = .false.
 
-      logical  :: farfieldDe_ClonePEC_Back,farfieldDe_ClonePEC_Front,farfieldDe_ClonePEC_Left,farfieldDe_ClonePEC_Up,farfieldDe_ClonePEC_Down
-      logical  :: farfieldDe_ClonePMC_Back,farfieldDe_ClonePMC_Front,farfieldDe_ClonePMC_Left,farfieldDe_ClonePMC_Up,farfieldDe_ClonePMC_Down
+      logical  :: farfieldDe_ClonePEC_Back = .false.,farfieldDe_ClonePEC_Front = .false.,farfieldDe_ClonePEC_Left = .false.,farfieldDe_ClonePEC_Up = .false.,farfieldDe_ClonePEC_Down = .false.
+      logical  :: farfieldDe_ClonePMC_Back = .false.,farfieldDe_ClonePMC_Front = .false.,farfieldDe_ClonePMC_Left = .false.,farfieldDe_ClonePMC_Up = .false.,farfieldDe_ClonePMC_Down = .false.
 
-      logical  :: farfieldAr_ClonePEC_Back,farfieldAr_ClonePEC_Front,farfieldAr_ClonePEC_Left,farfieldAr_ClonePEC_Right,farfieldAr_ClonePEC_Down
-      logical  :: farfieldAr_ClonePMC_Back,farfieldAr_ClonePMC_Front,farfieldAr_ClonePMC_Left,farfieldAr_ClonePMC_Right,farfieldAr_ClonePMC_Down
+      logical  :: farfieldAr_ClonePEC_Back = .false.,farfieldAr_ClonePEC_Front = .false.,farfieldAr_ClonePEC_Left = .false.,farfieldAr_ClonePEC_Right = .false.,farfieldAr_ClonePEC_Down = .false.
+      logical  :: farfieldAr_ClonePMC_Back = .false.,farfieldAr_ClonePMC_Front = .false.,farfieldAr_ClonePMC_Left = .false.,farfieldAr_ClonePMC_Right = .false.,farfieldAr_ClonePMC_Down = .false.
 
-      logical  :: farfieldAb_ClonePEC_Back,farfieldAb_ClonePEC_Front,farfieldAb_ClonePEC_Left,farfieldAb_ClonePEC_Right,farfieldAb_ClonePEC_Up
-      logical  :: farfieldAb_ClonePMC_Back,farfieldAb_ClonePMC_Front,farfieldAb_ClonePMC_Left,farfieldAb_ClonePMC_Right,farfieldAb_ClonePMC_Up
+      logical  :: farfieldAb_ClonePEC_Back = .false.,farfieldAb_ClonePEC_Front = .false.,farfieldAb_ClonePEC_Left = .false.,farfieldAb_ClonePEC_Right = .false.,farfieldAb_ClonePEC_Up = .false.
+      logical  :: farfieldAb_ClonePMC_Back = .false.,farfieldAb_ClonePMC_Front = .false.,farfieldAb_ClonePMC_Left = .false.,farfieldAb_ClonePMC_Right = .false.,farfieldAb_ClonePMC_Up = .false.
 
       complex(kind = CKIND), dimension(:,:,:), allocatable :: ExIz,ExDe,ExAb,ExAr,EyFr,EyTr,EyAb,EyAr,EzIz,EzDe,EzFr,EzTr
       complex(kind = CKIND), dimension(:,:,:), allocatable :: HxIz,HxDe,HxAb,HxAr,HyFr,HyTr,HyAb,HyAr,HzIz,HzDe,HzFr,HzTr
@@ -98,6 +98,7 @@ contains
          if (present(values)) array_bytes = size(values, kind=8)*storage_size(values, kind=8)/8_8
       end function array_bytes
    end function farfield_buffer_bytes
+
 
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -490,7 +491,7 @@ contains
       FF%farfieldAr_clonePEC_Down.OR.FF%farfieldAr_clonePMC_Down
       if (error) then
          buff='NF2FF STILL UNSUPPORTED'
-         call log_msg(LOG_FATAL, 'FARFIELD', Buff)
+         !call log_msg(LOG_FATAL, 'FARFIELD', Buff)
       end if
       !!!end of periodic cloning cases
 
@@ -2031,7 +2032,9 @@ contains
 
 
       goto 635
-634   call log_msg(LOG_WARN, 'FARFIELD', 'cannot write restarting fields, ignoring and continuing')
+634   call print11(0,SEPARADOR//separador//separador)
+      call print11(0,'FARFIELD: ERROR WRITING RESTARTING FIELDS. IGNORING AND CONTINUING')
+      call print11(0,SEPARADOR//separador//separador)          
 635   return
    end subroutine
    !
@@ -2586,8 +2589,10 @@ contains
                               call update_LN(comun,co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,Mx,My,Mz,Jx,Jy,Jz,L_theta,L_phi,N_theta,N_phi)
                               !! symmetries
                               !!!trfr must be called for each case
+                              new_Mx = Mx
                               new_My = My
                               new_Mz = Mz
+                              new_Jx = Jx
                               new_Jy = Jy
                               new_Jz = Jz
                               new_co = co
@@ -2766,8 +2771,8 @@ contains
 
                               if ((( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)).or. &
                               (( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP).and.( FF%farfieldTr_ClonePMC_RIGHT.or.FF%farfieldFr_ClonePMC_RIGHT)).or. &
-                              (( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)).or. &
-                              (( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP).and.( FF%farfieldTr_ClonePMC_RIGHT.or.FF%farfieldFr_ClonePMC_RIGHT))) then
+                              (( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePMC_RIGHT.or.FF%farfieldFr_ClonePMC_RIGHT)).or. &
+                              (( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT))) then
                                  sigNo=+1.0_RKIND
                                  if ((( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)).or. &
                                  (( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP).and.( FF%farfieldTr_ClonePMC_RIGHT.or.FF%farfieldFr_ClonePMC_RIGHT)))  signo=-1.0_RKIND
@@ -2845,8 +2850,10 @@ contains
                               !! symmetries
                               !!!IzDe must be called for each case
                               new_Mx = Mx
+                              new_My = My
                               new_Mz = Mz
                               new_Jx = Jx
+                              new_Jy = Jy
                               new_Jz = Jz
                               new_co = co
                               call cloneIzDe(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
@@ -3023,8 +3030,8 @@ contains
 
                               if ((( FF%farfieldIz_ClonePEC_UP.or.FF%farfieldDe_ClonePEC_UP).and.( FF%farfieldIz_ClonePEC_FRONT.or.FF%farfieldDe_ClonePEC_FRONT)).or. &
                               (( FF%farfieldIz_ClonePMC_UP.or.FF%farfieldDe_ClonePMC_UP).and.( FF%farfieldIz_ClonePMC_FRONT.or.FF%farfieldDe_ClonePMC_FRONT)).or. &
-                              (( FF%farfieldIz_ClonePEC_UP.or.FF%farfieldDe_ClonePMC_UP).and.( FF%farfieldIz_ClonePEC_FRONT.or.FF%farfieldDe_ClonePMC_FRONT)).or. &
-                              (( FF%farfieldIz_ClonePMC_UP.or.FF%farfieldDe_ClonePEC_UP).and.( FF%farfieldIz_ClonePMC_FRONT.or.FF%farfieldDe_ClonePEC_FRONT)))  then
+                              (( FF%farfieldIz_ClonePEC_UP.or.FF%farfieldDe_ClonePEC_UP).and.( FF%farfieldIz_ClonePEC_FRONT.or.FF%farfieldDe_ClonePMC_FRONT)).or. &
+                              (( FF%farfieldIz_ClonePMC_UP.or.FF%farfieldDe_ClonePMC_UP).and.( FF%farfieldIz_ClonePMC_FRONT.or.FF%farfieldDe_ClonePEC_FRONT)))  then
                                  sigNo=+1.0_RKIND
                                  if ((( FF%farfieldIz_ClonePEC_UP.or.FF%farfieldDe_ClonePEC_UP).and.( FF%farfieldIz_ClonePEC_FRONT.or.FF%farfieldDe_ClonePEC_FRONT)).or. &
                                  (( FF%farfieldIz_ClonePMC_UP.or.FF%farfieldDe_ClonePMC_UP).and.( FF%farfieldIz_ClonePMC_FRONT.or.FF%farfieldDe_ClonePMC_FRONT)))  sigNo=-1.0_RKIND
@@ -3103,8 +3110,10 @@ contains
                               !!!AbAr must be called for each case
                               new_Mx = Mx
                               new_My = My
+                              new_Mz = Mz
                               new_Jx = Jx
                               new_Jy = Jy
+                              new_Jz = Jz
                               new_co = co
                               call cloneAbAr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               !
