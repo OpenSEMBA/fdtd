@@ -621,8 +621,6 @@ contains
       if (a%K    /= b%K)    return
       if (a%dir  /= b%dir)  return
       if (a%Or   /= b%Or)   return
-      if (a%normal /= b%normal) return
-      if (a%isSurface .neqv. b%isSurface) return
       if (a%tag  /= b%tag)  return
       res = .true.
    end function ThinSlotComp_eq
@@ -641,6 +639,10 @@ contains
          if (size(a%tgc) /= 0) return
       else
          if (size(b%tgc) /= 0) return
+      end if
+      if (allocated(a%surfaceCoords) .neqv. allocated(b%surfaceCoords)) return
+      if (allocated(a%surfaceCoords)) then
+         if (.not. all(a%surfaceCoords == b%surfaceCoords)) return
       end if
       ThinSlot_eq = .true.
    end function ThinSlot_eq

@@ -12,6 +12,7 @@ module Preprocess_m
    !
    use Report_m
    use NFDETypes_m
+   use fhash, only: fhash_tbl_t, fhash_key
 #ifdef CompileWithMTLN
    use mtln_types_m, only: cable_t, unshielded_multiwire_t
 #endif
@@ -30,10 +31,11 @@ module Preprocess_m
    !
    public read_geomData, read_limits_nogeom,AssigLossyOrPECtoNodes,searchtag
   public checkDielectricTagForDuplicate, checkAnimatedTagForDuplicate, checkLossyTagForDuplicate
+   public expandSurfaceThinSlots
    !
    ! Information about a thin slot component that is only known after the PEC
    ! has been stamped into the media matrices: the normal of the PEC plane
-   ! that contains it. It is kept outside ThinSlotComp_t so that the parsed
+   ! that contains it. It is kept outside ThinSlotComp_t so that the
    ! component preserves the signed direction coming from the input.
    type :: thinSlotPreprocessed_t
       integer(kind=4), allocatable :: normal(:)
@@ -121,6 +123,7 @@ contains
       cluz=1.0_RKIND/sqrt(eps0*mu0)
       zvac=sqrt(mu0/eps0)
 !
+      if (associated(this%tSlots)) call expandSurfaceThinSlots(this%tSlots)
       call cuentatags(this,tagtype,layoutnumber,fichin)
 !
       delta=-1 !so that gfortran does not complain about uninitialized variables
@@ -2640,8 +2643,10 @@ contains
                if ((i1 >= BoundingBox%XI) .AND. (i1 < BoundingBox%XE) .AND. &
                &    (j1 >= BoundingBox%YI) .AND. (j1 < BoundingBox%YE) .AND. &
                &    (k1 >= BoundingBox%ZI) .AND. (k1 < BoundingBox%ZE)) then
-                  if (this%tSlots%Tg(j)%TgC(i)%isSurface) then
-                     orientationIndex = this%tSlots%Tg(j)%TgC(i)%normal
+                  if (isSurfaceThinSlot(this%tSlots%Tg(j)%TgC(i))) then
+                     ! The surface expansion validates the normal sign;
+                     ! preprocessing only needs the unsigned plane axis.
+                     orientationIndex = abs(this%tSlots%Tg(j)%TgC(i)%Or)
                   else
                   !find the orientation of the conductive plane containing the Slot
                   oriX = (direccion == IEY) .AND. isThinSlotHostMedium(media%sggMiHx(i1, j1, k1))
@@ -2713,7 +2718,7 @@ contains
                   end if
 
                   thinSlotData(j)%normal(i) = orientationIndex
-                  if (this%tSlots%Tg(j)%TgC(i)%isSurface) then
+                  if (isSurfaceThinSlot(this%tSlots%Tg(j)%TgC(i))) then
                      select case (Abs(orientationIndex))
                       case (IEX)
                         medium1 = media%sggMiHx(i1,j1,k1)
@@ -4763,7 +4768,7 @@ contains
          do a = 1, this%tSlots%Tg(slot)%n_tgc
             ! Surface-defined slots are validated by the embedded mesher, which
             ! already enforces the sheet-perimeter rule before export.
-            if (this%tSlots%Tg(slot)%TgC(a)%isSurface) cycle
+            if (isSurfaceThinSlot(this%tSlots%Tg(slot)%TgC(a))) cycle
             if (.not. getThinSlotParallelLines(this%tSlots%Tg(slot)%TgC(a), &
                                                thinSlotData(slot)%normal(a), &
                                                ownMedium, minusMedium, plusMedium)) cycle
@@ -4852,11 +4857,11 @@ contains
 
       ! Two perpendicular linels of the same slot that meet at a vertex with no
       ! other incident linel form a simple turn. The completion is driven by the
-      ! shared vertex and the H-face adjacency, not by the signed traversal kept
-      ! by the parser, so every corner orientation gets the same treatment: the
-      ! edges of the corner H face shared with a neighbouring slot face are the
-      ! internal thin-slot E edges, and the remaining external edges are cleared
-      ! to PEC.
+      ! shared vertex and the H-face adjacency, not by the signed orientation
+      ! kept by the parser, so every corner orientation gets the same treatment:
+      ! the edges of the corner H face shared with a neighbouring slot face are
+      ! the internal thin-slot E edges, and the remaining external edges are
+      ! cleared to PEC.
       subroutine completeThinSlotTurns(slot)
          integer(kind=4), intent(in) :: slot
          integer(kind=4) :: firstIndex, secondIndex, vx, vy, vz
@@ -4879,7 +4884,7 @@ contains
       end subroutine
 
       ! Returns the end point shared by two slot linels, comparing their end
-      ! points as a set so the signed traversal does not matter.
+      ! points as a set so the stored signed orientation does not matter.
       logical function componentsShareVertex(first, second, vx, vy, vz)
          type(ThinSlotComp_t), intent(in) :: first, second
          integer(kind=4), intent(out) :: vx, vy, vz
@@ -6367,6 +6372,337 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+   ! Surface-defined thin slots keep their raw surface intervals in the
+   ! parser description. They are expanded here, after MPI partition rotation,
+   ! and before tag and medium counting.
+   subroutine expandSurfaceThinSlots(thinSlots)
+      type(ThinSlots_t), intent(inout) :: thinSlots
+      integer(kind=4) :: i
+
+      if (.not. associated(thinSlots%tg)) return
+      do i = 1, thinSlots%n_tg
+         if (.not. allocated(thinSlots%Tg(i)%surfaceCoords)) cycle
+         if (thinSlots%Tg(i)%N_tgc > 0) cycle
+         if (associated(thinSlots%Tg(i)%tgc)) deallocate(thinSlots%Tg(i)%tgc)
+         call coordsToThinSlotSurfaceComp(thinSlots%Tg(i)%tgc, thinSlots%Tg(i)%surfaceCoords)
+         thinSlots%Tg(i)%N_tgc = size(thinSlots%Tg(i)%tgc)
+         thinSlots%Tg(i)%N_tgc_max = thinSlots%Tg(i)%N_tgc
+      end do
+   end subroutine expandSurfaceThinSlots
+
+   subroutine coordsToThinSlotSurfaceComp(tc, cs)
+      type(coords_t), dimension(:), intent(in) :: cs
+      type(ThinSlotComp_t), dimension(:), pointer :: tc
+      integer(kind=4), parameter :: FACE_EDGE_START(4) = [1, 1, 2, 3]
+      integer(kind=4), parameter :: FACE_EDGE_END(4) = [2, 3, 4, 4]
+      integer(kind=4) :: segmentIdx, cellI, cellJ, cellK
+      integer(kind=4) :: faceIdx, cornerIdx, edgeIdx
+      integer(kind=4) :: nFaces, faceCount, nComponents, compIdx
+      integer(kind=4) :: surfaceNormal, edgeAxis, dirAxis
+      integer(kind=4) :: neighborIdx, dirIdx, stat, firstFace, vertexUseCount
+      integer(kind=4), dimension(3) :: cornerA, cornerB
+      integer(kind=4), dimension(4) :: faceKey
+      integer(kind=4), dimension(6) :: edgeKey
+      integer(kind=4), dimension(:), allocatable :: faceNormal
+      integer(kind=4), dimension(:,:), allocatable :: faceCell
+      integer(kind=4), dimension(:,:,:), allocatable :: faceCorners
+      integer(kind=4), dimension(:), allocatable :: neighborCount
+      integer(kind=4), dimension(:,:), allocatable :: neighborFace
+      integer(kind=4), dimension(:,:), allocatable :: neighborDirAxis
+      integer(kind=4), dimension(:), allocatable :: faceDirCount
+      integer(kind=4), dimension(:,:), allocatable :: faceDirAxis
+      character(len=BUFSIZE), dimension(:), allocatable :: faceTag
+      type(fhash_tbl_t) :: faceMap, edgeMap, vertexMap
+
+      nFaces = 0
+      do segmentIdx = 1, size(cs)
+         nFaces = nFaces + (cs(segmentIdx)%Xe - cs(segmentIdx)%Xi + 1) * &
+            (cs(segmentIdx)%Ye - cs(segmentIdx)%Yi + 1) * &
+            (cs(segmentIdx)%Ze - cs(segmentIdx)%Zi + 1)
+      end do
+      if (nFaces == 0) then
+         allocate(tc(0))
+         return
+      end if
+
+      allocate(faceCell(nFaces, 3), faceNormal(nFaces), faceTag(nFaces))
+      allocate(faceCorners(nFaces, 4, 3))
+      call faceMap%allocate(max(127, nFaces))
+
+      faceCount = 0
+      do segmentIdx = 1, size(cs)
+         surfaceNormal = cs(segmentIdx)%Or
+         select case (abs(surfaceNormal))
+         case (IEX)
+            if (cs(segmentIdx)%Xi /= cs(segmentIdx)%Xe) then
+               call log_msg(LOG_FATAL, 'PREPROCESS', &
+                  'Surface thin slot interval is not cell-aligned in X.')
+            end if
+         case (IEY)
+            if (cs(segmentIdx)%Yi /= cs(segmentIdx)%Ye) then
+               call log_msg(LOG_FATAL, 'PREPROCESS', &
+                  'Surface thin slot interval is not cell-aligned in Y.')
+            end if
+         case (IEZ)
+            if (cs(segmentIdx)%Zi /= cs(segmentIdx)%Ze) then
+               call log_msg(LOG_FATAL, 'PREPROCESS', &
+                  'Surface thin slot interval is not cell-aligned in Z.')
+            end if
+         case default
+            call log_msg(LOG_FATAL, 'PREPROCESS', &
+               'Surface thin slot has an invalid orientation.')
+         end select
+
+         do cellK = cs(segmentIdx)%Zi, cs(segmentIdx)%Ze
+            do cellJ = cs(segmentIdx)%Yi, cs(segmentIdx)%Ye
+               do cellI = cs(segmentIdx)%Xi, cs(segmentIdx)%Xe
+                  faceCount = faceCount + 1
+                  faceCell(faceCount, :) = [cellI, cellJ, cellK]
+                  faceNormal(faceCount) = surfaceNormal
+                  faceTag(faceCount) = cs(segmentIdx)%tag
+                  select case (abs(surfaceNormal))
+                  case (IEX)
+                     faceCorners(faceCount, 1, :) = [cellI, cellJ, cellK]
+                     faceCorners(faceCount, 2, :) = [cellI, cellJ + 1, cellK]
+                     faceCorners(faceCount, 3, :) = [cellI, cellJ, cellK + 1]
+                     faceCorners(faceCount, 4, :) = [cellI, cellJ + 1, cellK + 1]
+                  case (IEY)
+                     faceCorners(faceCount, 1, :) = [cellI, cellJ, cellK]
+                     faceCorners(faceCount, 2, :) = [cellI + 1, cellJ, cellK]
+                     faceCorners(faceCount, 3, :) = [cellI, cellJ, cellK + 1]
+                     faceCorners(faceCount, 4, :) = [cellI + 1, cellJ, cellK + 1]
+                  case (IEZ)
+                     faceCorners(faceCount, 1, :) = [cellI, cellJ, cellK]
+                     faceCorners(faceCount, 2, :) = [cellI + 1, cellJ, cellK]
+                     faceCorners(faceCount, 3, :) = [cellI, cellJ + 1, cellK]
+                     faceCorners(faceCount, 4, :) = [cellI + 1, cellJ + 1, cellK]
+                  end select
+
+                  faceKey = [cellI, cellJ, cellK, abs(surfaceNormal)]
+                  call faceMap%check_key(fhash_key(faceKey), stat)
+                  if (stat == 0) then
+                     call log_msg(LOG_FATAL, 'PREPROCESS', &
+                        'Surface thin slot contains overlapping faces.')
+                  end if
+                  call faceMap%set(fhash_key(faceKey), 1)
+               end do
+            end do
+         end do
+      end do
+
+      if (faceCount /= nFaces) then
+         call log_msg(LOG_FATAL, 'PREPROCESS', &
+            'Unable to expand the surface thin-slot intervals.')
+      end if
+
+      allocate(neighborCount(nFaces), neighborFace(nFaces, 4))
+      allocate(neighborDirAxis(nFaces, 4))
+      neighborCount = 0
+      neighborFace = 0
+      neighborDirAxis = 0
+      call edgeMap%allocate(max(127, 4 * nFaces))
+
+      do faceIdx = 1, nFaces
+         do edgeIdx = 1, 4
+            cornerA = faceCorners(faceIdx, FACE_EDGE_START(edgeIdx), :)
+            cornerB = faceCorners(faceIdx, FACE_EDGE_END(edgeIdx), :)
+            edgeKey = edgeKeyFromCorners(cornerA, cornerB)
+            call edgeMap%check_key(fhash_key(edgeKey), stat)
+            if (stat /= 0) then
+               call edgeMap%set(fhash_key(edgeKey), faceIdx)
+            else
+               call edgeMap%get(fhash_key(edgeKey), firstFace, stat)
+               if (stat /= 0) then
+                  call log_msg(LOG_FATAL, 'PREPROCESS', &
+                     'Unable to read the surface thin-slot edge map.')
+               end if
+               if (firstFace < 0) then
+                  call log_msg(LOG_FATAL, 'PREPROCESS', &
+                     'Surface thin slot contains a non-manifold edge.')
+               end if
+               if (firstFace == faceIdx) then
+                  call log_msg(LOG_FATAL, 'PREPROCESS', &
+                     'Surface thin slot contains overlapping faces.')
+               end if
+               call checkNormalConsistency(firstFace, faceIdx, faceNormal)
+               edgeAxis = edgeAxisFromCorners(cornerA, cornerB)
+               call addFaceNeighbor(firstFace, faceIdx, &
+                  otherInPlaneAxis(abs(faceNormal(firstFace)), edgeAxis), &
+                  neighborCount, neighborFace, neighborDirAxis)
+               call addFaceNeighbor(faceIdx, firstFace, &
+                  otherInPlaneAxis(abs(faceNormal(faceIdx)), edgeAxis), &
+                  neighborCount, neighborFace, neighborDirAxis)
+               call edgeMap%set(fhash_key(edgeKey), -firstFace)
+            end if
+         end do
+      end do
+
+      call vertexMap%allocate(max(127, 4 * nFaces))
+      do faceIdx = 1, nFaces
+         do cornerIdx = 1, 4
+            cornerA = faceCorners(faceIdx, cornerIdx, :)
+            call vertexMap%check_key(fhash_key(cornerA), stat)
+            if (stat /= 0) then
+               call vertexMap%set(fhash_key(cornerA), 1)
+            else
+               call vertexMap%get(fhash_key(cornerA), vertexUseCount, stat)
+               if (stat /= 0) then
+                  call log_msg(LOG_FATAL, 'PREPROCESS', &
+                     'Unable to read the surface thin-slot vertex map.')
+               end if
+               vertexUseCount = vertexUseCount + 1
+               if (vertexUseCount >= 4) then
+                  call log_msg(LOG_FATAL, 'PREPROCESS', &
+                     'Surface thin slot cannot contain four-quad groups.')
+               end if
+               call vertexMap%set(fhash_key(cornerA), vertexUseCount)
+            end if
+         end do
+      end do
+
+      allocate(faceDirCount(nFaces), faceDirAxis(nFaces, 2))
+      faceDirCount = 0
+      faceDirAxis = 0
+      nComponents = 0
+      do faceIdx = 1, nFaces
+         do neighborIdx = 1, neighborCount(faceIdx)
+            call addFaceDirection(faceIdx, neighborDirAxis(faceIdx, neighborIdx), &
+               faceDirCount, faceDirAxis)
+         end do
+         if (faceDirCount(faceIdx) == 0) then
+            call log_msg(LOG_FATAL, 'PREPROCESS', &
+               'Surface thin slot has an isolated quad; its direction is ambiguous.')
+         end if
+         nComponents = nComponents + faceDirCount(faceIdx)
+      end do
+
+      allocate(tc(nComponents))
+      compIdx = 0
+      do faceIdx = 1, nFaces
+         do dirIdx = 1, faceDirCount(faceIdx)
+            dirAxis = faceDirAxis(faceIdx, dirIdx)
+            compIdx = compIdx + 1
+            tc(compIdx)%i = faceCell(faceIdx, 1)
+            tc(compIdx)%j = faceCell(faceIdx, 2)
+            tc(compIdx)%k = faceCell(faceIdx, 3)
+            tc(compIdx)%dir = dirAxis
+            ! Surface slots have no source traversal. Or carries the signed
+            ! host-face normal supplied by the mesher.
+            tc(compIdx)%Or = faceNormal(faceIdx)
+            tc(compIdx)%tag = faceTag(faceIdx)
+         end do
+      end do
+   end subroutine coordsToThinSlotSurfaceComp
+
+   function edgeKeyFromCorners(firstCorner, secondCorner) result(key)
+      integer(kind=4), dimension(3), intent(in) :: firstCorner, secondCorner
+      integer(kind=4), dimension(6) :: key
+      if (cornerLessOrEqual(firstCorner, secondCorner)) then
+         key = [firstCorner, secondCorner]
+      else
+         key = [secondCorner, firstCorner]
+      end if
+   end function edgeKeyFromCorners
+
+   logical function cornerLessOrEqual(firstCorner, secondCorner) result(res)
+      integer(kind=4), dimension(3), intent(in) :: firstCorner, secondCorner
+      integer(kind=4) :: axis
+      do axis = 1, 3
+         if (firstCorner(axis) < secondCorner(axis)) then
+            res = .true.
+            return
+         else if (firstCorner(axis) > secondCorner(axis)) then
+            res = .false.
+            return
+         end if
+      end do
+      res = .true.
+   end function cornerLessOrEqual
+
+   integer(kind=4) function edgeAxisFromCorners(firstCorner, secondCorner) result(edgeAxis)
+      integer(kind=4), dimension(3), intent(in) :: firstCorner, secondCorner
+      integer(kind=4), dimension(3) :: diff
+      integer(kind=4) :: axis
+      diff = abs(firstCorner - secondCorner)
+      edgeAxis = 0
+      do axis = 1, 3
+         if (diff(axis) == 0) cycle
+         if (edgeAxis /= 0) then
+            call log_msg(LOG_FATAL, 'PREPROCESS', &
+               'Surface thin slot faces share an invalid edge.')
+         end if
+         edgeAxis = axis
+      end do
+      if (edgeAxis == 0) then
+         call log_msg(LOG_FATAL, 'PREPROCESS', &
+            'Surface thin slot faces share an invalid edge.')
+      end if
+   end function edgeAxisFromCorners
+
+   integer(kind=4) function otherInPlaneAxis(normalAxis, edgeAxis) result(dirAxis)
+      integer(kind=4), intent(in) :: normalAxis, edgeAxis
+      integer(kind=4) :: axis
+      dirAxis = 0
+      if (normalAxis < 1 .or. normalAxis > 3 .or. edgeAxis < 1 .or. edgeAxis > 3 .or. &
+          normalAxis == edgeAxis) then
+         call log_msg(LOG_FATAL, 'PREPROCESS', &
+            'Surface thin slot has an invalid local direction.')
+      end if
+      do axis = 1, 3
+         if (axis /= normalAxis .and. axis /= edgeAxis) dirAxis = axis
+      end do
+      if (dirAxis == 0) then
+         call log_msg(LOG_FATAL, 'PREPROCESS', &
+            'Surface thin slot has an invalid local direction.')
+      end if
+   end function otherInPlaneAxis
+
+   subroutine addFaceNeighbor(faceIdx, neighborIdx, dirAxis, neighborCount, &
+                              neighborFace, neighborDirAxis)
+      integer(kind=4), intent(in) :: faceIdx, neighborIdx, dirAxis
+      integer(kind=4), dimension(:), intent(inout) :: neighborCount
+      integer(kind=4), dimension(:,:), intent(inout) :: neighborFace
+      integer(kind=4), dimension(:,:), intent(inout) :: neighborDirAxis
+      integer(kind=4) :: neighborSlot
+      neighborSlot = neighborCount(faceIdx) + 1
+      if (neighborSlot > 2) then
+         call log_msg(LOG_FATAL, 'PREPROCESS', &
+            'Surface thin slot branches or is wider than one quad at a face.')
+      end if
+      neighborCount(faceIdx) = neighborSlot
+      neighborFace(faceIdx, neighborSlot) = neighborIdx
+      neighborDirAxis(faceIdx, neighborSlot) = dirAxis
+   end subroutine addFaceNeighbor
+
+   subroutine addFaceDirection(faceIdx, dirAxis, faceDirCount, faceDirAxis)
+      integer(kind=4), intent(in) :: faceIdx, dirAxis
+      integer(kind=4), dimension(:), intent(inout) :: faceDirCount
+      integer(kind=4), dimension(:,:), intent(inout) :: faceDirAxis
+      if (faceDirCount(faceIdx) == 0) then
+         faceDirCount(faceIdx) = 1
+         faceDirAxis(faceIdx, 1) = dirAxis
+      else if (faceDirCount(faceIdx) == 1) then
+         if (faceDirAxis(faceIdx, 1) /= dirAxis) then
+            faceDirCount(faceIdx) = 2
+            faceDirAxis(faceIdx, 2) = dirAxis
+         end if
+      else if (dirAxis /= faceDirAxis(faceIdx, 1) .and. &
+               dirAxis /= faceDirAxis(faceIdx, 2)) then
+         call log_msg(LOG_FATAL, 'PREPROCESS', &
+            'Surface thin slot branches in more than two directions.')
+      end if
+   end subroutine addFaceDirection
+
+   subroutine checkNormalConsistency(faceA, faceB, faceNormal)
+      integer(kind=4), intent(in) :: faceA, faceB
+      integer(kind=4), dimension(:), intent(in) :: faceNormal
+      if (abs(faceNormal(faceA)) == abs(faceNormal(faceB)) .and. &
+          faceNormal(faceA) /= faceNormal(faceB)) then
+         call log_msg(LOG_FATAL, 'PREPROCESS', &
+            'Surface thin slot has inconsistent normal orientation between adjacent faces.')
+      end if
+   end subroutine checkNormalConsistency
+
    subroutine read_limits_nogeom (layoutnumber,num_procs, sgg, fullsize, SINPML_fullsize, this,MurAfterPML,mur_exist)
       type(limit_t), dimension(1:6) :: fullsize, SINPML_fullsize
       type(SGGFDTDINFO_t), intent(inout) :: sgg
@@ -7811,9 +8147,8 @@ contains
 
       integer :: j
 
-      if (component%N_tgc == 0) then
-         call log_msg(LOG_FATAL, 'PREPROCESS', 'Bug in ThinSlot Tags. Missing coordinates')
-      end if
+      ! A zero-length slot is valid input and contributes no components.
+      if (component%N_tgc == 0) return
 
       check_tags: do j = 1, component%N_tgc
          numertag = numertag + 1

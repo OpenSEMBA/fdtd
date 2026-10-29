@@ -2213,16 +2213,23 @@ contains
          call this%matAssToCoords(cs, mA, CELL_TYPE_LINEL)
          if (size(cs) > 0) then
             call coordsToThinSlotComp(res%tgc, cs)
+            res%n_tgc = size(res%tgc)
          else
             if (associated(cs)) deallocate(cs)
             call this%matAssToCoords(cs, mA, CELL_TYPE_SURFEL)
-            if (size(cs) == 0) then
-               call log_msg(LOG_FATAL, 'SMBJSON', &
-                  'Thin slot must be defined over line or surface cell intervals.')
+            if (size(cs) > 0) then
+               ! Surface topology is preprocessing, not parsing. Keep the raw
+               ! intervals and expand them after MPI partition rotation.
+               allocate(res%surfaceCoords(size(cs)))
+               res%surfaceCoords = cs
+            else
+               ! Meshers may collapse a slot to zero length. Such a slot is
+               ! valid input and simply contributes no components.
+               allocate(res%tgc(0))
+               res%n_tgc = 0
             end if
-            call coordsToThinSlotSurfaceComp(res%tgc, cs)
          end if
-         res%n_tgc = size(res%tgc)
+         if (associated(cs)) deallocate(cs)
 
       end function
 
@@ -2277,252 +2284,6 @@ contains
          res%Or = cs%Or
          res%tag = cs%tag
       end function
-
-      subroutine coordsToThinSlotSurfaceComp(tc, cs)
-         type(coords_t), dimension(:), pointer, intent(in) :: cs
-         type(ThinSlotComp_t), dimension(:), pointer :: tc
-         integer :: f, i, j, k, ii, p, q, a, b, nb, d, axis
-         integer :: nFaces, nComponents, c, found, slot, candidate
-         integer :: normal, normalAxis, edgeAxis
-         integer :: delta, sgn
-         integer :: nUnique
-         integer, dimension(3) :: commonVertex1, commonVertex2, diff
-         integer, dimension(:), allocatable :: faceI, faceJ, faceK, faceNormal
-         integer, dimension(:,:,:), allocatable :: faceCorners
-         integer, dimension(:), allocatable :: neighborCount
-         integer, dimension(:,:), allocatable :: neighborFace
-         integer, dimension(:,:), allocatable :: neighborEdgeAxis
-         integer, dimension(:), allocatable :: faceDirCount
-         integer, dimension(:,:), allocatable :: faceDirAxis
-         integer, dimension(:,:), allocatable :: uniqueVertex
-         integer, dimension(:), allocatable :: vertexUses
-         character(len=BUFSIZE), dimension(:), allocatable :: faceTag
-
-         nFaces = 0
-         do f = 1, size(cs)
-            nFaces = nFaces + (cs(f)%Xe - cs(f)%Xi + 1) * &
-               (cs(f)%Ye - cs(f)%Yi + 1) * (cs(f)%Ze - cs(f)%Zi + 1)
-         end do
-         if (nFaces == 0) then
-            allocate(tc(0))
-            return
-         end if
-
-         allocate(faceI(nFaces), faceJ(nFaces), faceK(nFaces))
-         allocate(faceNormal(nFaces), faceTag(nFaces))
-         allocate(faceCorners(nFaces, 4, 3))
-
-         nFaces = 0
-         do f = 1, size(cs)
-            normal = cs(f)%Or
-            select case (abs(normal))
-            case (IEX)
-               if (cs(f)%Xi /= cs(f)%Xe) then
-                  call log_msg(LOG_FATAL, 'SMBJSON', &
-                     'Surface thin slot interval is not cell-aligned in X.')
-               end if
-            case (IEY)
-               if (cs(f)%Yi /= cs(f)%Ye) then
-                  call log_msg(LOG_FATAL, 'SMBJSON', &
-                     'Surface thin slot interval is not cell-aligned in Y.')
-               end if
-            case (IEZ)
-               if (cs(f)%Zi /= cs(f)%Ze) then
-                  call log_msg(LOG_FATAL, 'SMBJSON', &
-                     'Surface thin slot interval is not cell-aligned in Z.')
-               end if
-            case default
-               call log_msg(LOG_FATAL, 'SMBJSON', &
-                  'Surface thin slot has an invalid orientation.')
-            end select
-
-            do k = cs(f)%Zi, cs(f)%Ze
-               do j = cs(f)%Yi, cs(f)%Ye
-                  do i = cs(f)%Xi, cs(f)%Xe
-                     nFaces = nFaces + 1
-                     faceI(nFaces) = i
-                     faceJ(nFaces) = j
-                     faceK(nFaces) = k
-                     faceNormal(nFaces) = normal
-                     faceTag(nFaces) = cs(f)%tag
-                     select case (abs(normal))
-                     case (IEX)
-                        faceCorners(nFaces, 1, :) = [i, j, k]
-                        faceCorners(nFaces, 2, :) = [i, j + 1, k]
-                        faceCorners(nFaces, 3, :) = [i, j, k + 1]
-                        faceCorners(nFaces, 4, :) = [i, j + 1, k + 1]
-                     case (IEY)
-                        faceCorners(nFaces, 1, :) = [i, j, k]
-                        faceCorners(nFaces, 2, :) = [i + 1, j, k]
-                        faceCorners(nFaces, 3, :) = [i, j, k + 1]
-                        faceCorners(nFaces, 4, :) = [i + 1, j, k + 1]
-                     case (IEZ)
-                        faceCorners(nFaces, 1, :) = [i, j, k]
-                        faceCorners(nFaces, 2, :) = [i + 1, j, k]
-                        faceCorners(nFaces, 3, :) = [i, j + 1, k]
-                        faceCorners(nFaces, 4, :) = [i + 1, j + 1, k]
-                     case default
-                        call log_msg(LOG_FATAL, 'SMBJSON', &
-                           'Surface thin slot has an invalid orientation.')
-                     end select
-                  end do
-               end do
-            end do
-         end do
-
-         allocate(neighborCount(nFaces), neighborFace(nFaces, 4))
-         allocate(neighborEdgeAxis(nFaces, 4))
-         neighborCount = 0
-         neighborFace = 0
-         neighborEdgeAxis = 0
-
-         do a = 1, nFaces - 1
-            do b = a + 1, nFaces
-               found = 0
-               do p = 1, 4
-                  do q = 1, 4
-                     if (all(faceCorners(a, p, :) == faceCorners(b, q, :))) then
-                        found = found + 1
-                        if (found == 1) commonVertex1 = faceCorners(a, p, :)
-                        if (found == 2) commonVertex2 = faceCorners(a, p, :)
-                     end if
-                  end do
-               end do
-               if (found == 2) then
-                  diff = abs(commonVertex1 - commonVertex2)
-                  if (count(diff > 0) /= 1) then
-                     call log_msg(LOG_FATAL, 'SMBJSON', &
-                        'Surface thin slot faces share an invalid edge.')
-                  end if
-                  edgeAxis = maxloc(diff, 1)
-
-                  slot = neighborCount(a) + 1
-                  if (slot > 4) then
-                     call log_msg(LOG_FATAL, 'SMBJSON', &
-                        'Surface thin slot branches at a face.')
-                  end if
-                  neighborCount(a) = slot
-                  neighborFace(a, slot) = b
-                  neighborEdgeAxis(a, slot) = edgeAxis
-
-                  slot = neighborCount(b) + 1
-                  if (slot > 4) then
-                     call log_msg(LOG_FATAL, 'SMBJSON', &
-                        'Surface thin slot branches at a face.')
-                  end if
-                  neighborCount(b) = slot
-                  neighborFace(b, slot) = a
-                  neighborEdgeAxis(b, slot) = edgeAxis
-               else if (found > 2) then
-                  call log_msg(LOG_FATAL, 'SMBJSON', &
-                     'Surface thin slot contains overlapping faces.')
-               end if
-            end do
-         end do
-
-         allocate(uniqueVertex(4 * nFaces, 3), vertexUses(4 * nFaces))
-         nUnique = 0
-         do a = 1, nFaces
-            do p = 1, 4
-               found = 0
-               do ii = 1, nUnique
-                  if (all(uniqueVertex(ii, :) == faceCorners(a, p, :))) then
-                     found = ii
-                     exit
-                  end if
-               end do
-               if (found == 0) then
-                  nUnique = nUnique + 1
-                  uniqueVertex(nUnique, :) = faceCorners(a, p, :)
-                  vertexUses(nUnique) = 1
-               else
-                  vertexUses(found) = vertexUses(found) + 1
-                  if (vertexUses(found) >= 4) then
-                     call log_msg(LOG_FATAL, 'SMBJSON', &
-                        'Surface thin slot cannot contain four-quad groups.')
-                  end if
-               end if
-            end do
-         end do
-
-         allocate(faceDirCount(nFaces), faceDirAxis(nFaces, 2))
-         faceDirCount = 0
-         faceDirAxis = 0
-         nComponents = 0
-         do a = 1, nFaces
-            normalAxis = abs(faceNormal(a))
-            do nb = 1, neighborCount(a)
-               edgeAxis = neighborEdgeAxis(a, nb)
-               candidate = 0
-               do axis = 1, 3
-                  if (axis /= normalAxis .and. axis /= edgeAxis) candidate = axis
-               end do
-               if (candidate == 0) then
-                  call log_msg(LOG_FATAL, 'SMBJSON', &
-                     'Surface thin slot has an invalid local direction.')
-               end if
-               if (faceDirCount(a) == 0) then
-                  faceDirCount(a) = 1
-                  faceDirAxis(a, 1) = candidate
-               else if (faceDirCount(a) == 1) then
-                  if (faceDirAxis(a, 1) /= candidate) then
-                     faceDirCount(a) = 2
-                     faceDirAxis(a, 2) = candidate
-                  end if
-               else if (candidate /= faceDirAxis(a, 1) .and. &
-                        candidate /= faceDirAxis(a, 2)) then
-                  call log_msg(LOG_FATAL, 'SMBJSON', &
-                     'Surface thin slot branches in more than two directions.')
-               end if
-            end do
-            if (faceDirCount(a) == 0) then
-               call log_msg(LOG_FATAL, 'SMBJSON', &
-                  'Surface thin slot has an isolated quad; its direction is ambiguous.')
-            end if
-            nComponents = nComponents + faceDirCount(a)
-         end do
-
-         allocate(tc(nComponents))
-         c = 0
-         do a = 1, nFaces
-            do d = 1, faceDirCount(a)
-               axis = faceDirAxis(a, d)
-               sgn = 1
-               do nb = 1, neighborCount(a)
-                  edgeAxis = neighborEdgeAxis(a, nb)
-                  candidate = 0
-                  do ii = 1, 3
-                     if (ii /= abs(faceNormal(a)) .and. ii /= edgeAxis) candidate = ii
-                  end do
-                  if (candidate /= axis) cycle
-                  select case (axis)
-                  case (IEX)
-                     delta = faceI(neighborFace(a, nb)) - faceI(a)
-                  case (IEY)
-                     delta = faceJ(neighborFace(a, nb)) - faceJ(a)
-                  case (IEZ)
-                     delta = faceK(neighborFace(a, nb)) - faceK(a)
-                  end select
-                  if (delta < 0) sgn = -1
-                  if (delta > 0) sgn = 1
-               end do
-
-               c = c + 1
-               tc(c)%i = faceI(a)
-               tc(c)%j = faceJ(a)
-               tc(c)%k = faceK(a)
-               tc(c)%dir = axis
-               tc(c)%Or = sgn * axis
-               tc(c)%normal = faceNormal(a)
-               tc(c)%isSurface = .true.
-               tc(c)%tag = faceTag(a)
-            end do
-         end do
-
-         deallocate(faceI, faceJ, faceK, faceNormal, faceTag, faceCorners)
-         deallocate(neighborCount, neighborFace, neighborEdgeAxis)
-         deallocate(uniqueVertex, vertexUses, faceDirCount, faceDirAxis)
-      end subroutine coordsToThinSlotSurfaceComp
    end function
 
    subroutine readThinWires(this, res, sonda)
