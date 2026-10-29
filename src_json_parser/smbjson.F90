@@ -2,6 +2,9 @@ module smbjson_m
 
 #ifdef CompileWithSMBJSON
    use NFDETypes_m
+#ifdef CompileWithMTLN
+   use mtln_types_m
+#endif
 
    use NFDETypes_extension_m
    use smbjson_labels_m
@@ -15,6 +18,7 @@ module smbjson_m
    use json_kinds
 
    use conformal_types_m
+   use conformal_m, only: validateConformalSurface, validateConformalVolume, validateClosedSurfaceTopology
 
    use, intrinsic :: iso_fortran_env , only: error_unit
 
@@ -37,7 +41,7 @@ module smbjson_m
    contains
       procedure :: readProblemDescription
       procedure :: readMesh
-   
+
 #ifdef CompileWithMTLN
       procedure :: readMTLN
 #endif
@@ -128,18 +132,16 @@ contains
       type(parser_t) :: res
       character(len=*), intent(in) :: filename
       res%filename = filename
-      
+
       allocate(res%jsonfile)
       call res%jsonfile%initialize()
       if (res%jsonfile%failed()) then
-         call WarnErrReport("Failed to initialize JSONfile", .true.)
-         error stop 'smbjson: failed to initialize JSON file: '//res%filename
+         call log_msg(LOG_FATAL, 'SMBJSON', "Failed to initialize JSONfile")
       end if
 
       call res%jsonfile%load(filename = res%filename)
       if (res%jsonfile%failed()) then
-         call WarnErrReport("Failed to load JSON file: "//res%filename, .true.)
-         error stop 'smbjson: failed to load JSON file: '//res%filename
+         call log_msg(LOG_FATAL, 'SMBJSON', "Failed to load JSON file: "//res%filename)
       end if
 
       allocate(res%core)
@@ -155,51 +157,51 @@ contains
       integer :: stat 
 
       if (.not. this%isInitialized .or. .not. associated(this%core) .or. .not. associated(this%root)) then
-         call WarnErrReport('smbjson: parser is not initialized for input file: '//this%filename, .true.)
-         error stop 'smbjson: parser is not initialized'
+         call log_msg(LOG_FATAL, 'SMBJSON', 'smbjson: parser is not initialized for input file: '//this%filename)
       end if
 
       this%mesh = this%readMesh()
       this%matTable = IdChildTable_t(this%core, this%root, J_MATERIALS)
       this%elementTable = IdChildTable_t(this%core, this%root, J_MESH//'.'//J_ELEMENTS)
-      
+
       call initializeProblemDescription(res)
-      
+
       res%switches = this%readAdditionalArguments()
-      
+
       ! Basics
       res%general = this%readGeneral()
       res%matriz = this%readMediaMatrix()
       res%despl = this%readGrid()
       res%front = this%readBoundary()
-      
+
       ! Materials
       call this%readBackgroundMaterial(res%mats)
       res%pecRegs = this%readPECRegions()
       res%pmcRegs = this%readPMCRegions()
       res%dielRegs = this%readDielectricRegions()
       res%lossyThinSurfs = this%readLossyThinSurfaces()
-      
+
       ! Sources
       res%plnSrc = this%readPlanewaves()
       res%nodSrc = this%readNodalSources()
-      
+
       ! Probes
       res%oldSonda = this%readProbes()
       res%sonda = this%readMoreProbes()
       res%BloquePrb = this%readBlockProbes()
       res%VolPrb = this%readVolumicProbes()
-      
+
       ! Conformal elements
       res%conformalRegs = this%readConformalRegions()
 
       ! Thin elements
-#ifdef CompileWithMTLN 
+#ifdef CompileWithMTLN
       res%mtln = this%readMTLN()
 #else
       call this%readThinWires(res%tWires, res%sonda)
 #endif
       res%tSlots = this%readThinSlots()
+
 
    end function
 
@@ -216,9 +218,9 @@ contains
           integer :: id, i
           real, dimension(:), allocatable :: pos
           type(coordinate_t) :: c
-          integer :: numberOfCoordinates 
+          integer :: numberOfCoordinates
           logical :: found
-          
+
           call this%core%get(this%root, J_MESH//'.'//J_COORDINATES, jcs, found=found)
           if (found) then
              numberOfCoordinates = this%core%count(jcs)
@@ -232,7 +234,7 @@ contains
              end do
           end if
       end subroutine
-   
+
       subroutine addElements(mesh)
          type(mesh_t), intent(inout) :: mesh
          character(len=:), allocatable :: elementType
@@ -243,11 +245,11 @@ contains
          integer, dimension(:), allocatable :: coordIds
          integer :: numberOfElements
          logical :: found
-         
+
          call this%core%get(this%root, J_MESH//'.'//J_ELEMENTS, jes, found=found)
          numberOfElements = this%core%count(jes)
          call res%allocateElements(100*numberOfElements)
-             
+
          if (found) then
             do i = 1, numberOfElements
                call this%core%get_child(jes, i, je)
@@ -264,44 +266,18 @@ contains
                   call mesh%addElement(id, polyline)
                case (J_ELEM_TYPE_CELL)
                   block
-                     logical :: isConformal
-                     type(json_value), pointer :: triangles
-                     call this%core%get(je, J_CONF_VOLUME_TRIANGLES, triangles, found=isConformal)
-                     if (.not. isConformal) then 
-                        block
-                           type(cell_region_t) :: cR
-                           type(cell_interval_t), dimension(:), allocatable :: intervals
-                           cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
-                           call mesh%addCellRegion(id, cR)
-                        end block
-                     else 
-                        block 
-                           type(conformal_region_t) :: cV
-                           type(coordinate_t) :: c
-                           integer :: j, k
-                           character(len=:), allocatable :: subtype
-                           cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
-                           do k = 1, size(cV%triangles)
-                              do j = 1, 3
-                                 c = mesh%getCoordinate(cV%triangles(k)%vertices(j)%id)
-                                 cV%triangles(k)%vertices(j)%position(1:3) = c%position(1:3)
-                              end do
-                           end do
-                           cV%intervals = readCellIntervals(je, J_CELL_INTERVALS)
-                           subtype = this%getStrAt(je, J_SUBTYPE)
-
-                           if (subtype == J_CONF_SUBTYPE_VOLUME) cV%typeName = REGION_TYPE_VOLUME
-                           if (subtype == J_CONF_SUBTYPE_SURFACE) cV%typeName = REGION_TYPE_SURFACE
-
-                           call mesh%addConformalRegion(id, cV)
-                        end block
-                     end if
+                     type(json_value), pointer :: conformalEntry
+                     type(cell_region_t) :: cR                   
+                     cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+                     call mesh%addCellRegion(id, cR)
                   end block
+               case (J_ELEM_TYPE_CONFORMAL)
+                  call mesh%addConformalRegion(id, readConformalRegion(je, id))
                case default
-                  call WarnErrReport('Invalid element type', .true.)
+                  call log_msg(LOG_ERROR, 'SMBJSON', 'Invalid element type')
                end select
             end do
-         end if
+          end if
       end subroutine
 
       function readCellIntervals(place, path) result(res)
@@ -330,15 +306,16 @@ contains
          end do
       end function
 
-      function readTriangles(place, path) result(res)
+      function readTriangles(place, path, elementId) result(res)
          type(json_value), pointer, intent(in) :: place
          character(len=*), intent(in) :: path
+         integer, intent(in) :: elementId
          type(triangle_t), dimension(:), allocatable :: res
 
          type(json_value), pointer :: triangles, triangle_ptr
-         real, dimension(:), allocatable :: triangle
+         integer, dimension(:), allocatable :: triangle
          integer :: i, j, nTriangles
-         real, dimension(:), allocatable :: cellStart, cellEnd
+         character(len=256) :: message
 
          logical :: containsTriangles
          call this%core%get(place, path, triangles, found=containsTriangles)
@@ -351,13 +328,275 @@ contains
          do i = 1, nTriangles
             call this%core%get_child(triangles, i, triangle_ptr)
             call this%core%get(triangle_ptr, triangle)
+            if (.not. allocated(triangle)) then
+               write(message, '(A,I0,A,I0,A)') 'Conformal element ', elementId, &
+                  ': triangle ', i, ' must contain exactly three coordinate ids.'
+               call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
+               return
+            end if
+            if (size(triangle) /= 3) then
+               write(message, '(A,I0,A,I0,A)') 'Conformal element ', elementId, &
+                  ': triangle ', i, ' must contain exactly three coordinate ids.'
+               call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
+               return
+            end if
             do j = 1, 3
                res(i)%vertices(j)%id = triangle(j)
             end do
          end do
-         
+
 
       end function
+
+      subroutine readConformalCoordinates(place, elementId, coordinates, found)
+         type(json_value), pointer, intent(in) :: place
+         integer, intent(in) :: elementId
+         type(coordinate_table_t), intent(out) :: coordinates
+         logical, intent(out) :: found
+
+         type(json_value), pointer :: jcs, jc
+         integer :: id, i, nCoordinates
+         real, dimension(:), allocatable :: pos
+         type(coordinate_t) :: c
+         character(len=256) :: message
+
+         found = .false.
+         call this%core%get(place, J_COORDINATES, jcs, found=found)
+         if (.not. found) return
+
+         nCoordinates = this%core%count(jcs)
+         if (nCoordinates == 0) then
+            found = .false.
+            return
+         end if
+
+         call coordinates%allocate(100*nCoordinates)
+         do i = 1, nCoordinates
+            call this%core%get_child(jcs, i, jc)
+            id = this%getIntAt(jc, J_ID)
+            if (coordinates%check(id) == 0) then
+               write(message, '(A,I0,A,I0,A)') 'Conformal element ', elementId, &
+                  ': duplicate local coordinate id ', id, '.'
+               call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
+               return
+            end if
+            pos = this%getRealsAt(jc, J_COORDINATE_POS)
+            if (.not. allocated(pos)) then
+               write(message, '(A,I0,A,I0,A)') 'Conformal element ', elementId, &
+                  ': local coordinate ', id, ' is missing relativePosition.'
+               call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
+               return
+            end if
+            if (size(pos) /= 3) then
+               write(message, '(A,I0,A,I0,A)') 'Conformal element ', elementId, &
+                  ': local coordinate ', id, ' must contain three relativePosition values.'
+               call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
+               return
+            end if
+            c%position = pos(1:3)
+            call coordinates%add(id, c)
+         end do
+      end subroutine
+
+      function readConformalRegion(place, elementId) result(res)
+         type(json_value), pointer, intent(in) :: place
+         integer, intent(in) :: elementId
+         type(conformal_region_t) :: res
+
+         type(coordinate_table_t) :: coordinates
+         type(coordinate_t) :: c
+         integer :: j, k
+         logical :: coordinatesFound, coordinateFound
+         character (len=:), allocatable :: subtype
+         character(len=256) :: message
+
+         res%triangles = readTriangles(place, J_CONF_VOLUME_TRIANGLES, elementId)
+         if (isFatalError()) return
+         if (size(res%triangles) > 0) then
+            call readConformalCoordinates(place, elementId, coordinates, coordinatesFound)
+            if (isFatalError()) return
+            if (.not. coordinatesFound) then
+               write(message, '(A,I0,A)') 'Conformal element ', elementId, &
+                  ": 'triangles' require an element-local 'coordinates' array; " // &
+                  'references to mesh.coordinates are no longer supported.'
+               call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
+               return
+            end if
+            do k = 1, size(res%triangles)
+               do j = 1, 3
+                  c = coordinates%get(res%triangles(k)%vertices(j)%id, coordinateFound)
+                  if (.not. coordinateFound) then
+                     write(message, '(A,I0,A,I0,A,I0,A,I0,A)') 'Conformal element ', elementId, &
+                        ', triangle ', k, ', vertex ', j, ': coordinate id ', &
+                        res%triangles(k)%vertices(j)%id, ' not found in element-local coordinates.'
+                     call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
+                     return
+                  end if
+                  res%triangles(k)%vertices(j)%position(1:3) = c%position(1:3)
+               end do
+            end do
+         end if
+         call readConformalIntervals(place, res%intervals, res%triangles)
+         subtype = this%getStrAt(place, J_SUBTYPE)
+
+         if (subtype == J_CONF_SUBTYPE_VOLUME) then
+            res%typename = REGION_TYPE_VOLUME
+         else if (subtype == J_CONF_SUBTYPE_SURFACE) then
+            res%typename = REGION_TYPE_SURFACE
+         else
+            call log_msg(LOG_ERROR, 'SMBJSON', 'Invalid conformal subtype label: ' // subtype // '. Expected "surface" or "volume".')
+            return
+         end if
+      end function
+
+      subroutine readConformalIntervals(place, structured, triangles)
+         type(json_value), pointer, intent(in) :: place
+         type(cell_interval_t), dimension(:), allocatable, intent(out) :: structured
+         type(triangle_t), dimension(:), allocatable, intent(inout) :: triangles
+
+         type(json_value), pointer :: intervalsPlace, interval
+         real, dimension(:), allocatable :: ini, fin
+         real, dimension(3) :: delta
+         integer :: i, j, k, nIntervals, nStructured, varying, normal, first, second
+         integer :: generatedId, minId
+         logical :: found, integral
+
+         call this%core%get(place, J_CELL_INTERVALS, intervalsPlace, found=found)
+         if (.not. found) then
+            allocate(structured(0))
+            return
+         end if
+
+         nIntervals = this%core%count(intervalsPlace)
+         allocate(structured(nIntervals))
+         nStructured = 0
+         minId = -1000000
+         do k = 1, size(triangles)
+            do j = 1, 3
+               minId = min(minId, triangles(k)%vertices(j)%id)
+            end do
+         end do
+         generatedId = minId - 1
+         do i = 1, nIntervals
+            call this%core%get_child(intervalsPlace, i, interval)
+            ini = this%getRealsAt(interval, '(1)')
+            fin = this%getRealsAt(interval, '(2)')
+            delta = fin(1:3) - ini(1:3)
+            varying = count(abs(delta) > 1.0e-5)
+            integral = all(abs(ini(1:3)-anint(ini(1:3))) < 1.0e-5) .and. &
+                       all(abs(fin(1:3)-anint(fin(1:3))) < 1.0e-5)
+
+            select case (varying)
+            case (1)
+               if (.not. integral) then
+                  call invalidConformalInterval(i, 'lines must be grid-aligned and use integer coordinates')
+                  return
+               end if
+               nStructured = nStructured + 1
+               structured(nStructured)%startNode%cell = nint(ini(1:3))
+               structured(nStructured)%endNode%cell = nint(fin(1:3))
+            case (2)
+               normal = minloc(abs(delta), 1)
+               first = mod(normal, 3) + 1
+               second = mod(normal + 1, 3) + 1
+               if (abs(ini(normal)-anint(ini(normal))) < 1.0e-5) then
+                  if (.not. integral) then
+                     call invalidConformalInterval(i, 'grid-face surfaces must use integer coordinates')
+                     return
+                  end if
+                  if ((delta(first) < 0.0) .neqv. (delta(second) < 0.0)) then
+                     call invalidConformalInterval(i, 'surface spans cannot have mixed-sign directions')
+                     return
+                  end if
+                  nStructured = nStructured + 1
+                  structured(nStructured)%startNode%cell = nint(ini(1:3))
+                  structured(nStructured)%endNode%cell = nint(fin(1:3))
+               else
+                  if (abs(fin(normal)-ini(normal)) > 1.0e-5 .or. &
+                      abs(ini(first)-anint(ini(first))) >= 1.0e-5 .or. &
+                      abs(ini(second)-anint(ini(second))) >= 1.0e-5 .or. &
+                      abs(fin(first)-anint(fin(first))) >= 1.0e-5 .or. &
+                      abs(fin(second)-anint(fin(second))) >= 1.0e-5) then
+                     call invalidConformalInterval(i, 'mid-cell surfaces require integer in-plane bounds')
+                     return
+                  end if
+                  if ((delta(first) < 0.0) .neqv. (delta(second) < 0.0)) then
+                     call invalidConformalInterval(i, 'surface spans cannot have mixed-sign directions')
+                     return
+                  end if
+                  call tessellateConformalPanel(ini(1:3), fin(1:3), normal, triangles, generatedId)
+               end if
+            case (0)
+               call invalidConformalInterval(i, 'points are not supported')
+               return
+            case default
+               call invalidConformalInterval(i, 'must define a line or rectangular surface')
+               return
+            end select
+         end do
+         structured = structured(:nStructured)
+
+      end subroutine
+
+      subroutine invalidConformalInterval(index, detail)
+         integer, intent(in) :: index
+         character(len=*), intent(in) :: detail
+         character(len=256) :: message
+         write(message, '(A,I0,A,A)') 'Invalid conformal interval ', index, ': ', trim(detail)
+         call log_msg(LOG_ERROR, 'SMBJSON', trim(message))
+      end subroutine
+
+      subroutine tessellateConformalPanel(firstPoint, secondPoint, normal, output, nextId)
+         real, dimension(3), intent(in) :: firstPoint, secondPoint
+         integer, intent(in) :: normal
+         type(triangle_t), dimension(:), allocatable, intent(inout) :: output
+         integer, intent(inout) :: nextId
+         integer :: a, b, ia, ib, a0, a1, b0, b1
+         real, dimension(3) :: p00, p10, p11, p01
+         type(triangle_t) :: firstTriangle, secondTriangle
+
+         a = mod(normal, 3) + 1
+         b = mod(normal + 1, 3) + 1
+         a0 = nint(min(firstPoint(a), secondPoint(a)))
+         a1 = nint(max(firstPoint(a), secondPoint(a)))
+         b0 = nint(min(firstPoint(b), secondPoint(b)))
+         b1 = nint(max(firstPoint(b), secondPoint(b)))
+         do ia = a0, a1 - 1
+            do ib = b0, b1 - 1
+               p00 = firstPoint; p00(a) = ia;   p00(b) = ib
+               p10 = firstPoint; p10(a) = ia+1; p10(b) = ib
+               p11 = firstPoint; p11(a) = ia+1; p11(b) = ib+1
+               p01 = firstPoint; p01(a) = ia;   p01(b) = ib+1
+               call setGeneratedTriangle(firstTriangle, p00, p10, p11, nextId)
+               call setGeneratedTriangle(secondTriangle, p00, p11, p01, nextId)
+               if (secondPoint(a) < firstPoint(a)) then
+                  firstTriangle%vertices = [firstTriangle%vertices(1), firstTriangle%vertices(3), firstTriangle%vertices(2)]
+                  secondTriangle%vertices = [secondTriangle%vertices(1), secondTriangle%vertices(3), secondTriangle%vertices(2)]
+               end if
+               call appendConformalTriangle(output, firstTriangle)
+               call appendConformalTriangle(output, secondTriangle)
+            end do
+         end do
+      end subroutine
+
+      subroutine setGeneratedTriangle(triangle, p1, p2, p3, nextId)
+         type(triangle_t), intent(out) :: triangle
+         real, dimension(3), intent(in) :: p1, p2, p3
+         integer, intent(inout) :: nextId
+         triangle%vertices(1)%position = p1; triangle%vertices(1)%id = nextId; nextId = nextId - 1
+         triangle%vertices(2)%position = p2; triangle%vertices(2)%id = nextId; nextId = nextId - 1
+         triangle%vertices(3)%position = p3; triangle%vertices(3)%id = nextId; nextId = nextId - 1
+      end subroutine
+
+      subroutine appendConformalTriangle(output, triangle)
+         type(triangle_t), dimension(:), allocatable, intent(inout) :: output
+         type(triangle_t), intent(in) :: triangle
+         type(triangle_t), dimension(:), allocatable :: expanded
+         allocate(expanded(size(output)+1))
+         expanded(:size(output)) = output
+         expanded(size(expanded)) = triangle
+         call move_alloc(expanded, output)
+      end subroutine
 
    end function
 
@@ -371,9 +610,9 @@ contains
       class(parser_t) :: this
       type(NFDEGeneral_t) :: res
       res%dt = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP, default = 0.0_RKIND)
-      if (res%dt < 0) call WarnErrReport('timStep cannot be negative', .true.)
+      if (res%dt < 0) call log_msg(LOG_ERROR, 'SMBJSON', 'timStep cannot be negative')
       res%nmax = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
-      if (res%nmax <=0) call WarnErrReport('numberOfSteps has to be positive', .true.)
+      if (res%nmax <=0) call log_msg(LOG_ERROR, 'SMBJSON', 'numberOfSteps has to be positive')
       res%mtlnProblem = this%getLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)
    end function
 
@@ -381,7 +620,7 @@ contains
       class(parser_t) :: this
       type(MatrizMedios_t) :: res
       character(len=*), parameter :: P = J_MESH//'.'//J_GRID//'.'//J_GRID_NUMBER_OF_CELLS
-      res%totalX = this%getIntAt(this%root, P//'(1)') + 1 
+      res%totalX = this%getIntAt(this%root, P//'(1)') + 1
       res%totalY = this%getIntAt(this%root, P//'(2)') + 1
       res%totalZ = this%getIntAt(this%root, P//'(3)') + 1
    end function
@@ -390,9 +629,8 @@ contains
       class(parser_t) :: this
       type(Desplazamiento_t) :: res
       real, dimension(:), allocatable :: vec
-
       integer :: nX, nY, nZ
-      
+
       character(len=*), parameter :: P = J_MESH//'.'//J_GRID
 
       nX = this%getIntAt(this%root, P//'.'//J_GRID_NUMBER_OF_CELLS//'(1)')
@@ -418,21 +656,22 @@ contains
       res%my2 = nY
       res%mz2 = nZ
 
+
    contains
       subroutine assignDes(path, dest, n)
          character(kind=CK, len=*) :: path
          real(kind=RKIND), dimension(:), pointer :: dest
-         integer(kind=4), intent(inout) :: n
          real(kind=RKIND), dimension(:), allocatable :: vec
+         integer(kind=4), intent(inout) :: n
          logical :: found = .false.
 
          vec = this%getRealsAt(this%root, path, found)
 
          if (.not. found) then
-            call WarnErrReport('Error reading grid: steps not found.', .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', 'Error reading grid: steps not found.')
          end if
          if (size(vec) /= 1 .and. size(vec) /= n) then
-            call WarnErrReport('Error reading grid: steps must be arrays of size 1 (for regular grids) or size equal to the number of cells.', .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', 'Error reading grid: steps must be arrays of size 1 (for regular grids) or size equal to the number of cells.')
          end if
 
          if (size(vec) == 1) then
@@ -446,6 +685,19 @@ contains
       end subroutine
    end function
 
+   subroutine readBackgroundMaterial(this, mats)
+      class(parser_t) :: this
+      type(Materials_t), intent(inout) :: mats
+      logical :: found
+      real(kind=RKIND) :: val
+
+      val = this%getRealAt(this%root, J_BACKGROUND//'.'//J_BKG_ABS_PERMITTIVITY, found=found)
+      if (found) mats%mats(1)%eps = val
+
+      val = this%getRealAt(this%root, J_BACKGROUND//'.'//J_BKG_ABS_PERMEABILITY, found=found)
+      if (found) mats%mats(1)%mu = val
+   end subroutine
+
    function readBoundary(this) result (res)
       class(parser_t) :: this
       type(Frontera_t) :: res
@@ -456,9 +708,9 @@ contains
       
       call this%core%get(this%root, J_BOUNDARY, bdrs, found)
       if (.not. found) then
-         call WarnErrReport("Error reading boundary: " // J_BOUNDARY // " not found.", .true.)
+         call log_msg(LOG_ERROR, 'SMBJSON', "Error reading boundary: " // J_BOUNDARY // " not found.")
       end if
-      
+
       block
          bdrType = this%getStrAt(bdrs, J_BND_ALL//'.'//J_TYPE, found)
          if (found) then
@@ -469,7 +721,7 @@ contains
             return
          end if
       end block
-         
+
       block
          character(len=*), dimension(6), parameter :: PLACELABELS = &
             [J_BND_XL, J_BND_XU, J_BND_YL, J_BND_YU, J_BND_ZL, J_BND_ZU]
@@ -477,7 +729,7 @@ contains
          do i = 1, 6
             bdrType = this%getStrAt(bdrs, PLACELABELS(i)//"."//J_TYPE, found)
             if (.not. found) then
-               call WarnErrReport(ERRORMSGINIT // PLACELABELS(i) // " or " // J_BND_ALL // " not found.", .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', ERRORMSGINIT // PLACELABELS(i) // " or " // J_BND_ALL // " not found.")
             end if
             j = labelToBoundaryPlace(PLACELABELS(i))
             res%boundaryType(j) = labelToBoundaryType(bdrType)
@@ -533,19 +785,6 @@ contains
       end function
    end function
 
-   subroutine readBackgroundMaterial(this, mats)
-      class(parser_t) :: this
-      type(Materials_t), intent(inout) :: mats
-      logical :: found
-      real(kind=RKIND) :: val
-
-      val = this%getRealAt(this%root, J_BACKGROUND//'.'//J_BKG_ABS_PERMITTIVITY, found=found)
-      if (found) mats%mats(1)%eps = val
-
-      val = this%getRealAt(this%root, J_BACKGROUND//'.'//J_BKG_ABS_PERMEABILITY, found=found)
-      if (found) mats%mats(1)%mu = val
-   end subroutine
-
    function readPECRegions(this) result (res)
       class(parser_t), intent(in) :: this
       type(PECRegions_t) :: res
@@ -560,17 +799,18 @@ contains
 
    function buildPECPMCRegions(this, matType) result(res)
       class(parser_t) :: this
-      character(len=*), intent(in) :: matType 
+      character(len=*), intent(in) :: matType
       type(PECRegions_t) :: res
       type(materialAssociation_t), dimension(:), allocatable :: mAs
       type(coords_t), dimension(:), pointer :: cs
       integer :: i
-      
-      ! mAs = this%getMaterialAssociations([matType],[J_ELEM_TYPE_CELL])
-      mAs = this%getMaterialAssociations([matType],['-'//J_CONF_SUBTYPE_SURFACE, J_ELEM_TYPE_CELL//'    ', '-'//J_CONF_SUBTYPE_VOLUME//' '])
+
+      ! Conformal elements may contribute grid-aligned intervals.  Those intervals
+      ! are handled by this standard structured-material path.
+      mAs = this%getMaterialAssociations([matType])
       block
          type(coords_t), dimension(:), pointer :: emptyCoords
-         if (size(mAs) == 0) then 
+         if (size(mAs) == 0) then
             allocate(emptyCoords(0))
             call appendRegion(res%lins,  res%nLins,  res%nLins_max,  emptyCoords)
             call appendRegion(res%surfs, res%nSurfs, res%nSurfs_max, emptyCoords)
@@ -578,7 +818,7 @@ contains
             return
          end if
       end block
-      
+
       do i = 1, size(mAs)
          call this%matAssToCoords(cs, mAs(i), CELL_TYPE_LINEL)
          call appendRegion(res%lins,  res%nLins,  res%nLins_max, cs)
@@ -604,13 +844,13 @@ contains
             end do
             resNCoords = size(cs)
             resNCoordsMax = size(cs)
-         else 
+         else
             allocate(auxCs(size(resCoords)))
             do i = 1, size(resCoords)
                 auxCs(i) = resCoords(i)
             end do
             deallocate(resCoords)
-            
+
             allocate(resCoords(size(auxCs) + size(cs)))
             resNCoords = size(resCoords)
             resNCoordsMax = size(resCoords)
@@ -621,7 +861,7 @@ contains
                 resCoords(i + size(auxCs)) = cs(i)
             end do
          end if
-      end subroutine         
+      end subroutine
    end function
 
    function readConformalRegions(this) result(res)
@@ -634,53 +874,130 @@ contains
       integer :: i, j
       logical :: found
 
-      mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC], [J_CONF_SUBTYPE_VOLUME, J_CONF_SUBTYPE_SURFACE])
+      call validateConformalMaterialAssociations()
+      if (isFatalError()) return
+
+      ! Put the longest label first so the Fortran character constructor does not
+      ! truncate "surface" to the length of "volume".
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC], [J_CONF_SUBTYPE_SURFACE, J_CONF_SUBTYPE_VOLUME])
 
       do i = 1, size(mAs)
          do j = 1, size(mAs(i)%elementIds)
             cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j), found)
-            if (found) then 
+            if (found) then
+               if (size(cR%triangles) == 0) cycle
                tagName = this%buildTagName(mAs(i)%materialId, mAs(i)%elementIds(j))
-               if (cR%typeName == REGION_TYPE_VOLUME) then 
+               if (cR%typeName == REGION_TYPE_VOLUME) then
                   call appendRegion(res%volumes, cR, tagName)
-               end if
-               if (cR%typeName == REGION_TYPE_SURFACE) then 
+               else if (cR%typeName == REGION_TYPE_SURFACE) then
                   call appendRegion(res%surfaces, cR, tagName)
                end if
             end if
          end do
       end do
 
-   contains 
+   contains
+      subroutine validateConformalMaterialAssociations()
+         type(json_value), pointer :: allAssociations, association
+         type(materialAssociation_t) :: materialAssociation
+         type(json_value_ptr_t) :: element, material
+         integer :: associationIndex, elementIndex
+         logical :: associationsFound
+
+         call this%core%get(this%root, J_MATERIAL_ASSOCIATIONS, allAssociations, found=associationsFound)
+         if (.not. associationsFound) return
+         do associationIndex = 1, this%core%count(allAssociations)
+            call this%core%get_child(allAssociations, associationIndex, association)
+            materialAssociation = this%parseMaterialAssociation(association)
+            material = this%matTable%getId(materialAssociation%materialId)
+            do elementIndex = 1, size(materialAssociation%elementIds)
+               element = this%elementTable%getId(materialAssociation%elementIds(elementIndex))
+               if (this%getStrAt(element%p, J_TYPE, default='') /= J_ELEM_TYPE_CONFORMAL) cycle
+               if (this%getStrAt(material%p, J_TYPE) == J_MAT_TYPE_MULTILAYERED_SURFACE) then
+                  if (this%getStrAt(element%p, J_SUBTYPE, default='') /= J_CONF_SUBTYPE_SURFACE) then
+                     call log_msg(LOG_ERROR, 'SMBJSON', 'Conformal multilayeredSurface materials require subtype surface.')
+                     return
+                  end if
+               else if (this%getStrAt(material%p, J_TYPE) /= J_MAT_TYPE_PEC) then
+                  call log_msg(LOG_ERROR, 'SMBJSON', 'Conformal elements only support PEC or multilayeredSurface materials.')
+                  return
+               end if
+            end do
+         end do
+      end subroutine
+
       subroutine appendRegion(regions, region, tagName)
          type(ConformalPECElements_t), dimension(:), pointer :: regions
+         type(ConformalPECElements_t) :: validation_region
          type(conformal_region_t), intent(in) :: region
          character(len=:), allocatable, intent(in) :: tagName
 
          type(ConformalPECElements_t), dimension(:), allocatable :: aux
          integer :: i
-         if (.not. associated(regions)) then 
-            allocate(regions(1))
-            regions(1)%triangles = region%triangles
-            regions(1)%intervals = copyIntervals(region%intervals)
-            regions(1)%tag = tagName
-         else 
-            allocate(aux(size(regions) + 1))
-            do i = 1, size(regions)
-               aux(i) = regions(i)
-            end do
-            aux(size(regions) + 1)%triangles = region%triangles
-            aux(size(regions) + 1)%intervals = copyIntervals(region%intervals)
-            aux(size(regions) + 1)%tag  = tagName
-            deallocate(regions)
-            
-            allocate(regions(size(aux)))
-            do i = 1, size(aux)
-               regions(i) = aux(i)
-            end do
+         logical :: is_valid
+         character(len=256) :: validation_message
+         if (.not. associated(regions)) then
+            validation_region%triangles = region%triangles
+            validation_region%intervals = cell_intervals_to_intervals(region%intervals)
+            call validateRegion(validation_region, region%typename, tagName, is_valid, validation_message)
+            if (is_valid) then 
+               allocate(regions(1))
+               regions(1)%triangles = region%triangles
+               regions(1)%intervals = cell_intervals_to_intervals(region%intervals)
+               ! allocate(regions(1)%intervals(0))
+               regions(1)%tag = tagName
+            end if
+         else
+            validation_region%triangles = region%triangles
+            validation_region%intervals = cell_intervals_to_intervals(region%intervals)
+            if (is_valid) then 
+               allocate(aux(size(regions) + 1))
+               do i = 1, size(regions)
+                  aux(i) = regions(i)
+               end do
+               aux(size(regions) + 1)%triangles = region%triangles
+               aux(size(regions) + 1)%intervals = cell_intervals_to_intervals(region%intervals)
+               ! allocate(aux(size(regions) + 1)%intervals(0))
+               aux(size(regions) + 1)%tag  = tagName
+               deallocate(regions)
 
+               allocate(regions(size(aux)))
+               do i = 1, size(aux)
+                  regions(i) = aux(i)
+               end do
+            end if
          end if
       end subroutine
+
+      function cell_intervals_to_intervals(cell_intervals) result(res)
+         type(cell_interval_t), intent(in), dimension(:), allocatable :: cell_intervals
+         type(interval_t), dimension(:), allocatable :: res
+         integer :: i
+         allocate(res(size(cell_intervals)))
+         do i = 1, size(cell_intervals)
+            res(i)%startNode%cell(:) = cell_intervals(i)%startNode%cell(:)
+            res(i)%endNode%cell(:) = cell_intervals(i)%endNode%cell(:)
+         end do
+      end function
+
+      subroutine validateRegion(element, region_type, tag_name, is_valid, validation_message)
+         type(ConformalPECElements_t), intent(in) :: element
+         integer, intent(in) :: region_type
+         character(len=*), intent(in) :: tag_name
+         logical, intent(out) :: is_valid
+         character(len=*), intent(out) :: validation_message
+
+         select case (region_type)
+         case (REGION_TYPE_SURFACE)
+            call validateConformalSurface(element, is_valid, validation_message)
+            if (.not. is_valid .and. .not. isFatalError()) &
+               call log_msg(LOG_ERROR, 'SMBJSON', 'Invalid conformal surface ' // trim(tag_name) // ': ' // trim(validation_message))
+         case (REGION_TYPE_VOLUME)
+            call validateConformalVolume(element, is_valid, validation_message)
+            if (.not. is_valid .and. .not. isFatalError()) &
+               call log_msg(LOG_ERROR, 'SMBJSON', 'Invalid conformal volume ' // trim(tag_name) // ': ' // trim(validation_message))
+         end select
+      end subroutine validateRegion
 
       function copyIntervals(intervals) result(res)
          type(cell_interval_t), dimension(:), allocatable, intent(in) :: intervals
@@ -699,11 +1016,11 @@ contains
    function readDielectricRegions(this) result (res)
       class(parser_t), intent(in) :: this
       type(DielectricRegions_t) :: res
-      
+
       call fillDielectricsOfCellType(res%vols, CELL_TYPE_VOXEL)
       call fillDielectricsOfCellType(res%surfs, CELL_TYPE_SURFEL)
       call fillDielectricsOfCellType(res%lins, CELL_TYPE_LINEL)
-      
+
       res%nVols = size(res%vols)
       res%nSurfs = size(res%Surfs)
       res%nLins = size(res%Lins)
@@ -715,14 +1032,14 @@ contains
       subroutine fillDielectricsOfCellType(res, cellType)
          integer, intent(in) :: cellType
          type(dielectric_t), dimension(:), pointer :: res
-         
+
          type(materialAssociation_t), dimension(:), allocatable :: mAs
          type(materialAssociation_t) :: mA
          type(cell_region_t) :: cR
 
          integer :: i, j, e
          integer :: nCs, nDielectrics
-         
+
          mAs = this%getMaterialAssociations( &
             [J_MAT_TYPE_ISOTROPIC, J_MAT_TYPE_LUMPED])
          if (size(mAs) == 0) then
@@ -749,7 +1066,7 @@ contains
 
          ! Fills
          allocate(res(nDielectrics))
-         
+
          if (nDielectrics == 0) return
 
          j = 0
@@ -787,7 +1104,7 @@ contains
          res%n_c1p = 0
          call this%matAssToCoords(res%c2p, mA, cellType)
          res%n_c2p = size(res%c2p)
-         
+
          matPtr = this%matTable%getId(mA%materialId)
          ! Fills rest of dielectric data.
          res%sigma  = this%getRealAt(matPtr%p, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0_RKIND)
@@ -815,17 +1132,17 @@ contains
          res%n_c1p = 0
          call this%matAssToCoords(res%c2p, mA, cellType)
          res%n_c2p = size(res%c2p)
-         
+
          matPtr = this%matTable%getId(mA%materialId)
-         
+
          ! Get the model type
          model = this%getStrAt(matPtr%p, J_MAT_LUMPED_MODEL, found)
          if (.not. found) then
             write(errorMsg, '(A)') ERRORMSGINIT, mA%materialId, " model not found."
-            call WarnErrReport(errorMsg, .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
          end if
-         
-         ! Not really needed for resistor, inductor, or capacitor. 
+
+         ! Not really needed for resistor, inductor, or capacitor.
          ! But avoids error in lumped initialization.
          res%orient = 1
          res%diodeOrientation = 1
@@ -840,20 +1157,20 @@ contains
             res%R = this%getRealAt(matPtr%p, J_MAT_LUMPED_RESISTANCE, found)
             if (.not. found) then
                write(errorMsg, '(A)') ERRORMSGINIT, mA%materialId, " resistance not found."
-               call WarnErrReport(errorMsg, .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
             end if
             res%Rtime_on = this%getRealAt(matPtr%p, J_MAT_LUMPED_STARTING_TIME, default=0.0_RKIND)
             res%Rtime_off = this%getRealAt(matPtr%p, J_MAT_LUMPED_END_TIME, default=1.0_RKIND)
             if (res%Rtime_on < 0 .or. res%Rtime_off <0) then 
                write(errorMsg,'(A)') ERRORMSGINIT, mA%materialId, " starting or end time is negative"
-               call WarnErrReport('', .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', '')
             end if
           case (J_MAT_LUMPED_MODEL_INDUCTOR)
             res%inductor = .true.
             res%L = this%getRealAt(matPtr%p, J_MAT_LUMPED_INDUCTANCE, found)
             if (.not. found) then
                write(errorMsg, '(A)') ERRORMSGINIT, mA%materialId, " inductance not found."
-               call WarnErrReport(errorMsg, .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
             end if
             res%R = this%getRealAt(matPtr%p, J_MAT_LUMPED_RESISTANCE, default=0.0_RKIND)
           case (J_MAT_LUMPED_MODEL_CAPACITOR)
@@ -861,16 +1178,16 @@ contains
             res%C = this%getRealAt(matPtr%p, J_MAT_LUMPED_CAPACITANCE, found)
             if (.not. found) then
                write(errorMsg, '(A)') ERRORMSGINIT, mA%materialId, " capacitance not found."
-               call WarnErrReport(errorMsg, .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
             end if
             res%R = this%getRealAt(matPtr%p, J_MAT_LUMPED_RESISTANCE, found)
             if (.not. found) then
                write(errorMsg, '(A)') ERRORMSGINIT, mA%materialId, " resistance not found."
-               call WarnErrReport(errorMsg, .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
             end if
           case default
             write(errorMsg, '(A)') ERRORMSGINIT, mA%materialId, " invalid model."
-            call WarnErrReport(errorMsg, .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
           end select
 
       end function
@@ -880,7 +1197,7 @@ contains
          type(materialAssociation_t), intent(in) :: mA
          integer :: e
          type(cell_region_t) :: cR
-         
+
          do e = 1, size(mA%elementIds)
             cR = this%mesh%getCellRegion(mA%elementIds(e))
             if (size(cellRegionToCoords(cR, cellType)) /= 0) then
@@ -901,13 +1218,20 @@ contains
       character(len=:), allocatable :: tagName
       type(coords_t), dimension(:), allocatable :: newCoords
       type(cell_region_t) :: cR
+      type(conformal_region_t) :: conformalRegion
       integer :: nCs
       integer :: e, jIni, jEnd
-      
+      logical :: found
+
       ! Precount
       nCs = 0
       do e = 1, size(mA%elementIds)
-         cR = this%mesh%getCellRegion(mA%elementIds(e))
+         cR = this%mesh%getCellRegion(mA%elementIds(e), found)
+         if (.not. found) then
+            conformalRegion = this%mesh%getConformalRegion(mA%elementIds(e), found)
+            if (found) cR%intervals = conformalRegion%intervals
+         end if
+         if (.not. found) cycle
          newCoords = cellRegionToCoords(cR, cellType)
          nCs = nCs + size(newCoords)
       end do
@@ -916,13 +1240,18 @@ contains
       jIni = 1
       allocate(res(nCs))
       do e = 1, size(mA%elementIds)
-         cR = this%mesh%getCellRegion(mA%elementIds(e))
+         cR = this%mesh%getCellRegion(mA%elementIds(e), found)
+         if (.not. found) then
+            conformalRegion = this%mesh%getConformalRegion(mA%elementIds(e), found)
+            if (found) cR%intervals = conformalRegion%intervals
+         end if
+         if (.not. found) cycle
          tagName = this%buildTagName(mA%materialId, mA%elementIds(e))
          newCoords = cellRegionToCoords(cR, cellType, tag=tagName)
          if (size(newCoords) == 0) cycle
          jEnd = jIni + size(newCoords) - 1
          res(jIni:jEnd) = newCoords(:)
-         jIni = jEnd + 1 
+         jIni = jEnd + 1
       end do
    end subroutine
 
@@ -937,7 +1266,7 @@ contains
       type(coords_t), dimension(:), pointer :: cs
 
       mAs = this%getMaterialAssociations([J_MAT_TYPE_MULTILAYERED_SURFACE])
-      
+
       ! Precounts
       nLossySurfaces = 0
       do i = 1, size(mAs)
@@ -954,7 +1283,6 @@ contains
       allocate(res%cs(nLossySurfaces))
       res%length = nLossySurfaces
       res%length_max = nLossySurfaces
-
       k = 1
       do i = 1, size(mAs)
          call this%matAssToCoords(cs, mAs(i), CELL_TYPE_SURFEL)
@@ -968,7 +1296,7 @@ contains
             res%nC_max = size(res%cs(i)%c)
          end if
       end do
-      
+
    contains
       function readLossyThinSurface(mA) result(res)
          type(materialAssociation_t), intent(in) :: mA
@@ -979,7 +1307,7 @@ contains
          type(json_value_ptr_t) :: mat
          type(json_value), pointer :: layer
          type(json_value), pointer :: layers
-         
+
          call this%matAssToCoords(res%c, mA, CELL_TYPE_SURFEL)
          res%nc = size(res%c)
 
@@ -1012,7 +1340,7 @@ contains
             end if
             res%thk(i)    = this%getRealAt(layer, J_MAT_MULTILAYERED_SURF_THICKNESS, found)
             if (.not. found) then
-               call WarnErrReport(ERRORMSGINIT // J_MAT_MULTILAYERED_SURF_THICKNESS // " in layer not found.", .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', ERRORMSGINIT // J_MAT_MULTILAYERED_SURF_THICKNESS // " in layer not found.")
             end if
             res%sigma_devia(i) = 0.0_RKIND
             res%eps_devia(i) = 0.0_RKIND
@@ -1040,7 +1368,7 @@ contains
       logical :: found
 
       call this%core%get(this%root, J_SOURCES, sources, found)
-      
+
       if (.not. found) then
          allocate(res%collection(0))
          res%nc = size(res%collection)
@@ -1073,7 +1401,6 @@ contains
          res%phi = this%getRealAt(pw, J_SRC_PW_DIRECTION//'.'//J_SRC_PW_PHI)
          res%alpha = this%getRealAt(pw, J_SRC_PW_POLARIZATION//'.'//J_SRC_PW_THETA)
          res%beta = this%getRealAt(pw, J_SRC_PW_POLARIZATION//'.'//J_SRC_PW_PHI)
-
          block
             type(cell_interval_t), dimension(:), allocatable :: cellIntervals
             type(coords_t), dimension(:), allocatable :: nfdeCoords
@@ -1138,18 +1465,18 @@ contains
           case (J_FIELD_CURRENT)
             res%isElec = .true.
           case default
-            call WarnErrReport('Error reading current field source. Field label not recognized.', .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', 'Error reading current field source. Field label not recognized.')
          end select
-         
+
          select case (this%getStrAt(jns, J_SRC_NS_HARDNESS, default=J_SRC_NS_HARDNESS_SOFT))
           case (J_SRC_NS_HARDNESS_SOFT)
             res%isHard = .false.
           case (J_SRC_NS_HARDNESS_HARD)
             res%isHard = .true.
           case default
-            call WarnErrReport('Error reading current field source. Hardness label not recognized.', .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', 'Error reading current field source. Hardness label not recognized.')
           end select
-         
+
          res%isInitialValue = .false.
 
          res%nombre = trim(adjustl(this%getStrAt(jns, J_SRC_MAGNITUDE_FILE)))
@@ -1164,12 +1491,12 @@ contains
             do j = 1, size(cRs)
                do k = 1, size(cRs(j)%intervals)
                   if (cRs(j)%intervals(k)%getSize() == 0) then
-                     call WarnErrReport('Nodal source "'//trim(adjustl(nodalSourceName))// &
+                     call log_msg(LOG_ERROR, 'SMBJSON', 'Nodal source "'//trim(adjustl(nodalSourceName))// &
                         '" is defined over an interval with zero length. Nodal sources must be '// &
-                        'defined over oriented lines.', .true.)
+                        'defined over oriented lines.')
                   else if (cRs(j)%intervals(k)%getType() /= CELL_TYPE_LINEL) then
-                     call WarnErrReport('Nodal source "'//trim(adjustl(nodalSourceName))// &
-                        '" must be defined over intervals describing oriented lines only.', .true.)
+                     call log_msg(LOG_ERROR, 'SMBJSON', 'Nodal source "'//trim(adjustl(nodalSourceName))// &
+                        '" must be defined over intervals describing oriented lines only.')
                   end if
                end do
             end do
@@ -1259,7 +1586,7 @@ contains
          ! Far fields only accept frequency domains.
          domain = this%getDomain(p, J_PR_DOMAIN)
          if (domain%type2 /= NP_T2_FREQ) then
-            call WarnErrReport("Only frequency domain is accepted for far field probes.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Only frequency domain is accepted for far field probes.")
          end if
          ff%tstart = 0.0_RKIND
          ff%tstop = 0.0_RKIND
@@ -1331,7 +1658,7 @@ contains
 
          call this%core%get(p, label, dir, found=found)
          if (.not. found) then
-            call WarnErrReport("Error reading far field probe. Direction label not found.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Error reading far field probe. Direction label not found.")
          end if
          initialValue = this%getRealAt(dir, J_PR_FAR_FIELD_DIR_INITIAL)
          finalValue   = this%getRealAt(dir, J_PR_FAR_FIELD_DIR_FINAL)
@@ -1365,7 +1692,7 @@ contains
       
       filtered_size = 0
       do i=1, size(ps)
-         if (isMoreProbe(ps(i)%p)) then 
+         if (isMoreProbe(ps(i)%p)) then
             filtered_size = filtered_size + 1
          end if
       end do
@@ -1373,9 +1700,9 @@ contains
       n = 1
       allocate(res%collection(filtered_size))
       do i=1, size(ps)
-         if (isMoreProbe(ps(i)%p)) then 
+         if (isMoreProbe(ps(i)%p)) then
             probeLbl = this%getStrAt(ps(i)%p, J_TYPE, default=J_FIELD_ELECTRIC)
-            if (probeLbl == J_PR_TYPE_POINT) then 
+            if (probeLbl == J_PR_TYPE_POINT) then
                res%collection(n) = readPointProbe(ps(i)%p)
                n = n + 1
             else if (probeLbl == J_PR_TYPE_LINE) then
@@ -1390,7 +1717,7 @@ contains
       do i=1, size(res%collection)
           if (size(res%collection(i)%cordinates) > res%len_cor_max) then
               res%len_cor_max = size(res%collection(i)%cordinates)
-          end if
+         end if
       end do
    contains
       logical function isMoreProbe(p)
@@ -1411,7 +1738,7 @@ contains
 
          typeLabel = this%getStrAt(p, J_TYPE, found=found)
          if (.not. found) then
-            call WarnErrReport("Point probe type label not found.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Point probe type label not found.")
          end if
          if (typeLabel /= J_PR_TYPE_POINT) then
             isPointProbe = .false.
@@ -1440,7 +1767,7 @@ contains
 
          outputName = this%getStrAt(p, J_NAME, found=nameFound)
          if (.not. nameFound) then 
-            call WarnErrReport("ERROR: name entry not found for probe.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "name entry not found for probe.")
          end if
          res%outputrequest = trim(adjustl(outputName))
 
@@ -1448,10 +1775,10 @@ contains
 
          elemIds = this%getIntsAt(p, J_ELEMENTIDS, found=elementIdsFound)
          if (.not. elementIdsFound) then
-            call WarnErrReport("ERROR: element ids entry not found for probe.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "element ids entry not found for probe.")
          end if
          if (size(elemIds) /= 1) then
-            call WarnErrReport("ERROR: point probe must contain a single element id.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "point probe must contain a single element id.")
          end if
 
          polyline = this%mesh%getPolyline(elemIds(1))
@@ -1490,7 +1817,7 @@ contains
 
          outputName = this%getStrAt(p, J_NAME, found=nameFound)
          if (.not. nameFound) then 
-            call WarnErrReport("Point probes must define a name.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Point probes must define a name.")
          end if
          res%outputrequest = trim(adjustl(outputName))
 
@@ -1498,27 +1825,27 @@ contains
 
          elemIds = this%getIntsAt(p, J_ELEMENTIDS, found=elementIdsFound)
          if (.not. elementIdsFound) then
-            call WarnErrReport("Element ids entry not found for probe.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Element ids entry not found for probe.")
          end if
          if (size(elemIds) /= 1) then
-            call WarnErrReport("Point probe must contain a single element id.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Point probe must contain a single element id.")
          end if
 
          pixel = getPixelFromElementId(this%mesh, elemIds(1))
-         
+
          typeLabel = this%getStrAt(p, J_TYPE, found=typeLabelFound)
          if (.not. typeLabelFound) then
-            call WarnErrReport("Point probe type label not found.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Point probe type label not found.")
          end if
          select case (typeLabel)
           case (J_PR_TYPE_POINT)
             call this%core%get(p, J_PR_POINT_DIRECTIONS, dirLabelPtr, found=dirLabelsFound)
             if(dirLabelsFound) then
                dirLabels = buildDirLabels(dirLabelPtr)
-            else 
+            else
                dirLabels = [J_DIR_X, J_DIR_Y, J_DIR_Z]
             end if
-            fieldLabel = this%getStrAt(p, J_FIELD, default=J_FIELD_ELECTRIC, found=fieldLabelFound)          
+            fieldLabel = this%getStrAt(p, J_FIELD, default=J_FIELD_ELECTRIC, found=fieldLabelFound)
             allocate(res%cordinates(size(dirLabels)))
             do j = 1, size(dirLabels)
                res%cordinates(j)%tag = outputName
@@ -1576,7 +1903,7 @@ contains
          select case (fieldLabel)
           case (J_FIELD_ELECTRIC)
             if (.not. present(dirLabel)) then
-               call WarnErrReport("Dir label must be present for electric field probes.", .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', "Dir label must be present for electric field probes.")
             end if
             select case (dirLabel)
              case (J_DIR_X)
@@ -1586,11 +1913,11 @@ contains
              case (J_DIR_Z)
                res = NP_COR_EZ
              case default
-               call WarnErrReport("Invalid dir label for electric field probe.", .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', "Invalid dir label for electric field probe.")
             end select
           case (J_FIELD_MAGNETIC)
             if (.not. present(dirLabel)) then
-               call WarnErrReport("Dir label must be present for magnetic field probes.", .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', "Dir label must be present for magnetic field probes.")
             end if
             select case (dirLabel)
              case (J_DIR_X)
@@ -1600,7 +1927,7 @@ contains
              case (J_DIR_Z)
                res = NP_COR_HZ
              case default
-               call WarnErrReport("Invalid dir label for magnetic field probe.", .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', "Invalid dir label for magnetic field probe.")
             end select
           case (J_FIELD_CURRENT)
             res = NP_COR_WIRECURRENT
@@ -1609,7 +1936,7 @@ contains
           case (J_FIELD_CHARGE)
             res = NP_COR_CHARGE
           case default
-            call WarnErrReport("Invalid field label for point/wire probe.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Invalid field label for point/wire probe.")
          end select
       end function
    end function
@@ -1651,11 +1978,11 @@ contains
 
          cRs = this%mesh%getCellRegions(this%getIntsAt(bp, J_ELEMENTIDS))
          if (size(cRs) /= 1) then
-            call WarnErrReport("Bulk current probe must be defined by a single cell region.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Bulk current probe must be defined by a single cell region.")
          end if
 
          if (size(cRs(1)%intervals) /= 1) then
-            call WarnErrReport("Bulk current probe must be defined by a single cell interval.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Bulk current probe must be defined by a single cell interval.")
          end if 
          cs = cellIntervalsToCoords(cRs(1)%intervals)
 
@@ -1666,13 +1993,13 @@ contains
          res%k1  = cs(1)%zi
          res%k2  = cs(1)%ze
          res%nml = abs(cs(1)%Or)
-         if (res%nml == 0) then !DIR_NULL 
+         if (res%nml == 0) then !DIR_NULL
             direction = this%getStrAt(bp, J_DIR)
             select case(trim(adjustl(direction)))
             case(J_DIR_X); res%nml = 1 !DIR_X
             case(J_DIR_Y); res%nml = 2 !DIR_Y
             case(J_DIR_Z); res%nml = 3 !DIR_Z
-            case default; call WarnErrReport('Null direction detected for bulk probe. Check definition')
+            case default; call log_msg(LOG_WARN, 'SMBJSON', 'Null direction detected for bulk probe. Check definition')
             end select
          end if
 
@@ -1700,7 +2027,7 @@ contains
          else
             res%fileNormalize = " "
          end if
-         res%type2 = domain%type2
+         res%type2  = domain%type2
 
          if (domain%isLogarithmicFrequencySpacing) then
             call appendLogSufix(res%outputrequest)
@@ -1724,7 +2051,7 @@ contains
 
       ps = this%jsonValueFilterByKeyValues(probes, J_TYPE, [J_PR_TYPE_MOVIE])
       if (size(ps) == 0) then
-         res = buildNoVolProbes()      
+         res = buildNoVolProbes()
          return
       end if
 
@@ -1757,27 +2084,26 @@ contains
 
          cRs = this%mesh%getCellRegions(this%getIntsAt(p, J_ELEMENTIDS))
          if (size(cRs) /= 1) then
-            call WarnErrReport("Movie probe must be defined over a single cell region.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Movie probe must be defined over a single cell region.")
          end if
 
          if (size(cRs(1)%intervals) /= 1) then
-            call WarnErrReport("Movie probe must be defined by a single cell interval.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Movie probe must be defined by a single cell interval.")
          end if
          cs = cellIntervalsToCoords(cRs(1)%intervals)
 
          fieldType = this%getStrAt(p, J_FIELD, default=J_FIELD_ELECTRIC)
          call this%core%get(p, J_PR_MOVIE_COMPONENT, compsPtr, found=componentsFound)
          allocate(res%cordinates(1))
+         res%cordinates(1) = cs(1)
          if (componentsFound) then
             call this%core%get(compsPtr, component)
-            res%cordinates(1) = cs(1)
-            res%cordinates(1)%Or  = buildVolProbeType(fieldType, component)
-         else 
+         else
             component = J_DIR_M
-            res%cordinates(1)%Or  = buildVolProbeType(fieldType, component)
          end if
+         res%cordinates(1)%Or  = buildVolProbeType(fieldType, component)
          res%len_cor = size(res%cordinates)
-         
+
          res%outputrequest = trim(adjustl(this%getStrAt(p, J_NAME, default=" ")))
          call setDomain(res, this%getDomain(p, J_PR_DOMAIN))
       end function
@@ -1819,7 +2145,7 @@ contains
                res = ICUR
             end select
          case default
-            call WarnErrReport("Invalid field type for movie probe.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Invalid field type for movie probe.")
          end select
       end function
 
@@ -1846,7 +2172,7 @@ contains
       end subroutine
    end function
 
-   subroutine appendLogSufix(fn) 
+   subroutine appendLogSufix(fn)
       character(len=BUFSIZE), intent(inout) :: fn
       character(len=*), parameter :: SMBJSON_LOG_SUFFIX = "_log_"
       fn = trim(fn) // SMBJSON_LOG_SUFFIX
@@ -1855,7 +2181,7 @@ contains
    function readThinSlots(this) result (res)
       class(parser_t) :: this
       type(ThinSlots_t) :: res
-      
+
       type(materialAssociation_t), dimension(:), allocatable :: mAs
       integer :: i
 
@@ -1877,11 +2203,11 @@ contains
          type(coords_t), dimension(:), pointer :: cs
          type(json_value_ptr_t) :: mat
          logical :: found
-         
+
          mat = this%matTable%getId(mA%materialId)
          res%width = this%getRealAt(mat%p, J_MAT_THINSLOT_WIDTH, found)
          if (.not. found) then
-            call WarnErrReport("Unable to read thin slot: " // J_MAT_THINSLOT_WIDTH // " not found.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Unable to read thin slot: " // J_MAT_THINSLOT_WIDTH // " not found.")
          end if
 
          call this%matAssToCoords(cs, mA, CELL_TYPE_LINEL)
@@ -1900,7 +2226,7 @@ contains
          do i = 1, size(cs)
             nXYZ =  (cs(i)%xe - cs(i)%xi + 1) * &
                     (cs(i)%ye - cs(i)%yi + 1) * &
-                    (cs(i)%ze - cs(i)%zi + 1) 
+                    (cs(i)%ze - cs(i)%zi + 1)
             nTgc = nTgc + nXYZ
          end do
 
@@ -1947,17 +2273,10 @@ contains
       class(parser_t) :: this
       type(ThinWires_t), intent(out) :: res
       type(MasSondas_t), intent(inout) :: sonda
-      type(materialAssociation_t), dimension(:), allocatable :: mAs, mwires
+      type(materialAssociation_t), dimension(:), allocatable :: mAs
       integer :: i, j, nGlobal, nNodes
       integer, dimension(:), allocatable :: nodeCoordIds, nodeNodeIdx
       logical :: found
-
-      mwires = this%getMaterialAssociations([ &
-                  J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
-                  J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
-      if (size(mwires) /= 0) then 
-         call WarnErrReport('ERROR: shieldedMultiwires and unshieldedMultiwires can only be defined if compiled with MTLN', .true.)
-      end if
 
       mAs = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
 
@@ -1990,12 +2309,14 @@ contains
          end do
       end if
 
-      ! Read wire probes and append to sonda.
+#ifndef CompileWithMTLN
+      ! Classic wire probes refer to the solver node numbering generated above.
       block
          type(json_value), pointer :: allProbes
          type(json_value_ptr_t), dimension(:), allocatable :: wireProbePs
          type(MasSonda_t), dimension(:), pointer :: newCollection
          integer :: nWireProbes, nExisting, k
+
          call this%core%get(this%root, J_PROBES, allProbes, found)
          if (found) then
             wireProbePs = [this%jsonValueFilterByKeyValue(allProbes, J_TYPE, J_PR_TYPE_WIRE)]
@@ -2003,23 +2324,22 @@ contains
             if (nWireProbes > 0) then
                nExisting = sonda%length
                allocate(newCollection(nExisting + nWireProbes))
-               newCollection(1:nExisting) = sonda%collection(1:nExisting)
+               if (nExisting > 0) newCollection(1:nExisting) = sonda%collection(1:nExisting)
                do k = 1, nWireProbes
                   newCollection(nExisting + k) = readWireProbe(wireProbePs(k)%p)
                end do
                deallocate(sonda%collection)
                sonda%collection => newCollection
                sonda%length = nExisting + nWireProbes
-               sonda%length_max = nExisting + nWireProbes
+               sonda%length_max = sonda%length
             end if
          end if
       end block
-      
-      do i=1, size(sonda%collection)
-         if (size(sonda%collection(i)%cordinates) > sonda%len_cor_max) then
-            sonda%len_cor_max = size(sonda%collection(i)%cordinates)
-         end if
+
+      do i = 1, size(sonda%collection)
+         sonda%len_cor_max = max(sonda%len_cor_max, size(sonda%collection(i)%cordinates))
       end do
+#endif
 
    contains
       function readThinWire(cable) result(res)
@@ -2034,11 +2354,10 @@ contains
          block
             type(json_value_ptr_t) :: m
             m = this%matTable%getId(cable%materialId)
-
             radius = this%getRealAt(m%p, J_MAT_WIRE_RADIUS)
             resistance = this%getRealAt(m%p, J_MAT_WIRE_RESISTANCE, default=0.0_RKIND)
             inductance = this%getRealAt(m%p, J_MAT_WIRE_INDUCTANCE, default=0.0_RKIND)
-            res%rad = radius 
+            res%rad = radius
             res%res = resistance
             res%ind = inductance
             res%dispfile = trim(adjustl(" "))
@@ -2074,9 +2393,9 @@ contains
          block
             type(linel_t), dimension(:), allocatable :: linels
             type(polyline_t) :: polyline
-            character(len=BUFSIZE) :: tagLabel
+            character (len=MAX_LINE) :: tagLabel
             type(generator_description_t), dimension(:), allocatable :: genDesc
-            
+
             polyline = this%mesh%getPolyline(cable%elementIds(1))
             linels = this%mesh%polylineToLinels(polyline)
 
@@ -2197,7 +2516,7 @@ contains
                position = findSourcePositionInLinels(sourceElemIds, linels)
 
                if (.not. this%existsAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE)) then
-                  call WarnErrReport('magnitudeFile of source missing', .true.)
+                  call log_msg(LOG_ERROR, 'SMBJSON', 'magnitudeFile of source missing')
                end if
 
                select case(this%getStrAt(genSrcs(i)%p, J_FIELD))
@@ -2206,27 +2525,27 @@ contains
                 case (J_FIELD_CURRENT)
                   res(position)%srctype = F_SOURCE_CURRENT
                case default
-                  call WarnErrReport('Field block of source of type generator must be current or voltage', .true.)
+                  call log_msg(LOG_ERROR, 'SMBJSON', 'Field block of source of type generator must be current or voltage')
                end select
                res(position)%srcfile = this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE)
                res(position)%multiplier = 1.0_RKIND*orientFieldFromGenerator(linels, position)
 
             end do
          end block
+
       end function
 
       function orientFieldFromGenerator(linels, position) result(res)
          type(linel_t), dimension(:), intent(in) :: linels
-         integer :: position
+         integer, intent(in) :: position
          integer :: res
-         if (position == 1) then 
+         if (position == 1) then
             res = sign(1,linels(position)%orientation)
-         else if  (position == size(linels)) then 
+         else if  (position == size(linels)) then
             res = -sign(1,linels(position)%orientation)
          else
             res = sign(1,linels(position)%orientation)
          end if
-
       end function
 
       function findSourcePositionInLinels(srcElemIds, linels) result(res)
@@ -2235,7 +2554,7 @@ contains
          type(pixel_t) :: pixel
          integer :: res
          integer :: i
-         
+
          pixel = this%mesh%nodeToPixel(this%mesh%getNode(srcElemIds(1)))
          do i = 1, size(linels)
             if (linels(i)%tag == pixel%tag) then
@@ -2244,7 +2563,7 @@ contains
             end if
          end do
 
-         call WarnErrReport("Source could not be found in linels.", .true.)
+         call log_msg(LOG_ERROR, 'SMBJSON', "Source could not be found in linels.")
 
       end function
 
@@ -2257,10 +2576,10 @@ contains
          call this%core%get(terminal, J_MAT_TERM_TERMINATIONS, tms, found)
 
          if (.not. found) then
-            call WarnErrReport("Error reading wire terminal. terminations not found.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Error reading wire terminal. terminations not found.")
          end if
          if (this%core%count(tms) /= 1) then
-            call WarnErrReport("Only terminals with a single termination are allowed for a wire.",  .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Only terminals with a single termination are allowed for a wire.")
          end if
 
          call this%core%get_child(tms, 1, tm)
@@ -2268,7 +2587,7 @@ contains
          label = this%getStrAt(tm, J_TYPE, found)
          res%terminationType = strToTerminationType(label)
          if (.not. found) then
-            call WarnErrReport("Error reading wire terminal. termination must specify a type.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Error reading wire terminal. termination must specify a type.")
          end if
 
          select case(label)
@@ -2285,7 +2604,7 @@ contains
             res%l = this%getRealAt(tm, J_MAT_TERM_INDUCTANCE, default=0.0_RKIND)
             res%c = this%getRealAt(tm, J_MAT_TERM_CAPACITANCE, default=1e22_RKIND)
           case default
-            call WarnErrReport("Error reading wire terminal. Holland wires only support open, short, and series terminations", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Error reading wire terminal. Holland wires only support open, short, and series terminations")
          end select
 
       end function
@@ -2311,17 +2630,18 @@ contains
          isThinWire = .false.
 
          if (size(mA%elementIds) /= 1) then
-            call WarnErrReport("Thin wires must be defined by a single element id.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Thin wires must be defined by a single element id.")
          end if
 
          pl = this%mesh%getPolyline(mA%elementIds(1))
          if (.not. this%mesh%arePolylineSegmentsStructured(pl)) then
-            call WarnErrReport("Thin wires must be defined by a structured polyline.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Thin wires must be defined by a structured polyline.")
          end if
-      
+
          isThinWire = .true.
       end function
 
+#ifndef CompileWithMTLN
       function readWireProbe(p) result(res)
          type(MasSonda_t) :: res
          type(json_value), pointer :: p
@@ -2333,7 +2653,7 @@ contains
 
          outputName = this%getStrAt(p, J_NAME, found=nameFound)
          if (.not. nameFound) then
-            call WarnErrReport("Wire probes must define a name.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Wire probes must define a name.")
          end if
          res%outputrequest = trim(adjustl(outputName))
 
@@ -2341,10 +2661,10 @@ contains
 
          elemIds = this%getIntsAt(p, J_ELEMENTIDS, found=elementIdsFound)
          if (.not. elementIdsFound) then
-            call WarnErrReport("Element ids entry not found for wire probe.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Element ids entry not found for wire probe.")
          end if
          if (size(elemIds) /= 1) then
-            call WarnErrReport("Wire probe must contain a single element id.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Wire probe must contain a single element id.")
          end if
 
          node = this%mesh%getNode(elemIds(1))
@@ -2362,7 +2682,7 @@ contains
           case (J_FIELD_VOLTAGE)
             res%cordinates(1)%Or = NP_COR_DDP
           case default
-            call WarnErrReport("Invalid field label for wire probe.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Invalid field label for wire probe.")
          end select
 
          res%len_cor = 1
@@ -2384,7 +2704,7 @@ contains
             res%filename = " "
          end if
          res%type1  = domain%type1
-         res%type2  = domain%type2
+         res%type2 = domain%type2
 
          if (domain%isLogarithmicFrequencySpacing) then
             call appendLogSufix(res%outputrequest)
@@ -2399,7 +2719,7 @@ contains
          type(polyline_t) :: polyline
          type(coordinate_t), dimension(:), allocatable :: linelCoords
          real, dimension(:), allocatable :: distance_to_linel_cell
-         integer :: k, j, i, m(1), or, n_linels, local_idx
+         integer :: k, j, i, m(1), orientation, n_linels, local_idx
 
          nd_index = 0
          do k = 1, size(mAs)
@@ -2410,18 +2730,16 @@ contains
                   n_linels = size(linels)
                   allocate(linelCoords(n_linels+1))
                   do i = 1, n_linels
-                     linelCoords(i)%position(1) = linels(i)%cell(1)
-                     linelCoords(i)%position(2) = linels(i)%cell(2)
-                     linelCoords(i)%position(3) = linels(i)%cell(3)
+                     linelCoords(i)%position = linels(i)%cell
                      if (linels(i)%orientation < 0) then
-                        or = abs(linels(i)%orientation)
-                        linelCoords(i)%position(or) = linelCoords(i)%position(or) + 1
+                        orientation = abs(linels(i)%orientation)
+                        linelCoords(i)%position(orientation) = linelCoords(i)%position(orientation) + 1
                      end if
                   end do
-                  or = linels(n_linels)%orientation
+                  orientation = linels(n_linels)%orientation
                   linelCoords(n_linels+1)%position = linelCoords(n_linels)%position
-                  linelCoords(n_linels+1)%position(abs(or)) = &
-                     linelCoords(n_linels+1)%position(abs(or)) + merge(1,-1,or>0)
+                  linelCoords(n_linels+1)%position(abs(orientation)) = &
+                     linelCoords(n_linels+1)%position(abs(orientation)) + merge(1, -1, orientation > 0)
                   allocate(distance_to_linel_cell(n_linels+1))
                   do i = 1, n_linels+1
                      distance_to_linel_cell(i) = norm2(linelCoords(i)%position - probe_coord%position)
@@ -2434,6 +2752,7 @@ contains
             end do
          end do
       end function
+#endif
    end subroutine
 
    function getDomain(this, place, path) result(res)
@@ -2465,16 +2784,22 @@ contains
       res%type2 = getNPDomainType(domainType, transferFunctionFound)
 
       res%tstart = this%getRealAt(domain, J_PR_DOMAIN_TIME_START, default=0.0_RKIND)
-      res%tstop = this%getRealAt(domain, J_PR_DOMAIN_TIME_STOP, default=0.0_RKIND)
       res%tstep = this%getRealAt(domain, J_PR_DOMAIN_TIME_STEP, default=0.0_RKIND)
+      ! A missing finalTime means the end of the simulation; preprocess_domain clamps it.
+      ! A zero tstop would make the solver ignore samplingPeriod and save every step.
+      if (res%tstep > 0.0_RKIND) then
+         res%tstop = this%getRealAt(domain, J_PR_DOMAIN_TIME_STOP, default=huge(1.0_RKIND))
+      else
+         res%tstop = this%getRealAt(domain, J_PR_DOMAIN_TIME_STOP, default=0.0_RKIND)
+      end if
       if (res%tstart < 0 .or. res%tstop <0 .or. res%tstep < 0) then
-         block 
+         block
             character(len=BUFSIZE) :: errorMsg
             character(len=:), allocatable :: p_name
             logical :: nameFound
             p_name = this%getStrAt(place, J_NAME, found=nameFound)
             write(errorMsg, *) "Probe named ", p_name, " has negative times in its domain definition"
-            call WarnErrReport(errorMsg, .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
          end block
       end if
       res%fstart = this%getRealAt(domain, J_PR_DOMAIN_FREQ_START, default=0.0_RKIND)
@@ -2540,7 +2865,7 @@ contains
          end if
 
          write(errorMsg, '(A)') "Invalid domain type: ", trim(typeLabel)
-         call WarnErrReport(errorMsg, .true.)
+         call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
 
       end function
    end function
@@ -2554,14 +2879,14 @@ contains
       logical :: found
       logical :: isMultiwire, isWireOrMultiwire
       character(len=BUFSIZE) :: errorMsg
-      
+
       ! Fills material association.
       res%materialId = this%getIntAt(matAss, J_MATERIAL_ID, found)
       if (.not. found) call showLabelNotFoundError(J_MATERIAL_ID)
-      
+
       res%elementIds = this%getIntsAt(matAss, J_ELEMENTIDS, found)
       if (.not. found) call showLabelNotFoundError(J_ELEMENTIDS)
-      
+
       res%name = this%getStrAt(matAss, J_NAME, found)
       if (.not. found) then
          res%name = ""
@@ -2587,19 +2912,19 @@ contains
       ! Checks validity of associations.
       if (this%matTable%checkId(res%materialId) /= 0) then
          write(errorMsg, *) ERRORMSGINIT, "material with id ", res%materialId, " not found."
-         call WarnErrReport(errorMsg, .true.)
+         call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
       end if
-      
+
       if (size(res%elementIds) == 0) then
          write(errorMsg, *) ERRORMSGINIT, J_ELEMENTIDS, "must not be empty."
-         call WarnErrReport(errorMsg, .true.)
+         call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
       end if
       block
          integer :: i
          do i = 1, size(res%elementIds)
             if (this%mesh%checkElementId(res%elementIds(i)) /= 0) then
                write(errorMsg, *) ERRORMSGINIT, "element with id ", res%elementIds(i), " not found."
-               call WarnErrReport(errorMsg, .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
             end if
          end do
       end block
@@ -2609,36 +2934,36 @@ contains
          this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_SHIELDED_MULTIWIRE .or. &
          this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_UNSHIELDED_MULTIWIRE
       isWireOrMultiwire = &
-         this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_WIRE .or. isMultiwire 
-      
+         this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_WIRE .or. isMultiwire
+
       if (isWireOrMultiwire) then
          if (res%initialTerminalId == -1 .or. res%endTerminalId == -1) then
             write(errorMsg, *), ERRORMSGINIT, "wire associations must include terminals."
-            call WarnErrReport(errorMsg, .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
          end if
          if (.not. isMaterialIdOfType(res%initialTerminalId, J_MAT_TYPE_TERMINAL)) then
             write(errorMsg, *) ERRORMSGINIT, "material with id ", res%materialId, " must be a terminal."
-            call WarnErrReport(errorMsg, .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
          end if
          if (.not. isMaterialIdOfType(res%endTerminalId, J_MAT_TYPE_TERMINAL)) then
             write(errorMsg, *) ERRORMSGINIT, "material with id ", res%materialId, " must be a terminal."
-            call WarnErrReport(errorMsg, .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
          end if
          if (res%initialConnectorId /= -1) then
             if (.not. isMaterialIdOfType(res%initialConnectorId, J_MAT_TYPE_CONNECTOR)) then
                write(errorMsg, *) ERRORMSGINIT, "material with id ", res%materialId, " must be a connector."
-               call WarnErrReport(errorMsg, .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
             end if
-         end if 
+         end if
          if (res%endConnectorId /= -1) then
             if (.not. isMaterialIdOfType(res%endConnectorId, J_MAT_TYPE_CONNECTOR)) then
                write(errorMsg, *) ERRORMSGINIT, "material with id ", res%materialId, " must be a connector."
-               call WarnErrReport(errorMsg, .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
             end if
          end if
       end if
       if (isMultiwire) then
-         ! Not defininign a containedWithinElementId is an error if the simulation is a 3D-FDTD one. 
+         ! Not defininign a containedWithinElementId is an error if the simulation is a 3D-FDTD one.
          ! For pure MTLN mode it is not an error.
          ! if (res%containedWithinElementId == -1) then
          !    write(error_unit, *) errorMsgInit, "multiwire associations must include: ", J_MAT_ASS_CAB_CONTAINED_WITHIN_ID
@@ -2648,8 +2973,8 @@ contains
          !    write(error_unit, *) errorMsgInit, "element with id ", res%containedWithinElementId, " not found."
          ! end if
       end if
-      
-   contains 
+
+   contains
       logical function isMaterialIdOfType(matId, matType)
          integer, intent(in) :: matId
          character(len=*), intent(in) :: matType
@@ -2657,15 +2982,15 @@ contains
          logical :: materialFound
          if (this%matTable%checkId(matId) /= 0) then
             write(errorMsg, *) "Material with id ", matId, " not found."
-            call WarnErrReport(errorMsg, .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
          end if
          mat = this%matTable%getId(matId)
          isMaterialIdOfType = this%getStrAt(mat%p, J_TYPE) == matType
       end function
-      
+
       subroutine showLabelNotFoundError(label)
          character(len=*), intent(in) :: label
-         
+
       end subroutine
    end function
 
@@ -2675,7 +3000,7 @@ contains
       type(materialAssociation_t), dimension(:), allocatable :: res
       type(json_value), pointer :: allMatAss
       character(len=*), intent(in), optional :: elementLabels(:)
-      
+
       type(json_value), pointer :: mAPtr
       integer :: i, j, k, e
       integer :: nMaterials
@@ -2691,7 +3016,7 @@ contains
          call this%core%get_child(allMatAss, i, mAPtr)
          do j = 1, size(materialTypes)
             if (isAssociatedWithMaterial(mAPtr, trim(materialTypes(j)))) then
-               if (present(elementLabels)) then 
+               if (present(elementLabels)) then
                   if (isAssociatedWithElementLabel(mAPtr, elementLabels)) nMaterials = nMaterials + 1
                else
                   nMaterials = nMaterials + 1
@@ -2706,8 +3031,8 @@ contains
          call this%core%get_child(allMatAss, i, mAPtr)
          do k = 1, size(materialTypes)
             if (isAssociatedWithMaterial(mAPtr, trim(materialTypes(k)))) then
-               if (present(elementLabels)) then 
-                  if (isAssociatedWithElementLabel(mAPtr, elementLabels)) then 
+               if (present(elementLabels)) then
+                  if (isAssociatedWithElementLabel(mAPtr, elementLabels)) then
                      res(j) = this%parseMaterialAssociation(mAPtr)
                      res(j)%matAssType = trim(materialTypes(k))
                      j = j+1
@@ -2721,11 +3046,11 @@ contains
          end do
       end do
 
-   contains 
+   contains
       logical function isAssociatedWithMaterial(mAPtr, materialType)
          type(json_value), pointer, intent(in) :: mAPtr
          character(len=*), intent(in) :: materialType
-         
+
          type(materialAssociation_t) :: matAss
          type(json_value_ptr_t) :: mat
 
@@ -2752,7 +3077,7 @@ contains
          do i = 1, size(elementIds)
             elm = this%elementTable%getId(elementIds(i))
             do j = 1, size(elementLabels)
-               if (elementLabels(j)(1:1) == "-") then 
+               if (elementLabels(j)(1:1) == "-") then
                   elementLabel = elementLabels(j)(2:)
                   negative = .true.
                else
@@ -2760,11 +3085,11 @@ contains
                   negative = .false.
                end if
                trimmedLabel = trim(elementLabel)
-               if (negative) then 
+               if (negative) then
                   isAssociatedWithElementLabel = isAssociatedWithElementLabel .and. (.not.(this%getStrAt(elm%p, J_TYPE, default="") == trimmedLabel) .and. &
                                                                               .not.(this%getStrAt(elm%p, J_SUBTYPE, default="") == trimmedLabel))
-               else 
-                  isAssociatedWithElementLabel = isAssociatedWithElementLabel .or. (this%getStrAt(elm%p, J_TYPE, default="") == trimmedLabel .or. & 
+               else
+                  isAssociatedWithElementLabel = isAssociatedWithElementLabel .or. (this%getStrAt(elm%p, J_TYPE, default="") == trimmedLabel .or. &
                                                                                     this%getStrAt(elm%p, J_SUBTYPE, default="") == trimmedLabel )
                end if
             end do
@@ -2779,7 +3104,7 @@ contains
       character(len=:), allocatable :: matName, layerName
       logical :: found
       character(len=BUFSIZE) :: errorMsg
-      
+
       block
          type(json_value_ptr_t) :: mat
          mat = this%matTable%getId(matId)
@@ -2791,7 +3116,7 @@ contains
          end if
          matName = adaptName(matName)
       end block
-      
+
       block
          type(json_value_ptr_t) :: elem
          elem = this%elementTable%getId(elementId)
@@ -2799,11 +3124,11 @@ contains
          if (.not. found) then
             deallocate(layerName)
             allocate(character(len(TAG_LAYER) + 12) :: layerName)
-            write(layerName, '(a,i0)') TAG_LAYER, elementId 
+            write(layerName, '(a,i0)') TAG_LAYER, elementId
          end if
          layerName = adaptName(layerName)
       end block
-      
+
       call checkIsValidName(matName)
       call checkIsValidName(layerName)
       res = trim(matName // '@' // layerName)
@@ -2816,7 +3141,7 @@ contains
             if (index(str, NOTALLOWEDCHARS(i:i)) /= 0) then
                write(errorMsg, *) "ERROR in name: ", str, &
                   " contains invalid character ", NOTALLOWEDCHARS(i:i)
-               call WarnErrReport(errorMsg, .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
             end if 
          end do
       end subroutine
@@ -2847,12 +3172,12 @@ contains
                 J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
                 J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ,&
                 J_MAT_TYPE_WIRE//'               ' ])
-      ! spaces are needed to make strings have same length. 
+      ! spaces are needed to make strings have same length.
       ! Why? Because of FORTRAN! It only accepts fixed length strings for arrays.
 
       mtln_res%connectors => readConnectors()
       call addConnIdToConnectorMap(connIdToConnector, mtln_res%connectors)
-      if (size(cables) == 0) then 
+      if (size(cables) == 0) then
          mtln_res%time_step = 0
          mtln_res%number_of_steps = 0
          allocate(mtln_res%cables(0))
@@ -2889,9 +3214,9 @@ contains
             ptr%conductor_in_parent = assignConductorInParent(cables(i))
          end select
       end do
-      
+
       mtln_res%wireGenerators = readWireGenerators()
-      mtln_res%probes = readMultiwireProbes()
+      call readMultiwireProbes(mtln_res%probes)
       mtln_res%networks = buildNetworks()
 
    contains
@@ -2906,11 +3231,11 @@ contains
          mat = this%matTable%getId(cable%materialId)
 
          select case (this%getStrAt(mat%p, J_TYPE))
-         case (J_MAT_TYPE_SHIELDED_MULTIWIRE) 
+         case (J_MAT_TYPE_SHIELDED_MULTIWIRE)
             parentId = cable%containedWithinElementId
             if (parentId == -1) then
                res => null()
-            else 
+            else
                res => getPointerToParentCable(cables, parentId)
             end if
          case (J_MAT_TYPE_UNSHIELDED_MULTIWIRE)
@@ -2918,7 +3243,7 @@ contains
          case (J_MAT_TYPE_WIRE)
             res => null()
          case default
-            call WarnErrReport('ERROR: Material type not recognized', .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', 'Material type not recognized')
          end select
       end function
 
@@ -2935,7 +3260,7 @@ contains
             parentId = cable%containedWithinElementId
             if (parentId == -1) then
                res = 0
-            else 
+            else
                res = getParentPositionInMultiwire(parentId)
             end if
          case (J_MAT_TYPE_UNSHIELDED_MULTIWIRE)
@@ -2943,7 +3268,7 @@ contains
          case (J_MAT_TYPE_WIRE)
             res = 0
          case default
-            call WarnErrReport('ERROR: Material type not recognized', .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', 'Material type not recognized')
          end select
       end function
 
@@ -2961,7 +3286,7 @@ contains
          end do
          if (.not. unique) then
             write (errorMsg, *) "Cable name ", cable%name, " has already been used"
-            call WarnErrReport(errorMsg, .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
          end if
       end subroutine
 
@@ -2971,13 +3296,13 @@ contains
          logical :: materialsFound
          type(json_value_ptr_t), dimension(:), allocatable :: connectors
          integer :: i, j, id, n
-         
+
          call this%core%get(this%root, J_MATERIALS, mat, materialsFound)
          if (.not. materialsFound) then
              allocate(res(0))
              return
          end if
-         
+
          connectors = this%jsonValueFilterByKeyValue(mat, J_TYPE, J_MAT_TYPE_CONNECTOR)
          allocate(res(size(connectors)))
          if (size(connectors) /= 0) then
@@ -3038,7 +3363,7 @@ contains
          type(json_value_ptr_t) :: cableMat
          character(len=:), allocatable :: cableType
          logical :: isShieldedCable
-         
+
          allocate(aux_nodes(0))
          allocate(networks_coordinates(0))
          cables  = [this%getMaterialAssociations([J_MAT_TYPE_UNSHIELDED_MULTIWIRE]), &
@@ -3088,7 +3413,7 @@ contains
          integer :: i, j
          type(terminal_network_t) :: res
          type(node_t) :: node
-         
+
          network_nodes = filterNetworkNodesByCoordinate(aux_nodes, network_coordinate)
          node_ids = buildListOfNodeIds(network_nodes)
 
@@ -3122,13 +3447,13 @@ contains
          n = 1
          do i = 1, size(node_ids)
             id_filtered_nodes = filterNetworkNodesById(subckt_filtered_nodes, node_ids(i))
-            if (size(id_filtered_nodes) /= 0) then 
+            if (size(id_filtered_nodes) /= 0) then
                res(n)%nodeId = id_filtered_nodes(1)%cId
                res(n)%model_name = trim(id_filtered_nodes(1)%node%termination%model%name)
                res(n)%model_file = trim(id_filtered_nodes(1)%node%termination%model%file)
                res(n)%circuit_name =  'subckt_' // trim(res(n)%model_file)//'_'// trim(adjustl(elementIndex))
                res(n)%number_of_nodes = readNumberOfNodes(res(n)%model_file,res(n)%model_name)
-               if (res(n)%number_of_nodes == 0) call WarnErrReport('Problem in network model. No ports detected', .true.)
+               if (res(n)%number_of_nodes == 0) call log_msg(LOG_ERROR, 'SMBJSON', 'Problem in network model. No ports detected')
                n = n + 1
             end if
          end do
@@ -3147,19 +3472,19 @@ contains
          open(unit=1, file = model_file, status='old', action='read', iostat=io)
          if (io /= 0) return
          do
-            read(1, '(A)', iostat=io) line 
+            read(1, '(A)', iostat=io) line
             if (io /= 0) exit
             line_trim = adjustl(line)
             if (len_trim(line_trim) == 0) cycle
             if (line_trim(1:1) == '*') cycle
             call splitLineIntoWords(line_trim, words)
-            if (size(words) >= 2) then 
+            if (size(words) >= 2) then
                if (to_upper(words(1)) == '.SUBCKT' .and. &
                    trim(words(2)) == trim(model_name)) then
                      res = size(words) -2
-                     exit 
+                     exit
                end if
-            end if 
+            end if
          end do
          close(1)
       end function
@@ -3307,13 +3632,13 @@ contains
          type(json_value), pointer :: res
 
          if (terminationId == -1) then
-            call WarnErrReport('Error: missing terminal on cable side', .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', 'missing terminal on cable side')
             res => null()
             return
          end if
          terminal = this%matTable%getId(terminationId)
          if (.not. this%existsAt(terminal%p, J_MAT_TERM_TERMINATIONS)) then
-            call WarnErrReport('Error: missing terminations on terminal', .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', 'missing terminations on terminal')
             res => null()
             return
          end if
@@ -3342,7 +3667,7 @@ contains
          res%node%termination%source = readGeneratorOnTermination(id,label)
          res%node%termination%model = readTerminationModel(termination)
          res%node%termination%networkCircuitNode = readTerminationnetworkCircuitNode(termination, default = -1)
-         
+
          res%node%side = label
          res%node%conductor_in_cable = elementIndex
 
@@ -3364,7 +3689,7 @@ contains
                   res%node%termination%termination_type = TERMINATION_OPEN
                   write(warningMsg, '(A)') 'MTLN terminal on cable '//trim(res%node%belongs_to_cable%name)// &
                         ' (conductor '//trim(intToStr(elementIndex))//', side '//trim(sideToStr(label))//') is short but not touching any wire or non-vacuum material. Treating as open.'
-                  call WarnErrReport(trim(warningMsg), .false.)
+                  call log_msg(LOG_WARN, 'SMBJSON', trim(warningMsg))
                end if
             end if
          end if
@@ -3571,34 +3896,34 @@ contains
             integer, dimension(:), allocatable :: sourceElemIds
             type(polyline_t) :: poly
             integer :: i
-   
+
             poly = this%mesh%getPolyline(id)
             do i = 1, size(genSrcs)
                if (.not. this%existsAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE)) then
-                  call WarnErrReport('magnitudeFile of source missing', .true.)
+                  call log_msg(LOG_ERROR, 'SMBJSON', 'magnitudeFile of source missing')
                   res%path_to_excitation = trim("")
                   res%source_type = SOURCE_TYPE_UNDEFINED
                   return
                end if
                if (.not. this%existsAt(genSrcs(i)%p, J_FIELD)) then
-                  call WarnErrReport('Type of generator is ambigous', .true.)
+                  call log_msg(LOG_ERROR, 'SMBJSON', 'Type of generator is ambigous')
                   res%path_to_excitation = trim("")
                   res%source_type = SOURCE_TYPE_UNDEFINED
                   return
                end if
                if (this%getStrAt(genSrcs(i)%p, J_FIELD) /= J_FIELD_VOLTAGE .and. &
                    this%getStrAt(genSrcs(i)%p, J_FIELD) /= J_FIELD_CURRENT) then 
-                  call WarnErrReport('Only voltage and current generators are supported', .true.)
+                  call log_msg(LOG_ERROR, 'SMBJSON', 'Only voltage and current generators are supported')
                   res%path_to_excitation = trim("")
                   res%source_type = SOURCE_TYPE_UNDEFINED
                   return
                end if
 
-               if (isSourceAttachedToLine(genSrcs(i)%p, poly, id, label)) then 
-                  if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_VOLTAGE) then 
-                     res%source_type = SOURCE_TYPE_VOLTAGE 
+               if (isSourceAttachedToLine(genSrcs(i)%p, poly, id, label)) then
+                  if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_VOLTAGE) then
+                     res%source_type = SOURCE_TYPE_VOLTAGE
                      res%resistance = this%getRealAt(genSrcs(i)%p, J_SRC_RESISTANCE_GEN, default = 0.0_rkind)
-                  else if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_CURRENT) then 
+                  else if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_CURRENT) then
                      res%source_type = SOURCE_TYPE_CURRENT
                      res%resistance = this%getRealAt(genSrcs(i)%p, J_SRC_RESISTANCE_GEN, default = 1.0e22_rkind)
                   end if
@@ -3609,7 +3934,7 @@ contains
             end do
             res%path_to_excitation = trim("")
             res%source_type = SOURCE_TYPE_UNDEFINED
-         end block 
+         end block
       end function
 
       function isSourceAttachedToLine(src, polyline, id, label) result(res)
@@ -3635,7 +3960,7 @@ contains
          else
             res = (srcCoord%coordIds(1) == polyline%coordIds(elementIndex))
          end if
-      
+
       end function
 
       function readTerminationType(termination) result(res)
@@ -3726,7 +4051,7 @@ contains
          integer :: idAndPos(2), elementIndex
 
          call this%core%get(this%root, J_sources, sources, found)
-         if (.not. found) then 
+         if (.not. found) then
             allocate(res(0))
             return
          end if
@@ -3741,9 +4066,9 @@ contains
          n = 1
 
          do i = 1, size(gens)
-            if (IsGeneratorOnWire(gens(i)%p)) then 
+            if (IsGeneratorOnWire(gens(i)%p)) then
                if (.not. this%existsAt(gens(i)%p, J_SRC_MAGNITUDE_FILE)) then
-                  call WarnErrReport('magnitudeFile of source missing', .true.)
+                  call log_msg(LOG_ERROR, 'SMBJSON', 'magnitudeFile of source missing')
                end if
 
                select case(this%getStrAt(gens(i)%p, J_FIELD))
@@ -3754,10 +4079,10 @@ contains
                   res(n)%generator_type = SOURCE_TYPE_CURRENT
                   res(n)%resistance = this%getRealAt(gens(i)%p, J_SRC_RESISTANCE_GEN, default = 1.0e22_rkind)
                case default
-                  call WarnErrReport('Field block of source of type generator must be current or voltage', .true.)
+                  call log_msg(LOG_ERROR, 'SMBJSON', 'Field block of source of type generator must be current or voltage')
                end select
                res(n)%path_to_excitation = this%getStrAt(gens(i)%p, J_SRC_MAGNITUDE_FILE)
-               
+
                idAndPos = getPolylineElemIdAndConductorOfGenerator(gens(i)%p)
                call elemIdToCable%get(key(idAndPos(1)), value=elementIndex)
                coord = GetCoordinateFromElemIdNode(gens(i)%p)
@@ -3787,7 +4112,7 @@ contains
          fieldLabel = this%getStrAt(p, J_FIELD, found=found)
          if (.not. found .or. (fieldLabel /= J_FIELD_CURRENT .and. fieldLabel /= J_FIELD_VOLTAGE)) then
             IsGeneratorOnWire = .false.
-            call WarnErrReport('field type not recognized', .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', 'field type not recognized')
             return 
          end if
 
@@ -3810,10 +4135,10 @@ contains
                do j = 2, size(polyline%coordIds)-1
                   if (polyline%coordIds(j) == cId) then
                      if (fieldLabel == J_FIELD_VOLTAGE .and. (mAs(i)%matAssType == J_MAT_TYPE_WIRE .or. mAs(i)%matAssType == J_MAT_TYPE_UNSHIELDED_MULTIWIRE)) then 
-                        call WarnErrReport('Voltage generators cannot be defined on wire/unshieldedMultiwire interior points', .true.)
+                        call log_msg(LOG_ERROR, 'SMBJSON', 'Voltage generators cannot be defined on wire/unshieldedMultiwire interior points')
                         return
                      else if (fieldLabel == J_FIELD_CURRENT .and. mAs(i)%matAssType == J_MAT_TYPE_SHIELDED_MULTIWIRE) then 
-                        call WarnErrReport('Current generators cannot be defined on shieldedMultiwire interior points', .true.)
+                        call log_msg(LOG_ERROR, 'SMBJSON', 'Current generators cannot be defined on shieldedMultiwire interior points')
                         return
                      end if
                      IsGeneratorOnWire = .true.
@@ -3822,11 +4147,11 @@ contains
                end do
             end do
          end do
-         
+
       end function
-      
-      function readMultiwireProbes() result(res)
-         type(probe_t), dimension(:), allocatable :: res
+
+      subroutine readMultiwireProbes(res)
+         type(probe_t), dimension(:), allocatable, intent(out) :: res
          type(json_value_ptr_t), dimension(:), allocatable :: wire_probes
          type(json_value), pointer :: probes
          integer :: i, j, elementIndex, n
@@ -3838,7 +4163,7 @@ contains
          logical :: parent_cable_found = .false., found
 
          call this%core%get(this%root, J_PROBES, probes, found)
-         if (.not. found) then 
+         if (.not. found) then
             allocate(res(0))
             return
          end if
@@ -3846,14 +4171,13 @@ contains
 
          n = countNumberOfMultiwireProbes(wire_probes)
          allocate(res(n))
-         if (n == 0) return
 
          n = 0
          do i = 1, size(wire_probes)
-            if (isProbeDefinedOnMultiwire(wire_probes(i)%p)) then 
+            if (isProbeDefinedOnMultiwire(wire_probes(i)%p)) then
                ids = getPolylineElemIdOfMultiwireProbe(wire_probes(i)%p)
                probe_node_coord = GetCoordinateFromElemIdNode(wire_probes(i)%p)
-               
+
                do j = 1, size(ids)
                   n = n + 1
                   res(n)%probe_name = readProbeName(wire_probes(i)%p)
@@ -3868,28 +4192,31 @@ contains
                   cable_ptr => mtln_res%cables(elementIndex)%ptr
                   ! Inside select type, cable_ptr is shielded_multiwire_t but parent_cable is cable_t
                   ! Outside, cable_t does not have the parent_cable member
-                  ! aux_ptr is used insted of cable_ptr => cable_ptr%parent_cable  
-                  parent_cable_found = .false. 
+                  ! aux_ptr is used insted of cable_ptr => cable_ptr%parent_cable
+                  parent_cable_found = .false.
                   do while (.not. parent_cable_found)
                      select type(cable_ptr)
                      type is(shielded_multiwire_t)
                         if (associated(cable_ptr%parent_cable)) then
-                           aux_ptr => cable_ptr%parent_cable   
+                           aux_ptr => cable_ptr%parent_cable
                         else
                            parent_cable_found = .true.
                         end if
                      type is(unshielded_multiwire_t)
                         parent_cable_found = .true.
                      end select
-                     if (.not. parent_cable_found) then 
+                     if (.not. parent_cable_found) then
                         cable_ptr => aux_ptr
                      end if
                   end do
                   res(n)%attached_to_cable => cable_ptr
                end do
+            else
+               call log_msg(LOG_ERROR, 'SMBJSON', 'Wire probe "'//readProbeName(wire_probes(i)%p)// &
+                  '" must reference a node whose coordinateId belongs to a wire polyline')
             end if
          end do
-      end function
+      end subroutine
 
       function GetCoordinateFromElemIdNode(object) result (res)
          type(json_value), pointer, intent(in) :: object
@@ -3897,7 +4224,7 @@ contains
 
          integer, dimension(:), allocatable :: elemIds
          type(node_t) :: node
-         
+
          elemIds = this%getIntsAt(object, J_ELEMENTIDS)
          node = this%mesh%getNode(elemIds(1))
          res = this%mesh%getCoordinate(node%coordIds(1))
@@ -3909,7 +4236,7 @@ contains
          type(pixel_t) :: pixel
          integer :: res
          integer :: i
-         
+
          pixel = this%mesh%nodeToPixel(this%mesh%getNode(elemIds(1)))
          do i = 1, size(linels)
             if (linels(i)%tag == pixel%tag) then
@@ -3918,7 +4245,7 @@ contains
             end if
          end do
 
-         call WarnErrReport("Source could not be found in linels.", .true.)
+         call log_msg(LOG_ERROR, 'SMBJSON', "Source could not be found in linels.")
 
       end function
 
@@ -3937,14 +4264,14 @@ contains
             linelCoords(i)%position(2) = linels(i)%cell(2)
             linelCoords(i)%position(3) = linels(i)%cell(3)
             if (linels(i)%orientation < 0) then
-               or = abs(linels(i)%orientation) 
+               or = abs(linels(i)%orientation)
                linelCoords(i)%position(or) = linelCoords(i)%position(or) + 1
             end if
          end do
          or = linels(size(linels))%orientation
          linelCoords(size(linels)+1)%position = linelCoords(size(linels))%position
          linelCoords(size(linels)+1)%position(abs(or)) = linelCoords(i)%position(abs(or)) + merge(1,-1,or>0)
-         
+
          allocate(distance_to_linel_cell(size(linelCoords)))
          do i = 1, size(linelCoords)
             distance_to_linel_cell(i) = norm2(linelCoords(i)%position-coord%position)
@@ -3966,7 +4293,7 @@ contains
             isProbeDefinedOnMultiwire = .false.
             return
          end if
-         
+
          block
             type(pixel_t) :: pixel
             integer, dimension(:), allocatable :: eIds
@@ -3998,9 +4325,9 @@ contains
          integer :: i
          integer, dimension(:), allocatable :: ids
          integer :: res
-         res = 0      
+         res = 0
          do i = 1, size(probes)
-            if (isProbeDefinedOnMultiwire(probes(i)%p)) then 
+            if (isProbeDefinedOnMultiwire(probes(i)%p)) then
                ids = getPolylineElemIdOfMultiwireProbe(probes(i)%p)
                res = res + size(ids)
             end if
@@ -4014,7 +4341,7 @@ contains
          type(materialAssociation_t), dimension(:), allocatable :: mAs
          integer :: i, j
          integer :: cId
-         
+
          block
             type(pixel_t) :: pixel
             integer, dimension(:), allocatable :: eIds
@@ -4045,7 +4372,7 @@ contains
          type(materialAssociation_t), dimension(:), allocatable :: mAs
          integer :: i, j, k
          integer :: cId
-         
+
          block
             type(pixel_t) :: pixel
             integer, dimension(:), allocatable :: eIds
@@ -4070,7 +4397,7 @@ contains
                end do
             end do
          end do
-         if (all(res(:) == 0)) call WarnErrReport('Generator does not belong to any wire, unshielded multiwire or shielded multiwire', .true.)
+         if (all(res(:) == 0)) call log_msg(LOG_ERROR, 'SMBJSON', 'Generator does not belong to any wire, unshielded multiwire or shielded multiwire')
       end function
 
       function readProbeType(probe) result(res)
@@ -4086,7 +4413,7 @@ contains
             res = PROBE_TYPE_CURRENT
          else
             write(errorMsg,*) 'probe type '//probe_type//' not supported'
-            call WarnErrReport(errorMsg, .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
             res = PROBE_TYPE_UNDEFINED
          end if
       end function
@@ -4094,9 +4421,9 @@ contains
       function readProbeName(probe) result(res)
          type(json_value), pointer :: probe
          character(:), allocatable :: res
-         if (this%existsAt(probe, J_NAME)) then 
+         if (this%existsAt(probe, J_NAME)) then
             res = this%getStrAt(probe, J_NAME)
-         else 
+         else
             res = ""
          end if
       end function
@@ -4180,7 +4507,7 @@ contains
             res = this%getIntsAt(cable, J_ELEMENTIDS)
          else
             allocate(res(0))
-            call WarnErrReport('Error reading materialAssociation region: elementIds label not found', .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', 'Error reading materialAssociation region: elementIds label not found')
          end if
       end function
 
@@ -4228,7 +4555,7 @@ contains
                res%tag = trim(adjustl(tagLabel))
             end select
          case default
-            call WarnErrReport("Error reading cable: material type is not valid", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Error reading cable: material type is not valid")
          end select
          res%initial_connector => findConnectorWithId(j_cable%initialConnectorId)
          res%end_connector => findConnectorWithId(j_cable%endConnectorId)
@@ -4250,11 +4577,11 @@ contains
          call copyAndEnlargeDes(res%desZ, despl%desZ, despl%mZ2)
       end function
 
-      subroutine copyAndEnlargeDes(copy, d, n) 
+      subroutine copyAndEnlargeDes(copy, d, n)
          real(kind=RKIND), dimension(:), pointer :: copy, d
          integer :: n
          allocate(copy(0:n-1))
-         if (size(d) == 1) then 
+         if (size(d) == 1) then
             copy(:) = d(1)
          else
             copy = d
@@ -4284,14 +4611,14 @@ contains
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE)) then
             res%inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)
          else
-            call WarnErrReport("Error reading material region: inductancePerMeter label not found.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Error reading material region: inductancePerMeter label not found.")
             res%inductance_per_meter = null_matrix
          end if
 
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE)) then
             res%capacitance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE,found)
          else
-            call WarnErrReport("Error reading material region: capacitancePerMeter label not found.", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Error reading material region: capacitancePerMeter label not found.")
             res%capacitance_per_meter = null_matrix
          end if
 
@@ -4326,17 +4653,17 @@ contains
          areFixedInCell = &
             this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE) .and. &
             this%existsAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE)
-         areMultipolarInCell = & 
+         areMultipolarInCell = &
             this%existsAt(mat%p, J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION)
-         hasRadius = &  
+         hasRadius = &
             this%existsAt(mat%p, J_MAT_WIRE_RADIUS) .and. &
             this%getRealAt(mat%p, J_MAT_WIRE_RADIUS, default=0.0_RKIND) /= 0.0_RKIND
 
-         if (.not. hasRadius) then 
+         if (.not. hasRadius) then
             if ((areFixedInCell .and. areMultipolarInCell) .or. &
                (.not. areFixedInCell .and. .not. areMultipolarInCell) ) then
-               call WarnErrReport( &
-                  "Unshielded multiwires in cell properties must be defined by fixed OR multipolarExpansions, but not both.", .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', &
+                  "Unshielded multiwires in cell properties must be defined by fixed OR multipolarExpansions, but not both.")
             end if
          end if
 
@@ -4349,9 +4676,9 @@ contains
             res%cell_capacitance_per_meter = null_matrix
 
             call this%core%get(mat%p, J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION, multipolarExpansionPtr)
-            allocate(res%multipolar_expansion(1))         
-            res%multipolar_expansion(1) = readMultipolarExpansion(multipolarExpansionPtr)
-         else if (hasRadius) then 
+            allocate(res%multipolar_expansion(1))
+            call readMultipolarExpansion(multipolarExpansionPtr, res%multipolar_expansion(1))
+         else if (hasRadius) then
             res%cell_inductance_per_meter = null_matrix
             res%cell_capacitance_per_meter = null_matrix
             allocate(res%multipolar_expansion(0))
@@ -4360,7 +4687,7 @@ contains
 
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)) then
             m = this%dimensionAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)
-            if (m == 0) then 
+            if (m == 0) then
                allocate(r(1))
                r(1) = this%getRealAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found)
             else
@@ -4373,7 +4700,7 @@ contains
 
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE)) then
             m = this%dimensionAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE)
-            if (m == 0) then 
+            if (m == 0) then
                allocate(c(1))
                c(1) = this%getRealAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE,found)
             else
@@ -4386,46 +4713,46 @@ contains
 
       end subroutine
 
-      function readMultipolarExpansion(multipolarExpansionPtr) result (res)
-         type(json_value), pointer :: multipolarExpansionPtr
-         type(multipolar_expansion_t) :: res
+      subroutine readMultipolarExpansion(multipolarExpansionPtr, res)
+         type(json_value), pointer, intent(in) :: multipolarExpansionPtr
+         type(multipolar_expansion_t), intent(out) :: res
          type(json_value), pointer :: jvPtr
          logical :: found
-         
+
          call this%core%get(multipolarExpansionPtr, J_MAT_MULTIWIRE_ME_INNER_REGION_BOX, jvPtr, found)
          if (.not. found) then
-            call WarnErrReport("Error reading multipolar expansion: innerRegionBox label not found", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Error reading multipolar expansion: innerRegionBox label not found")
          end if   
          res%inner_region = readInnnerRegionBox(jvPtr)
 
          call this%core%get(multipolarExpansionPtr, J_MAT_MULTIWIRE_ME_ELECTRIC, jvPtr, found)
          if (.not. found) then
-            call WarnErrReport("Error reading multipolar expansion electric reconstruction not found", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Error reading multipolar expansion electric reconstruction not found")
          end if
-         res%electric = readFieldReconstruction(jvPtr)
+         call readFieldReconstruction(jvPtr, res%electric)
 
          call this%core%get(multipolarExpansionPtr, J_MAT_MULTIWIRE_ME_MAGNETIC, jvPtr, found)
          if (.not. found) then
-            call WarnErrReport("Error reading multipolar expansion magnetic reconstruction not found", .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', "Error reading multipolar expansion magnetic reconstruction not found")
          end if
-         res%magnetic = readFieldReconstruction(jvPtr)
-      end function
-      
+         call readFieldReconstruction(jvPtr, res%magnetic)
+      end subroutine
+
       function readInnnerRegionBox(ptr) result(inner_region)
          type(json_value), pointer, intent(in) :: ptr
          type(box_2d_t) :: inner_region
          inner_region%minBound = this%getRealsAt(ptr, J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MIN)
          inner_region%maxBound = this%getRealsAt(ptr, J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MAX)
       end function
-      
-      function readFieldReconstruction(ptr) result(res)
+
+      subroutine readFieldReconstruction(ptr, res)
          type(json_value), pointer, intent(in) :: ptr
-         type(field_reconstruction_t), dimension(:), allocatable :: res
+         type(field_reconstruction_t), dimension(:), allocatable, intent(out) :: res
          real, dimension(:), allocatable :: auxAB
          type(json_value), pointer :: frPtr
          type(json_value), pointer :: absPtr
          type(json_value), pointer :: abPtr
-         
+
          integer :: i, j
          logical :: found
 
@@ -4439,18 +4766,18 @@ contains
 
             call this%core%get(frPtr, J_MAT_MULTIWIRE_MEFR_AB, absPtr, found)
             if (.not. found) then
-               call WarnErrReport("Error reading multipolar expansion: ab label not found", .true.)
+               call log_msg(LOG_ERROR, 'SMBJSON', "Error reading multipolar expansion: ab label not found")
             end if
             allocate(res(j)%ab(this%core%count(absPtr)))
             do i = 1, size(res(j)%ab)
-               call this%core%get_child(absPtr, i, abPtr)           
+               call this%core%get_child(absPtr, i, abPtr)
                call this%core%get(abPtr, '(1)', res(j)%ab(i)%a)
                call this%core%get(abPtr, '(2)', res(j)%ab(i)%b)
             end do
          end do
 
-      end function
-   
+      end subroutine
+
       function buildSegments(j_cable, despl) result(res)
          type(materialAssociation_t), intent(in) :: j_cable
          type(Desplazamiento_t), intent(in) :: despl
@@ -4471,11 +4798,11 @@ contains
             res(i)%y = linels(i)%cell(2)
             res(i)%z = linels(i)%cell(3)
             res(i)%orientation = linels(i)%orientation
-            if (prevOr == abs(res(i)%orientation)) then 
+            if (prevOr == abs(res(i)%orientation)) then
                res(i)%dualBox = res(i-1)%dualBox
                res(i)%d1 = res(i-1)%d1
                res(i)%d2 = res(i-1)%d2
-            else 
+            else
                select case(abs(res(i)%orientation))
                case(DIR_X)
                   res(i)%dualBox = getdualBoxYZ(res(i), despl)
@@ -4580,7 +4907,7 @@ contains
          if (this%existsAt(z, J_MAT_TRANSFER_IMPEDANCE_DIRECTION)) then
             direction = trim(adjustl(this%getStrAt(z,J_MAT_TRANSFER_IMPEDANCE_DIRECTION)))
          else
-            call WarnErrReport('Error reading material: direction of transferImpedancePerMeter missing', .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', 'Error reading material: direction of transferImpedancePerMeter missing')
          end if
 
          if (direction == "inwards") then
@@ -4590,17 +4917,17 @@ contains
          else if (direction == "both") then
             res%direction = TRANSFER_IMPEDANCE_DIRECTION_BOTH
          end if
-         
+
          block
             type(json_value), pointer :: poles, residues, p, r
             integer :: i, n
             real :: read_value
-            if (this%existsAt(z, J_MAT_TRANSFER_IMPEDANCE_POLES)) then 
+            if (this%existsAt(z, J_MAT_TRANSFER_IMPEDANCE_POLES)) then
                n = this%getIntAt(z, J_MAT_TRANSFER_IMPEDANCE_NUMBER_POLES)
                allocate(res%poles(n),res%residues(n))
                call this%core%get(z, J_MAT_TRANSFER_IMPEDANCE_POLES, poles)
                call this%core%get(z, J_MAT_TRANSFER_IMPEDANCE_RESIDUES, residues)
-               do i = 1, n 
+               do i = 1, n
                   call this%core%get_child(poles, i, p)
                   call this%core%get(p, '(1)', read_value)
                   res%poles(i)%re = read_value
@@ -4613,10 +4940,10 @@ contains
                   call this%core%get(r, '(2)', read_value)
                   res%residues(i)%im = read_value
                end do
-            else 
+            else
                allocate(res%poles(0),res%residues(0))
             end if
-               
+
          end block
       end function
 
@@ -4676,7 +5003,7 @@ contains
       character(len=BUFSIZE) :: errorMsg
       if (.not. found .and. .not. defaultPresent) then
          write(errorMsg,*) 'ERROR expecting a value at: '//path 
-         call WarnErrReport(errorMsg, .true.)
+         call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
       end if
    end subroutine
 
@@ -4688,7 +5015,7 @@ contains
       logical, intent(out), optional :: found
       logical, optional :: default
       logical :: localFound
-      
+
       call this%core%get(place, path, res, localFound, default)
       if (present(found)) then
          found = localFound
@@ -4706,7 +5033,7 @@ contains
       logical, intent(out), optional :: found
       integer, optional :: default
       logical :: localFound
-      
+
       call this%core%get(place, path, res, localFound, default)
       if (present(found)) then
          found = localFound
@@ -4722,7 +5049,7 @@ contains
       character(len=*) :: path
       logical, intent(out), optional :: found
       logical :: localFound
-      
+
       call this%core%get(place, path, res, localFound)
       if (present(found)) then
          found = localFound
@@ -4800,7 +5127,7 @@ contains
       logical, intent(out), optional :: found
       character(len=*), optional :: default
       logical :: localFound
-      
+
       call this%core%get(place, path, res, localFound, default)
       if (present(found)) then
          found = localFound
@@ -4863,7 +5190,7 @@ contains
          call this%core%get(src, key, typeStr, found)
          if(.not. found) then
             write(errorMsg, *) "Key: ", key, " not found while doing value filter."
-            call WarnErrReport(errorMsg, .true.)
+            call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
          end if
          if(found .and. typeStr == trim(scalarValue)) then
             n = n + 1
@@ -4893,35 +5220,36 @@ contains
 
       elemIds = this%getIntsAt(pw, J_ELEMENTIDS, found=found)
       if (.not. found) then
-         call WarnErrReport("Error reading single volume elementIds label not found.", .true.)
+         call log_msg(LOG_ERROR, 'SMBJSON', "Error reading single volume elementIds label not found.")
          allocate(res(0))
          return
       end if
       if (size(elemIds) == 0) then
-         call WarnErrReport("Entity elementIds must not be empty.", .true.)
+         call log_msg(LOG_ERROR, 'SMBJSON', "Entity elementIds must not be empty.")
          allocate(res(0))
          return
       end if
       if (size(elemIds) /= 1) then
-         call WarnErrReport("Entity must contain a single elementId.", .true.)
+         call log_msg(LOG_ERROR, 'SMBJSON', "Entity must contain a single elementId.")
          allocate(res(0))
          return
       end if
       cellRegion = this%mesh%getCellRegion(elemIds(1), found)
       if (.not. found) then
          write(errorMsg, *) "Entity elementId ", elemIds(1), " not found."
-         call WarnErrReport(errorMsg, .true.)
+         call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
          allocate(res(0))
          return
       end if
       res = cellRegion%getIntervalsOfType(CELL_TYPE_VOXEL)
       if (size(res) /= 1) then
          write(errorMsg, *) "Entity must contain a single cell region defining a volume."
-         call WarnErrReport(errorMsg, .true.)
+         call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
          allocate(res(0))
          return
       end if
    end function
 
-#endif   
+#endif
 end module
+

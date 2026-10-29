@@ -1,0 +1,87 @@
+# %%
+import numpy as np
+from numpy.fft import *
+import matplotlib.pyplot as plt
+import scipy.constants
+from skrf.media import Freespace
+from skrf.frequency import Frequency
+
+
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../../', 'src_pyWrapper'))
+SEMBA_EXE = '../../../build/bin/semba-fdtd'
+
+from pyWrapper import *
+
+# %% Generate excitation and visualize
+dt = 1e-12
+w0 = 0.1e-10    # ~ 2 GHz bandwidth
+t0 = 10*w0
+t = np.arange(0, t0+20*w0, dt)
+f = np.exp( -np.power(t-t0,2)/ w0**2 )
+
+plt.figure()
+plt.plot(t,f)
+
+data = np.zeros((len(t), 2))
+data[:,0] = t
+data[:,1] = f
+np.savetxt('gauss.exc', data)
+ 
+fq = fftfreq(len(t))/dt
+F = fft(f)
+F = F[fq>=0]
+fq = fq[fq>=0]
+Fmax = np.max(np.abs(F))
+Fcut = Fmax / np.sqrt(2.0)
+idx = (np.abs(np.abs(F) - Fcut)).argmin()
+
+plt.figure()
+plt.plot(fq, np.abs(F),'.-')
+plt.axvline(x = fq[idx], color = 'r')
+plt.xlim(0,5e9)
+plt.ylim(1e-9, 1e6)
+plt.yscale('log')
+
+plt.grid()
+
+# %% Run solver
+fn = 'conformal_sphere.fdtd.json'
+solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
+solver["mesh"]["elements"][0]["subtype"] = "volume"
+solver.cleanUp()
+solver.run()
+#%%
+inside_volume = Probe(solver.getSolvedProbeFolders("inside")[0])
+outside_volume = Probe(solver.getSolvedProbeFolders("outside")[0])
+
+# %%
+solver["mesh"]["elements"][0]["subtype"] = "surface"
+solver.cleanUp()
+solver.run()
+
+inside_surface = Probe(solver.getSolvedProbeFolders("inside")[0])
+outside_surface = Probe(solver.getSolvedProbeFolders("outside")[0])
+
+
+# %% Postprocess
+
+t = inside_volume['time']
+plt.figure()
+plt.plot(t, outside_volume['incident'], label="incident")
+plt.plot(t, inside_surface['field'], label="transmitted S")
+plt.plot(t, inside_volume['field'], '--', label="transmitted V")
+plt.plot(t, outside_surface['field'], label="reflected S")
+plt.plot(t, outside_volume['field'], '--', label="reflected V")
+plt.grid(which='both')
+plt.xlim(0,1.5e-8)
+plt.legend()
+
+# %%
+#transmitted
+assert np.all(inside_surface['field'] == 0.0)
+assert np.all(inside_volume['field'] == 0.0)
+#reflected
+assert np.corrcoef(outside_surface['field'], outside_volume['field'])[0, 1] > 0.98
+
+# %%

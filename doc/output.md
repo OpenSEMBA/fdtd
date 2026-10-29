@@ -5,6 +5,11 @@ In the filename patterns below, `R` is the root of the input filename, `N` is
 the probe name, `F` is the sampled field or component, `C` is the coordinate,
 and `B` is the probe bounding box.
 
+Time-domain probes buffer samples in memory and are flushed to disk every 128
+steps (`OUTPUT_TIME_BUFFER_SIZE`); `-flushdata <minutes>` adds a time-based
+flush. The estimated buffer memory per probe type is printed at `Init Timing`
+(see [init_timing.md](init_timing.md)).
+
 ## Scalar Text Output
 
 Point, wire, bulk-current, line, and far-field probes publish formatted `.dat`
@@ -43,11 +48,10 @@ or collectively writes the rank-local data into the canonical files.
 
 | Probe type | Without MPI | With MPI |
 | --- | --- | --- |
-| `movie`, time domain | `P/P.bin`, `P/P.xdmf`, `P/P.h5`, `P/P_geometry.xdmf`, and `P/P_geometry.h5` | The same five files. |
+| `movie`, time domain | `P/P.xdmf`, `P/P.h5`, `P/P_geometry.xdmf`, and `P/P_geometry.h5` | The same four files. |
 | frequency slice (`movie`, frequency domain) | `P/P.xdmf`, `P/P.h5`, `P/P_geometry.xdmf`, and `P/P_geometry.h5` | The same four files. |
 
-Time-domain movie `.bin` files contain the sampled values.
-Frequency slices do not create a `.bin` file.
+Movies and frequency slices do not create a `.bin` file.
 They create field data in `P.xdmf` and `P.h5`, plus the geometry companion in
 `P_geometry.xdmf` and `P_geometry.h5`.
 The `.xdmf` files describe the corresponding data and geometry stored in HDF5.

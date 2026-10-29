@@ -224,7 +224,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
 !!!only one dispersive layer
               if (sgg%Med(jmed)%multiport(1)%numLayers>1) then
                  buff='No more than 1 layer of dispersive SGBC currently supported'
-                 call StopOnError(layoutnumber,num_procs,buff)
+                 call log_msg(LOG_FATAL, 'SGBC', buff)
               end if
 !!!!!!!!
               filePoles=SGG%Med(jmed)%multiport(1)%multiportFileZ11 !although I call it Z it has the syntax of an Edispersive ISOTROPIC WITH THE NEW STANDARD (SEE LINES 6749 OF NFDEPARSER). 
@@ -237,7 +237,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
               inquire(FILE=trim(adjustl(filePoles)), EXIST=errnofile)
               if (.not.errnofile) then
                  buff='FILE '//trim(adjustl(filePoles))//' DOES NOT EXIST'
-                 call StopOnError(layoutnumber,num_procs,buff)
+                 call log_msg(LOG_FATAL, 'SGBC', buff)
               end if
               open (7345,file=trim(adjustl(filePoles)),form='formatted')
               read (7345,*) rra,rrb,rrc,rrd 
@@ -324,12 +324,12 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
                   compo%Correct_Hb=.true.
                   compo%Correct_Ha=.false.
                 case DEFAULT
-                  write(buff, *)    'Buggy ERROR: In SGBCs. '
-                  call WarnErrReport (buff,.TRUE.)
+                  write(buff, *)    'Internal bug: In SGBCs. '
+                  call log_msg(LOG_ERROR, 'SGBC', buff)
                end select
                if ((compo%med(1) == 0).or.(compo%med(0) == 0).or.(sgg%med(compo%med(1))%Is%PEC).or.(sgg%med(compo%med(0))%Is%PEC)) then
-                  write(buff, *)    'Buggy ERROR: In SGBCs. '
-                  call WarnErrReport (buff,.TRUE.)
+                  write(buff, *)    'Internal bug: In SGBCs. '
+                  call log_msg(LOG_ERROR, 'SGBC', buff)
                end if
 !!!!!!!!!
                compo%jmed       = jmed
@@ -342,8 +342,8 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
                if (compo%depth==0) then
                     compo%SGBCCrank=.false.
                else if (compo%depth<0) then
-                  write(buff, *)    'Buggy ERROR: In SGBCs compo%depth<0. ',compo%depth
-                  call WarnErrReport (buff,.TRUE.)
+                  write(buff, *)    'Internal bug: In SGBCs compo%depth<0. ',compo%depth
+                  call log_msg(LOG_ERROR, 'SGBC', buff)
                else
                     compo%SGBCCrank=SGBCCrank
                end if
@@ -413,12 +413,12 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
                   compo%Correct_Ha=.false.
                   compo%Correct_Hb=.true.
                 case DEFAULT
-                  write(buff, *)    'Buggy ERROR: In SGBCs. '
-                  call WarnErrReport (buff,.TRUE.)
+                  write(buff, *)    'Internal bug: In SGBCs. '
+                  call log_msg(LOG_ERROR, 'SGBC', buff)
                end select
                if ((compo%med(1) == 0).or.(compo%med(0) == 0).or.(sgg%med(compo%med(1))%Is%PEC).or.(sgg%med(compo%med(0))%Is%PEC)) then
-                  write(buff, *)    'Buggy ERROR: In SGBCs. '
-                  call WarnErrReport (buff,.TRUE.)
+                  write(buff, *)    'Internal bug: In SGBCs. '
+                  call log_msg(LOG_ERROR, 'SGBC', buff)
                end if
 !!!!   
                compo%jmed       = jmed
@@ -431,8 +431,8 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
                if (compo%depth==0) then
                     compo%SGBCCrank=.false.
                else if (compo%depth<0) then
-                  write(buff, *)    'Buggy ERROR: In SGBCs compo%depth<0. ',compo%depth
-                  call WarnErrReport (buff,.TRUE.)
+                  write(buff, *)    'Internal bug: In SGBCs compo%depth<0. ',compo%depth
+                  call log_msg(LOG_ERROR, 'SGBC', buff)
                else
                     compo%SGBCCrank=SGBCcrank
                end if
@@ -502,12 +502,12 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
                   compo%Correct_Ha=.false.
                   compo%Correct_Hb=.true.
                 case DEFAULT
-                  write(buff, *)    'Buggy ERROR: In SGBCs. '
-                  call WarnErrReport (buff,.TRUE.)
+                  write(buff, *)    'Internal bug: In SGBCs. '
+                  call log_msg(LOG_ERROR, 'SGBC', buff)
                end select
                if ((compo%med(1) == 0).or.(compo%med(0) == 0).or.(sgg%med(compo%med(1))%Is%PEC).or.(sgg%med(compo%med(0))%Is%PEC)) then
-                  write(buff, *)    'Buggy ERROR: In SGBCs. '
-                  call WarnErrReport (buff,.TRUE.)
+                  write(buff, *)    'Internal bug: In SGBCs. '
+                  call log_msg(LOG_ERROR, 'SGBC', buff)
                end if
 !!!!!!!!!
                compo%jmed  = jmed
@@ -520,8 +520,8 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
                if (compo%depth==0) then
                     compo%SGBCCrank=.false.
                else if (compo%depth<0) then
-                  write(buff, *)    'Buggy ERROR: In SGBCs compo%depth<0. ',compo%depth
-                  call WarnErrReport (buff,.TRUE.)
+                  write(buff, *)    'Internal bug: In SGBCs compo%depth<0. ',compo%depth
+                  call log_msg(LOG_ERROR, 'SGBC', buff)
                else
                     compo%SGBCCrank=SGBCcrank
                end if
@@ -566,7 +566,7 @@ do k1=sgg%SINPMLSweep(IEX)%ZI,sgg%SINPMLSweep(IEX)%ZE
     end do
 
     write(buff, *)  ' Maximum SGBC depth= ',2*i,' for medium jmed= ',jmed
-    call WarnErrReport (buff)
+    call log_msg(LOG_WARN, 'SGBC', buff)
 
 
 
@@ -1013,8 +1013,8 @@ subroutine AdvanceSGBCH
          compo%Hb_Plus = compo%Hb_Plus -  compo%gm2_externo* (compo%Efield - compo%E(compo%depth))
          compo%Hb_Minu = compo%Hb_Minu +  compo%gm2_externo* (compo%Efield - compo%E(-compo%depth))
       else     
-         write(buff, *)    'Buggy ERROR: In SGBCs. '
-         call StopOnError (0,0,buff)
+         write(buff, *)    'Internal bug: In SGBCs. '
+         call log_msg(LOG_FATAL, 'SGBC', buff)
       end if
    end do
    return
@@ -1176,8 +1176,7 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
          ib_ady=compo%layerIndex(i-1)         
          if ((ib<1).or.(ib>sgg%Med(compo%jmed)%multiport(1)%numLayers)) then
              write(buff, *)   'Buggy error in ib fuera de rango en compo numcapas. Contact '
-             call StopOnError (0,0,buff)
-             stop
+             call log_msg(LOG_FATAL, 'SGBC', buff)
          end if
          eprtemp=    sgg%Med(compo%jmed)%multiport(1)%epr(ib)  
          sigmatemp=  sgg%Med(compo%jmed)%multiport(1)%sigma(ib)
@@ -1205,8 +1204,7 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
          ib=compo%layerIndex(i)         
          if ((ib<1).or.(ib>sgg%Med(compo%jmed)%multiport(1)%numLayers)) then
              write(buff, *)   'Buggy error in ib fuera de rango en compo numcapas. '
-             call StopOnError (0,0,buff)
-             stop
+             call log_msg(LOG_FATAL, 'SGBC', buff)
          end if
          sigmamtemp= sgg%Med(compo%jmed)%multiport(1)%sigmam(ib)
          murtemp=    sgg%Med(compo%jmed)%multiport(1)%mur(ib)
@@ -1319,9 +1317,7 @@ subroutine StoreFieldsSGBCs(stochastic)
       end do
 
    goto 635
-634   call print11(0,SEPARADOR//separador//separador)
-   call print11(0,'SGBC: ERROR WRITING RESTARTING FIELDS. IGNORING AND CONTINUING')
-   call print11(0,SEPARADOR//separador//separador)          
+634   call log_msg(LOG_WARN, 'SGBC', 'cannot write restarting fields, ignoring and continuing')
 635   return
 end subroutine StoreFieldsSGBCs
 
@@ -1386,8 +1382,8 @@ subroutine test_stab(G2,GM2)
    end do
 
    if (unstable) then
-        write(buff, *)    'ERROR: SGBCs may become unstable. Reduce cfl'
-        call WarnErrReport (buff,.true.)
+        write(buff, *)    'SGBCs may become unstable. Reduce cfl'
+        call log_msg(LOG_ERROR, 'SGBC', buff)
    end if
 
    return
@@ -1439,7 +1435,7 @@ subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
          if (SGBCdepth==0) then !numlayers must necessarily be 1
              if (numLayers > 1) then
                 write(buff, *)   'SGBCDepth=0 and numcapas>1 not compatible. Please, relaunch'
-                call StopOnError (0,0,buff)
+                call log_msg(LOG_FATAL, 'SGBC', buff)
              else
                  layerWidth=1 !numlayers is necessarily 1 if it continues
              end if
@@ -1481,7 +1477,7 @@ subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
      if (precuenta==1) then
          if ((celdafinal/=compo%depth-1).and.(compo%depth/=0)) then
                 write(buff, *)   'Buggy error redondeo final ultima capa. '
-                call StopOnError (0,0,buff)
+                call log_msg(LOG_FATAL, 'SGBC', buff)
          end if
      end if
  end do

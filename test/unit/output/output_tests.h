@@ -22,16 +22,12 @@ extern "C" int test_output_transport_serial();
 
 // Artifact metadata and binary layout.
 extern "C" int test_atomic_file_replacement();
-extern "C" int test_portable_binary_output();
-extern "C" int test_output_binary_fragment_layout();
 extern "C" int test_output_binary_native_precision();
-extern "C" int test_output_binary_mixed_complex_layout();
-extern "C" int test_output_binary_append_real64();
-extern "C" int test_output_binary_append_empty_real64();
 
 // Probe lifecycle behaviour.
 extern "C" int test_init_point_probe();
 extern "C" int test_init_point_probe_with_incident();
+extern "C" int test_estimate_point_probe_memory();
 extern "C" int test_line_probe_integral();
 extern "C" int test_line_probe_empty_path();
 extern "C" int test_line_probe_dat_output();
@@ -44,6 +40,7 @@ extern "C" int test_flush_bulk_probe_dat();
 extern "C" int test_multiple_flush_point_probe();
 extern "C" int test_init_movie_probe();
 extern "C" int test_update_movie_probe();
+extern "C" int test_time_buffer_capacity();
 extern "C" int test_flush_movie_probe();
 extern "C" int test_close_movie_probe();
 extern "C" int test_init_frequency_slice_probe();
@@ -88,22 +85,14 @@ TEST(output, test_metadata_contract_edges) { EXPECT_EQ(0, test_output_metadata_c
 TEST(output, test_transport_serial) { EXPECT_EQ(0, test_output_transport_serial()); }
 // Replaces a completed file without exposing a partial target.
 TEST(output, test_atomic_file_replacement) { EXPECT_EQ(0, test_atomic_file_replacement()); }
-// Writes portable little-endian real64 binary data through the production append API.
-TEST(output, test_portable_binary_output) { EXPECT_EQ(0, test_portable_binary_output()); }
-// Requires identity metadata for binary fragments.
-TEST(output, test_binary_fragment_layout) { EXPECT_EQ(0, test_output_binary_fragment_layout()); }
 // Selects the highest supported native precision for mixed-value records.
 TEST(output, test_binary_native_precision) { EXPECT_EQ(0, test_output_binary_native_precision()); }
-// Accepts coordinate-plus-complex records at the selected record precision.
-TEST(output, test_binary_mixed_complex_layout) { EXPECT_EQ(0, test_output_binary_mixed_complex_layout()); }
-// Appends complete double-precision records without replacing prior samples.
-TEST(output, test_binary_append_real64) { EXPECT_EQ(0, test_output_binary_append_real64()); }
-// Treats an empty double-precision batch as a successful no-op append.
-TEST(output, test_binary_append_empty_real64) { EXPECT_EQ(0, test_output_binary_append_empty_real64()); }
 // Registers a point probe and its declared output paths.
 TEST(output, test_initialize_point_probe) { EXPECT_EQ(0, test_init_point_probe()); }
 // Declares the incident field alongside point-probe time samples.
 TEST(output, test_initialize_point_probe_with_incident) { EXPECT_EQ(0, test_init_point_probe_with_incident()); }
+// Estimates point-probe memory as one flush window of time samples.
+TEST(output, test_estimate_point_probe_memory) { EXPECT_EQ(0, test_estimate_point_probe_memory()); }
 // Preserves the signed mixed-direction electric-field line integral.
 TEST(output, test_line_probe_integral) { EXPECT_EQ(0, test_line_probe_integral()); }
 // Keeps an empty line discoverable without fabricating measurements.
@@ -127,7 +116,9 @@ TEST(output, test_flush_multiple_point_probe_info) { EXPECT_EQ(0, test_multiple_
 TEST(output, test_init_movie_probe_for_pec_surface) { EXPECT_EQ(0, test_init_movie_probe()); }
 // Samples movie-probe field components for a timestep.
 TEST(output, test_update_movie_probe_for_pec_surface) { EXPECT_EQ(0, test_update_movie_probe()); }
-// Flushes movie data and creates binary, HDF5, and XDMF artifacts.
+// Sizes time buffers to the samples taken between periodic flushes.
+TEST(output, test_time_buffer_capacity) { EXPECT_EQ(0, test_time_buffer_capacity()); }
+// Flushes movie data and creates HDF5 and XDMF artifacts without a binary payload.
 TEST(output, test_flush_movie_probe_data) { EXPECT_EQ(0, test_flush_movie_probe()); }
 // Closes a movie writer without publishing a JSON sidecar.
 TEST(output, test_close_movie_probe_data) { EXPECT_EQ(0, test_close_movie_probe()); }

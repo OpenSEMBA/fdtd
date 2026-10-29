@@ -2,7 +2,7 @@ integer function test_output_transport_serial() bind(c) result(err)
    ! Verifies the serial identity path used by root-aggregated flushes.
    use, intrinsic :: iso_fortran_env, only: real64
    use outputTransport_m, only: output_transport_t, init_output_transport, transfer_flush_batch, &
-                                OUTPUT_TRANSPORT_SUCCESS
+                                relay_flush_batch, OUTPUT_TRANSPORT_SUCCESS, OUTPUT_TRANSPORT_INVALID_CONTEXT
    use assertionTools_m, only: assert_integer_equal, assert_true
    implicit none
 
@@ -22,4 +22,10 @@ integer function test_output_transport_serial() bind(c) result(err)
    err = err + assert_true(size(counts) == 1 .and. counts(1) == 2, 'Serial batch count is incorrect')
    err = err + assert_true(size(displacements) == 1 .and. displacements(1) == 0, &
                            'Serial batch displacement is incorrect')
+   call relay_flush_batch(transport, 0, [5.0_real64, 6.0_real64], gathered_batch, status)
+   err = err + assert_integer_equal(status, OUTPUT_TRANSPORT_SUCCESS, 'Serial batch relay failed')
+   err = err + assert_true(all(gathered_batch == [5.0_real64, 6.0_real64]), 'Serial relay values changed')
+   call relay_flush_batch(transport, 1, [5.0_real64], gathered_batch, status)
+   err = err + assert_integer_equal(status, OUTPUT_TRANSPORT_INVALID_CONTEXT, &
+                                    'Relay from a rank outside the transport was accepted')
 end function test_output_transport_serial

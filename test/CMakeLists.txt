@@ -34,8 +34,14 @@ endif()
 add_subdirectory(conformal)
 set(CONFORMAL_TESTS_LIBRARY conformal_tests)
 
+add_subdirectory(borders)
+set(BORDER_TESTS_LIBRARY border_tests)
+
 add_subdirectory(unit/preprocess)
 set(PREPROCESS_TESTS_LIBRARY preprocess_tests)
+
+add_subdirectory(unit/report)
+set(REPORT_TESTS_LIBRARY report_tests)
 
 add_subdirectory(healer)
 set(HEALER_TESTS_LIBRARY healer_tests)
@@ -43,7 +49,7 @@ set(HEALER_TESTS_LIBRARY healer_tests)
 add_subdirectory(sgbc)
 set(SGBC_TESTS_LIBRARY sgbc_tests)
 
-add_executable(fdtd_tests 
+add_executable(fdtd_tests
     "fdtd_tests.cpp"
 )
 
@@ -51,7 +57,9 @@ target_link_libraries(fdtd_tests
     ${MTLN_TESTS_LIBRARY}
     ${SMBJSON_TESTS_LIBRARY}
     ${CONFORMAL_TESTS_LIBRARY}
+    ${BORDER_TESTS_LIBRARY}
     ${PREPROCESS_TESTS_LIBRARY}
+    ${REPORT_TESTS_LIBRARY}
     ${ROTATE_TESTS_LIBRARY}
     ${OUTPUT_TESTS_LIBRARY}
     ${VTK_API_TESTS_LIBRARY}

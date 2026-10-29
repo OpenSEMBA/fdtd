@@ -1,5 +1,5 @@
 
- 
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! This module contains the types and parameters shared by all the rest of the modules
 ! No public variables are defined. Only types and parameters
@@ -11,13 +11,13 @@ module  FDETYPES_m
    use omp_lib
 #endif
 
- 
-#ifdef CompileWithReal16 
+
+#ifdef CompileWithReal16
 #undef CompileWithReal8
 #undef CompileWithReal4
 #endif
 
-#ifdef CompileWithReal8 
+#ifdef CompileWithReal8
 #undef CompileWithReal16
 #undef CompileWithReal4
 #endif
@@ -211,16 +211,20 @@ module  FDETYPES_m
    integer(kind=4), parameter :: FACE_X = 1
    integer(kind=4), parameter :: FACE_Y = 2
    integer(kind=4), parameter :: FACE_Z = 3
-   
+
    integer(kind=4), parameter :: EDGE_X = 1
    integer(kind=4), parameter :: EDGE_Y = 2
    integer(kind=4), parameter :: EDGE_Z = 3
+   
+   integer(kind=4), parameter :: EDGE_REGION_I = 1
+   integer(kind=4), parameter :: EDGE_REGION_II = 2
+   integer(kind=4), parameter :: EDGE_REGION_CONFORMAL = 3
 
    !source types
    character(len=*), parameter :: F_SOURCE_VOLTAGE = 'VOLT'
    character(len=*), parameter :: F_SOURCE_CURRENT = 'CURR'
-
    
+
 #ifdef CompileWithReal4
    character(len=*), parameter  :: FMT='(e27.17e3,11(e19.9e3))'  !IEEE 754 single-precision 6 to 9 decimals -1.123456789E-001
 #else
@@ -279,7 +283,7 @@ module  FDETYPES_m
       NodalH  , &
       MagneticMedia, PMLMagneticMedia, &
       MTLNbundles
-   contains 
+   contains
       procedure :: reset => logic_reset
    end type
 
@@ -381,7 +385,7 @@ module  FDETYPES_m
       logical :: reversedOrientation
    end type oriented_point_t
 
-#ifdef CompileWithMTLN   
+#ifdef CompileWithMTLN
    type  :: Multiwires_t
    end type
 #endif
@@ -414,14 +418,14 @@ module  FDETYPES_m
       ! integer(kind=4) :: LextremoI,LextremoJ,LextremoK,RextremoI,RextremoJ,RextremoK !not necessary: I later compute the ends correctly
       integer(kind=4) :: LeftEnd,RightEnd
    end type Wires_t
-   
+
    type  :: SlantedNode_t
       integer(kind=4) :: elementIndex
       real(kind=RKIND_WIRES) :: x, y, z
       logical                 :: VsourceExists, IsourceExists
       type(source_t), pointer  :: Vsource, Isource
    end type SlantedNode_t
-   
+
    type  :: SlantedWires_t
       real(kind=RKIND_WIRES) :: radius,R,L,C,P_R,P_L,P_C
       type(WireDispersiveParams_t), allocatable, dimension(:) :: disp
@@ -477,7 +481,7 @@ module  FDETYPES_m
       integer(kind=4) :: esqx1,esqy1,esqz1,esqx2,esqy2,esqz2
       type(fichevol_t) :: sourceFile
       integer(kind=4) :: nummodes
-      logical :: isRC 
+      logical :: isRC
    end type planeonde_t
    !
    type  :: Border_t
@@ -526,7 +530,7 @@ module  FDETYPES_m
       integer(kind=4) :: XI,YI,ZI,XE,YE,ZE,What,Node  !the final values XE,YE,ZE are only needed for the CurrentProbes
       integer(kind=4) :: Xtrancos,Ytrancos,Ztrancos
       type(direction_t), dimension(:), allocatable :: line
-      
+
    end type observable_t
    !
    type  :: Obses_t
@@ -602,6 +606,75 @@ module  FDETYPES_m
       split_and_useless
    end type
 
+   ! Conformal edge/face data is shared by FDETYPES and NFDETypes. Keep the
+   ! definitions in this foundational module so MediaData_t does not depend on
+   ! the module that already USEs FDETYPES.
+   type :: conformal_field_t
+      real(kind=rkind), pointer :: p => null()
+      real(kind=rkind), allocatable :: owned
+   end type
+
+   type :: conformal_edge_fields_t
+      real(kind=rkind), pointer :: E
+      real(kind=rkind), pointer :: H1 => null()
+      real(kind=rkind), pointer :: H2 => null()
+      real(kind=rkind), pointer :: H3 => null()
+      real(kind=rkind), pointer :: H4 => null()
+   end type
+
+   type :: conformal_face_fields_t
+      real(kind=rkind), pointer :: H
+      real(kind=rkind), pointer :: E1 => null()
+      real(kind=rkind), pointer :: E2 => null()
+      real(kind=rkind), pointer :: E3 => null()
+      real(kind=rkind), pointer :: E4 => null()
+   end type
+
+   type :: conformal_feature_t
+      real(kind=rkind) :: ratio
+      integer(kind=4) :: size
+   end type
+
+   type, public :: edge_t
+      integer(kind=4), dimension(3) :: cell
+      integer(kind=4) :: direction = -1
+      real(kind=rkind) :: ratio = -1
+      logical :: is_two_sided = .false.
+      real(kind=rkind), dimension(2) :: material_coords = [0.0, 1.0]
+      integer(kind=4) :: edge_region = EDGE_REGION_CONFORMAL
+      type(conformal_edge_fields_t) :: region_I_fields, region_II_fields
+   end type
+
+   type, public :: face_t
+      integer(kind=4), dimension(3) :: cell
+      integer(kind=4) :: direction = -1
+      real(kind=rkind) :: ratio = -1
+      logical :: is_two_sided = .false.
+      type(edge_t), dimension(:), allocatable :: contour_inside_edges
+      real(kind=RKIND), dimension(3) :: normal
+      integer(kind=4) :: sgbc_profile_index = 0
+      integer(kind=4) :: surface_normal_sign = 0
+      type(conformal_face_fields_t) :: region_I_fields, region_II_fields
+   end type
+
+   type, public, extends(conformal_feature_t) :: conformal_edge_media_t
+      type(edge_t), dimension(:), allocatable :: edges
+   end type
+
+   type, public, extends(conformal_feature_t) :: conformal_face_media_t
+      type(face_t), dimension(:), allocatable :: faces
+   end type
+
+   type, public :: ConformalMedia_t
+      integer(kind=4) :: n_edges_media = 0
+      integer(kind=4) :: n_faces_media = 0
+      type(conformal_face_media_t), dimension(:), pointer :: face_media => null()
+      type(conformal_edge_media_t), dimension(:), pointer :: edge_media => null()
+      real(kind=rkind) :: time_step_scale_factor = 1.0
+      character(len=BUFSIZE) :: tag
+      type(XYZlimit_t) :: bbox
+   end type
+
 
 
    type  :: MediaData_t
@@ -621,6 +694,8 @@ module  FDETYPES_m
 #ifdef CompileWithMTLN
       type(Multiwires_t)      , dimension(:), pointer  :: Multiwire
 #endif
+      type(edge_t), dimension(:), allocatable :: ConformalEdge
+      type(face_t), dimension(:), allocatable :: ConformalFace
    end type
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -648,9 +723,9 @@ module  FDETYPES_m
       !only needed by Slots and processed by anisotropic
       type(Shared_t)                                        :: Hshared !hnormal info
       type(XYZlimit_t), dimension(1:6)                      :: Alloc,Sweep,SINPMLSweep
-      type(MediaData_t), pointer, dimension(:)            :: Med
-      type(NodalSource_t), dimension(:), pointer           :: NodalSource
-      type(obses_t)  , pointer, dimension(:)              :: Observation
+      type(MediaData_t), pointer, dimension( : )            :: Med
+      type(NodalSource_t), dimension( : ), pointer           :: NodalSource
+      type(obses_t)  , pointer, dimension( : )              :: Observation
       !
       logical  :: thereAreMagneticMedia
       logical  :: thereArePMLMagneticMedia
@@ -662,12 +737,12 @@ module  FDETYPES_m
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) , allocatable , dimension(:,:,:) :: sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz
       integer(kind=IKINDMTAG) , allocatable , dimension(:,:,:) :: sggMtag
    end type
-      
+
 
    type :: constants_t
       real(kind=rkind), pointer, dimension(:) :: g1,g2,gM1,gM2
    contains
-      procedure :: destroy => constants_destroy 
+      procedure :: destroy => constants_destroy
    end type
 
 
@@ -689,11 +764,11 @@ module  FDETYPES_m
 
    ! variables for timestepping solver control
    type :: sim_control_t
-      logical :: simu_devia, resume,saveall,makeholes,& 
-                 connectendings,isolategroupgroups,createmap, & 
-                 groundwires,noSlantedcrecepelo, & 
-                 mibc,ADE,conformalskin,sgbc, sgbcDispersive, sgbccrank, & 
-                 NOcompomur,strictOLD,TAPARRABOS, & 
+      logical :: simu_devia, resume,saveall,makeholes,&
+                 connectendings,isolategroupgroups,createmap, &
+                 groundwires,noSlantedcrecepelo, &
+                 mibc,ADE,conformalskin,sgbc, sgbcDispersive, sgbccrank, &
+                 NOcompomur,strictOLD,TAPARRABOS, &
                  noconformalmapvtk, experimentalVideal, &
                  forceresampled, mur_second,MurAfterPML, &
                  stableradholland,singlefilewrite,NF2FFDecim, &
@@ -765,7 +840,7 @@ contains
       this%postprocess = .false.
       this%flushXdmf = .false.
       this%flushVTK = .false.
-   end subroutine 
+   end subroutine
 
    subroutine logic_reset(this)
       class(logic_control_t) :: this
@@ -792,7 +867,7 @@ contains
       this%MagneticMedia = .false.
       this%PMLMagneticMedia= .false.
       this%MTLNbundles = .false.
-   end subroutine 
+   end subroutine
 
    subroutine setglobal(iu1,iu2)
        integer(kind=4) :: iu1,iu2
@@ -839,13 +914,13 @@ contains
          prior_IB      =   20 !THE USUAL
       end if 
       return
-      
+
 
    end subroutine set_priorities
-   
+
    function taglist_getFaceTag(this, field, i, j, k) result(res)
       class(taglist_t) :: this
-      integer(kind=IKINDMTAG) :: res 
+      integer(kind=IKINDMTAG) :: res
       integer(kind = 4) :: field, i, j, k
       select case(field)
       case(IHX)
@@ -859,7 +934,7 @@ contains
 
    function taglist_getEdgeTag(this, field, i, j, k) result(res)
       class(taglist_t) :: this
-      integer(kind=IKINDMTAG) :: res 
+      integer(kind=IKINDMTAG) :: res
       integer(kind = 4) :: field, i, j, k
       select case(field)
       case(IEX)
@@ -872,7 +947,7 @@ contains
    end function
 
    logical function direction_eq(a,b)
-      class(direction_t), intent(in) :: a,b 
+      class(direction_t), intent(in) :: a,b
       direction_eq = .true.
       direction_eq = direction_eq .and. (a%x == b%x)
       direction_eq = direction_eq .and. (a%y == b%y)

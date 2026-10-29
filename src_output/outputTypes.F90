@@ -210,6 +210,7 @@ module outputTypes_m
    end type abstract_probe_t
    type, extends(abstract_probe_t) :: abstract_time_probe_t
       character(len=BUFSIZE) :: filePathTime
+      integer :: fileUnitTime = 0
       integer(kind=SINGLE) :: nTime = 0_SINGLE
       integer(kind=SINGLE) :: nTimesFlushed = 0_SINGLE !times alredy writen in disk
       real(kind=RKIND_TIME), allocatable :: timeStep(:)
@@ -225,6 +226,7 @@ module outputTypes_m
 
    type, extends(abstract_probe_t) :: abstract_time_frequency_probe_t
       character(len=BUFSIZE) :: filePathTime, filePathFreq
+      integer :: fileUnitTime = 0, fileUnitFreq = 0
       integer(kind=SINGLE) :: nTime = 0_SINGLE, nFreq = 0_SINGLE
       real(kind=RKIND_TIME) :: quadratureDt = 0.0_RKIND_TIME
       real(kind=RKIND_TIME), allocatable :: timeStep(:)
@@ -265,7 +267,7 @@ module outputTypes_m
 
    type, extends(abstract_time_probe_t) :: wire_current_probe_output_t
       integer(kind=SINGLE) :: signValue = +1
-      type(current_values_t) :: currentValues(OUTPUT_TIME_BUFFER_SIZE)
+      type(current_values_t), allocatable :: currentValues(:)
       type(CurrentSegments_t), pointer :: segment
       type(output_artifact_t) :: artifacts(1)
 #ifdef CompileWithBerengerWires
@@ -365,6 +367,13 @@ module outputTypes_m
    end type problem_info_t
 
 contains
+
+   ! Outputs flush every OUTPUT_TIME_BUFFER_SIZE steps, so a probe sampling every tstride steps
+   ! stores at most ceil(OUTPUT_TIME_BUFFER_SIZE/tstride) samples between flushes.
+   pure integer function time_buffer_capacity(domain)
+      type(domain_t), intent(in) :: domain
+      time_buffer_capacity = (OUTPUT_TIME_BUFFER_SIZE + max(1, domain%tstride) - 1)/max(1, domain%tstride)
+   end function time_buffer_capacity
 
    pure integer function binary_numeric_representation_for_bytes(component_bytes)
       integer, intent(in) :: component_bytes(:)

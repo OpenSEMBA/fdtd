@@ -1,0 +1,14 @@
+{
+    "mesh": {
+        "coordinates": [],
+        "elements": [
+            {
+                "id": 1,
+                "type": "cell",
+                "subtype": "volume",
+                "intervals": [],
+                "triangles": []
+            }
+        ]
+    }
+}

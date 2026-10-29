@@ -1,6 +1,7 @@
 module test_rotate_generateMasSondas_m
     use smbjson_m
     use nfde_rotate_m
+    use NFDETypes_m, only: NP_COR_WIRECURRENT, NP_COR_EX
     use rotate_testingTools_m
     implicit none
 
@@ -31,6 +32,24 @@ integer function test_rotate_generate_mas_sondas() bind(C) result(err)
     call rotate_generateMasSondas(this, mpidir)
     call verify_massonda_rotation(test_err, this, mpidir)
     
+    call cleanup_massonda_test(this)
+
+    ! A wire probe before a field probe must not prevent the field probe rotation.
+    mpidir = 1
+    call setup_massonda_test(this, 2)
+    call init_massonda_data(this, 1, 3, 0, 0, 0, 0, 0, 1, 1, 1, NP_COR_WIRECURRENT, 1, "wire")
+    call init_massonda_data(this, 2, 1, 4, 2, 5, 3, 6, 1, 2, 3, NP_COR_EX, 1, "probe")
+    call rotate_generateMasSondas(this, mpidir)
+    call expect_eq_int(test_err, 3, this%Sonda%collection(1)%cordinates(1)%Xi, &
+                       "rotate_generateMasSondas: wire probe Xi should not be rotated")
+    call expect_eq_int(test_err, 0, this%Sonda%collection(1)%cordinates(1)%Yi, &
+                       "rotate_generateMasSondas: wire probe Yi should not be rotated")
+    call expect_eq_int(test_err, 2, this%Sonda%collection(2)%cordinates(1)%Xi, &
+                       "rotate_generateMasSondas: field probe after wire probe Xi")
+    call expect_eq_int(test_err, 3, this%Sonda%collection(2)%cordinates(1)%Yi, &
+                       "rotate_generateMasSondas: field probe after wire probe Yi")
+    call expect_eq_int(test_err, 1, this%Sonda%collection(2)%cordinates(1)%Zi, &
+                       "rotate_generateMasSondas: field probe after wire probe Zi")
     call cleanup_massonda_test(this)
     
     err = test_err

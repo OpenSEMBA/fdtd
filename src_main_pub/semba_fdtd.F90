@@ -5,14 +5,14 @@ module SEMBA_FDTD_m
    use Getargs_m
    !
    use FDETYPES_m
-   use Solver_m         
+   use Solver_m
    use resuming_m
    !nfde parser stuff
-   use NFDETypes_m                
-   use nfde_rotate_m           
+   use NFDETypes_m
+   use nfde_rotate_m
 
 
-#ifdef CompilePrivateVersion  
+#ifdef CompilePrivateVersion
    use ParseadorClass
 #endif
 
@@ -64,9 +64,9 @@ module SEMBA_FDTD_m
       procedure :: finalize => semba_end
       procedure :: create_solver => semba_create_solver
       procedure :: update_after_simulation => semba_update_after_simulation
-   end type semba_fdtd_t 
+   end type semba_fdtd_t
 
-   
+
 contains
 
    subroutine semba_init(this, input_flags)
@@ -75,7 +75,7 @@ contains
 
       real(kind=RKIND) :: dtantesdecorregir
       real(kind=RKIND) :: dxmin,dymin,dzmin,dtlay
-      
+
       logical :: dummylog,l_auxinput, l_auxoutput, ThereArethinslots
       logical :: hayinput
       character(len=BUFSIZE) :: f= ' ', chain = ' ', chain3 = ' ',chain4 = ' ', chaindummy= ' '
@@ -91,8 +91,8 @@ contains
 
       type(Parseador_t), pointer :: parser
       type(t_NFDE_FILE_t), pointer :: NFDE_FILE
-      type(solver_t) :: solver 
-         
+      type(solver_t) :: solver
+
 #ifdef CompileWithMPI
       logical :: fatalerror_aux
       type(XYZlimit_t), dimension(1:6) :: tempalloc
@@ -105,7 +105,7 @@ contains
       this%eps0= 8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12
       this%mu0 = 1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
       this%cluz=1.0_RKIND/sqrt(this%eps0*this%mu0)
-      
+
       call OnPrint
 
 #ifdef CompileWithMPI
@@ -116,10 +116,11 @@ contains
       this%l%layoutnumber = 0
 #endif
       call setglobal(this%l%layoutnumber,this%l%num_procs) !to create global variables with MPI info
+      call set_log_rank(this%l%layoutnumber, this%l%num_procs)
          
       write(this%whoamishort, '(i5)') this%l%layoutnumber + 1
       write(this%whoami, '(a,i5,a,i5,a)') '(', this%l%layoutnumber + 1, '/', this%l%num_procs, ') '
-         
+
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,this%l%ierr)
 #endif
@@ -220,7 +221,7 @@ contains
       end do
       !end of the semaphore
 
-#ifdef keeppause   
+#ifdef keeppause
       inquire(file='forcestop', EXIST=this%l%forcestop)
       if (this%l%forcestop) then
          if (this%l%layoutnumber==0) then
@@ -249,9 +250,9 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,this%l%ierr)
 #endif
       call get_secnds (this%l%time_out2)
-      
-   
-      if (present(input_flags)) then 
+
+
+      if (present(input_flags)) then
          this%l%read_command_line = .false.
          this%l%chain2 = input_flags
          this%l%length = len(input_flags)
@@ -259,7 +260,7 @@ contains
       ! look at the command_line and the launch file 251022
          call get_command (this%l%chain2, this%l%length, status)
          if (status /= 0) then
-            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'General error',.true.); goto 652
+            call log_msg(LOG_FATAL, 'MAIN', 'General error'); goto 652
          end if
       end if
 
@@ -271,7 +272,7 @@ contains
          read (9, '(a)') chain3
          chain3=trim(adjustl(chain3))
          close (9)               
-         print *,'----> launch input file '//trim(adjustl(chain3))
+         call log_msg(LOG_INFO, 'MAIN', 'launch input file '//trim(adjustl(chain3)))
       end if
 #ifdef CompileWithMPI
       call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
@@ -281,24 +282,24 @@ contains
       this%l%chain2=trim(adjustl(this%l%chain2))//' '//trim(adjustl(chain3))
 
       call buscaswitchficheroinput(this%l)
-      
+
 
    if (status /= 0) then
-       call stoponerror (this%l%layoutnumber, this%l%num_procs, 'Error in searching input file. Correct and remove pause file',.true.); goto 652
+       call log_msg(LOG_FATAL, 'MAIN', 'Error in searching input file. Correct and remove pause file'); goto 652
    end if
 !!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!
    call print_credits(this%l)
 
 #ifdef CompileWithMPI
-   call initialize_MPI_process(this%l%filefde,this%l%extension) 
+   call initialize_MPI_process(this%l%filefde,this%l%extension)
 #else
 #ifdef CompilePrivateVersion
-   if (trim(adjustl(this%l%extension))=='.nfde') then 
+   if (trim(adjustl(this%l%extension))=='.nfde') then
 #ifndef CompileWithMTLN
       NFDE_FILE => cargar_NFDE_FILE (this%l%filefde)
 #else
-      call WarnErrReport(".nfde files are not supported when compiling with MTLN.", .true.)
+      call log_msg(LOG_ERROR, 'MAIN', ".nfde files are not supported when compiling with MTLN.")
 #endif
    else
       allocate (NFDE_FILE)
@@ -323,13 +324,13 @@ contains
    call interpreta(this%l,status)      
    this%sgg%nInputRoot=trim (adjustl(this%l%nInputRoot))
 
-#ifdef CompileWithMPI            
+#ifdef CompileWithMPI
    call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
 
    call nfde_rotate (parser,this%l%mpidir)
 
-#ifdef CompileWithMPI            
+#ifdef CompileWithMPI
    call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
 
@@ -363,7 +364,7 @@ contains
          !release memory created by newPARSER
          if (this%l%fatalerror) then
             if (allocated(this%media%sggMiEx)) deallocate(this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz,this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz,this%media%sggMiNo,this%media%sggMtag)
-            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'Error in .nfde file syntax. Check all *Warnings* and *tmpWarnings* files, correct and remove pause file if any',.true.); goto 652
+            call log_msg(LOG_FATAL, 'MAIN', 'Error in .nfde file syntax. Check all *Warnings* and *tmpWarnings* files, correct and remove pause file if any'); goto 652
          end if
 
          if (allocated(this%media%sggMiEx)) then !for this%l%skindepthpre nothing is allocated
@@ -382,7 +383,7 @@ contains
       if (this%l%forcesteps) then
          this%sgg%TimeSteps = this%l%finaltimestep
 #ifdef CompileWithMTLN
-         this%mtln_parsed%number_of_steps = this%l%finaltimestep 
+         this%mtln_parsed%number_of_steps = this%l%finaltimestep
 #endif
       else
          this%l%finaltimestep = this%sgg%TimeSteps
@@ -398,7 +399,7 @@ contains
          this%l%finaltimestep=NEWfinaltimestep
 #endif
 #ifdef CompileWithMTLN
-            this%mtln_parsed%number_of_steps = this%l%finaltimestep 
+            this%mtln_parsed%number_of_steps = this%l%finaltimestep
 #endif
             if (finaltimestepantesdecorregir/=this%l%finaltimestep) then
                write(dubuf,*) SEPARADOR//separador//separador
@@ -414,12 +415,12 @@ contains
          if (this%sgg%Med(i)%Is%ThinWire) then
 #ifndef CompileWithBerengerWires
       if  ((this%l%wiresflavor=='berenger')) then
-            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'Berenger Wires without support. Recompile!')
+            call log_msg(LOG_FATAL, 'MAIN', 'Berenger Wires without support. Recompile!')
       end if
 #endif
 #ifndef CompileWithSlantedWires
       if  ((this%l%wiresflavor=='slanted').or.(this%l%wiresflavor=='semistructured')) then
-            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'slanted Wires without support. Recompile!')
+            call log_msg(LOG_FATAL, 'MAIN', 'slanted Wires without support. Recompile!')
       end if
 #endif
             continue
@@ -427,30 +428,30 @@ contains
          !
          if ((this%sgg%Med(i)%Is%AnisMultiport) .OR. (this%sgg%Med(i)%Is%multiport).OR. (this%sgg%Med(i)%Is%SGBC)) then
 #ifndef CompileWithNIBC
-            if (this%l%mibc) call stoponerror (this%l%layoutnumber, this%l%num_procs, 'this%l%mibc Multiports without support. Recompile!')
+            if (this%l%mibc) call log_msg(LOG_FATAL, 'MAIN', 'this%l%mibc Multiports without support. Recompile!')
 #endif
             continue
          end if
    !altair non-conformal sgbc 201119
 #ifdef NoConformalSGBC
          if (this%sgg%Med(i)%Is%sgbc .and. this%l%input_conformal_flag) then
-            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'Conformal sgbc not allowed. ')
+            call log_msg(LOG_FATAL, 'MAIN', 'Conformal sgbc not allowed. ')
          end if
 #endif
-   !    
+   !
       end do
-      
-      
+
+
       if (this%l%thereare_stoch.and.(.not.this%l%chosenyesornostochastic)) then
-         call stoponerror (this%l%layoutnumber, this%l%num_procs, '!STOCH found in .nfde. Specify either -stoch or -nostoch')
+         call log_msg(LOG_FATAL, 'MAIN', '!STOCH found in .nfde. Specify either -stoch or -nostoch')
       end if
 #ifndef CompileWithSlantedWires
       if (this%l%hay_slanted_wires) then
-         call stoponerror (this%l%layoutnumber, this%l%num_procs, 'slanted wires without slanted support. Recompile ()')
+         call log_msg(LOG_FATAL, 'MAIN', 'slanted wires without slanted support. Recompile ()')
       end if
-#endif   
+#endif
       if (this%l%hay_slanted_wires .AND. ((trim(adjustl(this%l%wiresflavor))/='slanted').AND.(trim(adjustl(this%l%wiresflavor))/='semistructured'))) then
-         call stoponerror (this%l%layoutnumber, this%l%num_procs, 'slanted wires require -this%l%wiresflavor Slanted/semistructured')
+         call log_msg(LOG_FATAL, 'MAIN', 'slanted wires require -this%l%wiresflavor Slanted/semistructured')
       end if
 
       
@@ -460,7 +461,7 @@ contains
          if (this%sgg%Med(jmed)%Is%ThinSlot) ThereArethinslots=.true.
       end do
       if (this%l%resume.and.this%l%run_with_abrezanjas.and.ThereArethinslots) then   
-            call stoponerror (this%l%layoutnumber, this%l%num_procs, 'this%l%resume -r currently unsupported by conformal solver',.true.); statuse=-1; !return
+            call log_msg(LOG_FATAL, 'MAIN', 'this%l%resume -r currently unsupported by conformal solver'); statuse=-1; !return
       end if
       !
    !!!SOME FINAL REPORTING
@@ -469,16 +470,16 @@ contains
          write(dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
          call print11 (this%l%layoutnumber, dubuf)
          call print11 (this%l%layoutnumber, 'Solver launched with options:')
-         write(dubuf,*) this%l%mibc          
+         write(dubuf,*) this%l%mibc
          call print11 (this%l%layoutnumber, '---> this%l%mibc    solver for NIBC multilayer: '//trim(adjustl(dubuf)))
-         write(dubuf,*) this%l%ade         
+         write(dubuf,*) this%l%ade
          call print11 (this%l%layoutnumber, '---> this%l%ade     solver for ADC multilayer: '//trim(adjustl(dubuf)))
          write(dubuf,*) this%l%sgbc    
          call print11 (this%l%layoutnumber, '---> sgbc    solver for multilayer: '//trim(adjustl(dubuf)))
          if (this%l%sgbc) then
-               write(dubuf,*) this%l%sgbcDispersive      
+               write(dubuf,*) this%l%sgbcDispersive
                call print11 (this%l%layoutnumber, '---> sgbc DISPERSIVE solver for multilayer: '//trim(adjustl(dubuf)))
-               write(dubuf,*) this%l%sgbccrank     
+               write(dubuf,*) this%l%sgbccrank
                call print11 (this%l%layoutnumber, '---> sgbc Crank-Nicolson solver for multilayer: '//trim(adjustl(dubuf)))
                write(dubuf,*) this%l%sgbcdepth
                call print11 (this%l%layoutnumber, '---> sgbc Depth: '//trim(adjustl(dubuf)))
@@ -491,7 +492,7 @@ contains
          call print11 (this%l%layoutnumber, '---> this%l%skindepthpre preprocessing for multilayer: '//trim(adjustl(dubuf)))
          write(dubuf,*) this%l%flag_conf_sgg
          call print11 (this%l%layoutnumber, '---> Conformal file external: '//trim(adjustl(dubuf)))
-         write(dubuf,*) this%l%input_conformal_flag      
+         write(dubuf,*) this%l%input_conformal_flag
          call print11 (this%l%layoutnumber, '---> Conformal solver: '//trim(adjustl(dubuf)))
          write(dubuf,*) this%l%run_with_abrezanjas
          call print11 (this%l%layoutnumber, '---> Conformal thin-gap solver: '//trim(adjustl(dubuf)))
@@ -512,12 +513,12 @@ contains
                call print11 (this%l%layoutnumber, '---> Berenger -this%l%mtlnberenger MTLN switch: '//trim(adjustl(dubuf)))
          end if
          if (trim(adjustl(this%l%wiresflavor))=='holland') then
-               write(dubuf,*) this%l%stableradholland                 
+               write(dubuf,*) this%l%stableradholland
                call print11 (this%l%layoutnumber, '---> Holland -this%l%stableradholland automatic correction switch: '//trim(adjustl(dubuf)))
          end if
-         write(dubuf,*) this%l%TAPARRABOS                
+         write(dubuf,*) this%l%TAPARRABOS
          call print11 (this%l%layoutnumber, '---> Thin-wire double-tails removed: '//trim(adjustl(dubuf)))
-         write(dubuf,*) this%l%fieldtotl                
+         write(dubuf,*) this%l%fieldtotl
          call print11 (this%l%layoutnumber, '---> Thin-wire -this%l%fieldtotl experimental switch: '//trim(adjustl(dubuf)))
 
          write(dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
@@ -527,7 +528,7 @@ contains
       if (this%l%layoutnumber == 0) then
          call erasesignalingfiles(this%l%simu_devia)
       end if
-      
+
       if (this%l%layoutnumber==0) then
          
          open(newunit=thefileno,FILE = trim(adjustl(this%l%nInputRoot))//'_tag_paraviewfilters.txt')
@@ -599,14 +600,16 @@ contains
                write(thefileno,'(a)') '# (  500 ,  599 ) '//trim(adjustl('Lumped element (+indexmedium)                                           (Surface)'))
                write(thefileno,'(a)') '# ( 1000 , 1999 ) '//trim(adjustl('Conformal Volume PEC (+indexmedium)                                     (Surface)'))
                write(thefileno,'(a)') '# ( 2000 , 2999 ) '//trim(adjustl('Conformal Volume PEC (+indexmedium)                                     (Line)'))
+               write(thefileno,'(a)') '# ( 3000 , 3999 ) '//trim(adjustl('Conformal surface PEC (+indexmedium)                                    (Surface)'))
+               write(thefileno,'(a)') '# ( 4000 , 4999 ) '//trim(adjustl('Conformal surface PEC (+indexmedium)                                    (Line)'))
                write(thefileno,'(a)') '# ( -0.5 , -0.5 ) '//trim(adjustl('Other types of media                                                    (Line)'))
                write(thefileno,'(a)') '# ( -1.0 , -1.0 ) '//trim(adjustl('Other types of media                                                    (Surface)'))
          close(thefileno)
       end if
 
-contains 
-   subroutine NFDE2sgg     
-   !!!!!!!!!      
+contains
+   subroutine NFDE2sgg
+   !!!!!!!!!
          real(kind=rkind) :: dt,finaldt
          logical fatalerror
          ! parser now holds all the .nfde info
@@ -615,7 +618,7 @@ contains
          call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
          call read_limits_nogeom (this%l%layoutnumber,this%l%num_procs, this%sgg, this%fullsize, this%SINPML_fullsize, parser,this%l%MurAfterPML,this%l%mur_exist)
-      
+
          dtantesdecorregir=this%sgg%dt
 
          dxmin=minval(this%sgg%DX)
@@ -720,11 +723,11 @@ contains
             ! this%l%groundwires,this%l%attfactorc,this%l%mibc,this%l%sgbc,this%l%sgbcDispersive,this%l%MEDIOEXTRA,this%maxSourceValue,this%l%skindepthpre,this%l%createmapvtk,this%l%input_conformal_flag,this%l%CLIPREGION,this%l%boundwireradius,this%l%maxwireradius,this%l%updateshared,this%l%run_with_dmma, this%eps0, &
             ! this%mu0,.false.,this%l%hay_slanted_wires,this%l%verbose,this%l%ignoresamplingerrors,this%tagtype,this%l%wiresflavor)
 #ifdef CompileWithMTLN
-            if (trim(adjustl(this%l%extension))=='.json')  then 
+            if (trim(adjustl(this%l%extension))=='.json')  then
                this%mtln_parsed = parser%mtln
                this%mtln_parsed%time_step = this%sgg%dt
             end if
-            ! if (trim(adjustl(this%l%extension))=='.json')  mtln_solver = mtlnCtor(parser%mtln)   
+            ! if (trim(adjustl(this%l%extension))=='.json')  mtln_solver = mtlnCtor(parser%mtln)
 #endif
             write(dubuf,*) '[OK] ENDED NFDE --------> GEOM'
             call print11 (this%l%layoutnumber, dubuf)
@@ -735,7 +738,7 @@ contains
             if (this%l%resume .AND. (slices /= this%l%slicesoriginales)) then
                buff='Different resumed/original MPI slices: '//trim(adjustl(slices))//' '//&
                & trim(adjustl(this%l%slicesoriginales))
-               call stoponerror (this%l%layoutnumber, this%l%num_procs, buff)
+               call log_msg(LOG_FATAL, 'MAIN', buff)
             end if
             call print11 (this%l%layoutnumber, trim(adjustl(slices)))
             !end writing
@@ -746,7 +749,7 @@ contains
 #ifdef CompileWithStochastic
             if (this%l%stochastic) then
                buff='this%l%stochastic uncompatible with MPI this%l%num_procs smaller than 2'
-               call stoponerror (this%l%layoutnumber, this%l%num_procs, buff)
+               call log_msg(LOG_FATAL, 'MAIN', buff)
             end if
 #endif
 #endif
@@ -756,6 +759,8 @@ contains
 #ifdef CompileWithStochastic
             if (this%l%stochastic) then
                call HalvesStochasticMPI(this%l%layoutnumber,this%l%num_procs,this%l%simu_devia)
+               ! each half has its own rank 0, which owns the signal files
+               call set_log_rank(this%l%layoutnumber, this%l%num_procs)
             end if
 #endif
                      
@@ -763,12 +768,12 @@ contains
    !!!now it divides the computational space
             call MPIdivide (this%sgg, this%fullsize, this%SINPML_fullsize, this%l%layoutnumber, this%l%num_procs, this%l%forcing, this%l%forced, this%l%slicesoriginales, this%l%resume,this%l%fatalerror)
             !
-            call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)   
+            call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
             if (this%l%fatalerror) then
    !try to recover
                return
             end if
-      
+
             ! if the layout is pure PML then take at least a line of non PML to build the PML data insider read_geomDAta
             ! Uses extra memory but later matrix sggm is deallocated in favor of smaller sggMIEX, etc
             do field = IEX, IHZ
@@ -790,7 +795,7 @@ contains
             end do
             !!end 16/07/15
             write(dubuf,*) 'INIT NFDE --------> GEOM'
-            call print11 (this%l%layoutnumber, dubuf)           
+            call print11 (this%l%layoutnumber, dubuf)
 
             call read_geomData (this%sgg,this%media,this%tag_numbers, this%l%fichin, this%l%layoutnumber, this%l%num_procs, this%SINPML_fullsize, this%fullsize, parser, &
             this%l%groundwires,this%l%attfactorc,this%l%mibc,this%l%sgbc,this%l%sgbcDispersive,this%l%extraMedium,this%maxSourceValue,this%l%skindepthpre,this%l%createmapvtk,this%l%input_conformal_flag,this%l%CLIPREGION,this%l%boundwireradius,this%l%maxwireradius,this%l%updateshared,this%l%run_with_dmma, &
@@ -805,7 +810,7 @@ contains
             call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
 #ifdef CompileWithMTLN
-            if (trim(adjustl(this%l%extension))=='.json')  then 
+            if (trim(adjustl(this%l%extension))=='.json')  then
                this%mtln_parsed = parser%mtln
                this%mtln_parsed%time_step = this%sgg%dt
             end if
@@ -850,10 +855,10 @@ contains
 
       if (this%l%layoutnumber==0) then
 #ifdef CompilePrivateVersion
-         if (trim(adjustl(extension))=='.nfde') then 
+         if (trim(adjustl(extension))=='.nfde') then
 #ifdef CompileWithMTLN
-            call stoponerror(this%l%layoutnumber, this%l%num_procs, &
-               'NFDE files are not supported when compiling with MTLN', .true.)
+            call log_msg(LOG_FATAL, 'MAIN', &
+               'NFDE files are not supported when compiling with MTLN')
 #endif
             NFDE_FILE => cargar_NFDE_FILE (filename)
          else
@@ -891,8 +896,8 @@ contains
                   longitud8=min(rawInfoBuffer, numberOfLinesInFile - i8 + 1)
             call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
             if ((longitud8>huge(1_4)).or.(longitud8>MAXMPIBYTES)) then
-               print *,'Stop. Buggy error: MPI longitud greater that greatest integer*4'
-               stop
+               call log_msg(LOG_FATAL, 'MAIN', &
+                                'MPI broadcast length greater than the largest integer*4')
             else
                longitud4=int(longitud8,4)
             end if
@@ -910,31 +915,31 @@ contains
       write (dubuf,*) 'INIT interpreting geometrical data from ', trim (adjustl(filename))
       call print11 (this%l%layoutnumber, dubuf)
 
-   
-      if (trim(adjustl(this%l%extension))=='.nfde') then 
-#ifdef CompilePrivateVersion   
+
+      if (trim(adjustl(this%l%extension))=='.nfde') then
+#ifdef CompilePrivateVersion
          parsedProblem => newparser (NFDE_FILE)
          ! this%l%mpidir = NFDE_FILE%mpidir
          this%l%thereare_stoch=NFDE_FILE%thereare_stoch
 #else
-         print *,'Not compiled with cargaNFDEINDEX'
-         stop
+         call log_msg(LOG_FATAL, 'MAIN', 'Not compiled with cargaNFDEINDEX')
 #endif
-      
+
 #ifdef CompileWithSMBJSON
       else if (trim(adjustl(this%l%extension))=='.json') then
          parsed_t = fdtdjson_parser_t(filename)   
          allocate(parsedProblem)
          parsedProblem = parsed_t%readProblemDescription()
+         if (isFatalError()) error stop 1
 #endif
 
       else
-         print *, 'Neither .nfde nor .json files used as input after -i'
-         stop
+         call log_msg(LOG_FATAL, 'MAIN', &
+                          'Neither .nfde nor .json files used as input after -i')
       end if
 
-      write(dubuf,*) '[OK] '//trim(adjustl(this%whoami))//' Parser still working ';  call print11(this%l%layoutnumber,dubuf)       
-#ifdef CompileWithMPI            
+      write(dubuf,*) '[OK] '//trim(adjustl(this%whoami))//' Parser still working ';  call print11(this%l%layoutnumber,dubuf)
+#ifdef CompileWithMPI
          call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
       return
@@ -973,7 +978,7 @@ contains
          read (unit, '(A)', end=2010) l_aux
          if (len_trim (adjustl(l_aux))>=BUFSIZE) then
             write(buffer,*) 'Line in .nfde larger than ',BUFSIZE,'Recompile '
-            call warnerrreport(buffer,.TRUE.) !ABORTA
+            call log_msg(LOG_ERROR, 'MAIN', buffer) !ABORTA
          end if
          rInfo%numberValue = rInfo%numberValue + 1
          line => rInfo%lines (rInfo%numberValue)
@@ -1065,16 +1070,16 @@ contains
    end subroutine carga_raw_info
 
 
-   end subroutine semba_init  
+   end subroutine semba_init
 
 
    function semba_create_solver(this) result (res)
       class(semba_fdtd_t) :: this
       type(solver_t) :: res
-      res = solver_ctor(this%sgg,this%media,this%tag_numbers,& 
-                        this%SINPML_fullsize,this%fullsize, & 
-                        this%finishedwithsuccess, this%eps0,this%mu0, & 
-                        this%tagtype,this%l, this%maxSourceValue, & 
+      res = solver_ctor(this%sgg,this%media,this%tag_numbers,&
+                        this%SINPML_fullsize,this%fullsize, &
+                        this%finishedwithsuccess, this%eps0,this%mu0, &
+                        this%tagtype,this%l, this%maxSourceValue, &
                         this%time_desdelanzamiento)
    end function
 
@@ -1090,7 +1095,7 @@ contains
       this%mu0 = mu
       this%media = media
    end subroutine
-   
+
    subroutine semba_launch(this)
       class(semba_fdtd_t) :: this
       type(solver_t) :: solver
@@ -1287,7 +1292,7 @@ contains
       input%chdummy = ' ';
       input%flushsecondsFields=0.;
       input%flushsecondsData=0.;
-      input%time_end=0. 
+      input%time_end=0.
       input%existeNFDE=.false.;
       input%existeh5=.false.
       input%creditosyaprinteados=.false.

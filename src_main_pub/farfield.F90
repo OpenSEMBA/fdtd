@@ -71,11 +71,33 @@ module farfield_m
 !!!
    !
    public UpdateFarField,InitFarField,Destroyfarfield,FlushFarfield,StoreFarfields
-   public farfield_t
+   public farfield_t, farfield_buffer_bytes
    !
    type(farfield_t), save, target :: FF
 
 contains
+
+   ! Bytes held by the near-to-far-field DFT buffers in FF; unallocated faces count as zero.
+   integer(kind=8) function farfield_buffer_bytes() result(bytes)
+      bytes = sum([array_bytes(FF%ExIz), array_bytes(FF%ExDe), array_bytes(FF%ExAb), array_bytes(FF%ExAr), &
+                   array_bytes(FF%EyFr), array_bytes(FF%EyTr), array_bytes(FF%EyAb), array_bytes(FF%EyAr), &
+                   array_bytes(FF%EzIz), array_bytes(FF%EzDe), array_bytes(FF%EzFr), array_bytes(FF%EzTr), &
+                   array_bytes(FF%HxIz), array_bytes(FF%HxDe), array_bytes(FF%HxAb), array_bytes(FF%HxAr), &
+                   array_bytes(FF%HyFr), array_bytes(FF%HyTr), array_bytes(FF%HyAb), array_bytes(FF%HyAr), &
+                   array_bytes(FF%HzIz), array_bytes(FF%HzDe), array_bytes(FF%HzFr), array_bytes(FF%HzTr), &
+                   array_bytes(FF%HxIz2), array_bytes(FF%HxDe2), array_bytes(FF%HxAb2), array_bytes(FF%HxAr2), &
+                   array_bytes(FF%HyFr2), array_bytes(FF%HyTr2), array_bytes(FF%HyAb2), array_bytes(FF%HyAr2), &
+                   array_bytes(FF%HzIz2), array_bytes(FF%HzDe2), array_bytes(FF%HzFr2), array_bytes(FF%HzTr2), &
+                   array_bytes(FF%expIwdt), array_bytes(FF%auxExp_E), array_bytes(FF%auxExp_H), &
+                   array_bytes(FF%dftInput)])
+   contains
+      ! An unallocated allocatable actual argument arrives as an absent optional dummy.
+      pure integer(kind=8) function array_bytes(values)
+         class(*), intent(in), optional :: values(..)
+         array_bytes = 0_8
+         if (present(values)) array_bytes = size(values, kind=8)*storage_size(values, kind=8)/8_8
+      end function array_bytes
+   end function farfield_buffer_bytes
 
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -468,7 +490,7 @@ contains
       FF%farfieldAr_clonePEC_Down.OR.FF%farfieldAr_clonePMC_Down
       if (error) then
          buff='NF2FF STILL UNSUPPORTED'
-         call stoponerror(layoutnumber,num_procs,Buff)
+         call log_msg(LOG_FATAL, 'FARFIELD', Buff)
       end if
       !!!end of periodic cloning cases
 
@@ -573,7 +595,7 @@ contains
                   if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -586,7 +608,7 @@ contains
                   if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -602,7 +624,7 @@ contains
                   if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -615,7 +637,7 @@ contains
                   if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -631,7 +653,7 @@ contains
                   if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -644,7 +666,7 @@ contains
                   if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -660,7 +682,7 @@ contains
                   if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -673,7 +695,7 @@ contains
                   if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -689,7 +711,7 @@ contains
                   if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -702,7 +724,7 @@ contains
                   if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -718,7 +740,7 @@ contains
                   if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -731,7 +753,7 @@ contains
                   if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -747,7 +769,7 @@ contains
                   if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -760,7 +782,7 @@ contains
                   if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -775,7 +797,7 @@ contains
                   if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -788,7 +810,7 @@ contains
                   if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -804,7 +826,7 @@ contains
                   if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -817,7 +839,7 @@ contains
                   if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -832,7 +854,7 @@ contains
                   if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -845,7 +867,7 @@ contains
                   if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -860,7 +882,7 @@ contains
                   if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -873,7 +895,7 @@ contains
                   if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -889,7 +911,7 @@ contains
                   if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -902,7 +924,7 @@ contains
                   if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k))%is%PEC)).and. .not. &
                   ((i == sgg%SINPMLSweep(IHX)%XI).or.(j == sgg%SINPMLSweep(IHY)%YI).or.(k == sgg%SINPMLSweep(IHZ)%ZI).or. &
                   (i == sgg%SINPMLSweep(IHX)%XE).or.(j == sgg%SINPMLSweep(IHY)%YE).or.(k == sgg%SINPMLSweep(IHZ)%ZE))) &
-                  call stoponerror(layoutnumber,num_procs,Buff)
+                  call log_msg(LOG_FATAL, 'FARFIELD', Buff)
                end if
             end do
          end do
@@ -919,11 +941,11 @@ contains
 
       if ((FF%NumFreqs < 0)) then
          write(Buff,*) 'Freq. range for NF/FF invalid',FF%NumFreqs,FF%InitialFreq,FF%FinalFreq,FF%FreqStep
-         call stoponerror(layoutnumber,num_procs,Buff)
+         call log_msg(LOG_FATAL, 'FARFIELD', Buff)
       end if
       if ((FF%NumFreqs > 100000)) then
          Buff='Too many NF/FF frequencies requested (>100000)'
-         call stoponerror(layoutnumber,num_procs,Buff)
+         call log_msg(LOG_FATAL, 'FARFIELD', Buff)
       end if
 
      allocate(FF%expIwdt(1:FF%NumFreqs),FF%auxExp_E(1:FF%NumFreqs),FF%auxExp_H(1:FF%NumFreqs),FF%dftInput(1:FF%NumFreqs))
@@ -984,7 +1006,7 @@ contains
       inquire(FILE=trim(adjustl(FF%FileNormalize)), EXIST=errnofile)
       if (.NOT. errnofile) then
          Buff=trim(adjustl(FF%FileNormalize))//' DOES NOT EXIST'
-         call STOPONERROR (layoutnumber,num_procs,Buff)
+         call log_msg(LOG_FATAL, 'FARFIELD', Buff)
       end if
       open(15, FILE=trim(adjustl(FF%FileNormalize)))
       read (15,*) time1, field1
@@ -2009,9 +2031,7 @@ contains
 
 
       goto 635
-634   call print11(0,SEPARADOR//separador//separador)
-      call print11(0,'FARFIELD: ERROR WRITING RESTARTING FIELDS. IGNORING AND CONTINUING')
-      call print11(0,SEPARADOR//separador//separador)          
+634   call log_msg(LOG_WARN, 'FARFIELD', 'cannot write restarting fields, ignoring and continuing')
 635   return
    end subroutine
    !
