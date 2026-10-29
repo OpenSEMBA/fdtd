@@ -86,7 +86,6 @@ contains
             c = conformal_fields%faces(id)%cell
             i = c(1); j = c(2); k = c(3)
             med = sggMed(i, j, k)
-            ! contour_length = conformal_fields%faces(id)%intersect%length
             select case (direction)
                 case (FACE_X); Id1 = Id_dir1(k); Id2 = Id_dir2(j)
                 case (FACE_Y); Id1 = Id_dir1(i); Id2 = Id_dir2(k)

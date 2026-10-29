@@ -1268,18 +1268,23 @@ contains
       
       n = 0
       do i = 1, size(contour)
-         if(contour(i)%isOnAnyEdge() .and. abs(contour(i)%length() -1.0) < EDGE_RATIO_EQ_TOLERANCE) then 
+         if(contour(i)%isOnAnyEdge()) then 
+         ! if(contour(i)%isOnAnyEdge() .and. abs(contour(i)%length() -1.0) < EDGE_RATIO_EQ_TOLERANCE) then 
             n = n + 1
          end if
       end do
       allocate(res(n))
       n = 0
       do i = 1, size(contour)
-         if(contour(i)%isOnAnyEdge() .and. abs(contour(i)%length() -1.0) < EDGE_RATIO_EQ_TOLERANCE) then 
+         if(contour(i)%isOnAnyEdge()) then 
+         ! if(contour(i)%isOnAnyEdge() .and. abs(contour(i)%length() -1.0) < EDGE_RATIO_EQ_TOLERANCE) then 
             n = n + 1
             res(n)%cell = contour(i)%getCell()
             res(n)%direction = contour(i)%getEdge()
-            res(n)%ratio = 0.0
+            ! if ( .and. abs(contour(i)%length() -1.0) < EDGE_RATIO_EQ_TOLERANCE) then 
+            !    res(n)%ratio = 0.0
+            ! else
+            res(n)%ratio = 1 - contour(i)%length()
          end if
       end do
    end function

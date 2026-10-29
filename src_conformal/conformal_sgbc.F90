@@ -133,8 +133,6 @@ contains
       this%h = 0.0_RKIND
       this%rhs = 0.0_RKIND
       this%initialized = .true.
-
-      ! this%e_first => this%e(0)
    end subroutine conformal_sgbc_init
 
    integer function layer_subdivisions(profile, layer, maximum_frequency, resolution, depth) result(count)
@@ -233,8 +231,6 @@ contains
          this%h(index) = this%h_ga(index)*this%h(index)+0.5_RKIND*this%h_gb(index)* &
             (this%e(index)-this%e(index+1)+this%e_old(index)-this%e_old(index+1))
       end do
-      ! this%e_1 = this%e(1)
-      ! this%e_n = this%e(this%n)
       this%e_1 = this%e(1)*this%length_ratio
       this%e_n = this%e(this%n)*this%length_ratio
    end subroutine conformal_sgbc_advance

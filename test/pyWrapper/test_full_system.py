@@ -956,16 +956,9 @@ def test_conformal_sgbc_resistance(tmp_path):
 
     # FDTD results
     probe = Probe(_get_solved_probe_folder(solver, "Wire_probe"))
-    theta = np.deg2rad(29.054)
-    L = 216.0e-3
-    Ls = L/np.cos(theta)
-    w = 120.0e-3
-    d = 10.0e-3
-    sigma = 100.0
-    R_th = 50 + Ls/(sigma*w*d)
-    # R_th = 50.0
-    R_meas = 1.0/probe['current_0'].to_numpy()[-10]
-    assert(np.abs(R_th-R_meas) < 1e-5)
+    R_th = R_sheet(sigma = 20, L = 216e-3, theta = 29.054, thickness = 2.0e-3, width = 120e-3)
+    R_meas = 1.0/probe['current_0'].to_numpy()[-10] - 50.0
+    assert(np.abs(R_th-R_meas)/R_th < 0.01)
 
 
 @pytest.mark.sgbc

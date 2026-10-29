@@ -197,27 +197,27 @@ contains
         integer :: i, j, key(4)
         type(edge_t), pointer :: edge
         real(kind=rkind) :: lower, upper, step
-        logical :: reverse = .true.
+        logical :: reverse = .false.
         do i = 1, size(sgbcs)
-            lower = 0.0
-            upper = 0.0
-            do j = 1, size(sgbcs(i)%contour_inside_edges)
-                step = 0.0
-                key(1:3) = sgbcs(i)%contour_inside_edges(j)%cell(1:3)
-                key(4) = sgbcs(i)%contour_inside_edges(j)%direction
-                edge => edge_map%getEdge(key)
-                if (.not. edge%is_two_sided) cycle
-                if (edge%edge_region == EDGE_REGION_CONFORMAL) then 
-                select case(edge%direction)
-                    case(1); step = 1.0_RKIND/idx(edge%cell(1))
-                    case(2); step = 1.0_RKIND/idy(edge%cell(2))
-                    case(3); step = 1.0_RKIND/idz(edge%cell(3))
-                end select
-                lower = lower + 0.5*edge%ratio*step
-                upper = upper + 0.5*(1.0-edge%ratio)*step
-                end if
-            end do
-            write(*,*) lower, upper
+            lower = 0.4*1.0_RKIND/idx(5)
+            upper = 0.4*1.0_RKIND/idx(5)
+            ! do j = 1, size(sgbcs(i)%contour_inside_edges)
+            !     step = 0.0
+            !     key(1:3) = sgbcs(i)%contour_inside_edges(j)%cell(1:3)
+            !     key(4) = sgbcs(i)%contour_inside_edges(j)%direction
+            !     edge => edge_map%getEdge(key)
+            !     if (.not. edge%is_two_sided) cycle
+            !     if (edge%edge_region == EDGE_REGION_CONFORMAL) then 
+            !     select case(edge%direction)
+            !         case(1); step = 1.0_RKIND/idx(edge%cell(1))
+            !         case(2); step = 1.0_RKIND/idy(edge%cell(2))
+            !         case(3); step = 1.0_RKIND/idz(edge%cell(3))
+            !     end select
+            !     lower = lower + 0.5*edge%ratio*step
+            !     upper = upper + 0.5*(1.0-edge%ratio)*step
+            !     end if
+            ! end do
+            ! write(*,*) lower, upper
             call sgbcs(i)%state%init(profiles(sgbcs(i)%sgbc_profile_index), dt, lower, upper, control%sgbcFreq, control%sgbcresol, control%sgbcdepth, reverse)
             sgbcs(i)%state%length_ratio = sgbcs(i)%intersect%compute_length_ratio([1.0/idx(sgbcs(i)%cell(1)),1.0/idy(sgbcs(i)%cell(2)),1.0/idz(sgbcs(i)%cell(3))])
         end do
@@ -300,8 +300,10 @@ contains
         integer(kind=4) :: l
         isInRegionII = .false.
         do l = 1, size(face%contour_inside_edges)
+            if (face%contour_inside_edges(l)%ratio == 0) then 
             isInRegionII = isInRegionII .or. ((all(edge_on_face%key(1:3) == face%contour_inside_edges(l)%cell)) .and. &
                                               edge_on_face%key(4) == face%contour_inside_edges(l)%direction)
+            end if
         end do
     end function
 

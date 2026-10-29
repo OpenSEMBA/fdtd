@@ -166,6 +166,8 @@ def RCS(fspace, radius):
     res = np.abs(res)**2*(l**2/(4*np.pi))
     return res
 
+def R_sheet(sigma, L, theta, thickness, width):
+    return L/(np.cos(np.deg2rad(theta))*sigma*width*thickness)
 
 def dtft(signal, time, freqs):
     """Continuous-time DTFT approximation using trapezoidal integration."""
