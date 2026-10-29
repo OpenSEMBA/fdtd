@@ -6,8 +6,10 @@ the probe name, `F` is the sampled field or component, `C` is the coordinate,
 and `B` is the probe bounding box.
 
 Time-domain probes buffer samples in memory and are flushed to disk every 128
-steps (`OUTPUT_TIME_BUFFER_SIZE`); `-flushdata <minutes>` adds a time-based
-flush. The estimated buffer memory per probe type is printed at `Init Timing`
+steps (`OUTPUT_TIME_BUFFER_SIZE`). Point, wire and bulk probes are flushed every 4096 steps
+(`SMALL_PROBE_BUFFER_SIZE`) because they are small; volumetric probes (movies)
+and line probes keep the 128-step cadence. `-flushdata <minutes>` adds a time-based flush that
+flushes every probe type. The estimated buffer memory per probe type is printed at `Init Timing`
 (see [init_timing.md](init_timing.md)).
 
 ## Scalar Text Output
@@ -55,6 +57,18 @@ Movies and frequency slices do not create a `.bin` file.
 They create field data in `P.xdmf` and `P.h5`, plus the geometry companion in
 `P_geometry.xdmf` and `P_geometry.h5`.
 The `.xdmf` files describe the corresponding data and geometry stored in HDF5.
+
+The HDF5 writer cannot append to an existing file. When a run is resumed
+(`-r`), the `P.xdmf` and `P.h5` of the previous run are moved to
+`P/before_resume_K/` (`K` is the first unused number) and the resumed run
+writes new files, so the frames written before the resume are kept but are not
+joined to the new ones. Scalar `.dat` probes are appended instead.
+
+The frequency sums of point probes are saved with each restart checkpoint in
+`<probe>_fq.dat.dft`, and those of frequency slices in `<slice folder>/..._at_x_y_z.dft`
+(one per MPI participant), and restored on resume, so a resumed output matches an
+uninterrupted run. A resumed run must be given the same step count with `-n`,
+the solver step count, as the run it resumes.
 
 ## Geometry Map Output
 
