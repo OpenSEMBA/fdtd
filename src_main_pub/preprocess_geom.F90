@@ -5642,7 +5642,7 @@ contains
          ! edges.  In particular, processing a zero retained-edge ratio here
          ! would mutate medium zero (PEC), even though no SGBC edge mapping is
          ! required by the coupled face formulation.
-         if (is_sgbc) return
+         ! if (is_sgbc) return
 
          do j = 1, conformal_media%n_edges_media
             if (conformal_media%edge_media(j)%ratio /= 0) then

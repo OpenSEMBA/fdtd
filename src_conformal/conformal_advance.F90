@@ -95,9 +95,6 @@ contains
 
             ! region 1
             H  => conformal_fields%faces(id)%region_I_fields%H
-            ! if (H/=0) then 
-            !     call sleep(1)
-            ! end if
             E1 => conformal_fields%faces(id)%region_I_fields%E1
             E2 => conformal_fields%faces(id)%region_I_fields%E2
             E3 => conformal_fields%faces(id)%region_I_fields%E3
@@ -107,9 +104,6 @@ contains
 
             ! region 2
             H  => conformal_fields%faces(id)%region_II_fields%H
-            ! if (H/=0) then 
-            !     call sleep(1)
-            ! end if
             E1 => conformal_fields%faces(id)%region_II_fields%E1
             E2 => conformal_fields%faces(id)%region_II_fields%E2
             E3 => conformal_fields%faces(id)%region_II_fields%E3

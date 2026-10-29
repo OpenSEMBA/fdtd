@@ -947,6 +947,7 @@ def test_conformal_sgbc_shielding_effectiveness(tmp_path):
 @pytest.mark.conformal
 def test_conformal_sgbc_resistance(tmp_path):
     """Verify SGBC resistance matches the analytical result if meshed conformal."""
+    setNgspice(tmp_path)
 
     fn = CASES_FOLDER + "conformal/lossyPlaneResistance.fdtd.json"
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -955,13 +956,15 @@ def test_conformal_sgbc_resistance(tmp_path):
 
     # FDTD results
     probe = Probe(_get_solved_probe_folder(solver, "Wire_probe"))
-    L = 216.0
-    theta = np.deg2rad(30)
-    w = 120.0
-    d = 2.0
-    sigma = 20.0
-    R_th = L*(np.sin(theta)+np.cos(theta))/(sigma*w*d)
-    R_meas = 1.0/probe['current_0'][-1]
+    theta = np.deg2rad(29.054)
+    L = 216.0e-3
+    Ls = L/np.cos(theta)
+    w = 120.0e-3
+    d = 10.0e-3
+    sigma = 100.0
+    R_th = 50 + Ls/(sigma*w*d)
+    # R_th = 50.0
+    R_meas = 1.0/probe['current_0'].to_numpy()[-10]
     assert(np.abs(R_th-R_meas) < 1e-5)
 
 

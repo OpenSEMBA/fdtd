@@ -217,6 +217,7 @@ contains
                 upper = upper + 0.5*(1.0-edge%ratio)*step
                 end if
             end do
+            write(*,*) lower, upper
             call sgbcs(i)%state%init(profiles(sgbcs(i)%sgbc_profile_index), dt, lower, upper, control%sgbcFreq, control%sgbcresol, control%sgbcdepth, reverse)
             sgbcs(i)%state%length_ratio = sgbcs(i)%intersect%compute_length_ratio([1.0/idx(sgbcs(i)%cell(1)),1.0/idy(sgbcs(i)%cell(2)),1.0/idz(sgbcs(i)%cell(3))])
         end do
@@ -642,7 +643,9 @@ contains
             allocate(faces(i)%region_II_fields%H)
             faces(i)%region_II_fields%H = 0.0
             allocate(faces(i)%region_I_fields%Etan)
+            faces(i)%region_I_fields%Etan = 0.0
             allocate(faces(i)%region_II_fields%Etan)
+            faces(i)%region_II_fields%Etan = 0.0
             call face_map%addFace(faces(i))
         end do
     end subroutine
