@@ -198,9 +198,9 @@ contains
         type(edge_t), pointer :: edge
         real(kind=rkind) :: lower, upper, step
         logical :: reverse = .true.
-        lower = 0.0
-        upper = 0.0
         do i = 1, size(sgbcs)
+            lower = 0.0
+            upper = 0.0
             do j = 1, size(sgbcs(i)%contour_inside_edges)
                 step = 0.0
                 key(1:3) = sgbcs(i)%contour_inside_edges(j)%cell(1:3)

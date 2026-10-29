@@ -116,7 +116,7 @@ contains
             E4 => conformal_fields%faces(id)%region_II_fields%E4
             Etan => conformal_fields%faces(id)%region_II_fields%Etan
             corr = computeFaceRegionIICorrection(conformal_fields%faces(id))
-            H = g%gm1(med)*H + g%gm2(med)*corr*((E2 - E4)*Id1 - (E3 - E1)*Id2  - Etan)
+            H = g%gm1(med)*H + g%gm2(med)*corr*((E2 - E4)*Id1 - (E3 - E1)*Id2  + Etan)
         end do
     end subroutine
 
