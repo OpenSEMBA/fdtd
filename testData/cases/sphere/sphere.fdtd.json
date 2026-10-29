@@ -40935,13 +40935,13 @@
             ],
             "theta": {
                 "initial": 0.0,
-                "final": 180.0,
-                "step": 90.0
+                "final": 3.141592653589793,
+                "step": 1.5707963268
             },
             "phi": {
                 "initial": 0.0,
-                "final": 360.0,
-                "step": 90.0
+                "final": 6.283185307179586,
+                "step": 1.5707963268
             },
             "domain": {
                 "type": "frequency",

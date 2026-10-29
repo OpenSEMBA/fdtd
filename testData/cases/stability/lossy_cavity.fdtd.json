@@ -1,0 +1,146 @@
+{
+  "format": "FDTD Input file",
+  "general": {
+    "timeStep": 1.5e-11,
+    "numberOfSteps": 8000
+  },
+  "boundary": {
+    "all": {
+      "type": "pec"
+    }
+  },
+  "mesh": {
+    "grid": {
+      "numberOfCells": [
+        20,
+        16,
+        12
+      ],
+      "steps": {
+        "x": [
+          0.01
+        ],
+        "y": [
+          0.01
+        ],
+        "z": [
+          0.01
+        ]
+      }
+    },
+    "coordinates": [
+      {
+        "id": 1,
+        "relativePosition": [
+          4,
+          5,
+          3
+        ]
+      },
+      {
+        "id": 2,
+        "relativePosition": [
+          4,
+          5,
+          5
+        ]
+      },
+      {
+        "id": 3,
+        "relativePosition": [
+          13,
+          9,
+          7
+        ]
+      }
+    ],
+    "elements": [
+      {
+        "id": 1,
+        "type": "cell",
+        "intervals": [
+          [
+            [
+              4,
+              5,
+              3
+            ],
+            [
+              4,
+              5,
+              5
+            ]
+          ]
+        ]
+      },
+      {
+        "id": 2,
+        "type": "node",
+        "coordinateIds": [
+          3
+        ]
+      },
+      {
+        "id": 3,
+        "type": "cell",
+        "intervals": [
+          [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              20,
+              16,
+              12
+            ]
+          ]
+        ]
+      }
+    ]
+  },
+  "materials": [
+    {
+      "id": 1,
+      "name": "lossy",
+      "type": "isotropic",
+      "relativePermittivity": 1.0,
+      "electricConductivity": 0.001
+    }
+  ],
+  "sources": [
+    {
+      "type": "nodalSource",
+      "magnitudeFile": "gauss_cavity.exc",
+      "elementIds": [
+        1
+      ],
+      "hardness": "soft"
+    }
+  ],
+  "materialAssociations": [
+    {
+      "materialId": 1,
+      "elementIds": [
+        3
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "name": "ez",
+      "type": "point",
+      "field": "electric",
+      "elementIds": [
+        2
+      ],
+      "directions": [
+        "z"
+      ],
+      "domain": {
+        "type": "time"
+      }
+    }
+  ]
+}

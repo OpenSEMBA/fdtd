@@ -22,6 +22,7 @@ module outputTypes_m
    integer, parameter :: FREQUENCY_DOMAIN = 1
    integer, parameter :: BOTH_DOMAIN = 2
    integer, parameter :: OUTPUT_TIME_BUFFER_SIZE = 128
+   integer, parameter :: SMALL_PROBE_BUFFER_SIZE = 4096 !point, wire and bulk probes are small; must be a multiple of OUTPUT_TIME_BUFFER_SIZE
 
    character(len=4), parameter :: BINARYEXTENSION = '.bin'
    character(len=4), parameter :: DATFILEEXTENSION = '.dat'
@@ -368,11 +369,15 @@ module outputTypes_m
 
 contains
 
-   ! Outputs flush every OUTPUT_TIME_BUFFER_SIZE steps, so a probe sampling every tstride steps
-   ! stores at most ceil(OUTPUT_TIME_BUFFER_SIZE/tstride) samples between flushes.
-   pure integer function time_buffer_capacity(domain)
+   ! A probe sampling every tstride steps stores at most ceil(flushSteps/tstride) samples between flushes.
+   pure integer function time_buffer_capacity(domain, flushSteps)
       type(domain_t), intent(in) :: domain
-      time_buffer_capacity = (OUTPUT_TIME_BUFFER_SIZE + max(1, domain%tstride) - 1)/max(1, domain%tstride)
+      integer, intent(in), optional :: flushSteps
+      integer :: steps
+
+      steps = OUTPUT_TIME_BUFFER_SIZE
+      if (present(flushSteps)) steps = flushSteps
+      time_buffer_capacity = (steps + max(1, domain%tstride) - 1)/max(1, domain%tstride)
    end function time_buffer_capacity
 
    pure integer function binary_numeric_representation_for_bytes(component_bytes)
