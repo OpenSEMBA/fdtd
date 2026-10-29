@@ -2211,8 +2211,25 @@ contains
          end if
 
          call this%matAssToCoords(cs, mA, CELL_TYPE_LINEL)
-         call coordsToThinSlotComp(res%tgc, cs)
-         res%n_tgc = size(res%tgc)
+         if (size(cs) > 0) then
+            call coordsToThinSlotComp(res%tgc, cs)
+            res%n_tgc = size(res%tgc)
+         else
+            if (associated(cs)) deallocate(cs)
+            call this%matAssToCoords(cs, mA, CELL_TYPE_SURFEL)
+            if (size(cs) > 0) then
+               ! Surface topology is preprocessing, not parsing. Keep the raw
+               ! intervals and expand them after MPI partition rotation.
+               allocate(res%surfaceCoords(size(cs)))
+               res%surfaceCoords = cs
+            else
+               ! Meshers may collapse a slot to zero length. Such a slot is
+               ! valid input and simply contributes no components.
+               allocate(res%tgc(0))
+               res%n_tgc = 0
+            end if
+         end if
+         if (associated(cs)) deallocate(cs)
 
       end function
 

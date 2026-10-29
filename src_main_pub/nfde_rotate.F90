@@ -675,57 +675,73 @@ contains
       return
    end subroutine rotate_generateSlantedWires
    
-   subroutine rotate_generateThinSlots (this,mpidir)     
+   subroutine rotate_generateThinSlots (this,mpidir)
       type(Parseador_t), intent(inout) :: this
-      integer(kind=4) :: mpidir    
-      type(ThinSlots_t), pointer :: old_tSlots    
-      integer(kind=4) :: tama,tama2,i,ii
-      integer(kind=4) :: oldx, oldy, oldz
-      
+      integer(kind=4), intent(in) :: mpidir
+      integer(kind=4) :: tama, tama2, i, ii, surfaceIdx
+      integer(kind=4) :: oldx, oldy, oldz, oldDir, oldOr
+
       tama = this%tSlots%n_Tg
-      allocate(old_tSlots,source=this%tSlots)
-      do i=1, tama       
+      do i = 1, tama
          tama2 = this%tSlots%Tg(i)%N_Tgc
          do ii = 1, tama2
-              !!!ROTATE THIN SLOT
-              if (MPIDIR==2) then
-                       oldx = this%tSlots%Tg(i)%TgC(ii)%i
-                       oldy = this%tSlots%Tg(i)%TgC(ii)%j
-                       oldz = this%tSlots%Tg(i)%TgC(ii)%K
+            oldx = this%tSlots%Tg(i)%TgC(ii)%i
+            oldy = this%tSlots%Tg(i)%TgC(ii)%j
+            oldz = this%tSlots%Tg(i)%TgC(ii)%K
+            oldDir = this%tSlots%Tg(i)%TgC(ii)%dir
+            oldOr = this%tSlots%Tg(i)%TgC(ii)%Or
 
-                       this%tSlots%Tg(i)%TgC(ii)%i = oldz
-                       this%tSlots%Tg(i)%TgC(ii)%j = oldx
-                       this%tSlots%Tg(i)%TgC(ii)%K = oldy
-                       select case (old_tsLots%Tg(i)%TgC(ii)%dir)
-                        case (IEX)
-                          this%tSlots%Tg(i)%TgC(ii)%dir = IEY
-                        case (IEY)
-                          this%tSlots%Tg(i)%TgC(ii)%dir = IEZ
-                        case (IEZ)
-                          this%tSlots%Tg(i)%TgC(ii)%dir = IEX
-                       end select
-              else if (MPIDIR==1) then
-                       oldx = this%tSlots%Tg(i)%TgC(ii)%i
-                       oldy = this%tSlots%Tg(i)%TgC(ii)%j
-                       oldz = this%tSlots%Tg(i)%TgC(ii)%K
-                       
-                       this%tSlots%Tg(i)%TgC(ii)%i = oldy
-                       this%tSlots%Tg(i)%TgC(ii)%j = oldz
-                       this%tSlots%Tg(i)%TgC(ii)%K = oldx
+            select case (mpidir)
+            case (2)
+               this%tSlots%Tg(i)%TgC(ii)%i = oldz
+               this%tSlots%Tg(i)%TgC(ii)%j = oldx
+               this%tSlots%Tg(i)%TgC(ii)%K = oldy
+            case (1)
+               this%tSlots%Tg(i)%TgC(ii)%i = oldy
+               this%tSlots%Tg(i)%TgC(ii)%j = oldz
+               this%tSlots%Tg(i)%TgC(ii)%K = oldx
+            end select
 
-                       select case (old_tsLots%Tg(i)%TgC(ii)%dir)
-                        case (IEX)
-                          this%tSlots%Tg(i)%TgC(ii)%dir = IEZ
-                        case (IEY)
-                          this%tSlots%Tg(i)%TgC(ii)%dir = IEX
-                        case (IEZ)
-                          this%tSlots%Tg(i)%TgC(ii)%dir = IEY
-                       end select
-              end if
-        end do
-      end do      
-      return
-      
+            ! Or is a signed line traversal for line-defined slots and a signed
+            ! surface normal for surface-defined slots; both rotate as axes.
+            this%tSlots%Tg(i)%TgC(ii)%dir = rotateThinSlotAxis(oldDir, mpidir)
+            this%tSlots%Tg(i)%TgC(ii)%Or = rotateThinSlotAxis(oldOr, mpidir)
+         end do
+
+         if (allocated(this%tSlots%Tg(i)%surfaceCoords)) then
+            do surfaceIdx = 1, size(this%tSlots%Tg(i)%surfaceCoords)
+               call ROTATEMPI(mpidir, this%tSlots%Tg(i)%surfaceCoords(surfaceIdx))
+            end do
+         end if
+      end do
+
+   contains
+
+      integer(kind=4) function rotateThinSlotAxis(axis, partitionDirection) result(res)
+         integer(kind=4), intent(in) :: axis, partitionDirection
+         res = axis
+         select case (partitionDirection)
+         case (2)
+            select case (abs(axis))
+            case (IEX)
+               res = sign(IEY, axis)
+            case (IEY)
+               res = sign(IEZ, axis)
+            case (IEZ)
+               res = sign(IEX, axis)
+            end select
+         case (1)
+            select case (abs(axis))
+            case (IEX)
+               res = sign(IEZ, axis)
+            case (IEY)
+               res = sign(IEX, axis)
+            case (IEZ)
+               res = sign(IEY, axis)
+            end select
+         end select
+      end function rotateThinSlotAxis
+
    end subroutine rotate_generateThinSlots
 !!   
    subroutine rotate_generateLossyThinSurface (this,mpidir)    
