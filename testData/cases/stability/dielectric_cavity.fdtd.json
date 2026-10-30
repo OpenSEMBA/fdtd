@@ -1,0 +1,144 @@
+{
+  "format": "FDTD Input file",
+  "general": {
+    "timeStep": 1.5e-11,
+    "numberOfSteps": 60000
+  },
+  "boundary": {
+    "xLower": {
+      "type": "pec"
+    },
+    "xUpper": {
+      "type": "pec"
+    },
+    "yLower": {
+      "type": "pmc"
+    },
+    "yUpper": {
+      "type": "pmc"
+    },
+    "zLower": {
+      "type": "pec"
+    },
+    "zUpper": {
+      "type": "pec"
+    }
+  },
+  "mesh": {
+    "grid": {
+      "numberOfCells": [
+        40,
+        2,
+        2
+      ],
+      "steps": {
+        "x": [
+          0.01
+        ],
+        "y": [
+          0.01
+        ],
+        "z": [
+          0.01
+        ]
+      }
+    },
+    "coordinates": [
+      {
+        "id": 1,
+        "relativePosition": [
+          14,
+          1,
+          1
+        ]
+      }
+    ],
+    "elements": [
+      {
+        "id": 1,
+        "type": "cell",
+        "intervals": [
+          [
+            [
+              5,
+              1,
+              0
+            ],
+            [
+              5,
+              1,
+              2
+            ]
+          ]
+        ]
+      },
+      {
+        "id": 2,
+        "type": "node",
+        "coordinateIds": [
+          1
+        ]
+      },
+      {
+        "id": 3,
+        "type": "cell",
+        "intervals": [
+          [
+            [
+              20,
+              0,
+              0
+            ],
+            [
+              40,
+              2,
+              2
+            ]
+          ]
+        ]
+      }
+    ]
+  },
+  "materials": [
+    {
+      "id": 1,
+      "name": "dielectric",
+      "type": "isotropic",
+      "relativePermittivity": 4.0
+    }
+  ],
+  "sources": [
+    {
+      "type": "nodalSource",
+      "magnitudeFile": "gauss_dielectric_cavity.exc",
+      "elementIds": [
+        1
+      ],
+      "hardness": "soft"
+    }
+  ],
+  "materialAssociations": [
+    {
+      "materialId": 1,
+      "elementIds": [
+        3
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "name": "ez",
+      "type": "point",
+      "field": "electric",
+      "elementIds": [
+        2
+      ],
+      "directions": [
+        "z"
+      ],
+      "domain": {
+        "type": "time"
+      }
+    }
+  ]
+}

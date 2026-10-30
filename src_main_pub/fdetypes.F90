@@ -777,6 +777,7 @@ module  FDETYPES_m
                  stochastic, verbose, dontwritevtk, &
                  resume_fromold, vtkindex,createh5bin,wirecrank,fatalerror
       real(kind=8) :: time_desdelanzamiento
+      real(kind=RKIND_TIME) :: resume_time = -1.0_RKIND_TIME
       real(kind=RKIND) :: cfl, attfactorc,attfactorw, alphamaxpar, &
                            alphaOrden, kappamaxpar, mindistwires,sgbcFreq,sgbcresol, maxSourceValue
       real(kind=RKIND_WIRES) :: factorradius,factordelta
