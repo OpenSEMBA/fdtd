@@ -113,7 +113,6 @@ contains
             face%region_I_fields%H = 0.0
             allocate(face%region_II_fields%H)
             face%region_II_fields%H = 0.0
-            ! if (face%is_sgbc) call assignTangentialFields(face, idx, idy, idz)
 
             if (.not. face%is_two_sided) cycle
             edges_on_face = buildEdgesOnFace(face%cell, face%direction)
@@ -199,8 +198,10 @@ contains
         real(kind=rkind) :: lower, upper, step
         logical :: reverse = .false.
         do i = 1, size(sgbcs)
-            lower = 0.4*1.0_RKIND/idx(5)
-            upper = 0.4*1.0_RKIND/idx(5)
+            lower = 0.00
+            upper = 0.00
+            ! lower = 0.01*1.0_RKIND/idx(5)
+            ! upper = 0.01*1.0_RKIND/idx(5)
             ! do j = 1, size(sgbcs(i)%contour_inside_edges)
             !     step = 0.0
             !     key(1:3) = sgbcs(i)%contour_inside_edges(j)%cell(1:3)

@@ -117,6 +117,7 @@ contains
       type(ConformalMedia_t), dimension(:), allocatable :: conformal_volumes, conformal_surfaces, conformal_sgbc_surfaces
       real(kind=rkind), dimension(:), allocatable :: edge_ratios, face_ratios, sgbc_edge_ratios, sgbc_face_ratios
       type(side_tris_map_t), dimension(:), allocatable :: volume_side_maps, surface_side_maps, sgbc_side_maps
+      type(steps_t) :: steps
       eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
       cluz=1.0_RKIND/sqrt(eps0*mu0)
       zvac=sqrt(mu0/eps0)
@@ -148,10 +149,12 @@ contains
       !create space for the etangential shared info
       sgg%EShared%Conta = 0
       sgg%EShared%MaxConta = 10
-     allocate(sgg%EShared%elem(1:sgg%EShared%MaxConta))
+      allocate(sgg%EShared%elem(1:sgg%EShared%MaxConta))
 
-
-      call buildConformalMedia(this%conformalRegs, conformal_volumes, conformal_surfaces, conformal_sgbc_surfaces, sgg%alloc)
+      steps%dx => sgg%dx
+      steps%dy => sgg%dy
+      steps%dz => sgg%dz
+      call buildConformalMedia(this%conformalRegs, conformal_volumes, conformal_surfaces, conformal_sgbc_surfaces, sgg%alloc, steps)
       sgg%dt = changeTimeStepIfConformalNeeded(sgg%dt)
       if (associated(this%conformalRegs%volumes)) then
          volume_side_maps = buildSideMaps(this%conformalRegs%volumes)
@@ -5553,6 +5556,20 @@ contains
                else
                   sgg%Med(face_media)%Sigma = 1.0e29_RKIND
                end if
+               ! if (is_sgbc) then
+               !    block
+               !       integer :: layer
+               !       real(kind=rkind) :: th, length, steps(3)
+               !       integer, dimension(3) :: cell
+               !       th = 0.0
+               !       do layer = 1, size(sgg%ConformalSGBCProfiles(profile_index)%thickness) 
+               !          th = th + sgg%ConformalSGBCProfiles(profile_index)%thickness(layer)
+               !       end do
+               !       cell = conformal_media%face_media(j)%faces(1)%cell
+               !       steps = [sgg%dx(cell(1)), sgg%dy(cell(2)), sgg%dz(cell(3))]
+               !       length = conformal_media%face_media(j)%faces(1)%intersect%compute_length(steps)
+               !    end block
+               ! end if
                sgg%Med(face_media)%Mur = conformal_media%face_media(j)%ratio * this%mats%mats(1)%mu / Mu0
                sgg%Med(face_media)%SigmaM = this%mats%mats(1)%sigmam
             else
@@ -5603,7 +5620,9 @@ contains
                end select
                next_face = next_face+1
                combined_faces(next_face) = conformal_media%face_media(j)%faces(k)
-               if (is_sgbc) combined_faces(next_face)%sgbc_profile_index = profile_index
+               if (is_sgbc) then 
+                  combined_faces(next_face)%sgbc_profile_index = profile_index
+               end if
             end do
             call move_alloc(combined_faces, sgg%Med(face_media)%ConformalFace)
          end do

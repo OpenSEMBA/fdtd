@@ -311,6 +311,10 @@ module  FDETYPES_m
       integer(kind=4) :: Or   !to include possible orientations (nodal sources 180915)
    end type
 
+   type steps_t
+      real(kind=RKIND), pointer, dimension(:) :: DX,DY,DZ
+   end type
+
    type tagnumber_t
       integer(kind=IKINDMTAG) , allocatable , dimension(:,:,:) :: x, y, z
    end type
@@ -607,21 +611,6 @@ module  FDETYPES_m
       split_and_useless
    end type
 
-   ! Conformal edge/face data is shared by FDETYPES and NFDETypes. Keep the
-   ! definitions in this foundational module so MediaData_t does not depend on
-   ! the module that already USEs FDETYPES.
-
-   ! type, public :: conformal_sgbc_state_t
-   !    logical :: initialized = .false.
-   !    integer :: n = 0
-   !    real(kind=RKIND), allocatable :: e_old(:), h(:), rhs(:)
-   !    real(kind=RKIND), pointer :: e(:)
-   !    real(kind=RKIND), allocatable :: e_ga(:), e_gb(:), h_ga(:), h_gb(:)
-   !    real(kind=RKIND), allocatable :: lower_diag(:), diagonal(:), upper_diag(:)
-   !    real(kind=RKIND), allocatable :: rhs_coeff(:,:)
-   !    real(kind=RKIND), allocatable :: upper_prime(:), rhs_prime(:)
-   ! end type
-
    type :: conformal_edge_fields_t
       real(kind=rkind), pointer :: E
       real(kind=rkind), pointer :: H1 => null()
@@ -649,6 +638,8 @@ module  FDETYPES_m
       integer :: direction = -1
    contains
       procedure :: compute_length_ratio
+      procedure :: compute_length
+      procedure :: compute_norm_length
    end type
 
    ! Nominal, non-dispersive material profile used by both the JSON parser and
@@ -866,6 +857,19 @@ contains
       case(EDGE_Y); res = res/(steps(1)*steps(3))
       case(EDGE_Z); res = res/(steps(1)*steps(2))
       end select
+   end function
+
+   function compute_length(this, steps) result(res)
+      class(intersect_t) :: this
+      real(kind=rkind), dimension(3), intent(in) :: steps
+      real(kind=rkind) :: res
+      res = norm2((this%end - this%init)*steps)
+   end function
+
+   function compute_norm_length(this) result(res)
+      class(intersect_t) :: this
+      real(kind=rkind) :: res
+      res = norm2((this%end - this%init))
    end function
 
    subroutine constants_destroy(this)

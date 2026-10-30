@@ -4,9 +4,9 @@ module conformal_media_m
    use geometry_m
    use cell_map_m
    use NFDETypes_m, only: ConformalPECRegions_t, ConformalPECElements_t, ConformalMedia_t, &
-                        edge_t, face_t, intersect_t, &
+                        edge_t, face_t, intersect_t, SGBCMaterialProfile_t, &
                         conformal_face_media_t, conformal_edge_media_t, rkind
-   use FDETYPES_m, only: XYZlimit_t, IHX, IHY, IHZ
+   use FDETYPES_m, only: XYZlimit_t, IHX, IHY, IHZ, steps_t
 
    real(kind=rkind), parameter :: EDGE_RATIO_EQ_TOLERANCE = 1e-5
    real(kind=rkind), parameter :: FACE_RATIO_EQ_TOLERANCE = 1e-3
@@ -36,11 +36,12 @@ contains
       end do
    end function
 
-   subroutine buildConformalMedia(conformalRegs, volumes, surfaces, sgbc_surfaces, alloc)
+   subroutine buildConformalMedia(conformalRegs, volumes, surfaces, sgbc_surfaces, alloc, steps)
       type(ConformalPECRegions_t), pointer, intent(in) :: conformalRegs
       type(ConformalMedia_t), allocatable, dimension(:), intent(inout) :: volumes, surfaces
       type(ConformalMedia_t), allocatable, dimension(:), optional, intent(inout) :: sgbc_surfaces
       type(XYZlimit_t), dimension(1:6), intent(in) :: alloc
+      type(steps_t), intent(in) :: steps
       if (associated(conformalRegs%volumes)) then
          volumes = buildMedia(conformalRegs%volumes, BODY_TYPE_VOLUME, alloc)
       else
@@ -53,7 +54,7 @@ contains
       end if
       if (present(sgbc_surfaces)) then
          if (associated(conformalRegs%sgbc_surfaces)) then
-            sgbc_surfaces = buildSGBCSurfaceMedia(conformalRegs%sgbc_surfaces, BODY_TYPE_SURFACE)
+            sgbc_surfaces = buildSGBCSurfaceMedia(conformalRegs%sgbc_surfaces, BODY_TYPE_SURFACE, steps)
          else
             allocate(sgbc_surfaces(0))
          end if
@@ -76,21 +77,28 @@ contains
       end do
    end function buildSurfaceMedia
 
-   function buildSGBCSurfaceMedia(elements, body_type) result(res)
+   function buildSGBCSurfaceMedia(elements, body_type, steps) result(res)
       type(ConformalPECElements_t), dimension(:), pointer, intent(in) :: elements
       integer(kind=4), optional :: body_type
+      integer(kind=4) :: b
+      type(steps_t), intent(in), optional :: steps
+      type(steps_t) :: s
       type(ConformalMedia_t), dimension(:), allocatable :: res
       type(side_t), dimension(:), allocatable :: local_sides
       real(kind=rkind), dimension(3) :: oriented_normal
       integer :: i, j, k, side_index, split_direction
 
+      b = BODY_TYPE_UNDEFINED
+      if (present(body_type)) b = body_type
+      if (present(steps)) s = steps
+
       allocate(res(size(elements)))
       do i = 1, size(elements)
          ! SGBC layer ordering is defined by user winding, so unlike PEC closed
          ! surfaces this path must not canonicalize triangle orientation.
-         res(i) = buildMediaFromElement(elements(i), body_type)
-         res(i)%is_sgbc = .true.
+         res(i) = buildMediaFromElement(element=elements(i), body_type=body_type, profile=elements(i)%sgbc_profile, steps=steps)
          res(i)%sgbc_profile = elements(i)%sgbc_profile
+         res(i)%is_sgbc = .true.
          ! block
          !    type(cell_map_t) :: cell_map
          !    call buildCellMap(cell_map, elements(i))
@@ -873,10 +881,12 @@ contains
       bbox%ZE = -alloc(IHZ)%ZE
    end subroutine
 
-   function buildMediaFromElement(element, body_type, alloc) result(res)
+   function buildMediaFromElement(element, body_type, alloc, profile, steps) result(res)
       type(ConformalPECElements_t), intent(in) :: element
       integer(kind=4), optional :: body_type
       type(XYZlimit_t), dimension(1:6), optional :: alloc
+      type(SGBCMaterialProfile_t), intent(in), optional :: profile
+      type(steps_t), intent(in), optional :: steps
       integer(kind=4) :: b
       type(ConformalMedia_t) :: res
 
@@ -894,6 +904,10 @@ contains
             call buildBoundingBox(cell_map, res%bbox)
       end if
       call fillElements(cell_map, faces, edges)
+      ! if (present(profile) .and. present(steps)) then 
+      !    call correctSGBCFaceRatio(faces,profile,steps)
+      !    call correctSGBCEdgeRatio(edges,profile,steps)
+      ! end if
       call addNewRatios(edges, faces, edge_ratios, face_ratios)
       res%edge_media => addEdgeMedia(edges, edge_ratios)
       res%face_media => addFaceMedia(faces, face_ratios)
@@ -904,6 +918,63 @@ contains
       res%time_step_scale_factor = computeTimeStepScalingFactor(res%edge_media, res%face_media)
       res%tag = element%tag
    end function
+
+   subroutine correctSGBCFaceRatio(faces, profile, steps)
+      type(face_t), dimension(:), intent(inout) :: faces
+      type(SGBCMaterialProfile_t), intent(in):: profile
+      type(steps_t), intent(in):: steps
+      integer :: i, layer, cell(3)
+      real(kind=rkind) :: th, l, area
+      th = 0
+      do layer = 1, size(profile%thickness) 
+         th = th + profile%thickness(layer)
+      end do
+      do i = 1, size(faces)
+
+         if (faces(i)%ratio < FACE_RATIO_EQ_TOLERANCE) cycle
+         cell = faces(i)%cell
+         l = faces(i)%intersect%compute_length([steps%dx(cell(1)),steps%dy(cell(2)),steps%dz(cell(3))])
+         select case(faces(i)%direction)
+         case(FACE_X); area = steps%dy(cell(2))*steps%dz(cell(3))
+         case(FACE_Y); area = steps%dx(cell(1))*steps%dz(cell(3))
+         case(FACE_Z); area = steps%dx(cell(1))*steps%dy(cell(2))
+         end select
+         if ((faces(i)%ratio  - 0.5*l*th/area ) > 0.0) then 
+            faces(i)%ratio =  faces(i)%ratio - 0.5*l*th/area
+            ! error stop 'ratio < 0'
+         end if
+         ! if (faces(i)%ratio < 0) faces(i)%ratio == 0
+         ! faces(i)%ratio = faces(i)%ratio*(0.88**2)
+      end do
+   end subroutine
+
+   subroutine correctSGBCEdgeRatio(edges, profile, steps)
+      type(edge_t), dimension(:), intent(inout) :: edges
+      type(SGBCMaterialProfile_t), intent(in):: profile
+      type(steps_t), intent(in):: steps
+      integer :: i, layer, cell(3)
+      real(kind=rkind) :: th, step
+      th = 0
+      do layer = 1, size(profile%thickness) 
+         th = th + profile%thickness(layer)
+      end do
+      do i = 1, size(edges)
+
+         if (edges(i)%ratio < EDGE_RATIO_EQ_TOLERANCE) cycle
+         cell = edges(i)%cell
+         select case(edges(i)%direction)
+         case(EDGE_X); step = steps%dx(cell(1))
+         case(EDGE_Y); step = steps%dy(cell(2))
+         case(EDGE_Z); step = steps%dz(cell(3))
+         end select
+         if ((edges(i)%ratio  - 0.5*th/step ) > 0.0) then 
+            edges(i)%ratio =  edges(i)%ratio  - 0.5*th/step
+            ! error stop 'ratio < 0'
+         end if
+         ! if (faces(i)%ratio < 0) faces(i)%ratio == 0
+         ! faces(i)%ratio = faces(i)%ratio*(0.88**2)
+      end do
+   end subroutine
 
    subroutine buildBoundingBox(cell_map, bbox)
       type(cell_map_t), intent(in) :: cell_map
