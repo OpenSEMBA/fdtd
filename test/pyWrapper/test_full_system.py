@@ -956,7 +956,7 @@ def test_conformal_sgbc_resistance(tmp_path):
 
     # FDTD results
     probe = Probe(_get_solved_probe_folder(solver, "Wire_probe"))
-    R_th = R_sheet(sigma = 20, L = 216e-3, theta = 29.054, thickness = 2.0e-3, width = 120e-3)
+    R_th = R_sheet(sigma = 200, L = 216e-3, theta = 29.054, thickness = 0.5e-3, width = 120e-3)
     R_meas = 1.0/probe['current_0'].to_numpy()[-10] - 50.0
     assert(np.abs(R_th-R_meas)/R_th < 0.01)
 
