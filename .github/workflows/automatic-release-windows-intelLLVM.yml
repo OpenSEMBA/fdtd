@@ -59,7 +59,7 @@ jobs:
       shell: bash
       env:
         CC: icx
-        CXX: icpx
+        CXX: icx
       run: |
         cmake -S . -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \

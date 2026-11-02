@@ -16,7 +16,9 @@ jobs:
   builds-and-test:
     strategy:
       matrix: 
-        os: [ubuntu-latest]
+        # ubuntu-latest moved to 26.04, whose HDF5/OpenMPI modules are built
+        # with gfortran 16 and whose oneAPI 2025.1 binaries segfault.
+        os: [ubuntu-24.04]
         compiler: [
           {name: 'intel', version: '2025.1'},
           # Match the HDF5 Fortran ABI used by the Ubuntu packages.
@@ -130,7 +132,7 @@ jobs:
         test "${{ steps.python-tests.outcome }}" = success
 
   parallel-hdf5-build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     name: ubuntu / gcc / parallel-hdf5
 
     steps:
