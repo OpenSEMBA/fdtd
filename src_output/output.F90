@@ -1033,8 +1033,11 @@ contains
       if (observation%FreqStep <= 0.0_RKIND) then
          countValue = 1_SINGLE
       else
-         countValue = int(floor((observation%FinalFreq - observation%InitialFreq)/observation%FreqStep), &
-                     kind=SINGLE) + 1_SINGLE
+         ! FreqStep is derived from the requested count, so the quotient is an
+         ! integer up to roundoff. The tolerance keeps the count independent of
+         ! the real precision (single vs double).
+         countValue = int(floor((observation%FinalFreq - observation%InitialFreq)/observation%FreqStep &
+                     + 1.0e-4_RKIND), kind=SINGLE) + 1_SINGLE
       end if
    end function frequency_count
 

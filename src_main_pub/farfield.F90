@@ -934,7 +934,10 @@ contains
       !allocate space
 
       if (FF%FreqStep/=0) then
-         FF%NumFreqs=int(abs(FF%InitialFreq-FF%FinalFreq)/FF%FreqStep)+1
+         ! The parser derives FreqStep from the requested number of samples, so
+         ! the quotient is an integer up to floating-point roundoff. Truncating
+         ! it directly makes the sample count depend on the real precision.
+         FF%NumFreqs=int(abs(FF%InitialFreq-FF%FinalFreq)/FF%FreqStep+1.0e-4_RKIND)+1
       else
          FF%NumFreqs=1 !default
       end if
