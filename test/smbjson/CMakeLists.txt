@@ -10,6 +10,7 @@ add_library (smbjson_test_fortran
     "test_read_dielectricSlab.F90"
     "test_read_thinSlot.F90"
     "test_read_thinSlot_ez.F90"
+    "test_read_thinSlot_surface.F90"
     "test_read_sgbc.F90"
     "test_read_currentInjection.F90"
     "test_read_nodal_source_resistance.F90"

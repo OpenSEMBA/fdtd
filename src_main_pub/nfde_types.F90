@@ -439,10 +439,11 @@ module NFDETypes_m
       integer(kind=4) :: i = 0
       integer(kind=4) :: j = 0
       integer(kind=4) :: K = 0
-      ! dir is the unsigned axis used by the Yee-material routines, while Or
-      ! keeps the signed traversal of the source linel (Or = dir or -dir).
-      ! The PEC plane normal that contains the slot is derived later, during
-      ! preprocessing, and is not stored in the parsed component.
+      ! dir is the unsigned in-plane axis used by the Yee-material routines.
+      ! Or is the signed orientation: for line-defined slots it is the signed
+      ! traversal of the source linel (abs(Or) == dir); for surface-defined
+      ! slots it is the signed normal of the host surface face
+      ! (abs(Or) /= dir). Line-slot normals are derived during preprocessing.
       integer(kind=4) :: dir = - 1
       integer(kind=4) :: Or = - 1
       character(len=BUFSIZE) :: tag
@@ -454,6 +455,9 @@ module NFDETypes_m
    type, public :: ThinSlot_t
       !always allocated contiguously; declared contiguous to avoid copy-in/copy-out temporaries when passed to addThinSlotComp
       type(ThinSlotComp_t), dimension(:), pointer, contiguous :: tgc => NULL ()
+      ! Surface-defined slots keep their raw surface intervals here. They are
+      ! expanded into tgc during preprocessing, after MPI partition rotation.
+      type(coords_t), dimension(:), allocatable :: surfaceCoords
       real(kind=RK) :: width = 0
       integer(kind=4) :: n_tgc = 0
       integer(kind=4) :: n_tgc_max = 0
@@ -806,6 +810,14 @@ module NFDETypes_m
 
 contains
 
+   ! Surface-defined slots store the signed host-face normal in Or, while
+   ! line-defined slots store the signed line traversal and satisfy
+   ! abs(Or) == dir.
+   elemental logical function isSurfaceThinSlot(component) result(res)
+      type(ThinSlotComp_t), intent(in) :: component
+      res = component%dir > 0 .and. component%Or /= 0 .and. &
+         abs(component%Or) /= component%dir
+   end function isSurfaceThinSlot
 
 end module NFDETypes_m
 
