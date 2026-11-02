@@ -495,3 +495,63 @@ integer function test_file_has_samples() bind(C, name="test_file_has_samples") r
         print *, 'test_file_has_samples PASSED'
     end if
 end function test_file_has_samples
+
+integer function test_expand_surface_thin_slots() bind(C, name="test_expand_surface_thin_slots") result(status)
+    use NFDETypes_m
+    use Preprocess_m
+    implicit none
+
+    type(ThinSlots_t) :: slots
+    integer :: i
+    integer, parameter :: expectedJ(3) = [2, 3, 4]
+
+    status = 0
+
+    allocate(slots%tg(1))
+    slots%n_tg = 1
+    slots%tg(1)%width = 1e-3_RKIND
+    allocate(slots%tg(1)%surfaceCoords(1))
+    slots%tg(1)%surfaceCoords(1)%Xi = 5
+    slots%tg(1)%surfaceCoords(1)%Xe = 5
+    slots%tg(1)%surfaceCoords(1)%Yi = 2
+    slots%tg(1)%surfaceCoords(1)%Ye = 4
+    slots%tg(1)%surfaceCoords(1)%Zi = 5
+    slots%tg(1)%surfaceCoords(1)%Ze = 5
+    slots%tg(1)%surfaceCoords(1)%Or = -IEZ
+    slots%tg(1)%surfaceCoords(1)%tag = 'gap@surface-slot'
+
+    call expandSurfaceThinSlots(slots)
+
+    if (slots%tg(1)%n_tgc /= 3) then
+        print *, 'test_expand_surface_thin_slots FAILED: expected 3 components, got', slots%tg(1)%n_tgc
+        status = 1
+    end if
+    if (slots%tg(1)%n_tgc_max /= 3) then
+        print *, 'test_expand_surface_thin_slots FAILED: expected n_tgc_max=3, got', slots%tg(1)%n_tgc_max
+        status = 1
+    end if
+
+    if (associated(slots%tg(1)%tgc)) then
+        do i = 1, min(3, slots%tg(1)%n_tgc)
+            if (slots%tg(1)%tgc(i)%i /= 5 .or. &
+                slots%tg(1)%tgc(i)%j /= expectedJ(i) .or. &
+                slots%tg(1)%tgc(i)%k /= 5 .or. &
+                slots%tg(1)%tgc(i)%dir /= IEY .or. &
+                slots%tg(1)%tgc(i)%Or /= -IEZ) then
+                print *, 'test_expand_surface_thin_slots FAILED: unexpected component', i
+                status = 1
+            end if
+        end do
+        deallocate(slots%tg(1)%tgc)
+    else
+        print *, 'test_expand_surface_thin_slots FAILED: tgc was not allocated'
+        status = 1
+    end if
+
+    deallocate(slots%tg(1)%surfaceCoords)
+    deallocate(slots%tg)
+
+    if (status == 0) then
+        print *, 'test_expand_surface_thin_slots PASSED'
+    end if
+end function test_expand_surface_thin_slots

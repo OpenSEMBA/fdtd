@@ -77,3 +77,4 @@ git_info.txt
 build2/
 .venv/
 specs/changes/*
+testing/*

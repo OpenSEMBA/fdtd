@@ -1,0 +1,98 @@
+{
+  "format": "FDTD Input file",
+  "general": {
+    "timeStep": 1.5e-11,
+    "numberOfSteps": 1200
+  },
+  "boundary": {
+    "all": {
+      "type": "pml",
+      "layers": 8
+    }
+  },
+  "mesh": {
+    "grid": {
+      "numberOfCells": [
+        90,
+        90,
+        90
+      ],
+      "steps": {
+        "x": [
+          0.01
+        ],
+        "y": [
+          0.01
+        ],
+        "z": [
+          0.01
+        ]
+      }
+    },
+    "coordinates": [
+      {
+        "id": 1,
+        "relativePosition": [
+          49,
+          45,
+          45
+        ]
+      }
+    ],
+    "elements": [
+      {
+        "id": 1,
+        "type": "cell",
+        "intervals": [
+          [
+            [
+              45,
+              45,
+              45
+            ],
+            [
+              45,
+              45,
+              46
+            ]
+          ]
+        ]
+      },
+      {
+        "id": 2,
+        "type": "node",
+        "coordinateIds": [
+          1
+        ]
+      }
+    ]
+  },
+  "materials": [],
+  "sources": [
+    {
+      "type": "nodalSource",
+      "magnitudeFile": "gauss_cpml.exc",
+      "elementIds": [
+        1
+      ],
+      "hardness": "soft"
+    }
+  ],
+  "materialAssociations": [],
+  "probes": [
+    {
+      "name": "ez",
+      "type": "point",
+      "field": "electric",
+      "elementIds": [
+        2
+      ],
+      "directions": [
+        "z"
+      ],
+      "domain": {
+        "type": "time"
+      }
+    }
+  ]
+}

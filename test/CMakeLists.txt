@@ -29,6 +29,7 @@ endif()
 
 if(SEMBA_FDTD_ENABLE_MPI)
     add_subdirectory(mpi/output)
+    add_subdirectory(mpi/sync)
 endif()
 
 add_subdirectory(conformal)

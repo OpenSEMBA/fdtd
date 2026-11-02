@@ -3,16 +3,21 @@ module outputUtils_m
    use outputTypes_m
    use domain_m
    use report_m
-   use directoryUtils_m, only: create_file_with_path
+   use directoryUtils_m, only: create_file_with_path, set_aside_previous_files, atomic_replace_file, delete_file
    implicit none
    integer(kind=SINGLE), parameter :: FILE_UNIT = 400
 
    private
 
+   ! Time-domain text probes opened on resume drop the rows after this time; negative means do not trim.
+   real(kind=RKIND_TIME), save :: resume_trim_time = -1.0_RKIND_TIME
+
    !===========================
    !  Public interface summary
    !===========================
    public :: new_cell_coordinate
+   public :: keep_previous_run_files
+   public :: set_resume_trim_time
    public :: get_coordinates_extension
    public :: get_prefix_extension
    public :: get_field_component
@@ -57,6 +62,22 @@ module outputUtils_m
    end interface get_coordinates_extension
 
 contains
+
+   ! The HDF5 writer cannot append to an existing file, so a resumed run would silently destroy the frames
+   ! written before it. They are moved aside together with their XDMF document, which refers to them by name.
+   subroutine keep_previous_run_files(path, base_name)
+      character(len=*), intent(in) :: path, base_name
+      character(len=BUFSIZE) :: aside_folder, file_names(2)
+      integer :: error
+
+      file_names(1) = trim(base_name)//'.h5'
+      file_names(2) = trim(base_name)//'.xdmf'
+      call set_aside_previous_files(path, file_names, aside_folder, error)
+      if (error /= 0) call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to keep the HDF5 files of the previous run')
+      if (len_trim(aside_folder) > 0) call log_msg(LOG_WARN, 'OUTPUT', &
+         'Resumed run: HDF5 frames of the previous run kept in '//trim(aside_folder))
+   end subroutine keep_previous_run_files
+
    function new_cell_coordinate(x, y, z) result(cell)
       integer(kind=SINGLE), intent(in) :: x, y, z
       type(cell_coordinate_t) :: cell
@@ -841,6 +862,59 @@ contains
       if (unit /= 0) close (unit)
    end subroutine
 
+   subroutine set_resume_trim_time(last_time)
+      real(kind=RKIND_TIME), intent(in) :: last_time
+
+      resume_trim_time = last_time
+   end subroutine set_resume_trim_time
+
+   ! A run that died after its last checkpoint left rows beyond it, which the resumed run writes again.
+   ! Rows are dropped when their time is later than last_time; the header and unreadable lines are kept.
+   subroutine discard_samples_after(path, last_time)
+      character(len=*), intent(in) :: path
+      real(kind=RKIND_TIME), intent(in) :: last_time
+      character(len=65536) :: line
+      character(len=BUFSIZE) :: scratch
+      real(kind=RKIND_TIME) :: sampleTime
+      integer :: inUnit, outUnit, ios
+      logical :: dropped, complete
+
+      scratch = trim(path)//'.resume'
+      open (newunit=inUnit, file=trim(path), status='old', action='read', iostat=ios)
+      if (ios /= 0) return
+      open (newunit=outUnit, file=trim(scratch), status='replace', action='write', iostat=ios)
+      if (ios /= 0) then
+         close (inUnit)
+         return
+      end if
+      dropped = .false.
+      complete = .true.
+      do
+         read (inUnit, '(a)', iostat=ios) line
+         if (ios /= 0) exit
+         if (len_trim(line) == len(line)) then ! longer than the buffer: leave the file as it was
+            complete = .false.
+            exit
+         end if
+         read (line, *, iostat=ios) sampleTime
+         if (ios == 0) then
+            if (sampleTime > last_time + 1.0e-9_RKIND_TIME*abs(last_time)) then
+               dropped = .true.
+               cycle
+            end if
+         end if
+         write (outUnit, '(a)') trim(line)
+      end do
+      close (inUnit)
+      close (outUnit)
+      if (dropped .and. complete) then
+         call atomic_replace_file(scratch, path, ios)
+         if (ios /= 0) call log_msg(LOG_WARN, 'OUTPUT', 'Unable to discard the rows after the checkpoint in '//trim(path))
+      else
+         call delete_file(scratch, ios)
+      end if
+   end subroutine discard_samples_after
+
    ! Opens a text probe file and leaves it open. A fresh run truncates the file and writes
    ! its header; a resumed run appends to an existing file without duplicating the header.
    ! Keeping this unit open avoids reopening probe files on every output flush.
@@ -865,6 +939,8 @@ contains
       if (present(append)) then
          inquire (file=trim(filePathReference), exist=exists, size=fileSize)
          appendExisting = append .and. exists .and. fileSize > 0
+         if (appendExisting .and. resume_trim_time >= 0.0_RKIND_TIME .and. trim(domainTypeReference) == TIMEEXTENSION) &
+            call discard_samples_after(filePathReference, resume_trim_time)
       end if
 
       if (.not. appendExisting) then

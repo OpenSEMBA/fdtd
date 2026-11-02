@@ -302,6 +302,7 @@ add_library(semba-main
 		semba-outputs
 		fdtd-utils
 		conformal
+		fhash
 		${OUTPUT_LIBRARIES}
 		${VTK_API_LIBRARIES}
 		${SMBJSON_LIBRARIES}

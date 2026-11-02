@@ -147,7 +147,7 @@ integer function test_estimate_point_probe_memory() bind(c) result(err)
    outputs => GetOutputs()
    call estimate_outputs_memory(bytes, counts)
 
-   expectedBytes = int(OUTPUT_TIME_BUFFER_SIZE, 8)*(storage_size(0.0_RKIND_TIME) + storage_size(0.0_RKIND))/8
+   expectedBytes = int(SMALL_PROBE_BUFFER_SIZE, 8)*(storage_size(0.0_RKIND_TIME) + storage_size(0.0_RKIND))/8
    test_err = test_err + assert_integer_equal(counts(POINT_PROBE_ID), 1, 'Point probe not counted')
    test_err = test_err + assert_integer_equal(sum(counts), 1, 'Unexpected outputs counted')
    test_err = test_err + assert_true(bytes(POINT_PROBE_ID) == expectedBytes, 'Unexpected point probe buffer bytes')
@@ -894,14 +894,14 @@ integer function test_update_time_probe_ranges() bind(c) result(err)
    test_err = test_err + assert_integer_equal(outputs(LINE_OUTPUT)%outputID, LINE_PROBE_ID, &
                                                'Unexpected line output id')
 
-   ! tstep = 2*dt, so buffers only need ceil(OUTPUT_TIME_BUFFER_SIZE/2) samples between flushes.
-   test_err = test_err + assert_integer_equal(size(outputs(CURRENT_OUTPUT)%wireCurrentProbe%timeStep), 64, &
+   ! tstep = 2*dt, so buffers only need ceil(flushSteps/2) samples between flushes: SMALL_PROBE_BUFFER_SIZE for wire and bulk, OUTPUT_TIME_BUFFER_SIZE for line.
+   test_err = test_err + assert_integer_equal(size(outputs(CURRENT_OUTPUT)%wireCurrentProbe%timeStep), 2048, &
                                                'Wire-current buffer not sized to its sampling stride')
-   test_err = test_err + assert_integer_equal(size(outputs(CURRENT_OUTPUT)%wireCurrentProbe%currentValues), 64, &
+   test_err = test_err + assert_integer_equal(size(outputs(CURRENT_OUTPUT)%wireCurrentProbe%currentValues), 2048, &
                                                'Wire-current values not sized to its sampling stride')
-   test_err = test_err + assert_integer_equal(size(outputs(CHARGE_OUTPUT)%wireChargeProbe%chargeValue), 64, &
+   test_err = test_err + assert_integer_equal(size(outputs(CHARGE_OUTPUT)%wireChargeProbe%chargeValue), 2048, &
                                                'Wire-charge buffer not sized to its sampling stride')
-   test_err = test_err + assert_integer_equal(size(outputs(BULK_OUTPUT)%bulkCurrentProbe%valueForTime), 64, &
+   test_err = test_err + assert_integer_equal(size(outputs(BULK_OUTPUT)%bulkCurrentProbe%valueForTime), 2048, &
                                                'Bulk buffer not sized to its sampling stride')
    test_err = test_err + assert_integer_equal(size(outputs(LINE_OUTPUT)%lineProbe%valueForTime), 64, &
                                                'Line buffer not sized to its sampling stride')
@@ -1740,7 +1740,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
    outputs(3)%movieProbe%timeStep(2) = 0.75_RKIND_TIME
    outputs(3)%movieProbe%yValueForTime(2, :4) = [1.1_RKIND, 1.2_RKIND, 1.3_RKIND, 1.4_RKIND]
 
-   call flush_outputs(dummysgg%time, 1_SINGLE, dummyControl, fields, dummyBound, .false.)
+   call flush_outputs(dummysgg%time, 1_SINGLE, dummyControl, fields, dummyBound, .false., .true.)
 
    expectedPath = trim(outputs(1)%movieProbe%filesPath)
    test_err = test_err + assert_true(.not. file_exists(trim(expectedPath)//'.bin'), 'Movie binary payload was published')
@@ -2152,7 +2152,7 @@ end function
 
 integer function test_time_buffer_capacity() bind(c) result(err)
    ! Verifies time buffers hold exactly the samples a probe can take between flushes.
-   use outputTypes_m, only: domain_t, time_buffer_capacity
+   use outputTypes_m, only: domain_t, time_buffer_capacity, SMALL_PROBE_BUFFER_SIZE
    use assertionTools_m, only: assert_integer_equal
    implicit none
 
@@ -2160,10 +2160,47 @@ integer function test_time_buffer_capacity() bind(c) result(err)
    integer :: i
    integer, parameter :: strides(5) = [1, 3, 10, 128, 200]
    integer, parameter :: expected(5) = [128, 43, 13, 1, 1]
+   integer, parameter :: expectedPoint(5) = [4096, 1366, 410, 32, 21]
 
    err = 0
    do i = 1, size(strides)
       domain%tstride = strides(i)
       err = err + assert_integer_equal(time_buffer_capacity(domain), expected(i), 'Unexpected time buffer capacity')
+      err = err + assert_integer_equal(time_buffer_capacity(domain, SMALL_PROBE_BUFFER_SIZE), expectedPoint(i), &
+                                       'Unexpected point probe time buffer capacity')
    end do
+end function
+
+integer function test_flush_cadence_from_counts() bind(c) result(err)
+   ! Verifies each probe group reports the flush period it is actually flushed with.
+   use output_m, only: flush_cadence_from_counts, POINT_PROBE_ID, MOVIE_PROBE_ID, LINE_PROBE_ID, MTLN_PROBE_ID
+   use outputTypes_m, only: OUTPUT_TIME_BUFFER_SIZE, SMALL_PROBE_BUFFER_SIZE
+   use assertionTools_m, only: assert_integer_equal
+   implicit none
+
+   integer(kind=4) :: counts(0:MTLN_PROBE_ID)
+   integer :: smallSteps, regularSteps
+
+   err = 0
+   counts = 0
+   call flush_cadence_from_counts(counts, smallSteps, regularSteps)
+   err = err + assert_integer_equal(smallSteps, 0, 'No probes: unexpected small cadence')
+   err = err + assert_integer_equal(regularSteps, 0, 'No probes: unexpected regular cadence')
+
+   counts(POINT_PROBE_ID) = 1
+   call flush_cadence_from_counts(counts, smallSteps, regularSteps)
+   err = err + assert_integer_equal(smallSteps, SMALL_PROBE_BUFFER_SIZE, 'Point probe: wrong small cadence')
+   err = err + assert_integer_equal(regularSteps, 0, 'Point probe: unexpected regular cadence')
+
+   counts = 0
+   counts(MOVIE_PROBE_ID) = 1
+   call flush_cadence_from_counts(counts, smallSteps, regularSteps)
+   err = err + assert_integer_equal(smallSteps, 0, 'Movie: unexpected small cadence')
+   err = err + assert_integer_equal(regularSteps, OUTPUT_TIME_BUFFER_SIZE, 'Movie: wrong regular cadence')
+
+   counts(LINE_PROBE_ID) = 1
+   counts(POINT_PROBE_ID) = 2
+   call flush_cadence_from_counts(counts, smallSteps, regularSteps)
+   err = err + assert_integer_equal(smallSteps, SMALL_PROBE_BUFFER_SIZE, 'Mixed run: wrong small cadence')
+   err = err + assert_integer_equal(regularSteps, OUTPUT_TIME_BUFFER_SIZE, 'Mixed run: wrong regular cadence')
 end function

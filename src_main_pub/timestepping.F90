@@ -447,6 +447,8 @@ module Solver_m
       character(len=bufsize) :: dubuf
       logical :: attinformado = .false.
       logical :: anyObservation
+      integer(kind=4) :: counts(0:MTLN_PROBE_ID)
+      integer :: smallFlushSteps, regularFlushSteps
 
 ! #ifdef compileWithMPI
       integer(kind=4) :: dummyMin,dummyMax, ierr
@@ -562,6 +564,7 @@ module Solver_m
          end if
 #endif
          this%initialtimestep=this%lastexecutedtimestep+1
+         this%control%resume_time = this%lastexecutedtime
          write(dubuf,*) '[OK] processing resuming data. Last executed time step ',this%lastexecutedtimestep
          call print11(this%control%layoutnumber,dubuf)
       end if
@@ -640,13 +643,13 @@ module Solver_m
 
       write(dubuf,*) 'Init Timing...';  call print11(this%control%layoutnumber,dubuf)
       ! Collective on all ranks: thereAre%Observation is rank-local.
-      call report_outputs_memory(this%control%layoutnumber)
+      call report_outputs_memory(this%control%layoutnumber, counts)
       anyObservation = this%thereAre%Observation
 #ifdef CompileWithMPI
       call MPI_AllReduce(this%thereAre%Observation, anyObservation, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
 #endif
-      call InitTiming(this%sgg, this%control, this%control%time_desdelanzamiento, this%initialtimestep, this%control%maxSourceValue, &
-                      merge(OUTPUT_TIME_BUFFER_SIZE, 0, anyObservation))
+      call flush_cadence_from_counts(counts, smallFlushSteps, regularFlushSteps)
+      call InitTiming(this%sgg, this%control, this%initialtimestep, anyObservation, smallFlushSteps, regularFlushSteps)
 
 
       call CLOSEWARNINGFILE(this%control%layoutnumber,this%control%num_procs,this%control%fatalerror,.false.,this%control%simu_devia) !here the stochastic is already split and there are two this%control%layoutnumber=0
@@ -1538,6 +1541,7 @@ contains
          call init_outputs(this%sgg, this%media, this%sinPML_fullsize, this%tag_numbers, this%bounds, &
                            this%control, this%thereAre%Observation, this%thereAre%wires, &
                            eps0_input=this%eps0, mu0_input=this%mu0)
+         if (this%control%resume) call load_outputs_dft_state(this%control%resume_time)
          l_auxinput=this%thereAre%Observation.or.this%thereAre%FarFields
          l_auxoutput=l_auxinput
 
@@ -1888,7 +1892,7 @@ contains
                    end if
                    if (this%control%layoutnumber == 0) call log_msg(LOG_INFO, 'SOLVER', dubuf)
                    if (this%thereAre%Observation) then
-                      call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, flushFF)
+                      call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, flushFF, .TRUE.)
                    end if
                 end if
 
@@ -1960,6 +1964,7 @@ contains
 
          call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nInputRoot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
          Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
+         call save_outputs_dft_state(this%sgg%time(this%n))
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -1971,7 +1976,8 @@ contains
       subroutine updateAndFlush()
          if (this%n > 0 .and. mod(this%n, OUTPUT_TIME_BUFFER_SIZE) == 0) then
             if (this%thereAre%Observation) then
-               call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, .FALSE.)
+               call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, .FALSE., &
+                                  mod(this%n, SMALL_PROBE_BUFFER_SIZE) == 0)
             end if
 #ifdef CompileWithMPI
             if (this%control%num_procs > 1) call MPI_Barrier(SUBCOMM_MPI, ierr)
@@ -2044,7 +2050,7 @@ contains
 
 #ifdef CompileWithMPI
       if (this%control%num_procs>1) then
-         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call barrier_timed(SUBCOMM_MPI)
          call FlushMPI_E_Cray
       end if
 #endif
@@ -2081,7 +2087,7 @@ contains
       !and I suspect the current Block too, going by the following comment
       !I include an initial flush before entering the loop so that resuming is correct
       if (this%control%num_procs>1) then
-         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call barrier_timed(SUBCOMM_MPI)
          call FlushMPI_H_Cray
       end if
       if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
@@ -2906,6 +2912,7 @@ contains
          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
          call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nInputRoot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
          Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
+         call save_outputs_dft_state(this%sgg%time(this%n))
          write(dubuf,'(a,i9)')  ' DONE FINAL FLUSHING OF RESTARTING FIELDS N=',this%n
          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
          call print11(this%control%layoutnumber,dubuf)
@@ -2921,7 +2928,7 @@ contains
       call print11(this%control%layoutnumber,dubuf)
       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
       if (this%thereAre%Observation) then
-         call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, .TRUE.)
+         call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, .TRUE., .TRUE.)
       end if
 #ifdef CompileWithMTLN
       if (this%mtlnObservationInitialized) call CloseMTLNObservation()
