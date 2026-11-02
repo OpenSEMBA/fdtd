@@ -1,0 +1,36 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Surface thin slot with inconsistent adjacent normals.",
+
+    "general": {
+        "timeStep": 10e-12,
+        "numberOfSteps": 1
+    },
+
+    "boundary": {
+        "all": {"type": "pml"}
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [10, 10, 10],
+            "steps": { "x": [0.01], "y": [0.01], "z": [0.01] }
+        },
+        "elements": [
+            {"id": 1, "type": "cell", "name": "surface-slot-positive",
+             "intervals": [ [ [5, 2, 5], [6, 3, 5] ] ]},
+            {"id": 2, "type": "cell", "name": "surface-slot-negative",
+             "intervals": [ [ [6, 4, 5], [5, 3, 5] ] ]}
+        ]
+    },
+
+    "materials": [
+        { "name": "gap", "type": "thinSlot", "id": 1, "width": 1e-3 }
+    ],
+
+    "materialAssociations": [
+        { "materialId": 1, "type": "thinSlot", "elementIds": [1, 2] }
+    ],
+
+    "probes": []
+}

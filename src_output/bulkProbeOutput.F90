@@ -44,8 +44,8 @@ contains
       this%isWriter = mpi_rank == 0
 #endif
 
-      call alloc_and_init(this%timeStep, time_buffer_capacity(this%domain), 0.0_RKIND_TIME)
-      call alloc_and_init(this%valueForTime, time_buffer_capacity(this%domain), 0.0_RKIND)
+      call alloc_and_init(this%timeStep, time_buffer_capacity(this%domain, SMALL_PROBE_BUFFER_SIZE), 0.0_RKIND_TIME)
+      call alloc_and_init(this%valueForTime, time_buffer_capacity(this%domain, SMALL_PROBE_BUFFER_SIZE), 0.0_RKIND)
       artifact_paths(1) = trim(this%path)//'_'//TIMEEXTENSION//DATFILEEXTENSION
       artifact_kinds = OUTPUT_ARTIFACT_TEXT
       call declare_probe_artifacts(this%artifacts, artifact_paths, artifact_kinds)

@@ -20,7 +20,7 @@ module output_m
    use outputTypes_m, only: solver_output_t, problem_info_t, output_artifact_t, &
                               spheric_domain_t, cell_coordinate_t, field_data_t, fields_reference_t, &
                               TIME_DOMAIN, FREQUENCY_DOMAIN, BOTH_DOMAIN, UNDEFINED_DOMAIN, volumetric_publication_t, &
-                              OUTPUT_ARTIFACT_UNDEFINED
+                              OUTPUT_ARTIFACT_UNDEFINED, OUTPUT_TIME_BUFFER_SIZE, SMALL_PROBE_BUFFER_SIZE
 #ifdef CompileWithMPI
    use mpi
 #endif
@@ -40,10 +40,12 @@ module output_m
    public :: init_outputs
    public :: update_outputs
    public :: flush_outputs
+   public :: save_outputs_dft_state
+   public :: load_outputs_dft_state
    public :: close_outputs
    public :: delete_outputs
    public :: GetOutputPartition
-   public :: estimate_outputs_memory, report_outputs_memory
+   public :: estimate_outputs_memory, report_outputs_memory, flush_cadence_from_counts
    public :: POINT_PROBE_ID, WIRE_CURRENT_PROBE_ID, WIRE_CHARGE_PROBE_ID, BULK_PROBE_ID, &
              MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID, FAR_FIELD_PROBE_ID, LINE_PROBE_ID, MTLN_PROBE_ID
    !===========================
@@ -182,6 +184,7 @@ contains
       mu0 = MU_VACUUM
       if (present(eps0_input)) eps0 = eps0_input
       if (present(mu0_input)) mu0 = mu0_input
+      if (control%resume) call set_resume_trim_time(control%resume_time)
       requestedOutputs = get_required_output_count(sgg)
 
       problemInfo%geometryToMaterialData => media
@@ -689,7 +692,8 @@ contains
    end subroutine update_outputs
 
    ! Single sampling rule for every time-domain probe. Also guards the buffers sized by
-   ! time_buffer_capacity, which assume outputs are flushed every OUTPUT_TIME_BUFFER_SIZE steps.
+   ! time_buffer_capacity, which assume outputs are flushed every OUTPUT_TIME_BUFFER_SIZE steps
+   ! (SMALL_PROBE_BUFFER_SIZE for point, wire and bulk probes).
    logical function time_sample_due(output, timeIndex, discreteTime) result(sampleDue)
       type(solver_output_t), intent(in) :: output
       integer(kind=SINGLE), intent(in) :: timeIndex
@@ -743,13 +747,14 @@ contains
                   discreteTime <= domain%tstop + boundaryTolerance
    end function is_time_sample_due
 
-   subroutine flush_outputs(simulationTimeArray, simulationTimeIndex, control, fields, bounds, farFieldFlushRequested)
+   subroutine flush_outputs(simulationTimeArray, simulationTimeIndex, control, fields, bounds, farFieldFlushRequested, flushSmallProbes)
       implicit none
       type(fields_reference_t), target :: fields
       type(fields_reference_t), pointer :: fieldsPtr
       type(sim_control_t), intent(in) :: control
       type(bounds_t), intent(in) :: bounds
       logical, intent(in) :: farFieldFlushRequested
+      logical, intent(in) :: flushSmallProbes !point, wire and bulk probes buffer SMALL_PROBE_BUFFER_SIZE steps, so they may skip a flush
       real(kind=RKIND_TIME), pointer, dimension(:), intent(in) :: simulationTimeArray
       integer, intent(in) :: simulationTimeIndex
       integer :: outIdx
@@ -759,13 +764,13 @@ contains
       do outIdx = 1, size(outputs)
          select case (outputs(outIdx)%outputID)
          case (POINT_PROBE_ID)
-            call flush_solver_output(outputs(outIdx)%pointProbe)
+            if (flushSmallProbes) call flush_solver_output(outputs(outIdx)%pointProbe)
          case (WIRE_CURRENT_PROBE_ID)
-            call flush_solver_output(outputs(outIdx)%wireCurrentProbe)
+            if (flushSmallProbes) call flush_solver_output(outputs(outIdx)%wireCurrentProbe)
          case (WIRE_CHARGE_PROBE_ID)
-            call flush_solver_output(outputs(outIdx)%wireChargeProbe)
+            if (flushSmallProbes) call flush_solver_output(outputs(outIdx)%wireChargeProbe)
          case (BULK_PROBE_ID)
-            call flush_solver_output(outputs(outIdx)%bulkCurrentProbe)
+            if (flushSmallProbes) call flush_solver_output(outputs(outIdx)%bulkCurrentProbe)
          case (LINE_PROBE_ID)
             call flush_solver_output(outputs(outIdx)%lineProbe)
          case (MOVIE_PROBE_ID)
@@ -778,6 +783,36 @@ contains
          end select
       end do
    end subroutine flush_outputs
+
+   subroutine save_outputs_dft_state(time)
+      real(kind=RKIND_TIME), intent(in) :: time
+      integer :: outIdx
+
+      if (.not. associated(outputs)) return
+      do outIdx = 1, size(outputs)
+         select case (outputs(outIdx)%outputID)
+         case (POINT_PROBE_ID)
+            call save_point_probe_dft_state(outputs(outIdx)%pointProbe, time)
+         case (FREQUENCY_SLICE_PROBE_ID)
+            call save_frequency_slice_dft_state(outputs(outIdx)%frequencySliceProbe, time)
+         end select
+      end do
+   end subroutine save_outputs_dft_state
+
+   subroutine load_outputs_dft_state(time)
+      real(kind=RKIND_TIME), intent(in) :: time
+      integer :: outIdx
+
+      if (.not. associated(outputs)) return
+      do outIdx = 1, size(outputs)
+         select case (outputs(outIdx)%outputID)
+         case (POINT_PROBE_ID)
+            call load_point_probe_dft_state(outputs(outIdx)%pointProbe, time)
+         case (FREQUENCY_SLICE_PROBE_ID)
+            call load_frequency_slice_dft_state(outputs(outIdx)%frequencySliceProbe, time)
+         end select
+      end do
+   end subroutine load_outputs_dft_state
 
    ! Solver-side probe buffers per outputID; HDF5/transport/metadata buffers are not counted.
    subroutine estimate_outputs_memory(bytes, counts)
@@ -866,8 +901,20 @@ contains
       if (present(values)) array_bytes = size(values, kind=8)*storage_size(values, kind=8)/8_8
    end function array_bytes
 
-   subroutine report_outputs_memory(layoutnumber)
+   ! Flush period of the small and the regular probe groups, 0 when the run has no probe of that group.
+   pure subroutine flush_cadence_from_counts(counts, smallSteps, regularSteps)
+      integer(kind=4), intent(in) :: counts(0:MTLN_PROBE_ID)
+      integer, intent(out) :: smallSteps, regularSteps
+
+      smallSteps = 0
+      regularSteps = 0
+      if (any(counts([POINT_PROBE_ID, WIRE_CURRENT_PROBE_ID, WIRE_CHARGE_PROBE_ID, BULK_PROBE_ID]) > 0)) smallSteps = SMALL_PROBE_BUFFER_SIZE
+      if (any(counts([LINE_PROBE_ID, MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID]) > 0)) regularSteps = OUTPUT_TIME_BUFFER_SIZE
+   end subroutine flush_cadence_from_counts
+
+   subroutine report_outputs_memory(layoutnumber, reducedCounts)
       integer(kind=4), intent(in) :: layoutnumber
+      integer(kind=4), intent(out), optional :: reducedCounts(0:MTLN_PROBE_ID)
       integer(kind=8) :: bytes(0:MTLN_PROBE_ID)
       integer(kind=4) :: counts(0:MTLN_PROBE_ID)
       character(len=BUFSIZE) :: dubuf
@@ -893,6 +940,9 @@ contains
       end do
       write (dubuf, '(a16,i8,a,f14.2,a)') 'total           ', sum(counts), ' probes', sum(bytes)/1048576.0d0, ' MB'
       call print11(layoutnumber, dubuf)
+      ! Movie counts are movies x regions: one buffer per MPI rank holding part of the movie.
+      if (counts(MOVIE_PROBE_ID) > 0) call print11(layoutnumber, '  movie count = movies x regions (one per MPI rank)')
+      if (present(reducedCounts)) reducedCounts = counts
    end subroutine report_outputs_memory
 
    subroutine remove_unused_outputs(output_list)

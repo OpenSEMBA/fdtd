@@ -103,6 +103,7 @@ contains
           call create_folder(this%path, error)
           if (error /= 0) call log_msg(LOG_FATAL, 'OUTPUT', &
                                            'Unable to create movie output directory')
+          if (control%resume) call keep_previous_run_files(this%path, filename)
        end if
        call synchronise_movie_participants(this, control)
        call write_geometry_companion(this%filesPath, this%mainCoords, this%auxCoords, problemInfo, &

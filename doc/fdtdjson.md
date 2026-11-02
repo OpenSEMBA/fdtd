@@ -420,7 +420,7 @@ stack.
 
 ### `thinSlot`
 
-A `thinSlot` represents a gap between two conductive surfaces. Therefore it must be located at a surface and be defined using line cell elements only. Its `<width>` is a real number which defines the distance between the surfaces in meters.
+A `thinSlot` represents a gap between two conductive surfaces. Therefore it must be located at a surface and be defined using line cell intervals or a one-cell-thick strip of surface cell intervals. Surface-defined slots are expanded into one-cell slot segments; branching, wider-than-one-quad strips, isolated quads and four-quad groups are rejected. The signed surface interval orientation is used as the host-face normal, and the mesher must provide a consistent normal orientation along the strip: adjacent coplanar faces with opposite normals are rejected. A slot whose intervals collapse to zero length is accepted and contributes no components. Its `<width>` is a real number which defines the distance between the surfaces in meters.
 
 The sheet containing the gap may be a `pec` material, an `isotropic` material applied as a surface with non-zero `electricConductivity`, or a `multilayeredSurface` (surface impedance) material.
 

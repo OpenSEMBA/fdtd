@@ -1024,7 +1024,15 @@ contains
       memory_elements = product_int64(shape)
     end if
     mem_dims(1) = int(max(1_int64, memory_elements), HSIZE_T)
-    if (error == 0) call h5screate_simple_f(1, mem_dims, memspace, error)
+    if (error == 0) then
+      if (empty_selection .or. (.not. present(local_offset) .and. &
+          file%collective .and. file%rank /= file%root_rank)) then
+        call h5screate_simple_f(1, mem_dims, memspace, error)
+      else
+        ! A memory space shaped like the file selection keeps HDF5 off its slow mismatched-rank copy path.
+        call h5screate_simple_f(rank, count, memspace, error)
+      end if
+    end if
     if (error == 0 .and. empty_selection) then
       call h5sselect_none_f(memspace, error)
     else if (error == 0 .and. .not. present(local_offset) .and. &
