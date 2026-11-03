@@ -22,6 +22,28 @@ and runs `semba-fdtd` under `mpirun` on the three nodes:
 ./scripts/run.sh ../../testData/cases/mpi/bundles_for_mpi.fdtd.json 3
 ```
 
+## Hang and resume
+
+This reproduces a run that stops writing outputs when one node stops answering
+MPI, then resumes it from the last checkpoint with the same number of ranks.
+Run from `docker/cluster/`:
+
+```sh
+./scripts/run.sh ../../testData/cases/mpi/bundles_for_mpi.fdtd.json 3 -flush 1   # checkpoint every minute
+docker compose pause node3                    # freeze node3: its ranks stop, the others block in MPI
+```
+
+`work/<case>/` stops growing. Stop the stuck job without `down.sh`, which empties `work/`:
+
+```sh
+docker compose unpause node3                  # needed before a restart of a paused container
+docker compose restart                        # kills the job; work/ keeps the .fields checkpoints
+./scripts/run.sh ../../testData/cases/mpi/bundles_for_mpi.fdtd.json 3 -r -n <steps>
+```
+
+The resume must use the same `3` ranks and the same `-n` as the original run.
+Add `-flush 1` to the resume too if checkpoints should keep being written.
+
 ## Notes
 
 - `/work` is a bind mount of `docker/cluster/work/`, shared by all nodes. Outputs
