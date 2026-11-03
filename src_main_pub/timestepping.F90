@@ -451,7 +451,7 @@ module Solver_m
       integer :: smallFlushSteps, regularFlushSteps
 
 ! #ifdef compileWithMPI
-      integer(kind=4) :: dummyMin,dummyMax, ierr
+      integer(kind=4) :: dummyMin,dummyMax, ierr, resumeIostat
       real(kind=rkind) :: rdummy
 ! #endif
       this%control%fatalerror=.false.
@@ -507,11 +507,13 @@ module Solver_m
          write(dubuf,*) 'Init processing resuming data'
          call print11(this%control%layoutnumber,dubuf)
          if (this%control%resume_fromold) then
-            open (14,file=trim(adjustl(this%control%nresumeable2))//'.old',form='unformatted')
+            open (14,file=trim(adjustl(this%control%nresumeable2))//'.old',form='unformatted',iostat=resumeIostat)
          else
-            open (14,file=trim(adjustl(this%control%nresumeable2)),form='unformatted')
+            open (14,file=trim(adjustl(this%control%nresumeable2)),form='unformatted',iostat=resumeIostat)
          end if
-         call ReadFields(this%sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,this%eps0,this%mu0,Ex,Ey,Ez,Hx,Hy,Hz)
+         !fatal here aborts every rank; a rank left out of the MPI calls below would hang the others
+         if (resumeIostat /= 0) call log_msg(LOG_FATAL, 'RESUMING', 'Cannot open restart fields: '//trim(adjustl(this%control%nresumeable2)))
+         call ReadFields(this%sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,this%eps0,this%mu0,this%control%num_procs,Ex,Ey,Ez,Hx,Hy,Hz)
          this%sgg%dt=ultimodt !to allow scaling
       !!!!!!!!!!!!No need to re-synchronize but I do it !!!!!!!!!!!!!!!!!!!!!!!!!!
 #ifdef CompileWithMPI
@@ -538,8 +540,9 @@ module Solver_m
                call print11(this%control%layoutnumber,dubuf)
                this%control%resume_fromold=.true.
                close (14)
-               open (14,file=trim(adjustl(this%control%nresumeable2))//'.old',form='unformatted')
-               call ReadFields(this%sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,this%eps0,this%mu0,Ex,Ey,Ez,Hx,Hy,Hz)
+               open (14,file=trim(adjustl(this%control%nresumeable2))//'.old',form='unformatted',iostat=resumeIostat)
+               if (resumeIostat /= 0) call log_msg(LOG_FATAL, 'RESUMING', 'Cannot open restart fields: '//trim(adjustl(this%control%nresumeable2))//'.old')
+               call ReadFields(this%sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,this%eps0,this%mu0,this%control%num_procs,Ex,Ey,Ez,Hx,Hy,Hz)
                this%sgg%dt=ultimodt !to allow scaling
                call MPI_AllReduce(this%lastexecutedtimestep, dummyMin, 1_4, MPI_INTEGER, MPI_MIN, SUBCOMM_MPI, ierr)
                call MPI_AllReduce(this%lastexecutedtimestep, dummyMax, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
