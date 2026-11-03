@@ -58,6 +58,8 @@ module resuming_m
    real(kind=RKIND), save           :: eps0,mu0
 !!!   
    integer(kind=4), parameter, private  :: BLOCK_SIZE = 1024
+   !first record of every restart file: identifies the process-count header
+   character(len=*), parameter, private :: RESUME_TAG = 'SEMBA_RESUME_NP1'
    public ReadFields,flush_and_save_resume
 
 
@@ -67,9 +69,10 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Read the main stepping program fields from isk for resuming simulation
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine ReadFields(sggalloc,lastexecutedtimestep,lastexecutedtime,ultimodt,eps00,mu00,Ex,Ey,Ez,Hx,Hy,Hz)
+   subroutine ReadFields(sggalloc,lastexecutedtimestep,lastexecutedtime,ultimodt,eps00,mu00,num_procs,Ex,Ey,Ez,Hx,Hy,Hz)
 
       type(XYZlimit_t), dimension(1:6) :: sggalloc
+      integer(kind=4), intent(in) :: num_procs
       real(kind=RKIND)   , intent(inout) :: &
       Ex(sggalloc(IEX)%XI : sggalloc(IEX)%XE,sggalloc(IEX)%YI : sggalloc(IEX)%YE,sggalloc(IEX)%ZI : sggalloc(IEX)%ZE),&
       Ey(sggalloc(IEY)%XI : sggalloc(IEY)%XE,sggalloc(IEY)%YI : sggalloc(IEY)%YE,sggalloc(IEY)%ZI : sggalloc(IEY)%ZE),&
@@ -80,10 +83,24 @@ contains
       real(kind=RKIND_TIME) :: lastexecutedtime,ultimodt
       real(kind=RKIND) :: eps00,mu00
       integer(kind=4) :: lastexecutedtimestep,i,j,k,i_block,n_block,ini,fin
+      character(len=len(RESUME_TAG)) :: tag
+      integer(kind=4) :: savedprocs, ios
+      character(len=BUFSIZE) :: dubuf
 
       eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
       zvac=sqrt(mu0/eps0)
       cluz=1.0_RKIND/sqrt(mu0*eps0)
+
+      !checked before any field is loaded, so every rank aborts here and none waits in MPI
+      read (14, iostat=ios) tag, savedprocs
+      if (ios /= 0) call log_msg(LOG_FATAL, 'RESUMING', 'Cannot read restart header: the file is truncated or corrupt')
+      if (tag /= RESUME_TAG) call log_msg(LOG_FATAL, 'RESUMING', &
+         'Restart file has no process-count header (written by an older version). It cannot be resumed')
+      if (savedprocs /= num_procs) then
+         write(dubuf,'(a,i0,a,i0)') 'Resume needs the same number of MPI processes as the original run: saved with ', &
+            savedprocs, ', current run uses ', num_procs
+         call log_msg(LOG_FATAL, 'RESUMING', trim(dubuf))
+      end if
 
       read (14) lastexecutedtimestep,lastexecutedtime,ultimodt,eps0,mu0
       do k=sggalloc(IEX)%ZI,sggalloc(IEX)%ZE
@@ -242,7 +259,7 @@ contains
 8777  if(my_iostat /= 0) write(*,FMT='(a)',advance='no'), '.' !!if(my_iostat /= 0) print '(i5,a1,i4,2x,a)',8777,'.',layoutnumber,trim(adjustl( nresumeable2))//'.old'
       open (14, file = trim(adjustl(nresumeable2)), form = 'unformatted',err=8777,iostat=my_iostat,status='new',action='write')
       !--->
-      call StoreFields(sgg,fin,eps0,mu0, b, Ex, Ey, Ez, Hx, Hy, Hz)
+      call StoreFields(sgg,fin,num_procs,eps0,mu0, b, Ex, Ey, Ez, Hx, Hy, Hz)
       !this module data !warning the calling order must be the same that the calling to the init routines
       if(Thereare%PMLBorders)       call StoreFieldsCPMLBorders
       if (Thereare%PMLbodies)        call StorefieldsPMLbodies
@@ -334,11 +351,11 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Flush the main stepping program fields to disk after simulation
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine StoreFields(sgg,finaltimestep,eps0,mu0, b, Ex, Ey, Ez, Hx, Hy, Hz)
+   subroutine StoreFields(sgg,finaltimestep,num_procs,eps0,mu0, b, Ex, Ey, Ez, Hx, Hy, Hz)
       !---------------------------> inputs <----------------------------------------------------------
       type(SGGFDTDINFO_t), intent(in) :: sgg
       type(bounds_t), intent(in) :: b
-      integer(kind = 4), intent(in) :: finaltimestep
+      integer(kind = 4), intent(in) :: finaltimestep, num_procs
       !--->
       real(kind = RKIND), dimension(0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent(in) :: Ex
       real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(in) :: Ey
@@ -351,6 +368,7 @@ contains
       integer(kind = 4) :: i, j, k, i_block, n_block, ini, fin
       real(kind = RKIND) :: eps0,mu0,cluz,zvac
       !---------------------------> starts StoreFields <---------------------------------------------
+      write(14,err=634) RESUME_TAG, num_procs
       write(14,err=634) finaltimestep,sgg%time(finaltimestep),sgg%dt,eps0,mu0
       !--->
       do k = 0, b%Ex%NZ-1
