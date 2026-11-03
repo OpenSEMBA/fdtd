@@ -160,6 +160,7 @@ module smbjson_labels_m
    character(len=*), parameter :: J_GEN_NUMBER_OF_STEPS = "numberOfSteps"
    character(len=*), parameter :: J_GEN_MTLN_PROBLEM = "mtlnProblem"
    character(len=*), parameter :: J_GEN_ADDITIONAL_ARGUMENTS = "additionalArguments"
+   character(len=*), parameter :: J_GEN_RESTART_FLUSH_MINUTES = "restartFlushMinutes"
 
    ! background
    character(len=*), parameter :: J_BACKGROUND = "background"

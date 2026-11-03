@@ -730,6 +730,7 @@ module NFDETypes_m
       real(kind=RK) :: dt
       integer(kind=4) :: nmax
       logical :: mtlnProblem
+      integer(kind=4) :: restartFlushMinutes !0 when not set: no periodic checkpoint
    end type NFDEGeneral_t
    !------------------------------------------------------------------------------
    ! Definition of the type. Three vectors are defined, for each axis X,Y,Z. If
