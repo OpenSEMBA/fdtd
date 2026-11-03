@@ -70,6 +70,31 @@ The frequency sums of point probes are saved with each restart checkpoint in
 uninterrupted run. A resumed run must be given the same step count with `-n`,
 the solver step count, as the run it resumes.
 
+## Resuming a Run
+
+Restart checkpoints are written every `restartFlushMinutes` (JSON) or `-flush <minutes>`
+(console), whichever is set with the higher priority. The init timing report then shows
+`Restart FIELDS flush: every N minutes`. Without either, fields are only saved at the end
+of the run or with `-cpumax`.
+
+To continue after a crash or a kill:
+
+1. Relaunch the same case with `-r` and the same step count `-n` as the original run.
+2. Use the same number of MPI processes as the original run. A resume with a different
+   count aborts before any field is read.
+3. The run continues from the last checkpoint. There is one file per rank,
+   `<case>_<k>.fields` with `k` from 1 to the number of ranks.
+
+```sh
+mpirun -np 4 semba-fdtd -i case.fdtd.json -r -n 20000
+```
+
+A checkpoint written by an older version has no process-count header and cannot be
+resumed. Run it again from the start with `-s`.
+
+Checkpoints are only written at a flush, so the steps after the last one are recomputed.
+Each rank writes its file locally and all ranks decide together when to flush.
+
 ## Geometry Map Output
 
 The `-mapvtk` option creates a geometry map rather than a JSON
