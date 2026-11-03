@@ -1,0 +1,47 @@
+# Simulated MPI cluster running semba-fdtd: three nodes, each capped at 1 GiB.
+# The build context is the repository root so the solver is compiled from source.
+x-node: &node
+  build:
+    context: ../..
+    dockerfile: docker/cluster/Dockerfile
+    args:
+      GIT_COMMIT: ${GIT_COMMIT:-UNKNOWN}
+  image: semba-cluster-solver:latest
+  mem_limit: 1g
+  memswap_limit: 1g
+  cpus: 1
+  pids_limit: 512
+  read_only: true
+  tmpfs:
+    - /tmp:size=16m,exec
+    - /home/mpi:size=32m,uid=1000,gid=1000
+    - /run:size=8m
+  volumes:
+    - type: bind
+      source: ./ssh
+      target: /cluster-ssh
+      read_only: true
+    - type: bind
+      source: ./work
+      target: /work
+    - type: bind
+      source: ./hostfile
+      target: /cluster/hostfile
+      read_only: true
+  networks:
+    - cluster
+
+services:
+  node1:
+    <<: *node
+    hostname: node1
+  node2:
+    <<: *node
+    hostname: node2
+  node3:
+    <<: *node
+    hostname: node3
+
+networks:
+  cluster:
+    driver: bridge
