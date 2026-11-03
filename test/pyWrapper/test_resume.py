@@ -190,3 +190,83 @@ def test_resume_rejects_different_process_count_then_resumes_with_same(tmp_path)
     resumed = subprocess.run(["mpirun", "-np", "2", SEMBA_EXE, "-i", case, "-r"], cwd=tmp_path,
                              capture_output=True, text=True)
     assert resumed.returncode == 0, resumed.stdout[-2000:]
+
+
+def _mpi_run(case, *flags):
+    return subprocess.run(["mpirun", "-np", "2", SEMBA_EXE, "-i", case, *flags], cwd=os.path.dirname(case),
+                          capture_output=True, text=True)
+
+
+def _assert_resumed_frames_match_reference(resumed_h5, reference_h5):
+    # every frame the resumed run wrote must equal the uninterrupted frame recorded at the same time
+    import h5py
+    import numpy as np
+
+    with h5py.File(reference_h5, "r") as ref, h5py.File(resumed_h5, "r") as res:
+        index = {round(float(t), 15): i for i, t in enumerate(ref["series/values"][...])}
+        ref_frames = ref["attributes/a0001/values"]
+        res_frames = res["attributes/a0001/values"]
+        for j, t in enumerate(res["series/values"][...]):
+            i = index[round(float(t), 15)]
+            assert np.array_equal(res_frames[j], ref_frames[i]), f"frame at t={t} differs after resume"
+
+
+@no_mpi_skip
+@pytest.mark.mpi
+@pytest.mark.hdf
+@pytest.mark.movie
+@pytest.mark.farfield
+@pytest.mark.slow
+@pytest.mark.skipif(sys.platform == "win32", reason="kills the job's process group, POSIX only")
+def test_resume_planewave_sphere_with_farfield_point_probe_and_movies_matches_uninterrupted(tmp_path):
+    reference = tmp_path / "reference"
+    interrupted = tmp_path / "interrupted"
+    case_folder = os.path.join(CASES_FOLDER, "sphere")
+    for folder in (reference, interrupted):
+        folder.mkdir()
+        for name in ("sphere_restart.fdtd.json", "gauss.exc"):
+            shutil.copy(os.path.join(case_folder, name), folder)
+    case_reference = str(reference / "sphere_restart.fdtd.json")
+    case_interrupted = str(interrupted / "sphere_restart.fdtd.json")
+
+    _set_steps(case_interrupted, 100_000_000)
+    solver = subprocess.Popen(
+        ["mpirun", "-np", "2", SEMBA_EXE, "-i", case_interrupted, "-flush", "1"],
+        cwd=interrupted, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True,
+    )
+    try:
+        deadline = time.time() + 600
+        while len(list(interrupted.glob("*.fields"))) < 2:
+            assert solver.poll() is None, "solver ended before writing restart fields"
+            assert time.time() < deadline, "restart fields were not written by both ranks"
+            time.sleep(1)
+        time.sleep(3)  # let both writers finish their files
+    finally:
+        os.killpg(solver.pid, signal.SIGKILL)  # only the job launched above
+        solver.wait()
+
+    _set_steps(case_interrupted, 1)
+    probe = _mpi_run(case_interrupted, "-r")
+    saved_step = int(re.search(r"Last executed time step\s+(\d+)", probe.stdout + probe.stderr).group(1))
+    steps = saved_step + 2000
+
+    _set_steps(case_reference, steps)
+    uninterrupted = _mpi_run(case_reference)
+    assert uninterrupted.returncode == 0, uninterrupted.stdout[-2000:]
+
+    _set_steps(case_interrupted, steps)
+    resumed = _mpi_run(case_interrupted, "-r")
+    assert resumed.returncode == 0, resumed.stdout[-2000:]
+
+    # the far-field log and the point probes are deterministic; the energy file is written on wall-clock intervals
+    deterministic = list(reference.glob("*_point_probe_*_tm.dat")) + list(reference.glob("*farfield_log*.dat"))
+    assert len(deterministic) == 4, [p.name for p in deterministic]
+    for expected in deterministic:
+        assert filecmp.cmp(expected, interrupted / expected.name, shallow=False), expected.name
+
+    movies = [p for p in reference.iterdir() if p.is_dir() and "_movie_" in p.name]
+    assert len(movies) == 2, [p.name for p in movies]
+    for movie in movies:
+        resumed_h5 = interrupted / movie.name / f"{movie.name}.h5"
+        assert resumed_h5.is_file()
+        _assert_resumed_frames_match_reference(resumed_h5, movie / f"{movie.name}.h5")
