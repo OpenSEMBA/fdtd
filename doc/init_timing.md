@@ -45,7 +45,7 @@ Reporting simulation info every 1 minutes
 |---|---|---|
 | `Probe buffer memory` | `report_outputs_memory` (`src_output/output.F90`) | Only printed when there are probes. One row per probe type in use, then the total. Counts are per output object, summed over ranks: `point` counts probe x component, and `movie` counts movies x regions (one per MPI rank holding part of a movie), so a single movie on 4 ranks shows `4 probes`. |
 | `Total Mcells` | Sweep extent, summed over MPI ranks | Millions of cells. |
-| `Restart FIELDS flush` | `-flush <minutes>`, `maxCPUtime` | `every N minutes`, `at the end, after N minutes`, or `none scheduled`. |
+| `Restart FIELDS flush` | `-flush <minutes>`, `general.restartFlushMinutes`, `maxCPUtime` | `every N minutes`, `at the end, after N minutes`, or `none scheduled`. |
 | `Observation DATA flush` | `OUTPUT_TIME_BUFFER_SIZE`, `SMALL_PROBE_BUFFER_SIZE`, `-flushdata <minutes>` | `every 128 steps (line, movie, frequency slice)` and/or `every 4096 steps (point, wire, bulk)`, joined by `, ` for the groups present on any rank; `at the end only` when only far-field probes exist; `no probes` when there is nothing to observe. Then `; time-based: none` or `; time-based: every N minutes`. |
 | `Reporting simulation info` | `REPORTINGSECONDS` | Minutes between progress reports. |
 
