@@ -5,7 +5,7 @@ module progress_m
    use FDETYPES_m
    use snapxdmf_m
    use Report_m, only: print11, get_secnds, time_t, erasesignalingfiles, &
-                       openclosedelete, file10isopen, log_msg, LOG_ERROR, LOG_FATAL
+                       openclosedelete, file10isopen, log_msg, LOG_INFO, LOG_ERROR, LOG_FATAL
 
    implicit none
    private
@@ -679,6 +679,7 @@ contains
 #ifdef CompileWithMPI
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
 #endif
+         call log_resident_memory(n)
 
          if (layoutnumber == 0) then
             write(dubuf,*) SEPARADOR,trim(adjustl(nInputRoot)),SEPARADOR
@@ -970,5 +971,25 @@ contains
       sgg%gridPoint = gridPoint
       return
    end function
+
+   ! Logs the resident memory (VmRSS, Linux) of this rank so per-node growth shows in the warnings file.
+   subroutine log_resident_memory(step)
+      integer(kind=4), intent(in) :: step
+      character(len=256) :: line, msg
+      integer :: u, ios
+
+      open(newunit=u, file='/proc/self/status', status='old', action='read', iostat=ios)
+      if (ios /= 0) return
+      do
+         read(u, '(a)', iostat=ios) line
+         if (ios /= 0) exit
+         if (line(1:6) == 'VmRSS:') then
+            write(msg, '(a,i0,a,a)') 'step ', step, ' resident memory:', trim(adjustl(line(7:)))
+            call log_msg(LOG_INFO, 'MEMORY', trim(msg))
+            exit
+         end if
+      end do
+      close(u)
+   end subroutine log_resident_memory
 
 end module progress_m
