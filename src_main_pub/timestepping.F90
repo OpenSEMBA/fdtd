@@ -1960,10 +1960,16 @@ contains
 #endif
 
       subroutine performFlushField()
-         write(dubuf,*)  SEPARADOR,trim(adjustl(this%control%nInputRoot)),SEPARADOR
-         call printMessage(this%control%layoutnumber,dubuf)
-         write(dubuf,*)  'INIT FLUSHING OF RESTARTING FIELDS n=',this%n
-         call printMessage(this%control%layoutnumber,dubuf)
+         integer(kind=8) :: clockStart, clockEnd, clockRate
+         real(kind=8) :: elapsedSeconds
+         ! Only the root rank reports: every rank runs the flush, but the console would repeat the banner
+         if (this%control%layoutnumber == 0) then
+            write(dubuf,*)  SEPARADOR,trim(adjustl(this%control%nInputRoot)),SEPARADOR
+            call printMessage(this%control%layoutnumber,dubuf)
+            write(dubuf,*)  'INIT FLUSHING OF RESTARTING FIELDS n=',this%n
+            call printMessage(this%control%layoutnumber,dubuf)
+         end if
+         call system_clock(clockStart, clockRate)
 
          call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nInputRoot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
          Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
@@ -1971,8 +1977,12 @@ contains
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
-         write(dubuf,*) 'DONE FLUSHING OF RESTARTING FIELDS n=',this%n
-         call printMessageWithSeparator(this%control%layoutnumber, dubuf)
+         call system_clock(clockEnd)
+         if (this%control%layoutnumber == 0) then
+            elapsedSeconds = real(clockEnd - clockStart, kind=8) / real(clockRate, kind=8)
+            write(dubuf,'(a,i0,a,f0.3,a)') 'DONE FLUSHING OF RESTARTING FIELDS n=',this%n, ' (elapsed ', elapsedSeconds, ' s)'
+            call printMessageWithSeparator(this%control%layoutnumber, dubuf)
+         end if
 
       end subroutine performFlushField
 
