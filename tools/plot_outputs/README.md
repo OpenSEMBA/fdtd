@@ -17,6 +17,7 @@ to `<source>/plots`.
 | --- | --- |
 | `probe` | One PNG per probe `.dat` file. `<source>` may also be a single file. |
 | `group` | Probes drawn together in one figure, selected by probe name. |
+| `farfield` | Bistatic RCS pattern (one panel per phi cut) and monostatic RCS versus frequency, from each `*_FF_*.dat` file. |
 | `3d-probes` | Probe locations in 3D, colored by peak time-domain value (ParaView). |
 | `3d-scene` | The same probes plus the problem geometry from the `__MAP` folder (ParaView). |
 
@@ -52,6 +53,17 @@ Probe positions come from the cell indices in the file names and the grid
 so run the solver with `-mapvtk`. Both commands also write `probes.csv` next
 to the image, with the position and peak value of every probe.
 
+## Far-field RCS
+
+```bash
+python3 tools/plot_outputs/plot_outputs.py farfield testData/cases/probe_demos
+```
+
+Each far-field file gives `<name>_pattern.png` (RCS in dBsm against theta, one
+panel per phi cut, one curve per frequency) and, when the probe includes
+theta = 180 deg and phi = 0, `<name>_backscatter.png` (monostatic RCS against
+frequency). Values come from the `RCS(GEOM)` column.
+
 ## Tests
 
 ```bash
@@ -60,7 +72,8 @@ to the image, with the position and peak value of every probe.
 
 ## Limits
 
-- Only point and bulk-current probe files are plotted. Wire, line, far-field,
-  energy and MTLN outputs are not recognised and are skipped.
+- The `probe`, `group` and 3D commands plot point, bulk-current, wire and line
+  probe files. Movie, energy and MTLN outputs are not recognised and are
+  skipped; far-field files are handled only by `farfield`.
 - 3D views use time-domain probes only, since frequency and time peaks have
   different units.

@@ -1,5 +1,6 @@
 """Unit tests for tools/plot_outputs/plot_outputs.py on synthetic probe files."""
 
+import argparse
 import importlib.util
 import json
 from pathlib import Path
@@ -97,3 +98,40 @@ def test_load_all_reads_mtln_wire_output_by_its_time_header(plot_outputs, tmp_pa
 
     assert (series.probe.name, series.probe.index, series.probe.domain) == ("wire_probe_bundle_I_5_4_4", None, "tm")
     assert series.columns == ["time", "conductor_1", "conductor_2"]
+
+
+FARFIELD_HEADER = " f_at_0.2E-007   Theta    Phi    Etheta_mod    Etheta_phase    Ephi_mod    Ephi_phase    RCS(ARIT) RCS(GEOM)\n"
+
+
+def write_farfield(path, rows):
+    lines = [FARFIELD_HEADER] + [
+        f"{f:.11E} {theta:.9E} {phi:.9E} 0 0 0 0 {rcs:.9E} {rcs:.9E}\n" for f, theta, phi, rcs in rows
+    ]
+    path.write_text("".join(lines), encoding="utf-8")
+
+
+def test_farfield_name_and_backscatter_pick_theta_180_phi_0(plot_outputs, tmp_path):
+    path = tmp_path / "case.fdtd_far_field_FF_3_3_3__47_47_47.dat"
+    write_farfield(path, [(2e8, 0.0, 0.0, 0.5), (2e8, 180.0, 0.0, 0.1), (4e8, 180.0, 0.0, 0.01), (4e8, 180.0, 90.0, 9.0)])
+
+    assert plot_outputs.farfield_name(path) == "far_field"
+    freq, dbsm = plot_outputs.backscatter_dbsm(plot_outputs.load_farfield(path))
+    assert freq == pytest.approx([2e8, 4e8])
+    assert dbsm == pytest.approx([-10.0, -20.0])
+
+
+def test_farfield_command_writes_pattern_and_backscatter_pngs(plot_outputs, tmp_path):
+    source = tmp_path / "case"
+    source.mkdir()
+    write_farfield(
+        source / "case.fdtd_far_field_FF_3_3_3__47_47_47.dat",
+        [(f, theta, phi, 0.1) for f in (2e8, 4e8) for theta in (0.0, 90.0, 180.0) for phi in (0.0, 90.0)],
+    )
+    arguments = argparse.Namespace(source=source, output=tmp_path / "plots")
+
+    plot_outputs.command_farfield(arguments)
+
+    assert sorted(path.name for path in (tmp_path / "plots").iterdir()) == [
+        "far_field_backscatter.png",
+        "far_field_pattern.png",
+    ]

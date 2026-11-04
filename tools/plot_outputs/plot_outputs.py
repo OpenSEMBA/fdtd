@@ -4,6 +4,7 @@
 Commands:
   probe      one PNG per probe .dat file
   group      one PNG per group of probes sharing a figure (see --group)
+  farfield   bistatic RCS pattern and backscatter per far-field file
   3d-probes  probe locations in 3D, rendered with ParaView (pvbatch)
   3d-scene   probe locations plus the problem geometry, rendered with ParaView
 
@@ -34,6 +35,8 @@ PROBE_FILE = re.compile(
     r"\.fdtd_(?P<name>.+?)_(?P<component>[EHJMWQ][xyz]|LI)"
     r"(?:_(?P<i>\d+)_(?P<j>\d+)_(?P<k>\d+))?(?:__\d+_\d+_\d+)?(?:_s\d+)?_(?P<domain>tm|fq)\.dat$"
 )
+# <case>.fdtd_<name>_FF_<i>_<j>_<k>__<i>_<j>_<k>.dat
+FARFIELD_FILE = re.compile(r"\.fdtd_(?P<name>.+?)_FF_\d+_\d+_\d+__\d+_\d+_\d+\.dat$")
 
 
 @dataclass(frozen=True)
@@ -126,6 +129,82 @@ def plot_series(series_list, title, domain, output):
     figure.savefig(output, dpi=150)
     plt.close(figure)
     print(output)
+
+
+def farfield_name(path):
+    match = FARFIELD_FILE.search(path.name)
+    if not match:
+        raise ValueError(f"not a far-field file: {path}")
+    return match.group("name")
+
+
+def load_farfield(path):
+    """Rows of (frequency, theta, phi, Etheta, Etheta_phase, Ephi, Ephi_phase, RCS arit, RCS geom)."""
+    data = np.loadtxt(path, skiprows=1, ndmin=2)
+    if data.shape[1] < 9:
+        raise ValueError(f"unexpected far-field columns in {path}")
+    return data
+
+
+def rcs_dbsm(rcs):
+    return 10.0 * np.log10(np.maximum(rcs, np.finfo(float).tiny))
+
+
+def backscatter_dbsm(data):
+    """Monostatic RCS: theta = 180 deg, phi = 0 (the incident direction is theta = 0)."""
+    rows = data[np.isclose(data[:, 1], 180.0) & np.isclose(data[:, 2], 0.0)]
+    return rows[:, 0], rcs_dbsm(rows[:, 8])
+
+
+def command_farfield(arguments):
+    output = output_directory(arguments)
+    files = [arguments.source] if arguments.source.is_file() else sorted(arguments.source.glob("*.fdtd_*_FF_*.dat"))
+    if not files:
+        raise SystemExit(f"No far-field files (*_FF_*.dat) in {arguments.source}")
+    for path in files:
+        name = farfield_name(path)
+        data = load_farfield(path)
+        freqs = np.unique(data[:, 0])
+
+        phis = np.unique(data[:, 2])
+        # Polar panels: theta is the angle from the incidence axis (0 at the top, clockwise), RCS the radius.
+        figure, axes = plt.subplots(1, len(phis), figsize=(5 * len(phis), 5.5), squeeze=False,
+                                    subplot_kw={"projection": "polar"}, layout="constrained")
+        colors = plt.cm.viridis(np.linspace(0, 1, len(freqs)))
+        all_dbsm = rcs_dbsm(data[:, 8])
+        rmin = np.floor(all_dbsm.min() / 10.0) * 10.0
+        rmax = np.ceil(all_dbsm.max() / 10.0) * 10.0
+        for axis, phi in zip(axes[0], phis):
+            for color, freq in zip(colors, freqs):
+                rows = data[np.isclose(data[:, 0], freq) & np.isclose(data[:, 2], phi)]
+                axis.plot(np.deg2rad(rows[:, 1]), rcs_dbsm(rows[:, 8]), color=color, label=f"{freq / 1e9:.2f} GHz")
+            axis.set_theta_zero_location("N")
+            axis.set_theta_direction(-1)
+            axis.set_thetamin(0)
+            axis.set_thetamax(180)
+            axis.set_rlim(rmin, rmax)
+            axis.set_title(f"phi = {phi:g} deg\nRCS (GEOM) [dBsm]", fontsize=10)
+        handles, labels = axes[0, 0].get_legend_handles_labels()
+        figure.legend(handles, labels, fontsize=7, loc="center left", bbox_to_anchor=(1.0, 0.5))
+        figure.suptitle(f"{name}: bistatic RCS pattern")
+        pattern = output / f"{slug(name)}_pattern.png"
+        pattern.parent.mkdir(parents=True, exist_ok=True)
+        figure.savefig(pattern, dpi=150, bbox_inches="tight")  # keeps the legend outside the axes
+        plt.close(figure)
+        print(pattern)
+
+        freq, dbsm = backscatter_dbsm(data)
+        if freq.size:
+            figure, axis = plt.subplots(figsize=(8, 4), layout="constrained")
+            axis.plot(freq / 1e9, dbsm, marker="o")
+            axis.set_xlabel("Frequency [GHz]")
+            axis.set_ylabel("Monostatic RCS (GEOM) [dBsm]")
+            axis.set_title(f"{name}: backscatter (theta = 180 deg)")
+            axis.grid(alpha=0.3)
+            backscatter = output / f"{slug(name)}_backscatter.png"
+            figure.savefig(backscatter, dpi=150)
+            plt.close(figure)
+            print(backscatter)
 
 
 def parse_group(text):
@@ -253,6 +332,7 @@ def parse_arguments():
         metavar="TITLE=NAME[,NAME...]",
         help="probe names drawn in one figure; repeat for more figures (default: one figure per probe name)",
     )
+    add_command("farfield", command_farfield, "far-field RCS pattern and backscatter (*_FF_*.dat files)")
     add_command("3d-probes", lambda arguments: command_3d(arguments, False), "probe locations in 3D (ParaView)")
     add_command("3d-scene", lambda arguments: command_3d(arguments, True), "probes and geometry in 3D (ParaView)")
     return parser.parse_args()
