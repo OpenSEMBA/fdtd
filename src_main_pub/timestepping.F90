@@ -127,6 +127,7 @@ module Solver_m
       procedure :: init_control => solver_init_control
       procedure, private :: init_fields
       procedure, private :: init_distances
+      procedure, private :: report_memory_estimate
       procedure :: launch_simulation
       procedure :: set_field_value
       procedure :: get_field_value
@@ -321,6 +322,42 @@ module Solver_m
       this%Ex = 0.0_RKIND; this%Ey = 0.0_RKIND; this%Ez = 0.0_RKIND; this%Hx = 0.0_RKIND; this%Hy = 0.0_RKIND; this%Hz = 0.0_RKIND
    end subroutine
 
+   ! Logs the RAM this rank will need for the field, distance and media arrays before they are allocated
+   subroutine report_memory_estimate(this)
+      class(solver_t) :: this
+      integer(kind=8) :: fieldBytes, distBytes, mediaBytes
+      character(len=bufsize) :: msg
+
+      fieldBytes = RKIND*(cells_of(this%sgg%Alloc(IEX))+cells_of(this%sgg%Alloc(IEY))+cells_of(this%sgg%Alloc(IEZ)) &
+                        + cells_of(this%sgg%Alloc(IHX))+cells_of(this%sgg%Alloc(IHY))+cells_of(this%sgg%Alloc(IHZ)))
+      ! dx/Idx pairs (e and h grids) along each axis
+      distBytes = 2_8*RKIND*(int(this%sgg%Alloc(IHX)%XE-this%sgg%Alloc(IHX)%XI+1,8)+int(this%sgg%Alloc(IHY)%YE-this%sgg%Alloc(IHY)%YI+1,8) &
+                           + int(this%sgg%Alloc(IHZ)%ZE-this%sgg%Alloc(IHZ)%ZI+1,8)+int(this%sgg%Alloc(IEX)%XE-this%sgg%Alloc(IEX)%XI+1,8) &
+                           + int(this%sgg%Alloc(IEY)%YE-this%sgg%Alloc(IEY)%YI+1,8)+int(this%sgg%Alloc(IEZ)%ZE-this%sgg%Alloc(IEZ)%ZI+1,8))
+      mediaBytes = 0
+      if (allocated(this%media%sggMiEx)) mediaBytes = INTEGERSIZEOFMEDIAMATRICES*(size(this%media%sggMiNo,kind=8) &
+                 + size(this%media%sggMiEx,kind=8)+size(this%media%sggMiEy,kind=8)+size(this%media%sggMiEz,kind=8) &
+                 + size(this%media%sggMiHx,kind=8)+size(this%media%sggMiHy,kind=8)+size(this%media%sggMiHz,kind=8)) &
+                 + IKINDMTAG*size(this%media%sggMtag,kind=8)
+
+      msg = 'estimated RAM for this rank: '//mb_text(fieldBytes+distBytes+mediaBytes)//' MB (fields '//mb_text(fieldBytes)// &
+            ' MB, distances '//mb_text(distBytes)//' MB, media '//mb_text(mediaBytes)//' MB)'
+      call log_msg(LOG_INFO, 'MEMORY', trim(msg))
+   end subroutine
+
+   function mb_text(bytes) result(s)
+      integer(kind=8), intent(in) :: bytes
+      character(len=:), allocatable :: s
+      character(len=20) :: buf
+      write(buf,'(f20.1)') real(bytes,8)/1048576.0_8
+      s = trim(adjustl(buf))
+   end function
+
+   pure integer(kind=8) function cells_of(lim) result(n)
+      type(XYZlimit_t), intent(in) :: lim
+      n = int(lim%XE-lim%XI+1,8)*int(lim%YE-lim%YI+1,8)*int(lim%ZE-lim%ZI+1,8)
+   end function
+
    subroutine init_distances(this)
       class(solver_t) :: this
       integer :: i
@@ -480,6 +517,7 @@ module Solver_m
       layoutcharID = trim(adjustl(this%control%nInputRoot))//'_'//trim(adjustl(chari))
       call findbounds(this%bounds)
 
+      call this%report_memory_estimate()
       call this%init_distances()
       Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
 !!!changed here to allow scaling on 211118 due to resuming problems: must read eps0, mu0 before doing numbers
