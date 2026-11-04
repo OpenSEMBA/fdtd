@@ -13,6 +13,9 @@ during the image build. The final image contains only the runtime libraries.
 ./scripts/down.sh    # stop the nodes and empty work/ (SSH keys are kept)
 ```
 
+`./scripts/stop.sh` stops a running case (Ctrl+C in `run.sh` does not reach the
+job) and keeps `work/`, so it can be resumed with `-r`.
+
 The solver commit is recorded in the binary and printed by `up.sh`.
 
 Run a case with `scripts/run.sh`, which copies the input file to `work/<case>/`
