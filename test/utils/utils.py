@@ -281,3 +281,9 @@ def read_probe_samples(solver, name):
     dat = Probe.getDatFile(Probe(solver.getSolvedProbeFolders(name)[0]))
     samples = np.loadtxt(dat, skiprows=1)
     return samples[:, 0], samples[:, 1]
+
+
+def set_steps(case: str | Path, steps: int) -> None:
+    data = json.load(open(case))
+    data["general"]["numberOfSteps"] = steps
+    json.dump(data, open(case, "w"))

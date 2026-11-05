@@ -3,39 +3,35 @@ import re
 import signal
 import sys
 import time
+from pathlib import Path
 
 import numpy as np
+from src_pyWrapper.pyWrapper import FDTD
 
-MOVIES = (
+MOVIES: tuple[str, ...] = (
     "electric_field_movie_ME_0_0_0__29_29_9",
     "electric_field_movie_low_ME_0_0_0__29_29_1",
     "electric_field_movie_high_ME_0_0_8__29_29_9",
 )
 
 
-def _set_steps(case, steps):
-    data = json.load(open(case))
-    data["general"]["numberOfSteps"] = steps
-    json.dump(data, open(case, "w"))
-
-
-def _fdtd(case, flags=None, mpi_procs=None):
+def _fdtd(case: str | Path, flags: list[str] | None = None, mpi_procs: int | None = None) -> FDTD:
     mpi_command = f"mpirun -np {mpi_procs}" if mpi_procs else None
     return FDTD(case, path_to_exe=SEMBA_EXE, flags=flags, mpi_command=mpi_command)
 
 
-def _output(solver):
+def _output(solver: FDTD) -> str:
     return (solver.output.stdout + solver.output.stderr).decode()
 
 
-def _saved_step(solver):
+def _saved_step(solver: FDTD) -> int:
     # a resume cannot end before the saved step, so the run fails and reports the checkpointed step
     with pytest.raises(AssertionError):
         solver.run()
     return int(re.search(r"Last executed time step\s+(\d+)", _output(solver)).group(1))
 
 
-def _is_number(token):
+def _is_number(token: str) -> bool:
     try:
         float(token)
         return True
@@ -43,12 +39,13 @@ def _is_number(token):
         return False
 
 
-def _assert_probe_file_close(expected, actual, peak_tolerance=1e-5):
+def _assert_probe_file_close(expected: Path, actual: Path, peak_tolerance: float = 1e-5) -> None:
     # text probe files: header lines must match exactly, numeric rows within a tolerance scaled to the peak
     lines_expected = open(expected).read().splitlines()
     lines_actual = open(actual).read().splitlines()
     assert len(lines_expected) == len(lines_actual), expected.name
-    rows_expected, rows_actual = [], []
+    rows_expected: list[list[float]] = []
+    rows_actual: list[list[float]] = []
     for line_expected, line_actual in zip(lines_expected, lines_actual):
         tokens = line_expected.split()
         if tokens and all(_is_number(t) for t in tokens):
@@ -65,7 +62,7 @@ def _assert_probe_file_close(expected, actual, peak_tolerance=1e-5):
 @pytest.mark.slow
 @pytest.mark.hdf
 @pytest.mark.movie
-def test_resume_after_sigkill_keeps_previous_movies(tmp_path):
+def test_resume_after_sigkill_keeps_previous_movies(tmp_path: Path) -> None:
     case_folder = os.path.join(CASES_FOLDER, "planewave")
     for name in ("pw-in-box-with-partial-movies.fdtd.json", "gauss_1GHz.exc"):
         shutil.copy(os.path.join(case_folder, name), tmp_path)
@@ -73,7 +70,7 @@ def test_resume_after_sigkill_keeps_previous_movies(tmp_path):
     os.rename(tmp_path / "pw-in-box-with-partial-movies.fdtd.json", case)
 
     # far more steps than can finish: the run is only ever stopped by the kill
-    _set_steps(case, 100_000_000)
+    set_steps(case, 100_000_000)
     solver = _fdtd(case, ["-flush", "1"]).start()  # shortest restart-fields flush interval, one minute
     try:
         deadline = time.time() + 180
@@ -86,10 +83,10 @@ def test_resume_after_sigkill_keeps_previous_movies(tmp_path):
         solver.kill()  # SIGKILL on POSIX, TerminateProcess on Windows (signal.SIGKILL does not exist there)
         solver.wait()
 
-    _set_steps(case, 1)
+    set_steps(case, 1)
     saved_step = _saved_step(_fdtd(case, ["-r"]))
 
-    _set_steps(case, saved_step + 200)
+    set_steps(case, saved_step + 200)
     _fdtd(case, ["-r"]).run()
 
     import h5py
@@ -106,7 +103,7 @@ def test_resume_after_sigkill_keeps_previous_movies(tmp_path):
 
 @pytest.mark.slow
 @pytest.mark.hdf
-def test_resume_after_sigkill_reproduces_uninterrupted_probes(tmp_path):
+def test_resume_after_sigkill_reproduces_uninterrupted_probes(tmp_path: Path) -> None:
     reference = tmp_path / "reference"
     interrupted = tmp_path / "interrupted"
     case_folder = os.path.join(CASES_FOLDER, "planewave")
@@ -117,7 +114,7 @@ def test_resume_after_sigkill_reproduces_uninterrupted_probes(tmp_path):
     case_reference = str(reference / "pw-in-box.fdtd.json")
     case_interrupted = str(interrupted / "pw-in-box.fdtd.json")
 
-    _set_steps(case_interrupted, 100_000_000)
+    set_steps(case_interrupted, 100_000_000)
     solver = _fdtd(case_interrupted, ["-flush", "1"]).start()
     try:
         deadline = time.time() + 180
@@ -130,7 +127,7 @@ def test_resume_after_sigkill_reproduces_uninterrupted_probes(tmp_path):
         solver.kill()  # SIGKILL on POSIX, TerminateProcess on Windows (signal.SIGKILL does not exist there)
         solver.wait()
 
-    _set_steps(case_interrupted, 1)
+    set_steps(case_interrupted, 1)
     saved_step = _saved_step(_fdtd(case_interrupted, ["-r", "-n", "1"]))
     steps = saved_step + 2000
 
@@ -144,7 +141,13 @@ def test_resume_after_sigkill_reproduces_uninterrupted_probes(tmp_path):
         _assert_probe_file_close(expected, interrupted / expected.name)
 
 
-def _flush_case(tmp_path, *, steps=20, minutes=None, additional=None):
+def _flush_case(
+    tmp_path: Path,
+    *,
+    steps: int = 20,
+    minutes: int | None = None,
+    additional: str | None = None,
+) -> str:
     case_folder = os.path.join(CASES_FOLDER, "planewave")
     for name in ("pw-in-box.fdtd.json", "gauss_1GHz.exc"):
         shutil.copy(os.path.join(case_folder, name), tmp_path)
@@ -167,14 +170,16 @@ def _flush_case(tmp_path, *, steps=20, minutes=None, additional=None):
         (7, "-flush 3", ["-flush", "2"], 2),  # console flag overrides both
     ],
 )
-def test_restart_flush_priority(tmp_path, minutes, additional, flags, expected):
+def test_restart_flush_priority(
+    tmp_path: Path, minutes: int, additional: str | None, flags: list[str], expected: int
+) -> None:
     case = _flush_case(tmp_path, minutes=minutes, additional=additional)
     solver = _fdtd(case, flags)
     solver.run()
     assert f"Restart FIELDS flush: every {expected} minutes" in _output(solver)
 
 
-def test_restart_flush_negative_is_rejected(tmp_path):
+def test_restart_flush_negative_is_rejected(tmp_path: Path) -> None:
     case = _flush_case(tmp_path, minutes=-1)
     solver = _fdtd(case)
     with pytest.raises(AssertionError):
@@ -186,7 +191,7 @@ def test_restart_flush_negative_is_rejected(tmp_path):
 @pytest.mark.mpi
 @pytest.mark.slow
 @pytest.mark.skipif(sys.platform == "win32", reason="kills the job's process group, POSIX only")
-def test_resume_rejects_different_process_count_then_resumes_with_same(tmp_path):
+def test_resume_rejects_different_process_count_then_resumes_with_same(tmp_path: Path) -> None:
     case = _flush_case(tmp_path, steps=100_000_000, minutes=1)
     solver = _fdtd(case, mpi_procs=2).start(start_new_session=True)
     try:
@@ -200,7 +205,7 @@ def test_resume_rejects_different_process_count_then_resumes_with_same(tmp_path)
         os.killpg(solver.pid, signal.SIGKILL)  # only the job launched above
         solver.wait()
 
-    _set_steps(case, 1)
+    set_steps(case, 1)
     wrong = _fdtd(case, ["-r"], mpi_procs=1)
     with pytest.raises(AssertionError):
         wrong.run()
@@ -209,11 +214,13 @@ def test_resume_rejects_different_process_count_then_resumes_with_same(tmp_path)
     # same count as saved: the probe reports the checkpointed step, as in the tests above
     saved_step = _saved_step(_fdtd(case, ["-r"], mpi_procs=2))
 
-    _set_steps(case, saved_step + 200)
+    set_steps(case, saved_step + 200)
     _fdtd(case, ["-r"], mpi_procs=2).run()
 
 
-def _assert_resumed_frames_match_reference(resumed_h5, reference_h5, peak_tolerance=1e-5):
+def _assert_resumed_frames_match_reference(
+    resumed_h5: Path, reference_h5: Path, peak_tolerance: float = 1e-5
+) -> None:
     # every frame the resumed run wrote must match the uninterrupted frame recorded at the same time
     import h5py
 
@@ -234,7 +241,9 @@ def _assert_resumed_frames_match_reference(resumed_h5, reference_h5, peak_tolera
 @pytest.mark.farfield
 @pytest.mark.slow
 @pytest.mark.skipif(sys.platform == "win32", reason="kills the job's process group, POSIX only")
-def test_resume_planewave_sphere_with_farfield_point_probe_and_movies_matches_uninterrupted(tmp_path):
+def test_resume_planewave_sphere_with_farfield_point_probe_and_movies_matches_uninterrupted(
+    tmp_path: Path,
+) -> None:
     reference = tmp_path / "reference"
     interrupted = tmp_path / "interrupted"
     case_folder = os.path.join(CASES_FOLDER, "sphere")
@@ -245,7 +254,7 @@ def test_resume_planewave_sphere_with_farfield_point_probe_and_movies_matches_un
     case_reference = str(reference / "sphere_restart.fdtd.json")
     case_interrupted = str(interrupted / "sphere_restart.fdtd.json")
 
-    _set_steps(case_interrupted, 100_000_000)
+    set_steps(case_interrupted, 100_000_000)
     solver = _fdtd(case_interrupted, ["-flush", "1"], mpi_procs=2).start(start_new_session=True)
     try:
         deadline = time.time() + 600
@@ -258,14 +267,14 @@ def test_resume_planewave_sphere_with_farfield_point_probe_and_movies_matches_un
         os.killpg(solver.pid, signal.SIGKILL)  # only the job launched above
         solver.wait()
 
-    _set_steps(case_interrupted, 1)
+    set_steps(case_interrupted, 1)
     saved_step = _saved_step(_fdtd(case_interrupted, ["-r"], mpi_procs=2))
     steps = saved_step + 2000
 
-    _set_steps(case_reference, steps)
+    set_steps(case_reference, steps)
     _fdtd(case_reference, mpi_procs=2).run()
 
-    _set_steps(case_interrupted, steps)
+    set_steps(case_interrupted, steps)
     _fdtd(case_interrupted, ["-r"], mpi_procs=2).run()
 
     # the far-field log and the point probes are deterministic; the energy file is written on wall-clock intervals
