@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 
 from test.utils.build_resolver import solver_executable
+from test.utils.utils import run_solver
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -18,13 +19,7 @@ def _run_example(tmp_path: Path, filename: str) -> subprocess.CompletedProcess[s
     case = EXAMPLES / filename
     input_path = tmp_path / case.name
     shutil.copy2(case, input_path)
-    return subprocess.run(
-        [str(SEMBA_EXE), "-i", input_path.name],
-        cwd=tmp_path,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    return run_solver(input_path, cwd=tmp_path, exe=SEMBA_EXE)
 
 
 def test_surface_thin_slot_is_accepted(tmp_path):
