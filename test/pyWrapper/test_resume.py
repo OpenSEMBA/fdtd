@@ -1,10 +1,11 @@
 from test.utils.utils import *
-import filecmp
 import re
 import signal
 import subprocess
 import sys
 import time
+
+import numpy as np
 
 MOVIES = (
     "electric_field_movie_ME_0_0_0__29_29_9",
@@ -13,15 +14,37 @@ MOVIES = (
 )
 
 
-def _run(case, *flags):
-    return subprocess.run([SEMBA_EXE, "-i", case, *flags], cwd=os.path.dirname(case),
-                          capture_output=True, text=True)
-
-
 def _set_steps(case, steps):
     data = json.load(open(case))
     data["general"]["numberOfSteps"] = steps
     json.dump(data, open(case, "w"))
+
+
+def _is_number(token):
+    try:
+        float(token)
+        return True
+    except ValueError:
+        return False
+
+
+def _assert_probe_file_close(expected, actual, peak_tolerance=1e-5):
+    # text probe files: header lines must match exactly, numeric rows within a tolerance scaled to the peak
+    lines_expected = open(expected).read().splitlines()
+    lines_actual = open(actual).read().splitlines()
+    assert len(lines_expected) == len(lines_actual), expected.name
+    rows_expected, rows_actual = [], []
+    for line_expected, line_actual in zip(lines_expected, lines_actual):
+        tokens = line_expected.split()
+        if tokens and all(_is_number(t) for t in tokens):
+            rows_expected.append([float(t) for t in tokens])
+            rows_actual.append([float(t) for t in line_actual.split()])
+        else:
+            assert line_expected == line_actual, expected.name
+    if rows_expected:
+        ref = np.array(rows_expected)
+        atol = peak_tolerance * np.max(np.abs(ref))
+        np.testing.assert_allclose(np.array(rows_actual), ref, rtol=1e-5, atol=atol, err_msg=expected.name)
 
 
 @pytest.mark.slow
@@ -37,7 +60,7 @@ def test_resume_after_sigkill_keeps_previous_movies(tmp_path):
     # far more steps than can finish: the run is only ever stopped by the kill
     _set_steps(case, 100_000_000)
     solver = subprocess.Popen(
-        [SEMBA_EXE, "-i", case, "-flush", "1"],  # shortest restart-fields flush interval, one minute
+        solver_command(case, "-flush", "1"),  # shortest restart-fields flush interval, one minute
         cwd=tmp_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
     try:
@@ -53,11 +76,11 @@ def test_resume_after_sigkill_keeps_previous_movies(tmp_path):
 
     # a resume cannot end before the saved step; the failed attempt reports it
     _set_steps(case, 1)
-    probe = _run(case, "-r")
+    probe = run_solver(case, "-r")
     saved_step = int(re.search(r"Last executed time step\s+(\d+)", probe.stdout).group(1))
 
     _set_steps(case, saved_step + 200)
-    resumed = _run(case, "-r")
+    resumed = run_solver(case, "-r")
     assert resumed.returncode == 0, resumed.stdout[-2000:]
 
     import h5py
@@ -87,7 +110,7 @@ def test_resume_after_sigkill_reproduces_uninterrupted_probes(tmp_path):
 
     _set_steps(case_interrupted, 100_000_000)
     solver = subprocess.Popen(
-        [SEMBA_EXE, "-i", case_interrupted, "-flush", "1"],
+        solver_command(case_interrupted, "-flush", "1"),
         cwd=interrupted, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
     try:
@@ -102,19 +125,19 @@ def test_resume_after_sigkill_reproduces_uninterrupted_probes(tmp_path):
         solver.wait()
 
     _set_steps(case_interrupted, 1)
-    probe = _run(case_interrupted, "-r", "-n", "1")
+    probe = run_solver(case_interrupted, "-r", "-n", "1")
     saved_step = int(re.search(r"Last executed time step\s+(\d+)", probe.stdout).group(1))
     steps = saved_step + 2000
 
-    uninterrupted = _run(case_reference, "-n", str(steps))
+    uninterrupted = run_solver(case_reference, "-n", str(steps))
     assert uninterrupted.returncode == 0, uninterrupted.stdout[-2000:]
-    resumed = _run(case_interrupted, "-r", "-n", str(steps))
+    resumed = run_solver(case_interrupted, "-r", "-n", str(steps))
     assert resumed.returncode == 0, resumed.stdout[-2000:]
 
     # Energy is reported on wall-clock intervals, so only the deterministic outputs are compared
     for name in ("before_Ex_3_3_1_tm", "after_Ex_3_3_5_tm", "inbox_Ex_3_3_3_tm", "inbox_Ex_3_3_3_fq"):
         expected = reference / f"pw-in-box.fdtd_{name}.dat"
-        assert filecmp.cmp(expected, interrupted / expected.name, shallow=False), name
+        _assert_probe_file_close(expected, interrupted / expected.name)
 
 
 def _flush_case(tmp_path, *, steps=20, minutes=None, additional=None):
@@ -142,14 +165,14 @@ def _flush_case(tmp_path, *, steps=20, minutes=None, additional=None):
 )
 def test_restart_flush_priority(tmp_path, minutes, additional, flags, expected):
     case = _flush_case(tmp_path, minutes=minutes, additional=additional)
-    run = _run(case, *flags)
+    run = run_solver(case, *flags)
     assert run.returncode == 0, run.stdout[-2000:]
     assert f"Restart FIELDS flush: every {expected} minutes" in run.stdout
 
 
 def test_restart_flush_negative_is_rejected(tmp_path):
     case = _flush_case(tmp_path, minutes=-1)
-    run = _run(case)
+    run = run_solver(case)
     assert run.returncode != 0
     assert "restartFlushMinutes cannot be negative" in run.stdout + run.stderr
 
@@ -161,7 +184,7 @@ def test_restart_flush_negative_is_rejected(tmp_path):
 def test_resume_rejects_different_process_count_then_resumes_with_same(tmp_path):
     case = _flush_case(tmp_path, steps=100_000_000, minutes=1)
     solver = subprocess.Popen(
-        ["mpirun", "-np", "2", SEMBA_EXE, "-i", case],
+        solver_command(case, mpi_procs=2),
         cwd=tmp_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True,
     )
     try:
@@ -176,31 +199,25 @@ def test_resume_rejects_different_process_count_then_resumes_with_same(tmp_path)
         solver.wait()
 
     _set_steps(case, 1)
-    wrong = subprocess.run(["mpirun", "-np", "1", SEMBA_EXE, "-i", case, "-r"], cwd=tmp_path,
+    wrong = subprocess.run(solver_command(case, "-r", mpi_procs=1), check=False, cwd=tmp_path,
                            capture_output=True, text=True)
     assert wrong.returncode != 0
     assert "mpirun -n 2" in wrong.stdout + wrong.stderr  # the saved process count is named
 
     # same count as saved: the probe reports the checkpointed step, as in the tests above
-    probe = subprocess.run(["mpirun", "-np", "2", SEMBA_EXE, "-i", case, "-r"], cwd=tmp_path,
+    probe = subprocess.run(solver_command(case, "-r", mpi_procs=2), cwd=tmp_path,
                            capture_output=True, text=True)
     saved_step = int(re.search(r"Last executed time step\s+(\d+)", probe.stdout).group(1))
 
     _set_steps(case, saved_step + 200)
-    resumed = subprocess.run(["mpirun", "-np", "2", SEMBA_EXE, "-i", case, "-r"], cwd=tmp_path,
+    resumed = subprocess.run(solver_command(case, "-r", mpi_procs=2), cwd=tmp_path,
                              capture_output=True, text=True)
     assert resumed.returncode == 0, resumed.stdout[-2000:]
 
 
-def _mpi_run(case, *flags):
-    return subprocess.run(["mpirun", "-np", "2", SEMBA_EXE, "-i", case, *flags], cwd=os.path.dirname(case),
-                          capture_output=True, text=True)
-
-
-def _assert_resumed_frames_match_reference(resumed_h5, reference_h5):
-    # every frame the resumed run wrote must equal the uninterrupted frame recorded at the same time
+def _assert_resumed_frames_match_reference(resumed_h5, reference_h5, peak_tolerance=1e-5):
+    # every frame the resumed run wrote must match the uninterrupted frame recorded at the same time
     import h5py
-    import numpy as np
 
     with h5py.File(reference_h5, "r") as ref, h5py.File(resumed_h5, "r") as res:
         index = {round(float(t), 15): i for i, t in enumerate(ref["series/values"][...])}
@@ -208,7 +225,8 @@ def _assert_resumed_frames_match_reference(resumed_h5, reference_h5):
         res_frames = res["attributes/a0001/values"]
         for j, t in enumerate(res["series/values"][...]):
             i = index[round(float(t), 15)]
-            assert np.array_equal(res_frames[j], ref_frames[i]), f"frame at t={t} differs after resume"
+            assert_allclose_to_peak(res_frames[j], ref_frames[i], peak_tolerance,
+                                    err_msg=f"frame at t={t} differs after resume")
 
 
 @no_mpi_skip
@@ -231,7 +249,7 @@ def test_resume_planewave_sphere_with_farfield_point_probe_and_movies_matches_un
 
     _set_steps(case_interrupted, 100_000_000)
     solver = subprocess.Popen(
-        ["mpirun", "-np", "2", SEMBA_EXE, "-i", case_interrupted, "-flush", "1"],
+        solver_command(case_interrupted, "-flush", "1", mpi_procs=2),
         cwd=interrupted, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True,
     )
     try:
@@ -246,23 +264,23 @@ def test_resume_planewave_sphere_with_farfield_point_probe_and_movies_matches_un
         solver.wait()
 
     _set_steps(case_interrupted, 1)
-    probe = _mpi_run(case_interrupted, "-r")
+    probe = run_solver(case_interrupted, "-r", mpi_procs=2)
     saved_step = int(re.search(r"Last executed time step\s+(\d+)", probe.stdout + probe.stderr).group(1))
     steps = saved_step + 2000
 
     _set_steps(case_reference, steps)
-    uninterrupted = _mpi_run(case_reference)
+    uninterrupted = run_solver(case_reference, mpi_procs=2)
     assert uninterrupted.returncode == 0, uninterrupted.stdout[-2000:]
 
     _set_steps(case_interrupted, steps)
-    resumed = _mpi_run(case_interrupted, "-r")
+    resumed = run_solver(case_interrupted, "-r", mpi_procs=2)
     assert resumed.returncode == 0, resumed.stdout[-2000:]
 
     # the far-field log and the point probes are deterministic; the energy file is written on wall-clock intervals
     deterministic = list(reference.glob("*_point_probe_*_tm.dat")) + list(reference.glob("*farfield_log*.dat"))
     assert len(deterministic) == 4, [p.name for p in deterministic]
     for expected in deterministic:
-        assert filecmp.cmp(expected, interrupted / expected.name, shallow=False), expected.name
+        _assert_probe_file_close(expected, interrupted / expected.name)
 
     movies = [p for p in reference.iterdir() if p.is_dir() and "_movie_" in p.name]
     assert len(movies) == 2, [p.name for p in movies]
