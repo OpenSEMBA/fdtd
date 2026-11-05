@@ -1,7 +1,6 @@
 from test.utils.utils import *
 import re
 import signal
-import subprocess
 import sys
 import time
 
@@ -75,10 +74,7 @@ def test_resume_after_sigkill_keeps_previous_movies(tmp_path):
 
     # far more steps than can finish: the run is only ever stopped by the kill
     _set_steps(case, 100_000_000)
-    fdtd = _fdtd(case, ["-flush", "1"])  # shortest restart-fields flush interval, one minute
-    solver = subprocess.Popen(
-        fdtd.run_command, cwd=fdtd.getFolder(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-    )
+    solver = _fdtd(case, ["-flush", "1"]).start()  # shortest restart-fields flush interval, one minute
     try:
         deadline = time.time() + 180
         while not list(tmp_path.glob("*.fields")):
@@ -122,10 +118,7 @@ def test_resume_after_sigkill_reproduces_uninterrupted_probes(tmp_path):
     case_interrupted = str(interrupted / "pw-in-box.fdtd.json")
 
     _set_steps(case_interrupted, 100_000_000)
-    fdtd = _fdtd(case_interrupted, ["-flush", "1"])
-    solver = subprocess.Popen(
-        fdtd.run_command, cwd=fdtd.getFolder(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-    )
+    solver = _fdtd(case_interrupted, ["-flush", "1"]).start()
     try:
         deadline = time.time() + 180
         while not list(interrupted.glob("*.fields")):
@@ -195,11 +188,7 @@ def test_restart_flush_negative_is_rejected(tmp_path):
 @pytest.mark.skipif(sys.platform == "win32", reason="kills the job's process group, POSIX only")
 def test_resume_rejects_different_process_count_then_resumes_with_same(tmp_path):
     case = _flush_case(tmp_path, steps=100_000_000, minutes=1)
-    fdtd = _fdtd(case, mpi_procs=2)
-    solver = subprocess.Popen(
-        fdtd.run_command, cwd=fdtd.getFolder(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        start_new_session=True,
-    )
+    solver = _fdtd(case, mpi_procs=2).start(start_new_session=True)
     try:
         deadline = time.time() + 300
         while len(list(tmp_path.glob("*.fields"))) < 2:
@@ -257,11 +246,7 @@ def test_resume_planewave_sphere_with_farfield_point_probe_and_movies_matches_un
     case_interrupted = str(interrupted / "sphere_restart.fdtd.json")
 
     _set_steps(case_interrupted, 100_000_000)
-    fdtd = _fdtd(case_interrupted, ["-flush", "1"], mpi_procs=2)
-    solver = subprocess.Popen(
-        fdtd.run_command, cwd=fdtd.getFolder(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        start_new_session=True,
-    )
+    solver = _fdtd(case_interrupted, ["-flush", "1"], mpi_procs=2).start(start_new_session=True)
     try:
         deadline = time.time() + 600
         while len(list(interrupted.glob("*.fields"))) < 2:
