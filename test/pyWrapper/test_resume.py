@@ -234,6 +234,25 @@ def _assert_resumed_frames_match_reference(
                                     err_msg=f"frame at t={t} differs after resume")
 
 
+def _sphere_restart_case(folder: Path) -> str:
+    # sphere.fdtd.json plus a point probe and a point movie, so the restart covers both
+    data = json.load(open(os.path.join(CASES_FOLDER, "sphere", "sphere.fdtd.json")))
+    data["general"]["numberOfSteps"] = 3000
+    data["mesh"]["coordinates"] = [{"id": 10, "relativePosition": [60, 40, 40]}]
+    data["mesh"]["elements"] += [
+        {"id": 5, "type": "node", "coordinateIds": [10]},
+        {"id": 6, "type": "cell", "intervals": [[[60, 60, 60], [61, 61, 61]]]},
+    ]
+    data["probes"] += [
+        {"name": "point_probe", "type": "point", "elementIds": [5], "directions": ["x", "y", "z"], "domain": {"type": "time"}},
+        {"name": "point_movie", "type": "movie", "field": "electric", "component": "x", "elementIds": [6],
+         "domain": {"type": "time", "samplingPeriod": 1e-9}},
+    ]
+    case = folder / "sphere_restart.fdtd.json"
+    json.dump(data, open(case, "w"))
+    return str(case)
+
+
 @no_mpi_skip
 @pytest.mark.mpi
 @pytest.mark.hdf
@@ -246,13 +265,11 @@ def test_resume_planewave_sphere_with_farfield_point_probe_and_movies_matches_un
 ) -> None:
     reference = tmp_path / "reference"
     interrupted = tmp_path / "interrupted"
-    case_folder = os.path.join(CASES_FOLDER, "sphere")
     for folder in (reference, interrupted):
         folder.mkdir()
-        for name in ("sphere_restart.fdtd.json", "gauss.exc"):
-            shutil.copy(os.path.join(case_folder, name), folder)
-    case_reference = str(reference / "sphere_restart.fdtd.json")
-    case_interrupted = str(interrupted / "sphere_restart.fdtd.json")
+        shutil.copy(os.path.join(CASES_FOLDER, "sphere", "gauss.exc"), folder)
+    case_reference = _sphere_restart_case(reference)
+    case_interrupted = _sphere_restart_case(interrupted)
 
     set_steps(case_interrupted, 100_000_000)
     solver = _fdtd(case_interrupted, ["-flush", "1"], mpi_procs=2).start(start_new_session=True)
