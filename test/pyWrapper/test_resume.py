@@ -20,6 +20,22 @@ def _set_steps(case, steps):
     json.dump(data, open(case, "w"))
 
 
+def _fdtd(case, flags=None, mpi_procs=None):
+    mpi_command = f"mpirun -np {mpi_procs}" if mpi_procs else None
+    return FDTD(case, path_to_exe=SEMBA_EXE, flags=flags, mpi_command=mpi_command)
+
+
+def _output(solver):
+    return (solver.output.stdout + solver.output.stderr).decode()
+
+
+def _saved_step(solver):
+    # a resume cannot end before the saved step, so the run fails and reports the checkpointed step
+    with pytest.raises(AssertionError):
+        solver.run()
+    return int(re.search(r"Last executed time step\s+(\d+)", _output(solver)).group(1))
+
+
 def _is_number(token):
     try:
         float(token)
@@ -59,9 +75,9 @@ def test_resume_after_sigkill_keeps_previous_movies(tmp_path):
 
     # far more steps than can finish: the run is only ever stopped by the kill
     _set_steps(case, 100_000_000)
+    fdtd = _fdtd(case, ["-flush", "1"])  # shortest restart-fields flush interval, one minute
     solver = subprocess.Popen(
-        solver_command(case, "-flush", "1"),  # shortest restart-fields flush interval, one minute
-        cwd=tmp_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        fdtd.run_command, cwd=fdtd.getFolder(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
     try:
         deadline = time.time() + 180
@@ -74,14 +90,11 @@ def test_resume_after_sigkill_keeps_previous_movies(tmp_path):
         solver.kill()  # SIGKILL on POSIX, TerminateProcess on Windows (signal.SIGKILL does not exist there)
         solver.wait()
 
-    # a resume cannot end before the saved step; the failed attempt reports it
     _set_steps(case, 1)
-    probe = run_solver(case, "-r")
-    saved_step = int(re.search(r"Last executed time step\s+(\d+)", probe.stdout).group(1))
+    saved_step = _saved_step(_fdtd(case, ["-r"]))
 
     _set_steps(case, saved_step + 200)
-    resumed = run_solver(case, "-r")
-    assert resumed.returncode == 0, resumed.stdout[-2000:]
+    _fdtd(case, ["-r"]).run()
 
     import h5py
 
@@ -109,9 +122,9 @@ def test_resume_after_sigkill_reproduces_uninterrupted_probes(tmp_path):
     case_interrupted = str(interrupted / "pw-in-box.fdtd.json")
 
     _set_steps(case_interrupted, 100_000_000)
+    fdtd = _fdtd(case_interrupted, ["-flush", "1"])
     solver = subprocess.Popen(
-        solver_command(case_interrupted, "-flush", "1"),
-        cwd=interrupted, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        fdtd.run_command, cwd=fdtd.getFolder(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
     try:
         deadline = time.time() + 180
@@ -125,14 +138,12 @@ def test_resume_after_sigkill_reproduces_uninterrupted_probes(tmp_path):
         solver.wait()
 
     _set_steps(case_interrupted, 1)
-    probe = run_solver(case_interrupted, "-r", "-n", "1")
-    saved_step = int(re.search(r"Last executed time step\s+(\d+)", probe.stdout).group(1))
+    saved_step = _saved_step(_fdtd(case_interrupted, ["-r", "-n", "1"]))
     steps = saved_step + 2000
 
-    uninterrupted = run_solver(case_reference, "-n", str(steps))
-    assert uninterrupted.returncode == 0, uninterrupted.stdout[-2000:]
-    resumed = run_solver(case_interrupted, "-r", "-n", str(steps))
-    assert resumed.returncode == 0, resumed.stdout[-2000:]
+    uninterrupted = _fdtd(case_reference, ["-n", str(steps)])
+    uninterrupted.run()
+    _fdtd(case_interrupted, ["-r", "-n", str(steps)]).run()
 
     # Energy is reported on wall-clock intervals, so only the deterministic outputs are compared
     for name in ("before_Ex_3_3_1_tm", "after_Ex_3_3_5_tm", "inbox_Ex_3_3_3_tm", "inbox_Ex_3_3_3_fq"):
@@ -165,16 +176,17 @@ def _flush_case(tmp_path, *, steps=20, minutes=None, additional=None):
 )
 def test_restart_flush_priority(tmp_path, minutes, additional, flags, expected):
     case = _flush_case(tmp_path, minutes=minutes, additional=additional)
-    run = run_solver(case, *flags)
-    assert run.returncode == 0, run.stdout[-2000:]
-    assert f"Restart FIELDS flush: every {expected} minutes" in run.stdout
+    solver = _fdtd(case, flags)
+    solver.run()
+    assert f"Restart FIELDS flush: every {expected} minutes" in _output(solver)
 
 
 def test_restart_flush_negative_is_rejected(tmp_path):
     case = _flush_case(tmp_path, minutes=-1)
-    run = run_solver(case)
-    assert run.returncode != 0
-    assert "restartFlushMinutes cannot be negative" in run.stdout + run.stderr
+    solver = _fdtd(case)
+    with pytest.raises(AssertionError):
+        solver.run()
+    assert "restartFlushMinutes cannot be negative" in _output(solver)
 
 
 @no_mpi_skip
@@ -183,9 +195,10 @@ def test_restart_flush_negative_is_rejected(tmp_path):
 @pytest.mark.skipif(sys.platform == "win32", reason="kills the job's process group, POSIX only")
 def test_resume_rejects_different_process_count_then_resumes_with_same(tmp_path):
     case = _flush_case(tmp_path, steps=100_000_000, minutes=1)
+    fdtd = _fdtd(case, mpi_procs=2)
     solver = subprocess.Popen(
-        solver_command(case, mpi_procs=2),
-        cwd=tmp_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True,
+        fdtd.run_command, cwd=fdtd.getFolder(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        start_new_session=True,
     )
     try:
         deadline = time.time() + 300
@@ -199,20 +212,16 @@ def test_resume_rejects_different_process_count_then_resumes_with_same(tmp_path)
         solver.wait()
 
     _set_steps(case, 1)
-    wrong = subprocess.run(solver_command(case, "-r", mpi_procs=1), check=False, cwd=tmp_path,
-                           capture_output=True, text=True)
-    assert wrong.returncode != 0
-    assert "mpirun -n 2" in wrong.stdout + wrong.stderr  # the saved process count is named
+    wrong = _fdtd(case, ["-r"], mpi_procs=1)
+    with pytest.raises(AssertionError):
+        wrong.run()
+    assert "mpirun -n 2" in _output(wrong)  # the saved process count is named
 
     # same count as saved: the probe reports the checkpointed step, as in the tests above
-    probe = subprocess.run(solver_command(case, "-r", mpi_procs=2), cwd=tmp_path,
-                           capture_output=True, text=True)
-    saved_step = int(re.search(r"Last executed time step\s+(\d+)", probe.stdout).group(1))
+    saved_step = _saved_step(_fdtd(case, ["-r"], mpi_procs=2))
 
     _set_steps(case, saved_step + 200)
-    resumed = subprocess.run(solver_command(case, "-r", mpi_procs=2), cwd=tmp_path,
-                             capture_output=True, text=True)
-    assert resumed.returncode == 0, resumed.stdout[-2000:]
+    _fdtd(case, ["-r"], mpi_procs=2).run()
 
 
 def _assert_resumed_frames_match_reference(resumed_h5, reference_h5, peak_tolerance=1e-5):
@@ -248,9 +257,10 @@ def test_resume_planewave_sphere_with_farfield_point_probe_and_movies_matches_un
     case_interrupted = str(interrupted / "sphere_restart.fdtd.json")
 
     _set_steps(case_interrupted, 100_000_000)
+    fdtd = _fdtd(case_interrupted, ["-flush", "1"], mpi_procs=2)
     solver = subprocess.Popen(
-        solver_command(case_interrupted, "-flush", "1", mpi_procs=2),
-        cwd=interrupted, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True,
+        fdtd.run_command, cwd=fdtd.getFolder(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        start_new_session=True,
     )
     try:
         deadline = time.time() + 600
@@ -264,17 +274,14 @@ def test_resume_planewave_sphere_with_farfield_point_probe_and_movies_matches_un
         solver.wait()
 
     _set_steps(case_interrupted, 1)
-    probe = run_solver(case_interrupted, "-r", mpi_procs=2)
-    saved_step = int(re.search(r"Last executed time step\s+(\d+)", probe.stdout + probe.stderr).group(1))
+    saved_step = _saved_step(_fdtd(case_interrupted, ["-r"], mpi_procs=2))
     steps = saved_step + 2000
 
     _set_steps(case_reference, steps)
-    uninterrupted = run_solver(case_reference, mpi_procs=2)
-    assert uninterrupted.returncode == 0, uninterrupted.stdout[-2000:]
+    _fdtd(case_reference, mpi_procs=2).run()
 
     _set_steps(case_interrupted, steps)
-    resumed = run_solver(case_interrupted, "-r", mpi_procs=2)
-    assert resumed.returncode == 0, resumed.stdout[-2000:]
+    _fdtd(case_interrupted, ["-r"], mpi_procs=2).run()
 
     # the far-field log and the point probes are deterministic; the energy file is written on wall-clock intervals
     deterministic = list(reference.glob("*_point_probe_*_tm.dat")) + list(reference.glob("*farfield_log*.dat"))
