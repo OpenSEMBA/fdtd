@@ -6,12 +6,6 @@ CAVITY_SIZE = (0.20, 0.16, 0.12)
 FREQS = np.linspace(1e7, 7e8, 200)
 
 
-def _read_probe(solver, name):
-    dat = Probe.getDatFile(Probe(solver.getSolvedProbeFolders(name)[0]))
-    samples = np.loadtxt(dat, skiprows=1)
-    return samples[:, 0], samples[:, 1]
-
-
 def _cavity_modes(n_modes):
     a, b, h = CAVITY_SIZE
     modes = [
@@ -27,7 +21,7 @@ def test_pec_cavity_resonances_and_late_time_stability(tmp_path):
     solver = FDTD(CASES_FOLDER + "stability/pec_cavity.fdtd.json",
                   path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
-    t, ez = _read_probe(solver, "ez")
+    t, ez = read_probe_samples(solver, "ez")
 
     spectrum = np.abs(np.fft.rfft(ez * np.hanning(len(ez))))
     freqs = np.fft.rfftfreq(len(ez), t[1] - t[0])
@@ -46,7 +40,7 @@ def test_lossy_cavity_decay_matches_conductivity(tmp_path):
     fn = CASES_FOLDER + "stability/lossy_cavity.fdtd.json"
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
-    t, ez = _read_probe(solver, "ez")
+    t, ez = read_probe_samples(solver, "ez")
     sigma = solver.getMaterialProperties("lossy")["electricConductivity"]
 
     # envelope decay of a uniformly filled cavity: exp(-sigma t / (2 eps0))
@@ -67,7 +61,7 @@ def test_cpml_reflection_below_minus_50_db(tmp_path):
         solver = FDTD(CASES_FOLDER + f"stability/cpml_{size}.fdtd.json",
                       path_to_exe=SEMBA_EXE, run_in_folder=folder)
         solver.run()
-        traces[size] = _read_probe(solver, "ez")[1]
+        traces[size] = read_probe_samples(solver, "ez")[1]
 
     # the large domain is reflection-free within the simulated time, so it is the reference
     n = min(len(v) for v in traces.values())
@@ -81,7 +75,7 @@ def test_courant_limit_stays_bounded(tmp_path, cfl):
     solver = FDTD(CASES_FOLDER + "stability/courant_cavity.fdtd.json",
                   path_to_exe=SEMBA_EXE, run_in_folder=tmp_path, flags=f"-cfl {cfl}")
     solver.run()
-    ez = _read_probe(solver, "ez")[1]
+    ez = read_probe_samples(solver, "ez")[1]
     half = len(ez) // 2
     assert np.all(np.isfinite(ez))
     assert np.abs(ez[half:]).max() <= 1.05 * np.abs(ez[:half]).max()
@@ -94,7 +88,7 @@ def test_dielectric_interface_cavity_resonances(tmp_path):
     solver = FDTD(CASES_FOLDER + "stability/dielectric_cavity.fdtd.json",
                   path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
-    t, ez = _read_probe(solver, "ez")
+    t, ez = read_probe_samples(solver, "ez")
 
     # half-filled 1D cavity: tan(k1 a)/k1 + tan(k2 b)/k2 = 0, k1 = w/c, k2 = n w/c
     a = b = 0.20
@@ -117,7 +111,7 @@ def test_cpml_grazing_long_run_decays(tmp_path):
     solver = FDTD(CASES_FOLDER + "stability/cpml_grazing.fdtd.json",
                   path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
-    ez = _read_probe(solver, "ez")[1]
+    ez = read_probe_samples(solver, "ez")[1]
     assert np.all(np.isfinite(ez))
     assert np.abs(ez[-len(ez) // 4:]).max() < 1e-3 * np.abs(ez).max()
 
@@ -133,7 +127,7 @@ def test_cavity_mpi_matches_single_rank(tmp_path):
         solver = FDTD(CASES_FOLDER + "stability/courant_cavity.fdtd.json", path_to_exe=SEMBA_EXE,
                       mpi_command=f"mpirun -np {ranks}", run_in_folder=folder)
         solver.run()
-        traces[ranks] = _read_probe(solver, "ez")[1]
+        traces[ranks] = read_probe_samples(solver, "ez")[1]
     assert np.allclose(traces[1], traces[2], rtol=1e-4, atol=1e-4 * np.abs(traces[1]).max())
 
 

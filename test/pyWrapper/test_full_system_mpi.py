@@ -328,3 +328,39 @@ def test_point_probe_at_mpi_interface_is_written_once(tmp_path, ranks, flags, pl
     parallel = _read_point_probe_outputs(parallel_dir)
 
     _assert_point_outputs_match_serial(serial, parallel)
+
+
+def _movie_frames(run_dir: Path):
+    frames = {}
+    for h5_path in sorted(run_dir.glob("*_movie_*/*.h5")):
+        if h5_path.stem.endswith("_geometry"):
+            continue  # companion mesh file, not the frames
+        with h5py.File(h5_path, "r") as h5_file:
+            frames[h5_path.parent.name] = np.asarray(h5_file["attributes/a0001/values"])
+    return frames
+
+
+def _run_sphere_movie(folder: Path, mpi_command=None) -> dict:
+    folder.mkdir()
+    shutil.copy(os.path.join(CASES_FOLDER, "sphere", "gauss.exc"), folder)
+    case = json.load(open(os.path.join(CASES_FOLDER, "sphere", "sphere.fdtd.json")))
+    case["general"]["numberOfSteps"] = 400
+    input_path = folder / "sphere_movie.fdtd.json"
+    json.dump(case, open(input_path, "w"))
+    FDTD(input_path, path_to_exe=SEMBA_EXE, mpi_command=mpi_command).run()
+    return _movie_frames(folder)
+
+
+@no_mpi_skip
+@pytest.mark.mpi
+@pytest.mark.hdf
+@pytest.mark.probes
+def test_movie_frames_match_serial_across_mpi_cut(tmp_path):
+    # the sphere movie must be identical on 2 ranks; a wrong read at the rank cut made frames diverge after a few steps
+    serial = _run_sphere_movie(tmp_path / "serial")
+    assert serial, "serial run produced no movie output"
+    parallel = _run_sphere_movie(tmp_path / "mpi_2", mpi_command="mpirun -np 2")
+
+    assert set(parallel) == set(serial), sorted(set(parallel) ^ set(serial))
+    for name, expected in serial.items():
+        assert_allclose_to_peak(parallel[name], expected, peak_tolerance=1e-6, err_msg=name)

@@ -614,6 +614,8 @@ contains
       res%nmax = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
       if (res%nmax <=0) call log_msg(LOG_ERROR, 'SMBJSON', 'numberOfSteps has to be positive')
       res%mtlnProblem = this%getLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)
+      res%restartFlushMinutes = this%getIntAt(this%root, J_GENERAL//'.'//J_GEN_RESTART_FLUSH_MINUTES, default = 0)
+      if (res%restartFlushMinutes < 0) call log_msg(LOG_FATAL, 'SMBJSON', 'restartFlushMinutes cannot be negative')
    end function
 
    function readMediaMatrix(this) result(res)

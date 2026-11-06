@@ -1770,7 +1770,7 @@ contains
             databufE%buf_x_tx => Ex(ExXI: ExXE, ExYI: ExYE, comZ+1)
             databufE%buf_x_rx => Ex(ExXI: ExXE, ExYI: ExYE, comZ-1)
             databufE%buf_y_tx => Ey(EyXI: EyXE, EyYI: EyYE, comZ+1)
-            databufE%buf_y_rx => Ey(EyXI: EyXE, EyYI: EyYI, comZ-1)
+            databufE%buf_y_rx => Ey(EyXI: EyXE, EyYI: EyYE, comZ-1)
          end if
       end if
       !---------------- ends InitExtraFlushMPI_Cray ------------------------------------------------

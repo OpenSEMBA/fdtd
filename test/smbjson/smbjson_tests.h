@@ -44,6 +44,8 @@ extern "C" int test_read_unshielded_multiwires_multipolar_expansion();
 extern "C" int test_read_background_defaults();
 extern "C" int test_read_background_set();
 extern "C" int test_read_wire_probe_defaults();
+extern "C" int test_read_restart_flush_minutes();
+extern "C" int test_read_restart_flush_default();
 extern "C" int test_read_nodal_source_resistance_per_meter();
 extern "C" int test_read_nodal_source_total_resistance();
 extern "C" int test_read_nodal_source_zero_length();
@@ -86,6 +88,8 @@ TEST(smbjson, read_lumped_multi_element) { EXPECT_EQ(0, test_read_lumped_multi_e
 TEST(smbjson, read_background_defaults) { EXPECT_EQ(0, test_read_background_defaults()); }
 TEST(smbjson, read_background_set)      { EXPECT_EQ(0, test_read_background_set()); }
 TEST(smbjson, read_wire_probe_defaults) { EXPECT_EQ(0, test_read_wire_probe_defaults()); }
+TEST(smbjson, read_restart_flush_minutes) { EXPECT_EQ(0, test_read_restart_flush_minutes()); }
+TEST(smbjson, read_restart_flush_default) { EXPECT_EQ(0, test_read_restart_flush_default()); }
 TEST(smbjson, read_nodal_source_resistance_per_meter) {
                                            EXPECT_EQ(0, test_read_nodal_source_resistance_per_meter()); }
 TEST(smbjson, read_nodal_source_total_resistance) {

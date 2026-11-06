@@ -127,6 +127,7 @@ module Solver_m
       procedure :: init_control => solver_init_control
       procedure, private :: init_fields
       procedure, private :: init_distances
+      procedure, private :: report_memory_estimate
       procedure :: launch_simulation
       procedure :: set_field_value
       procedure :: get_field_value
@@ -321,6 +322,42 @@ module Solver_m
       this%Ex = 0.0_RKIND; this%Ey = 0.0_RKIND; this%Ez = 0.0_RKIND; this%Hx = 0.0_RKIND; this%Hy = 0.0_RKIND; this%Hz = 0.0_RKIND
    end subroutine
 
+   ! Logs the RAM this rank will need for the field, distance and media arrays before they are allocated
+   subroutine report_memory_estimate(this)
+      class(solver_t) :: this
+      integer(kind=8) :: fieldBytes, distBytes, mediaBytes
+      character(len=bufsize) :: msg
+
+      fieldBytes = RKIND*(cells_of(this%sgg%Alloc(IEX))+cells_of(this%sgg%Alloc(IEY))+cells_of(this%sgg%Alloc(IEZ)) &
+                        + cells_of(this%sgg%Alloc(IHX))+cells_of(this%sgg%Alloc(IHY))+cells_of(this%sgg%Alloc(IHZ)))
+      ! dx/Idx pairs (e and h grids) along each axis
+      distBytes = 2_8*RKIND*(int(this%sgg%Alloc(IHX)%XE-this%sgg%Alloc(IHX)%XI+1,8)+int(this%sgg%Alloc(IHY)%YE-this%sgg%Alloc(IHY)%YI+1,8) &
+                           + int(this%sgg%Alloc(IHZ)%ZE-this%sgg%Alloc(IHZ)%ZI+1,8)+int(this%sgg%Alloc(IEX)%XE-this%sgg%Alloc(IEX)%XI+1,8) &
+                           + int(this%sgg%Alloc(IEY)%YE-this%sgg%Alloc(IEY)%YI+1,8)+int(this%sgg%Alloc(IEZ)%ZE-this%sgg%Alloc(IEZ)%ZI+1,8))
+      mediaBytes = 0
+      if (allocated(this%media%sggMiEx)) mediaBytes = INTEGERSIZEOFMEDIAMATRICES*(size(this%media%sggMiNo,kind=8) &
+                 + size(this%media%sggMiEx,kind=8)+size(this%media%sggMiEy,kind=8)+size(this%media%sggMiEz,kind=8) &
+                 + size(this%media%sggMiHx,kind=8)+size(this%media%sggMiHy,kind=8)+size(this%media%sggMiHz,kind=8)) &
+                 + IKINDMTAG*size(this%media%sggMtag,kind=8)
+
+      msg = 'estimated RAM for this rank: '//mb_text(fieldBytes+distBytes+mediaBytes)//' MB (fields '//mb_text(fieldBytes)// &
+            ' MB, distances '//mb_text(distBytes)//' MB, media '//mb_text(mediaBytes)//' MB)'
+      call log_msg(LOG_INFO, 'MEMORY', trim(msg))
+   end subroutine
+
+   function mb_text(bytes) result(s)
+      integer(kind=8), intent(in) :: bytes
+      character(len=:), allocatable :: s
+      character(len=20) :: buf
+      write(buf,'(f20.1)') real(bytes,8)/1048576.0_8
+      s = trim(adjustl(buf))
+   end function
+
+   pure integer(kind=8) function cells_of(lim) result(n)
+      type(XYZlimit_t), intent(in) :: lim
+      n = int(lim%XE-lim%XI+1,8)*int(lim%YE-lim%YI+1,8)*int(lim%ZE-lim%ZI+1,8)
+   end function
+
    subroutine init_distances(this)
       class(solver_t) :: this
       integer :: i
@@ -451,7 +488,7 @@ module Solver_m
       integer :: smallFlushSteps, regularFlushSteps
 
 ! #ifdef compileWithMPI
-      integer(kind=4) :: dummyMin,dummyMax, ierr
+      integer(kind=4) :: dummyMin,dummyMax, ierr, resumeIostat
       real(kind=rkind) :: rdummy
 ! #endif
       this%control%fatalerror=.false.
@@ -480,6 +517,7 @@ module Solver_m
       layoutcharID = trim(adjustl(this%control%nInputRoot))//'_'//trim(adjustl(chari))
       call findbounds(this%bounds)
 
+      call this%report_memory_estimate()
       call this%init_distances()
       Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
 !!!changed here to allow scaling on 211118 due to resuming problems: must read eps0, mu0 before doing numbers
@@ -507,11 +545,13 @@ module Solver_m
          write(dubuf,*) 'Init processing resuming data'
          call print11(this%control%layoutnumber,dubuf)
          if (this%control%resume_fromold) then
-            open (14,file=trim(adjustl(this%control%nresumeable2))//'.old',form='unformatted')
+            open (14,file=trim(adjustl(this%control%nresumeable2))//'.old',form='unformatted',iostat=resumeIostat)
          else
-            open (14,file=trim(adjustl(this%control%nresumeable2)),form='unformatted')
+            open (14,file=trim(adjustl(this%control%nresumeable2)),form='unformatted',iostat=resumeIostat)
          end if
-         call ReadFields(this%sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,this%eps0,this%mu0,Ex,Ey,Ez,Hx,Hy,Hz)
+         !fatal here aborts every rank; a rank left out of the MPI calls below would hang the others
+         if (resumeIostat /= 0) call log_msg(LOG_FATAL, 'RESUMING', 'Cannot open restart fields: '//trim(adjustl(this%control%nresumeable2)))
+         call ReadFields(this%sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,this%eps0,this%mu0,this%control%num_procs,Ex,Ey,Ez,Hx,Hy,Hz)
          this%sgg%dt=ultimodt !to allow scaling
       !!!!!!!!!!!!No need to re-synchronize but I do it !!!!!!!!!!!!!!!!!!!!!!!!!!
 #ifdef CompileWithMPI
@@ -538,8 +578,9 @@ module Solver_m
                call print11(this%control%layoutnumber,dubuf)
                this%control%resume_fromold=.true.
                close (14)
-               open (14,file=trim(adjustl(this%control%nresumeable2))//'.old',form='unformatted')
-               call ReadFields(this%sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,this%eps0,this%mu0,Ex,Ey,Ez,Hx,Hy,Hz)
+               open (14,file=trim(adjustl(this%control%nresumeable2))//'.old',form='unformatted',iostat=resumeIostat)
+               if (resumeIostat /= 0) call log_msg(LOG_FATAL, 'RESUMING', 'Cannot open restart fields: '//trim(adjustl(this%control%nresumeable2))//'.old')
+               call ReadFields(this%sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,this%eps0,this%mu0,this%control%num_procs,Ex,Ey,Ez,Hx,Hy,Hz)
                this%sgg%dt=ultimodt !to allow scaling
                call MPI_AllReduce(this%lastexecutedtimestep, dummyMin, 1_4, MPI_INTEGER, MPI_MIN, SUBCOMM_MPI, ierr)
                call MPI_AllReduce(this%lastexecutedtimestep, dummyMax, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
@@ -1540,7 +1581,7 @@ contains
          write(dubuf,*) 'Init Observation...';  call print11(this%control%layoutnumber,dubuf)
          call init_outputs(this%sgg, this%media, this%sinPML_fullsize, this%tag_numbers, this%bounds, &
                            this%control, this%thereAre%Observation, this%thereAre%wires, &
-                           eps0_input=this%eps0, mu0_input=this%mu0)
+                           eps0_input=this%eps0, mu0_input=this%mu0, farFieldsExists=this%thereAre%FarFields)
          if (this%control%resume) call load_outputs_dft_state(this%control%resume_time)
          l_auxinput=this%thereAre%Observation.or.this%thereAre%FarFields
          l_auxoutput=l_auxinput
@@ -1957,10 +1998,16 @@ contains
 #endif
 
       subroutine performFlushField()
-         write(dubuf,*)  SEPARADOR,trim(adjustl(this%control%nInputRoot)),SEPARADOR
-         call printMessage(this%control%layoutnumber,dubuf)
-         write(dubuf,*)  'INIT FLUSHING OF RESTARTING FIELDS n=',this%n
-         call printMessage(this%control%layoutnumber,dubuf)
+         integer(kind=8) :: clockStart, clockEnd, clockRate
+         real(kind=8) :: elapsedSeconds
+         ! Only the root rank reports: every rank runs the flush, but the console would repeat the banner
+         if (this%control%layoutnumber == 0) then
+            write(dubuf,*)  SEPARADOR,trim(adjustl(this%control%nInputRoot)),SEPARADOR
+            call printMessage(this%control%layoutnumber,dubuf)
+            write(dubuf,*)  'INIT FLUSHING OF RESTARTING FIELDS n=',this%n
+            call printMessage(this%control%layoutnumber,dubuf)
+         end if
+         call system_clock(clockStart, clockRate)
 
          call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nInputRoot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
          Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
@@ -1968,8 +2015,12 @@ contains
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
-         write(dubuf,*) 'DONE FLUSHING OF RESTARTING FIELDS n=',this%n
-         call printMessageWithSeparator(this%control%layoutnumber, dubuf)
+         call system_clock(clockEnd)
+         if (this%control%layoutnumber == 0) then
+            elapsedSeconds = real(clockEnd - clockStart, kind=8) / real(clockRate, kind=8)
+            write(dubuf,'(a,i0,a,f0.3,a)') 'DONE FLUSHING OF RESTARTING FIELDS n=',this%n, ' (elapsed ', elapsedSeconds, ' s)'
+            call printMessageWithSeparator(this%control%layoutnumber, dubuf)
+         end if
 
       end subroutine performFlushField
 
