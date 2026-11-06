@@ -312,6 +312,8 @@ contains
    call data_loader(this%l%filefde, parser)
 
    this%sgg%extraSwitches=parser%switches
+   !JSON default for -flush; additionalArguments and console flags parsed by interpreta override it
+   this%l%flushminutesFields=parser%general%restartFlushMinutes
 !!!gives preference to command-line switches
    call getcommandargument (this%l%chain2, 1, chaindummy, this%l%length, statuse, getBinaryPath())
 

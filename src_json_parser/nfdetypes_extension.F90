@@ -70,6 +70,7 @@ contains
       type(Parseador_t), intent(inout) :: pD
 
       allocate(pD%general)
+      pD%general%restartFlushMinutes = 0
       allocate(pD%matriz)
       allocate(pD%despl)
       allocate(pD%front)

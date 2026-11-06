@@ -8,40 +8,6 @@ import pyvista as pv
 from test.utils.utils import *
 
 
-def h5_datasets(h5_path):
-    datasets = {}
-    with h5py.File(h5_path, "r") as h5_file:
-        h5_file.visititems(
-            lambda name, item: datasets.__setitem__(name, item[()])
-            if isinstance(item, h5py.Dataset)
-            else None
-        )
-    return datasets
-
-
-def assert_same_h5_datasets(h5_path, reference_h5_path, peak_tolerance=1e-5):
-    datasets = h5_datasets(h5_path)
-    reference = h5_datasets(reference_h5_path)
-    assert datasets.keys() == reference.keys()
-    for name in reference:
-        # shortcut: atol scaled to the peak of either array absorbs float32 round-off on near-zero values (an all-zero reference would give atol=0), revisit if real fields need tighter checks
-        scale = max(np.max(np.abs(reference[name])), np.max(np.abs(datasets[name])))
-        atol = peak_tolerance * scale
-        np.testing.assert_allclose(datasets[name], reference[name], rtol=1e-5, atol=atol, err_msg=name)
-
-
-def assert_static_point_attributes(xdmf_path, attribute_names):
-    root = ET.parse(xdmf_path).getroot()
-    for name in attribute_names:
-        attributes = root.findall(f'.//Attribute[@Name="{name}"]')
-        assert attributes
-        for attribute in attributes:
-            data_item = attribute.find("DataItem")
-            assert data_item is not None
-            assert data_item.attrib.get("ItemType") is None
-            assert data_item.attrib.get("Format") == "HDF"
-
-
 @no_mpi_skip
 @pytest.mark.mpi
 @pytest.mark.wires

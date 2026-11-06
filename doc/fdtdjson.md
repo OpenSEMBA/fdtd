@@ -74,7 +74,10 @@ This object must always be present and contains general information regarding th
 Additionally, it may contain the following optional entry:
 
 + `<mtlnProblem>` : A boolean indicating whether the problem is a pure MTLN problem and will solved using only the MTLN solver. If it is not present, its default value is `false`
++ `<restartFlushMinutes>` : An integer number of minutes between restart checkpoints (`.fields` files), the same as `-flush <minutes>`. It must be at least 1; `0` or absence means no periodic checkpoint. Sub-minute intervals are not available. See [resuming a run](output.md#resuming-a-run).
 + `<additionalArguments>` : A string with flags. Keep in mind that flags passed by console have higher priority.
+
+When the same option is set in several places, the priority is: console flags, then `additionalArguments`, then `restartFlushMinutes`.
 
 **Example:**
 

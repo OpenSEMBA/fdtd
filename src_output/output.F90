@@ -147,7 +147,7 @@ contains
    end subroutine GetOutputPartition
 
    subroutine init_outputs(sgg, media, sinpml_fullsize, materialTags, bounds, control, observationsExists, &
-                           wiresExists, eps0_input, mu0_input)
+                           wiresExists, eps0_input, mu0_input, farFieldsExists)
 
       type(SGGFDTDINFO_t), intent(in) ::  sgg
       type(media_matrices_t), target, intent(in) :: media
@@ -158,6 +158,7 @@ contains
       logical, intent(inout) :: wiresExists
       logical, intent(out) :: observationsExists
       real(kind=RKIND), intent(in), optional :: eps0_input, mu0_input
+      logical, intent(out), optional :: farFieldsExists
 
       type(domain_t) :: domain
       type(spheric_domain_t) :: sphericRange
@@ -180,6 +181,7 @@ contains
       logical :: thereAreMtlnObservations = .false.
 #endif
       observationsExists = .false.
+      if (present(farFieldsExists)) farFieldsExists = .false.
       eps0 = EPSILON_VACUUM
       mu0 = MU_VACUUM
       if (present(eps0_input)) eps0 = eps0_input
@@ -395,6 +397,8 @@ contains
 
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = FAR_FIELD_PROBE_ID
+               !restart fields must carry the far-field state whenever a far-field probe exists
+               if (present(farFieldsExists)) farFieldsExists = .true.
                allocate (outputs(outputCount)%farFieldOutput)
 #ifdef CompileWithMPI
                call configure_far_field_mpi(outputs(outputCount), lowerBound, upperBound)

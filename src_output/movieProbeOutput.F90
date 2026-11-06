@@ -712,7 +712,8 @@ contains
    subroutine save_field_component(this, fieldData, fieldComponent, simTime, problemInfo, fieldDir)
       type(movie_probe_output_t), intent(inout) :: this
       real(kind=RKIND), intent(inout)           :: fieldData(:, :)
-      real(kind=RKIND), intent(in)              :: fieldComponent(:, :, :)
+      ! pointer dummy keeps the lower bounds of the solver array, so global coordinates index it directly
+      real(kind=RKIND), pointer, intent(in)     :: fieldComponent(:, :, :)
       real(kind=RKIND_TIME), intent(in)       :: simTime
       type(problem_info_t), intent(in)          :: problemInfo
       integer, intent(in)                       :: fieldDir
