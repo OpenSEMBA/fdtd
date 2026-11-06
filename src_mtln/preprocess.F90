@@ -97,7 +97,7 @@ contains
             return
         end if
 
-        res%cable_name_to_bundle_id = mapCablesToBundlesId(line_bundles, res%bundles)
+        call mapCablesToBundlesId(res%cable_name_to_bundle_id, line_bundles)
 
         ! if (size(parsed%probes) /= 0) then
         !     ! res%probes = res%addProbesWithId(parsed%probes)
@@ -240,7 +240,6 @@ contains
         class(preprocess_t) :: this
         type(transmission_line_bundle_t), dimension(:), intent(in) :: lines
         type(mtl_bundle_t), dimension(:), allocatable :: res
-        type(fhash_tbl_t) :: conductors_before_cable
         integer(kind=4) :: i
 #ifdef CompileWithMPI
         integer(kind=4) :: ierr
@@ -256,9 +255,8 @@ contains
                 this%dt = res(i)%dt
             end if
             call setBundleTransferImpedance(res(i), lines(i))
-            call mapConductorsBeforeCable(conductors_before_cable, lines(i))
+            call mapConductorsBeforeCable(this%conductors_before_cable, lines(i))
         end do  
-        this%conductors_before_cable = conductors_before_cable
     end function    
 
 
@@ -579,10 +577,9 @@ contains
 
     end function
 
-    function mapCablesToBundlesId(lines, bundles) result(res)
+    subroutine mapCablesToBundlesId(res, lines)
+        type(fhash_tbl_t), intent(inout) :: res
         type(transmission_line_bundle_t), dimension(:), allocatable :: lines
-        type(mtl_bundle_t), dimension(:), allocatable :: bundles
-        type(fhash_tbl_t) :: res
         integer(kind=4) :: i, j, k
 
         do i = 1, size(lines)
@@ -593,7 +590,7 @@ contains
             end do
         end do
 
-    end function
+    end subroutine
 
     function mapCablesToBundles(lines, bundles) result(res)
         type(transmission_line_bundle_t), dimension(:), allocatable :: lines
