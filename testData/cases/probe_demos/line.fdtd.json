@@ -1,0 +1,48 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Line probe: electric field line integral along a polyline crossing the total field region.",
+
+    "general": {
+        "timeStep": 3e-11,
+        "numberOfSteps": 1000
+    },
+
+    "boundary": {
+        "all": {"type": "mur"}
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [30, 30, 30],
+            "steps": { "x": [0.02], "y": [0.02], "z": [0.02] }
+        },
+        "coordinates": [
+            {"id": 1, "relativePosition": [4, 15, 15]},
+            {"id": 2, "relativePosition": [26, 15, 15]}
+        ],
+        "elements": [
+            {"id": 10, "type": "cell", "intervals": [ [ [8, 8, 8], [23, 23, 23] ] ]},
+            {"id": 20, "type": "polyline", "coordinateIds": [1, 2]}
+        ]
+    },
+
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "gauss.exc",
+            "elementIds": [10],
+            "direction": { "theta": 0.0, "phi": 0.0 },
+            "polarization": { "theta": 1.5708, "phi": 0.0 }
+        }
+    ],
+
+    "probes": [
+        {
+            "name": "line_voltage",
+            "type": "line",
+            "field": "electric",
+            "elementIds": [20],
+            "domain": { "type": "time" }
+        }
+    ]
+}

@@ -1,0 +1,347 @@
+#!/usr/bin/env python3
+"""Plot semba-fdtd probe outputs.
+
+Commands:
+  probe      one PNG per probe .dat file
+  group      one PNG per group of probes sharing a figure (see --group)
+  farfield   bistatic RCS pattern and backscatter per far-field file
+  3d-probes  probe locations in 3D, rendered with ParaView (pvbatch)
+  3d-scene   probe locations plus the problem geometry, rendered with ParaView
+
+Every command takes the solver output directory (or one probe file for
+"probe") and writes PNG files to --output, which defaults to <source>/plots.
+"""
+
+import argparse
+import csv
+import json
+import re
+import shutil
+import subprocess
+from collections import defaultdict
+from dataclasses import dataclass
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+
+PARAVIEW_SCRIPT = Path(__file__).with_name("paraview_scene.py")
+# <case>.fdtd_<name>_<component>[_<i>_<j>_<k>][__<i>_<j>_<k>][_s<node>]_<tm|fq>.dat
+# Components: E/H point fields, J/M bulk current and circulation, W/Q wire current and charge, LI line integral.
+PROBE_FILE = re.compile(
+    r"\.fdtd_(?P<name>.+?)_(?P<component>[EHJMWQ][xyz]|LI)"
+    r"(?:_(?P<i>\d+)_(?P<j>\d+)_(?P<k>\d+))?(?:__\d+_\d+_\d+)?(?:_s\d+)?_(?P<domain>tm|fq)\.dat$"
+)
+# <case>.fdtd_<name>_FF_<i>_<j>_<k>__<i>_<j>_<k>.dat
+FARFIELD_FILE = re.compile(r"\.fdtd_(?P<name>.+?)_FF_\d+_\d+_\d+__\d+_\d+_\d+\.dat$")
+
+
+@dataclass(frozen=True)
+class Probe:
+    path: Path
+    name: str
+    component: str
+    index: tuple  # None for line integrals, which have no single cell
+    domain: str
+
+
+@dataclass(frozen=True)
+class Series:
+    probe: Probe
+    columns: list
+    data: np.ndarray
+
+
+def parse_probe(path):
+    match = PROBE_FILE.search(path.name)
+    if match is None:
+        return mtln_probe(path)
+    index = tuple(int(match[axis]) for axis in "ijk") if match["i"] else None
+    return Probe(path, match["name"], match["component"], index, match["domain"])
+
+
+def mtln_probe(path):
+    """MTLN wire outputs are named <case>.fdtd_<probe>_<bundle>.dat and start with a 'time' column."""
+    with path.open(encoding="utf-8") as stream:
+        header = stream.readline().split()
+    if not header or header[0] != "time" or ".fdtd_" not in path.name:
+        return None
+    return Probe(path, path.name.split(".fdtd_", 1)[1].removesuffix(".dat"), "", None, "tm")
+
+
+def load_series(probe):
+    lines = probe.path.read_text(encoding="utf-8").splitlines()
+    rows = [line.split() for line in lines[1:] if line.strip()]
+    if not rows:
+        return None
+    return Series(probe, lines[0].split(), np.array(rows, dtype=float))
+
+
+def load_all(source):
+    files = [source] if source.is_file() else sorted(source.glob("*.dat"))
+    series = []
+    for path in files:
+        probe = parse_probe(path)
+        if probe is None:
+            continue
+        loaded = load_series(probe)
+        if loaded is None:
+            print(f"skipped {path.name}: no samples")
+        else:
+            series.append(loaded)
+    if not series:
+        raise SystemExit(f"No supported probe files in {source}")
+    return series
+
+
+def traces(series):
+    """Columns to draw: field/current over time, or magnitudes over frequency."""
+    if series.probe.domain == "fq":
+        return [(i, name) for i, name in enumerate(series.columns) if name.endswith("magnitude")]
+    return [(i, name) for i, name in enumerate(series.columns) if i > 0]
+
+
+def plot_series(series_list, title, domain, output):
+    """One subplot per quantity (e.g. field and incident), sharing the x axis."""
+    quantities = {}
+    for series in series_list:
+        for i, name in traces(series):
+            quantities.setdefault(name, []).append((series, i))
+
+    figure, axes = plt.subplots(
+        len(quantities), 1, figsize=(8, 3.2 * len(quantities)), sharex=True, squeeze=False, layout="constrained"
+    )
+    for axis, (name, members) in zip(axes[:, 0], quantities.items()):
+        for series, i in members:
+            axis.plot(series.data[:, 0], series.data[:, i], label=f"{series.probe.name} {series.probe.component}")
+        axis.set_title(name, fontsize=10)
+        axis.set_ylabel("Magnitude" if domain == "fq" else "Value")
+        if domain == "fq":
+            axis.set_yscale("log")
+        axis.grid(alpha=0.3)
+        axis.legend(fontsize=8)
+    axes[-1, 0].set_xlabel("Frequency (Hz)" if domain == "fq" else "Time (s)")
+    figure.suptitle(title)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(output, dpi=150)
+    plt.close(figure)
+    print(output)
+
+
+def farfield_name(path):
+    match = FARFIELD_FILE.search(path.name)
+    if not match:
+        raise ValueError(f"not a far-field file: {path}")
+    return match.group("name")
+
+
+def load_farfield(path):
+    """Rows of (frequency, theta, phi, Etheta, Etheta_phase, Ephi, Ephi_phase, RCS arit, RCS geom)."""
+    data = np.loadtxt(path, skiprows=1, ndmin=2)
+    if data.shape[1] < 9:
+        raise ValueError(f"unexpected far-field columns in {path}")
+    return data
+
+
+def rcs_dbsm(rcs):
+    return 10.0 * np.log10(np.maximum(rcs, np.finfo(float).tiny))
+
+
+def backscatter_dbsm(data):
+    """Monostatic RCS: theta = 180 deg, phi = 0 (the incident direction is theta = 0)."""
+    rows = data[np.isclose(data[:, 1], 180.0) & np.isclose(data[:, 2], 0.0)]
+    return rows[:, 0], rcs_dbsm(rows[:, 8])
+
+
+def command_farfield(arguments):
+    output = output_directory(arguments)
+    files = [arguments.source] if arguments.source.is_file() else sorted(arguments.source.glob("*.fdtd_*_FF_*.dat"))
+    if not files:
+        raise SystemExit(f"No far-field files (*_FF_*.dat) in {arguments.source}")
+    for path in files:
+        name = farfield_name(path)
+        data = load_farfield(path)
+        freqs = np.unique(data[:, 0])
+
+        phis = np.unique(data[:, 2])
+        # Polar panels: theta is the angle from the incidence axis (0 at the top, clockwise), RCS the radius.
+        figure, axes = plt.subplots(1, len(phis), figsize=(5 * len(phis), 5.5), squeeze=False,
+                                    subplot_kw={"projection": "polar"}, layout="constrained")
+        colors = plt.cm.viridis(np.linspace(0, 1, len(freqs)))
+        all_dbsm = rcs_dbsm(data[:, 8])
+        rmin = np.floor(all_dbsm.min() / 10.0) * 10.0
+        rmax = np.ceil(all_dbsm.max() / 10.0) * 10.0
+        for axis, phi in zip(axes[0], phis):
+            for color, freq in zip(colors, freqs):
+                rows = data[np.isclose(data[:, 0], freq) & np.isclose(data[:, 2], phi)]
+                axis.plot(np.deg2rad(rows[:, 1]), rcs_dbsm(rows[:, 8]), color=color, label=f"{freq / 1e9:.2f} GHz")
+            axis.set_theta_zero_location("N")
+            axis.set_theta_direction(-1)
+            axis.set_thetamin(0)
+            axis.set_thetamax(180)
+            axis.set_rlim(rmin, rmax)
+            axis.set_title(f"phi = {phi:g} deg\nRCS (GEOM) [dBsm]", fontsize=10)
+        handles, labels = axes[0, 0].get_legend_handles_labels()
+        figure.legend(handles, labels, fontsize=7, loc="center left", bbox_to_anchor=(1.0, 0.5))
+        figure.suptitle(f"{name}: bistatic RCS pattern")
+        pattern = output / f"{slug(name)}_pattern.png"
+        pattern.parent.mkdir(parents=True, exist_ok=True)
+        figure.savefig(pattern, dpi=150, bbox_inches="tight")  # keeps the legend outside the axes
+        plt.close(figure)
+        print(pattern)
+
+        freq, dbsm = backscatter_dbsm(data)
+        if freq.size:
+            figure, axis = plt.subplots(figsize=(8, 4), layout="constrained")
+            axis.plot(freq / 1e9, dbsm, marker="o")
+            axis.set_xlabel("Frequency [GHz]")
+            axis.set_ylabel("Monostatic RCS (GEOM) [dBsm]")
+            axis.set_title(f"{name}: backscatter (theta = 180 deg)")
+            axis.grid(alpha=0.3)
+            backscatter = output / f"{slug(name)}_backscatter.png"
+            figure.savefig(backscatter, dpi=150)
+            plt.close(figure)
+            print(backscatter)
+
+
+def parse_group(text):
+    title, _, names = text.partition("=")
+    selected = [name.strip() for name in names.split(",") if name.strip()]
+    if not title or not selected:
+        raise argparse.ArgumentTypeError(f"expected TITLE=NAME[,NAME...], got '{text}'")
+    return title, selected
+
+
+def slug(text):
+    return re.sub(r"\W+", "_", text).strip("_")
+
+
+def output_directory(arguments):
+    base = arguments.source if arguments.source.is_dir() else arguments.source.parent
+    return arguments.output or base / "plots"
+
+
+def command_probe(arguments):
+    output = output_directory(arguments)
+    for series in load_all(arguments.source):
+        probe = series.probe
+        plot_series([series], probe.path.stem, probe.domain, output / f"{probe.path.stem}.png")
+
+
+def command_group(arguments):
+    output = output_directory(arguments)
+    by_name = defaultdict(list)
+    for series in load_all(arguments.source):
+        by_name[series.probe.name].append(series)
+    groups = dict(arguments.group) if arguments.group else {name: [name] for name in by_name}
+
+    for title, names in groups.items():
+        unknown = [name for name in names if name not in by_name]
+        if unknown:
+            raise SystemExit(f"Unknown probe name(s) {', '.join(unknown)}; available: {', '.join(sorted(by_name))}")
+        for domain in ("tm", "fq"):
+            selected = [series for name in names for series in by_name[name] if series.probe.domain == domain]
+            if selected:
+                plot_series(selected, title, domain, output / f"{slug(title)}_{domain}.png")
+
+
+def grid_edges(source_dir):
+    """Cell-vertex coordinates along x, y and z, from the input's mesh.grid."""
+    cases = sorted(source_dir.glob("*.fdtd.json"))
+    if not cases:
+        raise SystemExit(f"No .fdtd.json input in {source_dir}; it is needed to place the probes")
+    grid = json.loads(cases[0].read_text(encoding="utf-8"))["mesh"]["grid"]
+    origin = grid.get("origin", [0.0, 0.0, 0.0])
+    edges = []
+    for axis, count, start in zip("xyz", grid["numberOfCells"], origin):
+        steps = grid["steps"][axis]
+        if len(steps) == 1:
+            steps = steps * count
+        edges.append(start + np.concatenate(([0.0], np.cumsum(steps))))
+    return edges
+
+
+def probe_csv(source_dir, output):
+    """Write one row per probe location: physical position and peak time-domain value."""
+    edges = grid_edges(source_dir)
+    peaks = {}
+    for series in load_all(source_dir):
+        if series.probe.domain != "tm":
+            continue
+        if series.probe.index is None:
+            continue
+        # Column 1 is the field or current; incident and voltage columns have other units.
+        key = (series.probe.name, series.probe.index)
+        peaks[key] = max(peaks.get(key, 0.0), float(np.abs(series.data[:, 1]).max()))
+    if not peaks:
+        raise SystemExit(f"No time-domain probe files in {source_dir}")
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with output.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(["x", "y", "z", "name", "peak"])
+        for (name, index), peak in sorted(peaks.items()):
+            writer.writerow([*(edges[axis][index[axis]] for axis in range(3)), name, peak])
+    return output
+
+
+def geometry_pieces(source_dir):
+    pieces = sorted(piece for folder in source_dir.glob("*__MAP") for piece in folder.glob("*.vtu"))
+    if not pieces:
+        raise SystemExit(f"No __MAP geometry in {source_dir}; run the solver with -mapvtk")
+    return pieces
+
+
+def command_3d(arguments, with_geometry):
+    source = arguments.source if arguments.source.is_dir() else arguments.source.parent
+    output = output_directory(arguments)
+    pvbatch = shutil.which("pvbatch")
+    if pvbatch is None:
+        raise SystemExit("pvbatch was not found in PATH; install ParaView to render 3D views")
+
+    csv_path = probe_csv(source, output / "probes.csv")
+    image = output / ("scene_3d.png" if with_geometry else "probes_3d.png")
+    command = [pvbatch, "--force-offscreen-rendering", str(PARAVIEW_SCRIPT), str(csv_path), str(image)]
+    if with_geometry:
+        command += ["--geometry", *map(str, geometry_pieces(source))]
+    subprocess.run(command, check=True)
+    print(image)
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    commands = parser.add_subparsers(dest="command", required=True)
+
+    def add_command(name, run, help_text):
+        command = commands.add_parser(name, help=help_text, description=help_text)
+        command.add_argument("source", type=Path, help="solver output directory, or one probe .dat file for 'probe'")
+        command.add_argument("-o", "--output", type=Path, help="directory for the PNG files (default: <source>/plots)")
+        command.set_defaults(run=run)
+        return command
+
+    add_command("probe", command_probe, "one plot per probe file")
+    group = add_command("group", command_group, "probes sharing one figure")
+    group.add_argument(
+        "-g",
+        "--group",
+        action="append",
+        type=parse_group,
+        metavar="TITLE=NAME[,NAME...]",
+        help="probe names drawn in one figure; repeat for more figures (default: one figure per probe name)",
+    )
+    add_command("farfield", command_farfield, "far-field RCS pattern and backscatter (*_FF_*.dat files)")
+    add_command("3d-probes", lambda arguments: command_3d(arguments, False), "probe locations in 3D (ParaView)")
+    add_command("3d-scene", lambda arguments: command_3d(arguments, True), "probes and geometry in 3D (ParaView)")
+    return parser.parse_args()
+
+
+def main():
+    arguments = parse_arguments()
+    arguments.run(arguments)
+
+
+if __name__ == "__main__":
+    main()
