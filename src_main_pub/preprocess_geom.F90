@@ -5556,20 +5556,6 @@ contains
                else
                   sgg%Med(face_media)%Sigma = 1.0e29_RKIND
                end if
-               ! if (is_sgbc) then
-               !    block
-               !       integer :: layer
-               !       real(kind=rkind) :: th, length, steps(3)
-               !       integer, dimension(3) :: cell
-               !       th = 0.0
-               !       do layer = 1, size(sgg%ConformalSGBCProfiles(profile_index)%thickness) 
-               !          th = th + sgg%ConformalSGBCProfiles(profile_index)%thickness(layer)
-               !       end do
-               !       cell = conformal_media%face_media(j)%faces(1)%cell
-               !       steps = [sgg%dx(cell(1)), sgg%dy(cell(2)), sgg%dz(cell(3))]
-               !       length = conformal_media%face_media(j)%faces(1)%intersect%compute_length(steps)
-               !    end block
-               ! end if
                sgg%Med(face_media)%Mur = conformal_media%face_media(j)%ratio * this%mats%mats(1)%mu / Mu0
                sgg%Med(face_media)%SigmaM = this%mats%mats(1)%sigmam
             else
@@ -5652,9 +5638,10 @@ contains
          integer(kind=4) :: cell(3)
          integer(kind=4) :: previous_edges
          type(edge_t), dimension(:), allocatable :: combined_edges
+         logical, dimension(:), allocatable :: accept_edge
          integer(kind=4), intent(in) :: type
          logical, intent(in) :: is_sgbc
-         integer :: j, k
+         integer :: j, k, existing_edge_media, accepted_edges, next_edge
          real, dimension(3) :: normal
 
          ! SGBC sheets are penetrable and therefore do not own Yee electric
@@ -5690,17 +5677,25 @@ contains
             end if
             previous_edges = 0
             if (allocated(sgg%Med(edge_media)%ConformalEdge)) previous_edges = ubound(sgg%Med(edge_media)%ConformalEdge, 1)
-            allocate(combined_edges(previous_edges + conformal_media%edge_media(j)%size))
-            if (previous_edges > 0) combined_edges(1:previous_edges) = sgg%Med(edge_media)%ConformalEdge
+            allocate(accept_edge(conformal_media%edge_media(j)%size))
+            accepted_edges = 0
             do k = 1, conformal_media%edge_media(j)%size
                cell(:) = conformal_media%edge_media(j)%edges(k)%cell(:)
-
-               ! if (cell(1) < bbox%xi) bbox%xi = cell(1)
-               ! if (cell(1) > bbox%xe) bbox%xe = cell(1)
-               ! if (cell(2) < bbox%yi) bbox%yi = cell(2)
-               ! if (cell(2) > bbox%ye) bbox%ye = cell(2)
-               ! if (cell(3) < bbox%zi) bbox%zi = cell(3)
-               ! if (cell(3) > bbox%ze) bbox%ze = cell(3)
+               select case(conformal_media%edge_media(j)%edges(k)%direction)
+               case(E_X); existing_edge_media = media%sggMiEx(cell(1), cell(2), cell(3))
+               case(E_Y); existing_edge_media = media%sggMiEy(cell(1), cell(2), cell(3))
+               case(E_Z); existing_edge_media = media%sggMiEz(cell(1), cell(2), cell(3))
+               end select
+               ! Zero-ratio SGBC edges use medium zero; compare with the SGBC priority, not PEC's.
+               accept_edge(k) = .not. (is_sgbc .and. sgg%Med(existing_edge_media)%Priority > prior_CS)
+               if (accept_edge(k)) accepted_edges = accepted_edges + 1
+            end do
+            allocate(combined_edges(previous_edges + accepted_edges))
+            if (previous_edges > 0) combined_edges(1:previous_edges) = sgg%Med(edge_media)%ConformalEdge
+            next_edge = previous_edges
+            do k = 1, conformal_media%edge_media(j)%size
+               if (.not. accept_edge(k)) cycle
+               cell(:) = conformal_media%edge_media(j)%edges(k)%cell(:)
 
                select case(conformal_media%edge_media(j)%edges(k)%direction)
                case(E_X)
@@ -5710,8 +5705,10 @@ contains
                case(E_Z)
                   media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
                end select
-               combined_edges(previous_edges + k) = conformal_media%edge_media(j)%edges(k)
+               next_edge = next_edge + 1
+               combined_edges(next_edge) = conformal_media%edge_media(j)%edges(k)
             end do
+            deallocate(accept_edge)
             call move_alloc(combined_edges, sgg%Med(edge_media)%ConformalEdge)
          end do
       end subroutine

@@ -636,6 +636,7 @@ module  FDETYPES_m
    type :: intersect_t
       real(kind=rkind), dimension(3) :: init = [0.0,0.0,0.0], end = [0.0,0.0,0.0]
       integer :: direction = -1
+      real(kind=rkind) :: area_ratio = 0.0
    contains
       procedure :: compute_length_ratio
       procedure :: compute_length

@@ -1,0 +1,301 @@
+{
+  "_format": "FDTD Input file",
+  "general": {
+    "timeStep": 1.0e-11,
+    "numberOfSteps": 50000,
+    "additionalArguments": ""
+  },
+  "boundary": {
+    "all": {
+      "type": "pml",
+      "layers": 10,
+      "order": 2,
+      "reflection": 0.001
+    }
+  },
+  "materials": [
+    { "name": "PEC", "id": 1,
+      "type": "pec"
+    },
+    { "name": "Surface_impedance_material", "id": 2,
+      "type": "multilayeredSurface",
+      "layers": [
+        {
+          "thickness": 0.001,
+          "relativePermittivity": 1.0,
+          "relativePermeability": 1.0,
+          "electricConductivity": 50.0
+        }
+      ]
+    },
+    { "name": "Wire_material", "id": 3,
+      "type": "wire",
+      "radius": 0.001,
+      "resistancePerMeter": 0.0,
+      "inductancePerMeter": 0.0
+    },
+    { "name": "Terminal", "id": 4,
+      "type": "terminal",
+      "terminations": [
+        {
+          "type": "series",
+          "resistance": 50.0,
+          "capacitance": 1e+22
+        }
+      ]
+    },
+    { "name": "Short", "id": 5,
+      "type": "terminal",
+      "terminations": [
+        {
+          "type": "short"
+        }
+      ]
+    }
+  ],
+  "materialAssociations": [
+    { "materialId": 1,
+      "elementIds": [10, 11, 9, 13, 14, 12]
+    },
+    { "materialId": 2,
+      "elementIds": [15]
+    },
+    { "name": "Cable", "materialId": 3,
+      "type": "cable",
+      "elementIds": [3],
+      "initialTerminalId": 4,
+      "endTerminalId": 5
+    },
+    { "name": "Cable1", "materialId": 3,
+      "type": "cable",
+      "elementIds": [4],
+      "initialTerminalId": 4,
+      "endTerminalId": 5
+    },
+    { "name": "Cable2", "materialId": 3,
+      "type": "cable",
+      "elementIds": [5],
+      "initialTerminalId": 4,
+      "endTerminalId": 5
+    },
+    { "name": "Cable3", "materialId": 3,
+      "type": "cable",
+      "elementIds": [6],
+      "initialTerminalId": 4,
+      "endTerminalId": 5
+    },
+    { "name": "Cable4", "materialId": 3,
+      "type": "cable",
+      "elementIds": [7],
+      "initialTerminalId": 4,
+      "endTerminalId": 5
+    },
+    { "name": "Cable5", "materialId": 3,
+      "type": "cable",
+      "elementIds": [8],
+      "initialTerminalId": 4,
+      "endTerminalId": 5
+    }
+  ],
+  "sources": [
+    { "name": "Generator",
+      "type": "generator",
+      "magnitudeFile": "ramp_slow.exc",
+      "elementIds": [2],
+      "field": "voltage"
+    },
+    { "name": "Generator1",
+      "type": "generator",
+      "magnitudeFile": "ramp_slow.exc",
+      "elementIds": [16],
+      "field": "voltage"
+    },
+    { "name": "Generator2",
+      "type": "generator",
+      "magnitudeFile": "ramp_slow.exc",
+      "elementIds": [17],
+      "field": "voltage"
+    },
+    { "name": "Generator3",
+      "type": "generator",
+      "magnitudeFile": "ramp_slow.exc",
+      "elementIds": [18],
+      "field": "voltage"
+    },
+    { "name": "Generator4",
+      "type": "generator",
+      "magnitudeFile": "ramp_slow.exc",
+      "elementIds": [19],
+      "field": "voltage"
+    },
+    { "name": "Generator5",
+      "type": "generator",
+      "magnitudeFile": "ramp_slow.exc",
+      "elementIds": [20],
+      "field": "voltage"
+    }
+  ],
+  "probes": [
+    { "name": "Bulk probe",
+      "type": "bulkCurrent",
+      "field": "electric",
+      "elementIds": [1],
+      "domain": {
+        "type": "time"
+      }
+    }
+  ],
+  "mesh": {
+    "grid": {
+      "numberOfCells": [27, 20, 37],
+      "steps": {
+        "x": [0.012],
+        "y": [0.012],
+        "z": [0.012]
+      },
+      "origin": [-0.0, -0.0, -0.0]
+    },
+    "coordinates": [
+      { "id": 1, "relativePosition": [19, 2, 2] },
+      { "id": 2, "relativePosition": [19, 16, 6] },
+      { "id": 3, "relativePosition": [13, 8, 4] },
+      { "id": 4, "relativePosition": [14, 8, 4] },
+      { "id": 5, "relativePosition": [13, 4, 4] },
+      { "id": 6, "relativePosition": [14, 4, 4] },
+      { "id": 7, "relativePosition": [13, 14, 4] },
+      { "id": 8, "relativePosition": [14, 14, 4] },
+      { "id": 9, "relativePosition": [13, 12, 4] },
+      { "id": 10, "relativePosition": [14, 12, 4] },
+      { "id": 11, "relativePosition": [13, 6, 4] },
+      { "id": 12, "relativePosition": [14, 6, 4] },
+      { "id": 13, "relativePosition": [13, 10, 4] },
+      { "id": 14, "relativePosition": [14, 10, 4] },
+      { "id": 15, "relativePosition": [13, 14, 4] },
+      { "id": 16, "relativePosition": [3, 4, 4] },
+      { "id": 17, "relativePosition": [23, 4, 4] },
+      { "id": 18, "relativePosition": [23, 14, 14] },
+      { "id": 19, "relativePosition": [3, 14, 14] },
+      { "id": 20, "relativePosition": [3, 4, 4] },
+      { "id": 21, "relativePosition": [23, 14, 4] },
+      { "id": 22, "relativePosition": [14, 4, 4] },
+      { "id": 23, "relativePosition": [22, 4, 14] },
+      { "id": 24, "relativePosition": [23, 14, 14] },
+      { "id": 25, "relativePosition": [3, 4, 14] },
+      { "id": 26, "relativePosition": [4, 14, 14] },
+      { "id": 27, "relativePosition": [4, 4, 14] },
+      { "id": 28, "relativePosition": [22, 14, 14] }
+    ],
+    "elements": [
+      { "id": 1, "name": "Bulk_probe",
+        "type": "cell",
+        "intervals": [
+          [[19, 2, 2], [19, 16, 6]]
+        ]
+      },
+      { "id": 2, "name": "Generator",
+        "type": "node",
+        "coordinateIds": [3]
+      },
+      { "id": 16, "name": "Generator1",
+        "type": "node",
+        "coordinateIds": [5]
+      },
+      { "id": 17, "name": "Generator2",
+        "type": "node",
+        "coordinateIds": [7]
+      },
+      { "id": 18, "name": "Generator3",
+        "type": "node",
+        "coordinateIds": [9]
+      },
+      { "id": 19, "name": "Generator4",
+        "type": "node",
+        "coordinateIds": [11]
+      },
+      { "id": 20, "name": "Generator5",
+        "type": "node",
+        "coordinateIds": [13]
+      },
+      { "id": 3, "name": "Line",
+        "type": "polyline",
+        "coordinateIds": [3, 4]
+      },
+      { "id": 4, "name": "Line001",
+        "type": "polyline",
+        "coordinateIds": [5, 6]
+      },
+      { "id": 5, "name": "Line002",
+        "type": "polyline",
+        "coordinateIds": [7, 8]
+      },
+      { "id": 6, "name": "Line003",
+        "type": "polyline",
+        "coordinateIds": [9, 10]
+      },
+      { "id": 7, "name": "Line004",
+        "type": "polyline",
+        "coordinateIds": [11, 12]
+      },
+      { "id": 8, "name": "Line005",
+        "type": "polyline",
+        "coordinateIds": [13, 14]
+      },
+      { "id": 9, "name": "Plane",
+        "type": "conformal",
+        "subtype": "surface",
+        "intervals": [
+          [[13, 14, 4], [3, 4, 4]]
+        ],
+        "triangles": []
+      },
+      { "id": 10, "name": "Plane002",
+        "type": "conformal",
+        "subtype": "surface",
+        "intervals": [
+          [[23, 4, 4], [23, 14, 14]]
+        ],
+        "triangles": []
+      },
+      { "id": 11, "name": "Plane003",
+        "type": "conformal",
+        "subtype": "surface",
+        "intervals": [
+          [[3, 14, 14], [3, 4, 4]]
+        ],
+        "triangles": []
+      },
+      { "id": 12, "name": "Plane005",
+        "type": "conformal",
+        "subtype": "surface",
+        "intervals": [
+          [[23, 14, 4], [14, 4, 4]]
+        ],
+        "triangles": []
+      },
+      { "id": 13, "name": "Plane006",
+        "type": "conformal",
+        "subtype": "surface",
+        "intervals": [
+          [[22, 4, 14], [23, 14, 14]]
+        ],
+        "triangles": []
+      },
+      { "id": 14, "name": "Plane007",
+        "type": "conformal",
+        "subtype": "surface",
+        "intervals": [
+          [[3, 4, 14], [4, 14, 14]]
+        ],
+        "triangles": []
+      },
+      { "id": 15, "name": "PlaneLossy",
+        "type": "conformal",
+        "subtype": "surface",
+        "intervals": [
+          [[4, 4, 14], [22, 14, 14]]
+        ],
+        "triangles": []
+      }
+    ]
+  }
+}

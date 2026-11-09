@@ -112,9 +112,9 @@ contains
          ! handles vacuum/material boundaries and dissimilar layer interfaces
          ! with the same expression.
          e_xi(index) = (cell_eps(index-1)*h_ds(index-1)+cell_eps(index)*h_ds(index))/ &
-            (h_ds(index-1)+h_ds(index))
+         (h_ds(index-1)+h_ds(index))
          e_sigma(index) = (cell_sigma(index-1)*h_ds(index-1)+cell_sigma(index)*h_ds(index))/ &
-            (h_ds(index-1)+h_ds(index))
+         (h_ds(index-1)+h_ds(index))
          e_ds(index) = 0.5_RKIND*(h_ds(index-1)+h_ds(index))
          this%e_ga(index) = advance_a(real(dt,RKIND), e_sigma(index), e_xi(index))
          this%e_gb(index) = advance_b(real(dt,RKIND), e_sigma(index), e_xi(index), e_ds(index))
@@ -212,9 +212,6 @@ contains
       if (.not. this%initialized) return
       this%h(0) = this%h_0
       this%h(this%n) = this%h_n
-      ! if (this%h(0) /= 0) then 
-      !    call sleep(1)
-      ! end if
       if (present(lower_h)) this%h(0) = lower_h
       if (present(upper_h)) this%h(this%n) = upper_h
       

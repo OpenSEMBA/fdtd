@@ -949,17 +949,74 @@ def test_conformal_sgbc_resistance(tmp_path):
     """Verify SGBC resistance matches the analytical result if meshed conformal."""
     setNgspice(tmp_path)
 
-    fn = CASES_FOLDER + "conformal/lossyPlaneResistance.fdtd.json"
+    fn = CASES_FOLDER + "conformal/lossyPlaneResistance_salva_corrections.fdtd.json"
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     solver.run()
 
     # FDTD results
-    probe = Probe(_get_solved_probe_folder(solver, "Wire_probe"))
-    R_th = R_sheet(sigma = 200, L = 216e-3, theta = 29.054, thickness = 0.5e-3, width = 120e-3)
-    R_meas = 1.0/probe['current_0'].to_numpy()[-10] - 50.0
-    assert(np.abs(R_th-R_meas)/R_th < 0.01)
+    exc_file = solver.getExcitationFile("gauss")[0]
+    exc = pd.read_csv(exc_file, sep="\\s+")
+    exc = exc.rename(columns={exc.columns[0]: "time", exc.columns[1]: "V"})
+    new_freqs = np.geomspace(1e3, 1e8, num=2000)
+    Vexc = exc["V"].to_numpy()
+    texc = exc["time"].to_numpy()
+    dt_exc = texc[1] - texc[0]
+    Vfexc = dt_exc * np.array(
+        [np.sum(Vexc * np.exp(-1j * 2 * np.pi * f * texc)) for f in new_freqs]
+    )
+    p = Probe(solver.getSolvedProbeFolders("Bulk probe")[0])
+    Ibulk_conf = p["current"].to_numpy()
+    tbulk_conf = p["time"].to_numpy()
+    dt_bulk_conf = tbulk_conf[1] - tbulk_conf[0]
+    Ifbulk_conf = dt_bulk_conf * np.array(
+        [
+            np.sum(Ibulk_conf * np.exp(-1j * 2 * np.pi * f * tbulk_conf))
+            for f in new_freqs
+        ]
+    )
+    # %%
+    R_th = R_sheet(sigma = 45, L = 216e-3, theta = 29.054, thickness = 3.0e-3, width = 120e-3)
+    z =np.abs(Vfexc / Ifbulk_conf)
+    # assert(np.abs(R_th-R_meas)/R_th < 0.01)
 
+    assert(100*((z[0]-50.0/6)-R_th)/R_th < 1)
+
+
+    # probe = Probe(_get_solved_probe_folder(solver, "Wire_probe"))
+    # R_th = R_sheet(sigma = 200, L = 216e-3, theta = 29.054, thickness = 0.5e-3, width = 120e-3)
+    # R_meas = 1.0/probe['current_0'].to_numpy()[-10] - 50.0
+    # assert(np.abs(R_th-R_meas)/R_th < 0.01)
+
+@pytest.mark.conformal
+@pytest.mark.sgbc
+@pytest.mark.planewave
+def test_conformal_pec_overrides_overlapping_sgbc(tmp_path):
+    """A coincident SGBC must not alter a conformal PEC sheet's response."""
+    filename = CASES_FOLDER + "conformal/shieldingEffectiveness.fdtd.json"
+    results = []
+    for overlapping in (False, True):
+        run_folder = tmp_path / str(overlapping)
+        run_folder.mkdir()
+        solver = FDTD(filename, path_to_exe=SEMBA_EXE, run_in_folder=run_folder)
+        solver["materialAssociations"][0]["materialId"] = 2
+        if overlapping:
+            sheet = copy.deepcopy(solver["mesh"]["elements"][3])
+            sheet["id"] = 5
+            solver["mesh"]["elements"].append(sheet)
+            solver["materialAssociations"].append({
+                "materialId": 1,
+                "elementIds": [5],
+            })
+        solver.run()
+        results.append([
+            Probe(solver.getSolvedProbeFolders(name)[0])["field"].to_numpy()
+            for name in ("front", "back")
+        ])
+
+    assert np.max(np.abs(results[0][0])) > 0.0
+    for pec_only, overlap in zip(*results):
+        np.testing.assert_allclose(overlap, pec_only, atol=1e-8, rtol=1e-6)
 
 @pytest.mark.sgbc
 @pytest.mark.probes

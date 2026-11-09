@@ -941,6 +941,7 @@ contains
          end select
          if ((faces(i)%ratio  - 0.5*l*th/area ) > 0.0) then 
             faces(i)%ratio =  faces(i)%ratio - 0.5*l*th/area
+            faces(i)%intersect%area_ratio = l*th/area
             ! error stop 'ratio < 0'
          end if
          ! if (faces(i)%ratio < 0) faces(i)%ratio == 0

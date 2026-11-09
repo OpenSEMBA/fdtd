@@ -196,12 +196,17 @@ contains
         integer :: i, j, key(4)
         type(edge_t), pointer :: edge
         real(kind=rkind) :: lower, upper, step
+        integer :: n_l, n_u
         logical :: reverse = .false.
+        ! step = 1.0/idx(5)
         do i = 1, size(sgbcs)
-            lower = 0.00
-            upper = 0.00
-            ! lower = 0.01*1.0_RKIND/idx(5)
-            ! upper = 0.01*1.0_RKIND/idx(5)
+            lower = 0.0
+            upper = 0.0
+            ! n_l = 0
+            ! n_u = 0
+            
+            ! ! lower = step*(1-sgbcs(i)%ratio)
+            ! ! upper = step*sgbcs(i)%ratio
             ! do j = 1, size(sgbcs(i)%contour_inside_edges)
             !     step = 0.0
             !     key(1:3) = sgbcs(i)%contour_inside_edges(j)%cell(1:3)
@@ -209,15 +214,21 @@ contains
             !     edge => edge_map%getEdge(key)
             !     if (.not. edge%is_two_sided) cycle
             !     if (edge%edge_region == EDGE_REGION_CONFORMAL) then 
+            !         n_l = n_l + 1
+            !         n_u = n_u + 1
             !     select case(edge%direction)
             !         case(1); step = 1.0_RKIND/idx(edge%cell(1))
             !         case(2); step = 1.0_RKIND/idy(edge%cell(2))
             !         case(3); step = 1.0_RKIND/idz(edge%cell(3))
             !     end select
-            !     lower = lower + 0.5*edge%ratio*step
-            !     upper = upper + 0.5*(1.0-edge%ratio)*step
+            !     ! lower = lower + edge%ratio*step
+            !     ! upper = upper + (1.0-edge%ratio)*step
+            !     lower = step
+            !     upper = step
             !     end if
             ! end do
+            ! lower = lower/n_l
+            ! upper = upper/n_u
             ! write(*,*) lower, upper
             call sgbcs(i)%state%init(profiles(sgbcs(i)%sgbc_profile_index), dt, lower, upper, control%sgbcFreq, control%sgbcresol, control%sgbcdepth, reverse)
             sgbcs(i)%state%length_ratio = sgbcs(i)%intersect%compute_length_ratio([1.0/idx(sgbcs(i)%cell(1)),1.0/idy(sgbcs(i)%cell(2)),1.0/idz(sgbcs(i)%cell(3))])
@@ -932,6 +943,15 @@ contains
         type(face_t), intent(in) :: face
         real(kind=rkind) :: res
         res = face%ratio/(1.0-face%ratio)
+        ! if ((face%ratio - 0.5*face%intersect%area_ratio) > 0.0) then 
+        ! res = (face%ratio)/(1.0-face%ratio -face%intersect%area_ratio)
+        ! if (res<0) then 
+        !     res = face%ratio/(1.0-face%ratio)
+        ! end if
+        ! error stop 'ratio < 0'
+        ! else
+        !     res = face%ratio/(1.0-face%ratio)
+        ! end if
     end function
 
 
