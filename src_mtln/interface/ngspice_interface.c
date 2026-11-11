@@ -17,6 +17,13 @@
 #include "ngspice_interface.h"
 #define ngspice_COMPLEX_H
 #include "ngspice/fteext.h"
+#include "ngspice/ftedefs.h"
+#ifndef _WIN32
+#include <unistd.h>
+#endif
+
+int INPtypelook(char *);
+int load_opus(const char *);
 
 #ifndef _MSC_VER
 #ifndef __cplusplus
@@ -49,11 +56,56 @@ int
 ng_data(pvecvaluesall vdata, int numvecs, int ident, void* userdata);
 
 
+/* Folder of the running executable, with trailing separator; empty on failure. */
+static void executable_folder(char* folder, size_t size)
+{
+    char* sep;
+    folder[0] = '\0';
+#ifdef _WIN32
+    char* path = NULL;
+    if (_get_pgmptr(&path) != 0 || path == NULL) return;
+    strncpy(folder, path, size - 1);
+    folder[size - 1] = '\0';
+    sep = strrchr(folder, '\\');
+    if (strrchr(folder, '/') > sep) sep = strrchr(folder, '/');
+#else
+    ssize_t len = readlink("/proc/self/exe", folder, size - 1);
+    if (len <= 0) { folder[0] = '\0'; return; }
+    folder[len] = '\0';
+    sep = strrchr(folder, '/');
+#endif
+    if (sep) sep[1] = '\0'; else folder[0] = '\0';
+}
+
+/* XSPICE code models (e.g. 'filesource' used by cable-end generators) are
+   shipped next to the executable. They are loaded only if no spinit has
+   already loaded them, so a user spinit keeps precedence. */
+static void load_codemodels_next_to_executable(void)
+{
+    static const char* models[] = {"spice2poly.cm", "analog.cm", "digital.cm",
+                                   "xtradev.cm", "xtraevt.cm", "table.cm"};
+    char folder[4096], path[4200];
+    size_t i;
+    FILE* f;
+
+    if (INPtypelook("filesource") >= 0) return;
+    executable_folder(folder, sizeof(folder));
+    if (folder[0] == '\0') return;
+    for (i = 0; i < sizeof(models) / sizeof(models[0]); i++) {
+        snprintf(path, sizeof(path), "%s%s", folder, models[i]);
+        f = fopen(path, "rb");
+        if (!f) continue;
+        fclose(f);
+        load_opus(path);
+    }
+}
+
 void start()
 {
     int ret = 0;
     errorflag = false;
     ret = ngSpice_Init(ng_getchar, ng_getstat, ng_exit,  ng_data, ng_initdata, ng_thread_runs, NULL);
+    load_codemodels_next_to_executable();
     return;
 }
 
@@ -82,12 +134,14 @@ pvector_info get_vector_info(char* vecname){
     return ret;
 }
 
-void circ(char** input){
+/* Returns 0 if the circuit was parsed, non-zero otherwise.
+   ngSpice_Circ returns 0 even when parsing fails, so the parsed circuit is checked. */
+int circ(char** input){
     if (errorflag) {
-        return;
+        return 1;
     }
-    int ret = ngSpice_Circ(input);
-    return;
+    if (ngSpice_Circ(input) != 0) return 1;
+    return (ft_curckt && ft_curckt->ci_ckt) ? 0 : 1;
 }
 
 int has_error(void)
