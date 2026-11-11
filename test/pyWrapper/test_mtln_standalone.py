@@ -43,6 +43,34 @@ def test_paul_8_6_square(tmp_path):
 @pytest.mark.multiwire
 @pytest.mark.probes
 @pytest.mark.codemodel
+def test_paul_8_6_square_with_shipped_codemodels(tmp_path, monkeypatch):
+    # No spinit in the run folder: the *.cm files next to the executable must be used.
+    monkeypatch.delenv("SPICE_SCRIPTS", raising=False)
+    fn = CASES_FOLDER + "paul/paul_8_6_square.fdtd.json"
+
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+    assert not os.path.exists(os.path.join(tmp_path, "spinit"))
+
+    p_expected = probe_from_fixture(
+        tmp_path, "paul_8_6_square.fdtd_start_voltage_wire_V_5_5_1.dat"
+    )
+    p_solved = Probe(solver.getSolvedProbeFolders("start_voltage")[0])
+    solved = np.interp(
+        p_expected["time"].to_numpy(),
+        p_solved["time"].to_numpy(),
+        p_solved["voltage_0"].to_numpy(),
+    )
+    check_values_are_comparable(solved)
+    assert np.corrcoef(solved, p_expected["voltage_0"])[0, 1] > 0.998
+
+
+@no_mtln_skip
+@pytest.mark.mtln
+@pytest.mark.wires
+@pytest.mark.multiwire
+@pytest.mark.probes
+@pytest.mark.codemodel
 def test_paul_8_6_triangle(tmp_path):
     fn = CASES_FOLDER + "paul/paul_8_6_triangle.fdtd.json"
     setNgspice(tmp_path)
