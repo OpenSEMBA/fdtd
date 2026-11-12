@@ -15,15 +15,11 @@
 #endif
 #include <signal.h>
 #include "ngspice_interface.h"
-#define ngspice_COMPLEX_H
-#include "ngspice/fteext.h"
-#include "ngspice/ftedefs.h"
-#ifndef _WIN32
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <unistd.h>
 #endif
-
-int INPtypelook(char *);
-int load_opus(const char *);
 
 #ifndef _MSC_VER
 #ifndef __cplusplus
@@ -36,6 +32,10 @@ typedef int BOOL;
 
 bool no_bg = true;
 static bool errorflag = false;
+/* Only the sharedspice API is exported by ngspice.dll on Windows, so ngspice
+   state is probed by matching the text a command prints. */
+static const char* probe_text = NULL;
+static bool probe_hit = false;
 
 int
 ng_getchar(char* outputreturn, int ident, void* userdata);
@@ -77,6 +77,18 @@ static void executable_folder(char* folder, size_t size)
     if (sep) sep[1] = '\0'; else folder[0] = '\0';
 }
 
+/* Runs an ngspice command and reports whether its output contained text. */
+static bool command_prints(const char* cmd, const char* text)
+{
+    char buffer[4300];
+    snprintf(buffer, sizeof(buffer), "%s", cmd);
+    probe_text = text;
+    probe_hit = false;
+    ngSpice_Command(buffer);
+    probe_text = NULL;
+    return probe_hit;
+}
+
 /* XSPICE code models (e.g. 'filesource' used by cable-end generators) are
    shipped next to the executable. They are loaded only if no spinit has
    already loaded them, so a user spinit keeps precedence. */
@@ -84,11 +96,11 @@ static void load_codemodels_next_to_executable(void)
 {
     static const char* models[] = {"spice2poly.cm", "analog.cm", "digital.cm",
                                    "xtradev.cm", "xtraevt.cm", "table.cm"};
-    char folder[4096], path[4200];
+    char folder[4096], path[4200], cmd[4300];
     size_t i;
     FILE* f;
 
-    if (INPtypelook("filesource") >= 0) return;
+    if (!command_prints("devhelp filesource", "not found")) return;
     executable_folder(folder, sizeof(folder));
     if (folder[0] == '\0') return;
     for (i = 0; i < sizeof(models) / sizeof(models[0]); i++) {
@@ -96,7 +108,16 @@ static void load_codemodels_next_to_executable(void)
         f = fopen(path, "rb");
         if (!f) continue;
         fclose(f);
-        load_opus(path);
+#ifdef _WIN32
+        /* ngspice splits command words on spaces; the 8.3 path has none. */
+        {
+            char short_path[4200];
+            DWORD n = GetShortPathNameA(path, short_path, sizeof(short_path));
+            if (n > 0 && n < sizeof(short_path)) strcpy(path, short_path);
+        }
+#endif
+        snprintf(cmd, sizeof(cmd), "codemodel %s", path);
+        ngSpice_Command(cmd);
     }
 }
 
@@ -141,7 +162,7 @@ int circ(char** input){
         return 1;
     }
     if (ngSpice_Circ(input) != 0) return 1;
-    return (ft_curckt && ft_curckt->ci_ckt) ? 0 : 1;
+    return command_prints("inventory", "no current circuit") ? 1 : 0;
 }
 
 int has_error(void)
@@ -156,7 +177,7 @@ int
 ng_getchar(char* outputreturn, int ident, void* userdata)
 {
     // printf("%s\n", outputreturn);
-    /* setting a flag if an error message occurred */
+    if (probe_text && strstr(outputreturn, probe_text)) probe_hit = true;
     return 0;
 }
 
