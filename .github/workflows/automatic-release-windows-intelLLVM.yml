@@ -188,6 +188,15 @@ jobs:
       run: |
           tar -czvf semba-fdtd-windows-intelLLVM.tar.gz build/bin/* LICENSE
 
+    # XSPICE code models are needed by cable-end generators (#485).
+    - name: Verify code models in archive
+      shell: bash
+      run: |
+        contents=$(tar -tzf semba-fdtd-windows-intelLLVM.tar.gz)
+        for cm in spice2poly analog digital xtradev xtraevt table; do
+          echo "$contents" | grep -qx "build/bin/$cm.cm" || { echo "Missing build/bin/$cm.cm"; exit 1; }
+        done
+
     - name: Generating release
       uses: "marvinpinto/action-automatic-releases@latest"
       with:
