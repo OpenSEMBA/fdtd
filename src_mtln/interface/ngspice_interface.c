@@ -16,7 +16,8 @@
 #include <signal.h>
 #include "ngspice_interface.h"
 #ifdef _WIN32
-#include <windows.h>
+/* Declared here: <windows.h> clashes with the BOOLEAN macro of ngspice/bool.h. */
+__declspec(dllimport) unsigned long __stdcall GetShortPathNameA(const char*, char*, unsigned long);
 #else
 #include <unistd.h>
 #endif
@@ -112,7 +113,7 @@ static void load_codemodels_next_to_executable(void)
         /* ngspice splits command words on spaces; the 8.3 path has none. */
         {
             char short_path[4200];
-            DWORD n = GetShortPathNameA(path, short_path, sizeof(short_path));
+            unsigned long n = GetShortPathNameA(path, short_path, sizeof(short_path));
             if (n > 0 && n < sizeof(short_path)) strcpy(path, short_path);
         }
 #endif
