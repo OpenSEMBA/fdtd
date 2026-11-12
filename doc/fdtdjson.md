@@ -942,6 +942,8 @@ MTLN voltage(current) generators can have a series(parallel) resistance, which i
 
 If the generator is located at the termination of a wire, the series or parallel `resistance` is added to the connection defined in the corresponding `terminal`. If a current generator is located on a wire intermediate position, its Thévenin equivalent (generator + series resistance) is computed to substitute the current generator.  The per-unit-length properties of the corresponding segment are modified according to the `resistance` of the generator.
 
+Generators at the termination of a wire are solved by ngspice with the XSPICE `filesource` model. Its code models (`*.cm`) are shipped next to the `semba-fdtd` executable and loaded from there unless a `spinit` file has already loaded them; the simulation stops with a fatal error if the circuit cannot be parsed.
+
 #### Sources hardness
 
 A **hard** source is defined as one that imposes its value at its position on the wire. On the other hand, a **soft** source adds its value to the current/voltage values. **Sources for both Holland and MTLN wires are always soft**.

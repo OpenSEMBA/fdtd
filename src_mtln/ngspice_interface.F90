@@ -18,10 +18,10 @@ module ngspice_interface_m
             character(kind=c_char), dimension(*), intent(in) :: input
         end subroutine
 
-        subroutine circ(input) bind(C, name = "circ")
-            use iso_c_binding, only: c_ptr
+        integer(c_int) function circ(input) bind(C, name = "circ")
+            use iso_c_binding, only: c_ptr, c_int
             type(c_ptr), intent(in) :: input(*)
-        end subroutine
+        end function
 
         subroutine start() bind (C, name = "start")
             use iso_c_binding, only: c_int, c_ptr

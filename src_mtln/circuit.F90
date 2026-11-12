@@ -1,7 +1,7 @@
 module circuit_m
 
     use ngspice_interface_m
-    use Report_m, only: log_msg, LOG_INFO, LOG_ERROR
+    use Report_m, only: log_msg, LOG_INFO, LOG_ERROR, LOG_FATAL
     use FDETYPES_m, only: RKIND, RKIND_TIME, SINGLE
     implicit none
 
@@ -175,7 +175,11 @@ contains
             tmp(i)%item = trim(input(i)) // c_null_char
             argv_c(i) = c_loc(tmp(i)%item)
         end do
-        call circ(argv_c)
+        if (circ(argv_c) /= 0) then
+            call log_msg(LOG_FATAL, 'MTLN', 'Ngspice could not parse the MTLN circuit. '// &
+                'If it uses XSPICE models (e.g. generators at cable ends), the *.cm code models '// &
+                'must be next to the semba-fdtd executable or loaded by a spinit file.')
+        end if
         ! Prevent ngspice from accumulating per-step vector history:
         ! with 'save none', plotAddRealValue always overwrites position 0,
         ! keeping only the latest value and avoiding unbounded memory growth.
