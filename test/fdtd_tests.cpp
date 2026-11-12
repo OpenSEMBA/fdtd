@@ -10,6 +10,7 @@
 #endif
 #ifdef CompileWithSMBJSON
     #include "smbjson/smbjson_tests.h"
+    #include "lorentz/lorentz_tests.h"
     #include "unit/rotate/rotate_tests.h"
     #include "unit/output/output_tests.h"
     #include "wires/wires_tests.h"

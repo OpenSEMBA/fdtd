@@ -1,0 +1,140 @@
+{
+  "general": {
+    "timeStep": 1.5406665612371765e-11,
+    "numberOfSteps": 130000
+  },
+  "boundary": {
+    "xLower": {
+      "type": "pec"
+    },
+    "xUpper": {
+      "type": "pec"
+    },
+    "yLower": {
+      "type": "pmc"
+    },
+    "yUpper": {
+      "type": "pmc"
+    },
+    "zLower": {
+      "type": "pml",
+      "layers": 15,
+      "order": 3.0,
+      "reflection": 0.001
+    },
+    "zUpper": {
+      "type": "pec"
+    }
+  },
+  "mesh": {
+    "grid": {
+      "numberOfCells": [
+        2,
+        2,
+        900
+      ],
+      "steps": {
+        "x": [
+          0.01
+        ],
+        "y": [
+          0.01
+        ],
+        "z": [
+          0.01
+        ]
+      }
+    },
+    "coordinates": [
+      {
+        "id": 1,
+        "relativePosition": [
+          1,
+          1,
+          200
+        ]
+      }
+    ],
+    "elements": [
+      {
+        "id": 1,
+        "type": "node",
+        "coordinateIds": [
+          1
+        ]
+      },
+      {
+        "id": 2,
+        "type": "cell",
+        "intervals": [
+          [
+            [
+              -1,
+              -1,
+              100
+            ],
+            [
+              3,
+              3,
+              910
+            ]
+          ]
+        ]
+      },
+      {
+        "id": 3,
+        "type": "cell",
+        "intervals": [
+          [
+            [
+              0,
+              0,
+              700
+            ],
+            [
+              2,
+              2,
+              900
+            ]
+          ]
+        ]
+      }
+    ]
+  },
+  "sources": [
+    {
+      "type": "planewave",
+      "magnitudeFile": "gauss.exc",
+      "elementIds": [
+        2
+      ],
+      "direction": {
+        "theta": 0.0,
+        "phi": 0.0
+      },
+      "polarization": {
+        "theta": 1.5707963267948966,
+        "phi": 0.0
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": 2,
+      "name": "LorentzSlab",
+      "type": "lorentz",
+      "epsInf": 2.0,
+      "omegaP": 899377374.0,
+      "omega1": 599584916.0,
+      "gamma": 89937737.39999999
+    }
+  ],
+  "materialAssociations": [
+    {
+      "materialId": 2,
+      "elementIds": [
+        3
+      ]
+    }
+  ]
+}
