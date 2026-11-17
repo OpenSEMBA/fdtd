@@ -101,7 +101,8 @@ preceded by token stdout, same with stderr.*/
 int
 ng_getchar(char* outputreturn, int ident, void* userdata)
 {
-    // printf("%s\n", outputreturn);
+    /* ngspice output is silent unless SEMBA_NGSPICE_DEBUG is set. */
+    if (getenv("SEMBA_NGSPICE_DEBUG")) printf("%s\n", outputreturn);
     /* setting a flag if an error message occurred */
     return 0;
 }
