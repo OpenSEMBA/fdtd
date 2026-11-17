@@ -1,7 +1,7 @@
 module circuit_m
 
     use ngspice_interface_m
-    use Report_m, only: log_msg, LOG_INFO, LOG_ERROR, LOG_FATAL
+    use Report_m, only: log_msg, LOG_INFO, LOG_FATAL
     use FDETYPES_m, only: RKIND, RKIND_TIME, SINGLE
     implicit none
 
@@ -95,7 +95,7 @@ contains
     subroutine step(this)
         class(circuit_t) :: this
         if (has_error() /= 0) then
-            call log_msg(LOG_ERROR, 'MTLN', 'Ngspice reported a controlled exit before MTLN step.')
+            call log_msg(LOG_FATAL, 'MTLN', 'Ngspice reported a controlled exit before MTLN step.')
             return
         end if
 
@@ -106,7 +106,7 @@ contains
         end if
 
         if (has_error() /= 0) then
-            call log_msg(LOG_ERROR, 'MTLN', 'Ngspice reported a controlled exit after run/resume.')
+            call log_msg(LOG_FATAL, 'MTLN', 'Ngspice reported a controlled exit after run/resume.')
             return
         end if
 
@@ -243,24 +243,24 @@ contains
         real(kind=c_double), pointer :: values(:)
 
         if (has_error() /= 0) then
-            call log_msg(LOG_ERROR, 'MTLN', 'Ngspice reported a controlled exit while updating nodes.')
+            call log_msg(LOG_FATAL, 'MTLN', 'Ngspice reported a controlled exit while updating nodes.')
             return
         end if
 
         do i = 1, size(this%nodes%names)
             info_ptr = get_vector_info(trim(this%nodes%names(i)%name)//c_null_char)
             if (.not. c_associated(info_ptr)) then
-                call log_msg(LOG_ERROR, 'MTLN', 'Ngspice returned null vector info for '//trim(this%nodes%names(i)%name))
+                call log_msg(LOG_FATAL, 'MTLN', 'Ngspice returned null vector info for '//trim(this%nodes%names(i)%name))
                 return
             end if
 
             call c_f_pointer(info_ptr, info)
             if (.not. c_associated(info%vRealData)) then
-                call log_msg(LOG_ERROR, 'MTLN', 'Ngspice returned null vector data for '//trim(this%nodes%names(i)%name))
+                call log_msg(LOG_FATAL, 'MTLN', 'Ngspice returned null vector data for '//trim(this%nodes%names(i)%name))
                 return
             end if
             if (info%vLength <= 0) then
-                call log_msg(LOG_ERROR, 'MTLN', 'Ngspice returned empty vector for '//trim(this%nodes%names(i)%name))
+                call log_msg(LOG_FATAL, 'MTLN', 'Ngspice returned empty vector for '//trim(this%nodes%names(i)%name))
                 return
             end if
 
