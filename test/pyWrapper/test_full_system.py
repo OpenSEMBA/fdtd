@@ -2543,3 +2543,99 @@ def test_slotted_box_shielding_effectiveness(tmp_path):
     assert np.allclose(
         shielding_effectiveness, robinson_se, atol=robinson_tolerance_db, rtol=0.0
     )
+
+
+@pytest.mark.dielectric
+@pytest.mark.probes
+def test_lorentz_res2_s11(tmp_path):
+    """Verify the resonant Lorentz slab S11 matches the dgtd and scikit-rf vectors."""
+    folder_vacuum = os.path.join(tmp_path, "vacuum_reference")
+    os.makedirs(folder_vacuum)
+    solver_vacuum = FDTD(
+        input_filename=CASES_FOLDER + "lorentz/vacuum_reference.fdtd.json",
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=folder_vacuum,
+    )
+    solver_vacuum.run()
+    probe_vacuum = Probe(_get_solved_probe_folder(solver_vacuum, "reflection"))
+
+    solver = FDTD(
+        input_filename=CASES_FOLDER + "lorentz/lorentz_res2.fdtd.json",
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path,
+    )
+    solver.run()
+    probe = Probe(_get_solved_probe_folder(solver, "reflection"))
+
+    reference = np.loadtxt(
+        OUTPUTS_FOLDER + "lorentz_res2_s11.csv", delimiter=",", skiprows=1
+    )
+    frequencies = reference[:, 0]
+    time = probe["time"].to_numpy()
+    field = probe["field"].to_numpy()
+    incident = probe_vacuum["field"].to_numpy()
+    assert np.allclose(probe_vacuum["time"].to_numpy(), time)
+
+    s11 = np.array(
+        [
+            np.sum((field - incident) * np.exp(-1j * 2 * np.pi * f * time))
+            / np.sum(incident * np.exp(-1j * 2 * np.pi * f * time))
+            for f in frequencies
+        ]
+    )
+    magnitude = 20.0 * np.log10(np.abs(s11))
+    phase = np.rad2deg(np.angle(s11))
+    for db, deg in (
+        (reference[:, 1], reference[:, 2]),
+        (reference[:, 3], reference[:, 4]),
+    ):
+        assert np.all(np.abs(magnitude - db) < 0.5)
+        assert np.all(np.abs((phase - deg + 180.0) % 360.0 - 180.0) < 12.0)
+
+
+@pytest.mark.dielectric
+@pytest.mark.probes
+def test_lorentz_plasma_s11(tmp_path):
+    """Verify the cold-plasma Lorentz slab S11 matches the dgtd and scikit-rf vectors."""
+    folder_vacuum = os.path.join(tmp_path, "vacuum_reference")
+    os.makedirs(folder_vacuum)
+    solver_vacuum = FDTD(
+        input_filename=CASES_FOLDER + "lorentz/vacuum_reference.fdtd.json",
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=folder_vacuum,
+    )
+    solver_vacuum.run()
+    probe_vacuum = Probe(_get_solved_probe_folder(solver_vacuum, "reflection"))
+
+    solver = FDTD(
+        input_filename=CASES_FOLDER + "lorentz/lorentz_plasma.fdtd.json",
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path,
+    )
+    solver.run()
+    probe = Probe(_get_solved_probe_folder(solver, "reflection"))
+
+    reference = np.loadtxt(
+        OUTPUTS_FOLDER + "lorentz_plasma_s11.csv", delimiter=",", skiprows=1
+    )
+    frequencies = reference[:, 0]
+    time = probe["time"].to_numpy()
+    field = probe["field"].to_numpy()
+    incident = probe_vacuum["field"].to_numpy()
+    assert np.allclose(probe_vacuum["time"].to_numpy(), time)
+
+    s11 = np.array(
+        [
+            np.sum((field - incident) * np.exp(-1j * 2 * np.pi * f * time))
+            / np.sum(incident * np.exp(-1j * 2 * np.pi * f * time))
+            for f in frequencies
+        ]
+    )
+    magnitude = 20.0 * np.log10(np.abs(s11))
+    phase = np.rad2deg(np.angle(s11))
+    for db, deg in (
+        (reference[:, 1], reference[:, 2]),
+        (reference[:, 3], reference[:, 4]),
+    ):
+        assert np.all(np.abs(magnitude - db) < 0.5)
+        assert np.all(np.abs((phase - deg + 180.0) % 360.0 - 180.0) < 12.0)

@@ -1,7 +1,7 @@
 {
   "general": {
     "timeStep": 1.5406665612371765e-11,
-    "numberOfSteps": 65000
+    "numberOfSteps": 32500
   },
   "boundary": {
     "xLower": {
