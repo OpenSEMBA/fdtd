@@ -1,7 +1,7 @@
 {
   "general": {
     "timeStep": 1.5406665612371765e-11,
-    "numberOfSteps": 130000
+    "numberOfSteps": 65000
   },
   "boundary": {
     "xLower": {
@@ -135,6 +135,22 @@
       "elementIds": [
         3
       ]
+    }
+  ],
+  "probes": [
+    {
+      "name": "reflection",
+      "type": "point",
+      "field": "electric",
+      "elementIds": [
+        1
+      ],
+      "directions": [
+        "x"
+      ],
+      "domain": {
+        "type": "time"
+      }
     }
   ]
 }
