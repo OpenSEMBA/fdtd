@@ -1313,7 +1313,7 @@ contains
             call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
          end if
          if (omegaP <= 0.0_RKIND) then
-            write(errorMsg, '(a,i0,a)') 'Lorentz material ', mA%materialId, ': omegaP must be positive.'
+            write(errorMsg, '(a,i0,a)') 'Lorentz material ', mA%materialId, ': omegaP must be > 0.'
             call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
          end if
          if (omega1 < 0.0_RKIND) then
