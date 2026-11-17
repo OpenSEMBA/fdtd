@@ -3,3 +3,4 @@ precompiled_libraries/linux* eol=lf
 *.sh     -crlf
 *.ac     -crlf
 *.am     -crlf
+*.bat    text eol=crlf
