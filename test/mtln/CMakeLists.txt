@@ -27,3 +27,10 @@ target_link_libraries(mtln_tests
     mtln_solver_tests_fortran
     GTest::gtest
 )
+# The codemodels test loads the code models built from the ngspice submodule.
+configure_file(ngspice_codemodels_dir.inc.in
+    "${CMAKE_CURRENT_BINARY_DIR}/ngspice_codemodels_dir.inc" @ONLY)
+target_include_directories(mtln_solver_tests_fortran PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+if (TARGET ngspice-codemodels)
+    add_dependencies(mtln_solver_tests_fortran ngspice-codemodels)
+endif()

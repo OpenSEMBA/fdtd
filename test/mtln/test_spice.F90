@@ -303,20 +303,43 @@ end function
 
 
 integer function test_load_codemodels() bind(C) result(error_cnt)
+    ! Loads the XSPICE analog code models and solves a circuit with a 'gain'
+    ! code model. Fails if the code models cannot be loaded or are not
+    ! compatible with the ngspice library (the 'a1' line would not parse).
     use circuit_m
     use mtln_testingTools_m
+    use ngspice_interface_m, only: command
     implicit none
+    include 'ngspice_codemodels_dir.inc'
     type(circuit_t) :: circuit
-    type(string_t), dimension(7) :: names
-    character(len=*, kind=c_char), parameter :: NETLIST= PATH_TO_TEST_DATA//c_char_'netlists/saturation.cir'
-    names(1) = string_t("wire1_1_initial_R", 17)
-    names(2) = string_t("wire1_1_initial", 15)
-    names(3) = string_t("wire1_1_initial_S", 17)
-    names(4) = string_t("wire1_2_initial", 15)
-    names(5) = string_t("wire1_1_end", 11)
-    names(6) = string_t("wire1_wire1_inter", 17)
-    names(7) = string_t("wire1_2_end", 11)
+    character(50), dimension(:), allocatable :: input
+    type(string_t), dimension(2) :: names
+    names(1) = string_t("in", 2)
+    names(2) = string_t("out", 3)
+
+    allocate(input(0))
+    input = ["* XSPICE code model check"]
+    input = [input, "vin in 0 dc 2"]
+    input = [input, "a1 in out amp"]
+    input = [input, ".model amp gain(gain=2.5)"]
+    input = [input, "rl out 0 1k"]
+    input = [input, ".dc vin 2 2 1"]
+    input = [input, ".save v(in) v(out)"]
+    input = [input, ".end"]
+    input = [input, "NULL"]
+
     error_cnt = 0
-    call circuit%init(names=names, netlist=netlist)
-    ! call circuit%run()
+    call circuit%init(names=names)
+    ! ngspice passes quotes literally to dlopen, so the path must not contain spaces.
+    call command(c_char_'codemodel '//NGSPICE_CODEMODELS_DIR//c_char_'analog.cm'//c_null_char)
+    call circuit%readInput(input)
+    call circuit%step()
+    call circuit%updateNodes()
+
+    if (.not. checkNear(circuit%getNodeVoltage("in"), 2.0_rkind, 0.01_rkind)) then
+        error_cnt = error_cnt + 1
+    end if
+    if (.not. checkNear(circuit%getNodeVoltage("out"), 5.0_rkind, 0.01_rkind)) then
+        error_cnt = error_cnt + 1
+    end if
 end function

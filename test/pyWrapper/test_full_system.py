@@ -884,9 +884,13 @@ def test_sgbc_shielding_effectiveness(tmp_path):
 
 @pytest.mark.sgbc
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_current_orientation(tmp_path):
     """Verify bulk-current sign follows source rather than mesh orientation."""
     fn = CASES_FOLDER + "current_orientation/currentOrientation.fdtd.json"
+    # The generator uses the XSPICE 'filesource' code model. Without it the
+    # circuit is not parsed, the current stays at 0 and the asserts pass anyway.
+    setNgspice(tmp_path)
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     solver["mesh"]["elements"][12]["coordinateIds"] = [1, 2]
