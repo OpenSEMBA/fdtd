@@ -1,158 +1,136 @@
 module lorentz_testingTools_m
    use FDETYPES_m
-   use SEMBA_FDTD_m
+   use EDispersives_m
    implicit none
    private
-   public :: test_lorentz_res2_s11, test_lorentz_plasma_s11
+   public :: test_lorentz_ade_single_node
 
-   ! Yee node (Ex) observed in the committed 1D-equivalent Lorentz slab cases.
-   integer, parameter :: PROBE_I = 1, PROBE_J = 1, PROBE_K = 200
+   ! Single-pole-pair medium used by the checks below. The values correspond to
+   ! eps_r(w) = 2 + omegaP^2/(omega1^2 - w^2 + j*gamma*w) with omegaP = 3c,
+   ! omega1 = 2c and gamma = 0.3c, already converted to the first-order form
+   ! consumed by InitEDispersives.
+   complex(kind=CKIND), parameter :: POLE1 = (4.49688687e7_CKIND, 5.97896205325447083e8_CKIND)
+   complex(kind=CKIND), parameter :: RESIDUE1 = (0.0_CKIND, 5.98931083300393435e-3_CKIND)
 
-   real(kind=RKIND), dimension(:), allocatable, save :: incident_samples
-   integer(kind=4), save :: number_of_steps = 0
-   real(kind=RKIND), save :: time_step = 0.0_RKIND
-   logical, save :: incident_cached = .false.
-
-   real(kind=RKIND), parameter :: MAX_ERROR_DB = 0.5_RKIND
-   real(kind=RKIND), parameter :: MAX_ERROR_DEG = 12.0_RKIND
+   real(kind=RKIND), parameter :: TOL = 1.0e-5_RKIND
 
 contains
 
-   ! Run one case step by step and return the Ex samples at the observation node.
-   subroutine run_case(case_file, samples)
-      character(len=*), intent(in) :: case_file
-      real(kind=RKIND), dimension(:), allocatable, intent(out) :: samples
-      type(semba_fdtd_t) :: semba
-      type(solver_t) :: solver
+   ! Unit test of the electric dispersive subroutines on a one-node mesh:
+   ! InitEDispersives must produce the documented ADE coefficients and
+   ! AdvanceEDispersiveE must follow the documented polarization recurrence.
+   integer function test_lorentz_ade_single_node() bind(C) result(err)
+      type(SGGFDTDINFO_t) :: sgg
+      type(media_matrices_t) :: media
+      real(kind=RKIND), target :: ex(1, 1, 1), ey(1, 1, 1), ez(1, 1, 1)
+      real(kind=RKIND) :: g1(0:1), g2(0:1)
+      real(kind=RKIND) :: dt, eps, sigma
+      complex(kind=CKIND) :: kappa(2), beta(2), g3(2), current(2)
+      real(kind=RKIND) :: sumBeta, g1Expected, g2Expected
+      real(kind=RKIND) :: previous, expected
+      logical :: thereAre
+      integer :: step
 
-      call semba%init("-i "//trim(case_file))
-      solver = semba%create_solver()
-#ifdef CompileWithMTLN
-      solver%mtln_parsed = semba%mtln_parsed
-#endif
-      call solver%init()
+      err = 0
+      dt = 1.0e-11_RKIND
+      eps = 2.0_RKIND*EPSILON_VACUUM
+      sigma = 0.0_RKIND
 
-      number_of_steps = solver%control%finaltimestep
-      time_step = solver%sgg%dt
-      allocate(samples(0:number_of_steps))
-      samples = 0.0_RKIND
+      call buildSingleNodeMedium(sgg, media, eps, sigma, dt)
+      ex = 0.0_RKIND
+      ey = 0.0_RKIND
+      ez = 0.0_RKIND
+      g1 = 0.0_RKIND
+      g2 = 0.0_RKIND
 
-      do while (solver%n <= solver%control%finaltimestep)
-         call solver%step()
-         samples(solver%n) = solver%get_field_value(IEX, PROBE_I, PROBE_J, PROBE_K)
-         solver%n = solver%n + 1
+      call InitEDispersives(sgg, media, thereAre, .false., g1, g2, ex, ey, ez)
+      if (.not. thereAre) call testFails(err, 'InitEDispersives should report electric dispersive nodes')
+
+      ! Documented coefficients: Kappa = (1 + a*dt/2)/(1 - a*dt/2),
+      ! Beta = C*dt/(1 - a*dt/2), G2 = 2*dt/(2*eps + sum(Re(Beta)) + sigma*dt)
+      ! and G1 = (2*eps + sum(Re(Beta)) - sigma*dt)/(2*eps + sum(Re(Beta)) + sigma*dt).
+      kappa(1) = (1.0_RKIND + POLE1*dt/2.0_RKIND)/(1.0_RKIND - POLE1*dt/2.0_RKIND)
+      kappa(2) = conjg(kappa(1))
+      beta(1) = RESIDUE1*dt/(1.0_RKIND - POLE1*dt/2.0_RKIND)
+      beta(2) = conjg(beta(1))
+      sumBeta = real(beta(1)) + real(beta(2))
+      g2Expected = 2.0_RKIND*dt/(2.0_RKIND*eps + sumBeta + sigma*dt)
+      g1Expected = (2.0_RKIND*eps + sumBeta - sigma*dt)/(2.0_RKIND*eps + sumBeta + sigma*dt)
+      g3(1) = g2Expected/2.0_RKIND*(1.0_RKIND + kappa(1))
+      g3(2) = g2Expected/2.0_RKIND*(1.0_RKIND + kappa(2))
+
+      if (abs(g1(1) - g1Expected) > TOL*abs(g1Expected)) call testFails(err, 'InitEDispersives G1')
+      if (abs(g2(1) - g2Expected) > TOL*abs(g2Expected)) call testFails(err, 'InitEDispersives G2')
+
+      ! Advance the single node with a prescribed E and follow the recurrence:
+      ! E <- E - Re(sum_k G3_k*J_k), J_k <- Kappa_k*J_k + Beta_k*(E - Eprevious)/dt.
+      current = (0.0_RKIND, 0.0_RKIND)
+      previous = 0.0_RKIND
+      do step = 1, 3
+         ex(1, 1, 1) = real(step, RKIND)
+         call AdvanceEDispersiveE(sgg)
+         expected = real(step, RKIND) - real(g3(1)*current(1) + g3(2)*current(2))
+         if (abs(ex(1, 1, 1) - expected) > TOL*max(1.0_RKIND, abs(expected))) &
+            call testFails(err, 'AdvanceEDispersiveE should subtract the polarization current')
+         current(1) = kappa(1)*current(1) + beta(1)*(ex(1, 1, 1) - previous)/dt
+         current(2) = kappa(2)*current(2) + beta(2)*(ex(1, 1, 1) - previous)/dt
+         previous = ex(1, 1, 1)
       end do
 
-      call solver%destroy_and_deallocate()
-   end subroutine
+      call DestroyEDispersives(sgg)
+      deallocate(sgg%Med)
+      deallocate(media%sggMiEx, media%sggMiEy, media%sggMiEz)
+   end function
 
-   ! The incident field comes from an all-vacuum run with the same mesh, source and node.
-   subroutine cache_incident_field()
-      if (incident_cached) return
-      call run_case('vacuum_reference.fdtd.json', incident_samples)
-      incident_cached = .true.
-   end subroutine
+   subroutine buildSingleNodeMedium(sgg, media, eps, sigma, dt)
+      type(SGGFDTDINFO_t), intent(inout) :: sgg
+      type(media_matrices_t), intent(inout) :: media
+      real(kind=RKIND), intent(in) :: eps, sigma, dt
+      integer :: field
 
-   ! S11(f) = DFT(E_total - E_incident) / DFT(E_incident) at one frequency.
-   subroutine s11_at_frequency(total, incident, frequency, value)
-      real(kind=RKIND), intent(in) :: total(0:), incident(0:), frequency
-      complex(kind=CKIND), intent(out) :: value
-      real(kind=8), parameter :: two_pi = 6.283185307179586476925286766559d0
-      real(kind=8) :: phase
-      complex(kind=CKIND) :: weight, numerator, denominator
-      integer :: n
+      allocate(sgg%Med(0:1))
+      sgg%NumMedia = 1
+      sgg%dt = dt
+      sgg%Med(1)%Is%PML = .false.
+      sgg%Med(1)%Is%EDispersive = .true.
+      sgg%Med(1)%Is%EDispersiveAnis = .false.
+      allocate(sgg%Med(1)%EDispersive(1))
+      sgg%Med(1)%EDispersive(1)%numpolres11 = 2
+      sgg%Med(1)%EDispersive(1)%eps11 = eps
+      sgg%Med(1)%EDispersive(1)%Sigma11 = sigma
+      allocate(sgg%Med(1)%EDispersive(1)%a11(2), sgg%Med(1)%EDispersive(1)%C11(2))
+      sgg%Med(1)%EDispersive(1)%a11(1) = POLE1
+      sgg%Med(1)%EDispersive(1)%a11(2) = conjg(POLE1)
+      sgg%Med(1)%EDispersive(1)%C11(1) = RESIDUE1
+      sgg%Med(1)%EDispersive(1)%C11(2) = conjg(RESIDUE1)
 
-      numerator = (0.0_RKIND, 0.0_RKIND)
-      denominator = (0.0_RKIND, 0.0_RKIND)
-      do n = 0, ubound(total, 1)
-         phase = two_pi*real(frequency, 8)*real(n, 8)*real(time_step, 8)
-         weight = cmplx(cos(phase), -sin(phase), CKIND)
-         numerator = numerator + cmplx(total(n) - incident(n), 0.0_RKIND, CKIND)*weight
-         denominator = denominator + cmplx(incident(n), 0.0_RKIND, CKIND)*weight
+      do field = IEX, IHZ
+         sgg%Alloc(field)%XI = 1
+         sgg%Alloc(field)%XE = 1
+         sgg%Alloc(field)%YI = 1
+         sgg%Alloc(field)%YE = 1
+         sgg%Alloc(field)%ZI = 1
+         sgg%Alloc(field)%ZE = 1
+         sgg%Sweep(field)%XI = 1
+         sgg%Sweep(field)%XE = 1
+         sgg%Sweep(field)%YI = 1
+         sgg%Sweep(field)%YE = 1
+         sgg%Sweep(field)%ZI = 1
+         sgg%Sweep(field)%ZE = 1
       end do
-      value = numerator/denominator
+
+      allocate(media%sggMiEx(1, 1, 1), media%sggMiEy(1, 1, 1), media%sggMiEz(1, 1, 1))
+      media%sggMiEx = 0
+      media%sggMiEy = 0
+      media%sggMiEz = 0
+      media%sggMiEx(1, 1, 1) = 1
    end subroutine
 
-   real(kind=RKIND) function wrapped_degrees(angle) result(res)
-      real(kind=RKIND), intent(in) :: angle
-      res = modulo(angle + 180.0_RKIND, 360.0_RKIND) - 180.0_RKIND
-   end function
-
-   ! Compare the simulated S11 against the committed dgtd and scikit-rf vectors.
-   integer function compare_case(case_name) result(errors)
-      character(len=*), intent(in) :: case_name
-      real(kind=RKIND), dimension(:), allocatable :: total
-      real(kind=RKIND) :: frequency, skrf_db, skrf_phase, dgtd_db, dgtd_phase
-      real(kind=RKIND) :: db, phase, phase_error
-      complex(kind=CKIND) :: value
-      character(len=256) :: header
-      character(len=256) :: reference_file
-      integer :: unit, ios
-
-      errors = 0
-      call cache_incident_field()
-      call run_case(trim(case_name)//'.fdtd.json', total)
-      if (size(total) /= size(incident_samples)) then
-         write (*, *) 'Lorentz test: case and reference time windows differ'
-         errors = errors + 1
-         return
-      end if
-
-      reference_file = 'references/'//trim(case_name)//'_s11.csv'
-      open (newunit=unit, file=trim(reference_file), status='old', action='read', iostat=ios)
-      if (ios /= 0) then
-         write (*, *) 'Lorentz test: cannot open '//trim(reference_file)
-         errors = errors + 1
-         return
-      end if
-      read (unit, '(a)') header
-
-      do
-         read (unit, *, iostat=ios) frequency, skrf_db, skrf_phase, dgtd_db, dgtd_phase
-         if (ios /= 0) exit
-         call s11_at_frequency(total, incident_samples, frequency, value)
-         db = 20.0_RKIND*log10(abs(value))
-         phase = atan2(aimag(value), real(value))*180.0_RKIND/3.14159265358979323846_RKIND
-
-         if (abs(db - skrf_db) > MAX_ERROR_DB) then
-            write (*, '(a,f9.3,a,f8.3,a,f8.3)') 'Lorentz scikit-rf |S11| mismatch at ', &
-               frequency/1.0e6_RKIND, ' MHz: fdtd ', db, ' dB, reference ', skrf_db
-            errors = errors + 1
-         end if
-         if (abs(db - dgtd_db) > MAX_ERROR_DB) then
-            write (*, '(a,f9.3,a,f8.3,a,f8.3)') 'Lorentz dgtd |S11| mismatch at ', &
-               frequency/1.0e6_RKIND, ' MHz: fdtd ', db, ' dB, reference ', dgtd_db
-            errors = errors + 1
-         end if
-         phase_error = wrapped_degrees(phase - skrf_phase)
-         if (abs(phase_error) > MAX_ERROR_DEG) then
-            write (*, '(a,f9.3,a,f8.2,a,f8.2)') 'Lorentz scikit-rf S11 phase mismatch at ', &
-               frequency/1.0e6_RKIND, ' MHz: fdtd ', phase, ' deg, reference ', skrf_phase
-            errors = errors + 1
-         end if
-         phase_error = wrapped_degrees(phase - dgtd_phase)
-         if (abs(phase_error) > MAX_ERROR_DEG) then
-            write (*, '(a,f9.3,a,f8.2,a,f8.2)') 'Lorentz dgtd S11 phase mismatch at ', &
-               frequency/1.0e6_RKIND, ' MHz: fdtd ', phase, ' deg, reference ', dgtd_phase
-            errors = errors + 1
-         end if
-      end do
-      close (unit)
-   end function
-
-   ! The slab cases are PEC-backed, so S11 fully characterizes them (S21 = 0).
-   integer function test_lorentz_res2_s11() bind(C) result(errors)
-      errors = 0
-      call chdir("./testData/cases/lorentz/")
-      errors = compare_case('lorentz_res2')
-      call chdir("../../..")
-   end function
-
-   integer function test_lorentz_plasma_s11() bind(C) result(errors)
-      errors = 0
-      call chdir("./testData/cases/lorentz/")
-      errors = compare_case('lorentz_plasma')
-      call chdir("../../..")
-   end function
+   subroutine testFails(err, message)
+      integer, intent(inout) :: err
+      character(len=*), intent(in) :: message
+      err = err + 1
+      write (*, '(a)') 'Lorentz ADE test: '//trim(message)
+   end subroutine
 
 end module

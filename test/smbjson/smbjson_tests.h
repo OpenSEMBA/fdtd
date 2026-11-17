@@ -22,6 +22,7 @@ extern "C" int test_read_planewave();
 extern "C" int test_read_planewave_empty_elementids();
 extern "C" int test_read_sgbc();
 extern "C" int test_read_dielectricslab();
+extern "C" int test_read_lorentz_material();
 extern "C" int test_read_thinslot();
 extern "C" int test_read_thinslot_ez();
 extern "C" int test_read_thinslot_surface();
@@ -74,6 +75,7 @@ TEST(smbjson, parser_reject_conformal_nonpec_material) { EXPECT_EQ(0, test_parse
 TEST(smbjson, read_planewave)            { EXPECT_EQ(0, test_read_planewave()); }
 TEST(smbjson, read_planewave_empty_elementids) { EXPECT_EQ(0, test_read_planewave_empty_elementids()); }
 TEST(smbjson, read_dielectricslab)       { EXPECT_EQ(0, test_read_dielectricslab()); }
+TEST(smbjson, read_lorentz_material)     { EXPECT_EQ(0, test_read_lorentz_material()); }
 TEST(smbjson, read_thinslot)             { EXPECT_EQ(0, test_read_thinslot()); }
 TEST(smbjson, read_thinslot_ez)          { EXPECT_EQ(0, test_read_thinslot_ez()); }
 TEST(smbjson, read_thinslot_surface)     { EXPECT_EQ(0, test_read_thinslot_surface()); }
