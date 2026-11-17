@@ -1220,43 +1220,69 @@ contains
 
       type(materialAssociation_t), dimension(:), allocatable :: mAs
       type(coords_t), dimension(:), pointer :: cs
-      integer :: i, j, nVols
+      integer :: nVols, nSurfs, nLins
 
       mAs = this%getMaterialAssociations([J_MAT_TYPE_LORENTZ])
 
-      ! Precounts: one dispersive volume per material association with voxels.
-      nVols = 0
-      nullify(cs)
-      do i = 1, size(mAs)
-         call this%matAssToCoords(cs, mAs(i), CELL_TYPE_VOXEL)
-         if (size(cs) > 0) nVols = nVols + 1
-         deallocate(cs)
-         nullify(cs)
-      end do
+      ! One dispersive entry per material association and cell type, so a
+      ! material can cover volumes, surfaces and lines at the same time.
+      nVols = countAssociations(mAs, CELL_TYPE_VOXEL)
+      nSurfs = countAssociations(mAs, CELL_TYPE_SURFEL)
+      nLins = countAssociations(mAs, CELL_TYPE_LINEL)
 
       allocate(res%Vols(nVols))
-      allocate(res%Surfs(0))
-      allocate(res%Lins(0))
+      allocate(res%Surfs(nSurfs))
+      allocate(res%Lins(nLins))
       res%nVols = nVols
-      res%nSurfs = 0
-      res%nLins = 0
+      res%nSurfs = nSurfs
+      res%nLins = nLins
+      res%nVols_max = nVols
+      res%nSurfs_max = nSurfs
+      res%nLins_max = nLins
+      res%n_c_max = 0
 
-      if (nVols == 0) return
-
-      j = 1
-      do i = 1, size(mAs)
-         call this%matAssToCoords(cs, mAs(i), CELL_TYPE_VOXEL)
-         if (size(cs) > 0) then
-            res%Vols(j) = readLorentz(mAs(i))
-            j = j + 1
-         end if
-         deallocate(cs)
-         nullify(cs)
-      end do
+      call fillEntries(res%Vols, CELL_TYPE_VOXEL)
+      call fillEntries(res%Surfs, CELL_TYPE_SURFEL)
+      call fillEntries(res%Lins, CELL_TYPE_LINEL)
 
    contains
-      function readLorentz(mA) result(res)
+      integer function countAssociations(associations, cellType) result(n)
+         type(materialAssociation_t), dimension(:), intent(in) :: associations
+         integer, intent(in) :: cellType
+         integer :: k
+
+         n = 0
+         nullify(cs)
+         do k = 1, size(associations)
+            call this%matAssToCoords(cs, associations(k), cellType)
+            if (size(cs) > 0) n = n + 1
+            deallocate(cs)
+            nullify(cs)
+         end do
+      end function
+
+      subroutine fillEntries(entries, cellType)
+         type(FreqDepenMaterial_t), dimension(:), intent(inout) :: entries
+         integer, intent(in) :: cellType
+         integer :: k, e
+
+         e = 0
+         nullify(cs)
+         do k = 1, size(mAs)
+            call this%matAssToCoords(cs, mAs(k), cellType)
+            if (size(cs) > 0) then
+               e = e + 1
+               entries(e) = readLorentz(mAs(k), cellType)
+               res%n_c_max = max(res%n_c_max, entries(e)%n_c)
+            end if
+            deallocate(cs)
+            nullify(cs)
+         end do
+      end subroutine
+
+      function readLorentz(mA, cellType) result(res)
          type(materialAssociation_t), intent(in) :: mA
+         integer, intent(in) :: cellType
          type(FreqDepenMaterial_t) :: res
          type(json_value_ptr_t) :: matPtr
          real(kind=RKIND) :: epsInf, omegaP, omega1, gamma
@@ -1267,7 +1293,7 @@ contains
 
          matPtr = this%matTable%getId(mA%materialId)
 
-         call this%matAssToCoords(res%c, mA, CELL_TYPE_VOXEL)
+         call this%matAssToCoords(res%c, mA, cellType)
          res%n_c = size(res%c)
 
          epsInf = this%getRealAt(matPtr%p, J_MAT_LORENTZ_EPS_INF, default=1.0_RKIND)
