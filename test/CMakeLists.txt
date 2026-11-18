@@ -18,6 +18,8 @@ if (SEMBA_FDTD_ENABLE_SMBJSON)
     add_subdirectory(utils)
     add_subdirectory(smbjson)
     set(SMBJSON_TESTS_LIBRARY smbjson_tests)
+    add_subdirectory(lorentz)
+    set(LORENTZ_TESTS_LIBRARY lorentz_tests)
     add_subdirectory(unit/rotate)
     set(ROTATE_TESTS_LIBRARY rotate_tests)
     add_subdirectory(unit/output)
@@ -57,6 +59,7 @@ add_executable(fdtd_tests
 target_link_libraries(fdtd_tests
     ${MTLN_TESTS_LIBRARY}
     ${SMBJSON_TESTS_LIBRARY}
+    ${LORENTZ_TESTS_LIBRARY}
     ${CONFORMAL_TESTS_LIBRARY}
     ${BORDER_TESTS_LIBRARY}
     ${PREPROCESS_TESTS_LIBRARY}

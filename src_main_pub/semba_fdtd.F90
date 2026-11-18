@@ -252,6 +252,7 @@ contains
       call get_secnds (this%l%time_out2)
 
 
+      status = 0
       if (present(input_flags)) then
          this%l%read_command_line = .false.
          this%l%chain2 = input_flags
