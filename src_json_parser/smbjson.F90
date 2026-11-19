@@ -3947,6 +3947,7 @@ contains
                      res%resistance = this%getRealAt(genSrcs(i)%p, J_SRC_RESISTANCE_GEN, default = 1.0e22_rkind)
                   end if
                   res%path_to_excitation = trim(this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE))
+                  call checkExcitationRunsUntilSimulationEnd(res%path_to_excitation)
                   return
                end if
 
@@ -4101,7 +4102,7 @@ contains
                   call log_msg(LOG_ERROR, 'SMBJSON', 'Field block of source of type generator must be current or voltage')
                end select
                res(n)%path_to_excitation = this%getStrAt(gens(i)%p, J_SRC_MAGNITUDE_FILE)
-
+               call checkExcitationRunsUntilSimulationEnd(res(n)%path_to_excitation)
                idAndPos = getPolylineElemIdAndConductorOfGenerator(gens(i)%p)
                call elemIdToCable%get(key(idAndPos(1)), value=elementIndex)
                coord = GetCoordinateFromElemIdNode(gens(i)%p)
@@ -4117,6 +4118,33 @@ contains
          end do
       end function
 
+      subroutine checkExcitationRunsUntilSimulationEnd(path_to_excitation)
+         character(len=256), intent(in) :: path_to_excitation
+         real(kind=RKIND_TIME) :: final_time, last_time
+         integer :: unit, ios
+
+         final_time = mtln_res%time_step*mtln_res%number_of_steps
+         open(newunit=unit, file=trim(path_to_excitation), status='old', action='read', position = 'append', iostat=ios)
+         if (ios /= 0) then
+            call log_msg(LOG_FATAL, 'SMBJSON', 'Cannot open excitation file: '//trim(path_to_excitation))
+         end if
+
+         backspace(unit, iostat=ios)
+         if (ios /= 0) then
+            call log_msg(LOG_FATAL, 'SMBJSON', 'Cannot position excitation file: '//trim(path_to_excitation))
+         end if
+
+         read(unit, *, iostat=ios) last_time
+         if (ios /= 0) then
+            call log_msg(LOG_FATAL, 'SMBJSON', 'Cannot read last excitation time in file: '//trim(path_to_excitation))
+         end if
+
+         close(unit)
+         if (last_time < final_time) then
+            call log_msg(LOG_FATAL, 'SMBJSON', &
+               'Excitation file ends before the simulation final time: '//trim(path_to_excitation))
+         end if
+      end subroutine
 
 
       logical function IsGeneratorOnWire(p)
