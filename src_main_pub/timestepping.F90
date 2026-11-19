@@ -352,6 +352,9 @@ module Solver_m
                  + size(this%media%sggMiEx,kind=8)+size(this%media%sggMiEy,kind=8)+size(this%media%sggMiEz,kind=8) &
                  + size(this%media%sggMiHx,kind=8)+size(this%media%sggMiHy,kind=8)+size(this%media%sggMiHz,kind=8)) &
                  + IKINDMTAG*size(this%media%sggMtag,kind=8)
+      if (allocated(this%tag_numbers%edge%x)) mediaBytes = mediaBytes + IKINDMTAG*(size(this%tag_numbers%edge%x,kind=8) &
+                 + size(this%tag_numbers%edge%y,kind=8)+size(this%tag_numbers%edge%z,kind=8) &
+                 + size(this%tag_numbers%face%x,kind=8)+size(this%tag_numbers%face%y,kind=8)+size(this%tag_numbers%face%z,kind=8))
 
       msg = 'estimated RAM for this rank: '//mb_text(fieldBytes+distBytes+mediaBytes)//' MB (fields '//mb_text(fieldBytes)// &
             ' MB, distances '//mb_text(distBytes)//' MB, media '//mb_text(mediaBytes)//' MB)'
