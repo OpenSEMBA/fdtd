@@ -2041,7 +2041,7 @@ contains
       end subroutine performFlushField
 
       subroutine updateAndFlush()
-         if (this%n > 0 .and. mod(this%n, OUTPUT_TIME_BUFFER_SIZE) == 0) then
+         if (this%n > 0 .and. mod(this%n, outputFlushSteps) == 0) then
             if (this%thereAre%Observation) then
                call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, .FALSE., &
                                   mod(this%n, SMALL_PROBE_BUFFER_SIZE) == 0)

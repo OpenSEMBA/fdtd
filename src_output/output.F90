@@ -20,7 +20,8 @@ module output_m
    use outputTypes_m, only: solver_output_t, problem_info_t, output_artifact_t, &
                               spheric_domain_t, cell_coordinate_t, field_data_t, fields_reference_t, &
                               TIME_DOMAIN, FREQUENCY_DOMAIN, BOTH_DOMAIN, UNDEFINED_DOMAIN, volumetric_publication_t, &
-                              OUTPUT_ARTIFACT_UNDEFINED, OUTPUT_TIME_BUFFER_SIZE, SMALL_PROBE_BUFFER_SIZE
+                              OUTPUT_ARTIFACT_UNDEFINED, OUTPUT_TIME_BUFFER_SIZE, SMALL_PROBE_BUFFER_SIZE, &
+                              outputFlushSteps
 #ifdef CompileWithMPI
    use mpi
 #endif
@@ -238,6 +239,8 @@ contains
       end block
 #endif
 
+      call choose_flush_steps(sgg, control)
+
       do ii = 1, sgg%NumberRequest
          domain = preprocess_domain(sgg%Observation(ii), sgg%time, sgg%dt, control%finaltimestep, &
                                     control%saveall)
@@ -423,6 +426,47 @@ contains
 #endif
       return
    contains
+   ! Halves the line/movie flush period until the time buffers of all movies fit MOVIE_BUFFER_BUDGET bytes per rank.
+   ! A full-domain movie keeps OUTPUT_TIME_BUFFER_SIZE frames of every cell otherwise, which does not fit for large meshes.
+   ! The period stays a power of two so it divides SMALL_PROBE_BUFFER_SIZE, and is the same on every rank.
+   subroutine choose_flush_steps(sgg, control)
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      type(sim_control_t), intent(in) :: control
+      integer(kind=8), parameter :: MOVIE_BUFFER_BUDGET = 1073741824_8
+      integer(kind=8) :: frameBytes
+      integer :: ii, i
+      type(domain_t) :: domain
+#ifdef CompileWithMPI
+      integer :: localSteps, mpiError
+#endif
+
+      frameBytes = 0
+      do ii = 1, sgg%NumberRequest
+         domain = preprocess_domain(sgg%Observation(ii), sgg%time, sgg%dt, control%finaltimestep, control%saveall)
+         if (domain%domainType /= TIME_DOMAIN) cycle
+         do i = 1, sgg%Observation(ii)%nP
+            associate (p => sgg%Observation(ii)%P(i))
+               select case (p%what)
+               case (ICUR, IMEC, IMHC, ICURX, ICURY, ICURZ, IEXC, IEYC, IEZC, IHXC, IHYC, IHZC)
+                  ! x, y and z buffers are always allocated
+                  frameBytes = frameBytes + 3_8*RKIND*int(p%XE - p%XI + 1, 8)*int(p%YE - p%YI + 1, 8)*int(p%ZE - p%ZI + 1, 8)
+               end select
+            end associate
+         end do
+      end do
+
+      outputFlushSteps = OUTPUT_TIME_BUFFER_SIZE
+      do while (outputFlushSteps > 1 .and. outputFlushSteps*frameBytes > MOVIE_BUFFER_BUDGET)
+         outputFlushSteps = outputFlushSteps/2
+      end do
+#ifdef CompileWithMPI
+      if (control%num_procs > 1) then
+         localSteps = outputFlushSteps
+         call MPI_Allreduce(localSteps, outputFlushSteps, 1, MPI_INTEGER, MPI_MIN, SUBCOMM_MPI, mpiError)
+      end if
+#endif
+   end subroutine choose_flush_steps
+
 #ifdef CompileWithMPI
       subroutine configure_far_field_mpi(output, lower_bound, upper_bound)
          type(solver_output_t), intent(inout) :: output
@@ -732,7 +776,7 @@ contains
       real(kind=RKIND_TIME), allocatable, intent(in) :: timeStep(:)
       if (.not. allocated(timeStep)) return
       if (nTime >= size(timeStep)) call log_msg(LOG_FATAL, 'OUTPUT', &
-                                                    'Probe time buffer full: flush outputs every OUTPUT_TIME_BUFFER_SIZE steps')
+                                                    'Probe time buffer full: flush outputs every outputFlushSteps steps')
    end subroutine check_time_buffer
 
    logical function is_time_sample_due(domain, timeIndex, discreteTime) result(sampleDue)
@@ -913,7 +957,7 @@ contains
       smallSteps = 0
       regularSteps = 0
       if (any(counts([POINT_PROBE_ID, WIRE_CURRENT_PROBE_ID, WIRE_CHARGE_PROBE_ID, BULK_PROBE_ID]) > 0)) smallSteps = SMALL_PROBE_BUFFER_SIZE
-      if (any(counts([LINE_PROBE_ID, MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID]) > 0)) regularSteps = OUTPUT_TIME_BUFFER_SIZE
+      if (any(counts([LINE_PROBE_ID, MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID]) > 0)) regularSteps = outputFlushSteps
    end subroutine flush_cadence_from_counts
 
    subroutine report_outputs_memory(layoutnumber, reducedCounts)
