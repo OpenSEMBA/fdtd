@@ -174,8 +174,9 @@ module Solver_m
    function solver_ctor(sgg,media,tag_numbers,SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
                         input, maxSourceValue, time_desdelanzamiento) result(res)
       type(SGGFDTDINFO_t), intent(in) :: sgg
-      type(taglist_t), intent(in) :: tag_numbers
-      type(media_matrices_t), intent(in) :: media
+      ! media and tag_numbers are moved into the solver (left unallocated): copying them doubles the per-cell RAM
+      type(taglist_t), intent(inout) :: tag_numbers
+      type(media_matrices_t), intent(inout) :: media
       type(limit_t), dimension(1:6), intent(in) :: SINPML_fullsize,fullsize
       logical, intent(in) :: finishedwithsuccess
       real(kind=RKIND), intent(in) :: eps0,mu0
@@ -187,8 +188,20 @@ module Solver_m
 
       call res%init_control(input,maxSourceValue, time_desdelanzamiento)
       res%sgg = sgg
-      res%media = media
-      res%tag_numbers = tag_numbers 
+      call move_alloc(media%sggMiNo, res%media%sggMiNo)
+      call move_alloc(media%sggMiEx, res%media%sggMiEx)
+      call move_alloc(media%sggMiEy, res%media%sggMiEy)
+      call move_alloc(media%sggMiEz, res%media%sggMiEz)
+      call move_alloc(media%sggMiHx, res%media%sggMiHx)
+      call move_alloc(media%sggMiHy, res%media%sggMiHy)
+      call move_alloc(media%sggMiHz, res%media%sggMiHz)
+      call move_alloc(media%sggMtag, res%media%sggMtag)
+      call move_alloc(tag_numbers%edge%x, res%tag_numbers%edge%x)
+      call move_alloc(tag_numbers%edge%y, res%tag_numbers%edge%y)
+      call move_alloc(tag_numbers%edge%z, res%tag_numbers%edge%z)
+      call move_alloc(tag_numbers%face%x, res%tag_numbers%face%x)
+      call move_alloc(tag_numbers%face%y, res%tag_numbers%face%y)
+      call move_alloc(tag_numbers%face%z, res%tag_numbers%face%z)
       res%sinPML_fullsize = SINPML_fullsize
       res%fullsize = fullsize
       res%eps0 = eps0
