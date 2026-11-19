@@ -8,7 +8,7 @@ on:
 jobs:
 
   builds-and-tests:
-    runs-on: windows-latest
+    runs-on: windows-2025
     strategy:
       matrix: 
         build-type: ["Release"]

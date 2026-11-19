@@ -17,7 +17,7 @@ jobs:
   builds-and-tests:
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [windows-2025]
         compiler: [
           {name: 'intel', version: '2025.2.1'}
         ]
