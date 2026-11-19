@@ -953,29 +953,40 @@ contains
       implicit none
       type(solver_output_t), pointer, intent(inout) :: output_list(:)
 
-      type(solver_output_t), allocatable :: tmp(:)
+      type(solver_output_t), pointer :: compact(:)
       type(output_partition_t), allocatable :: compact_partitions(:)
       integer :: i, n, k
 
       n = count(output_list%outputID /= UNDEFINED_PROBE)
 
-      allocate (tmp(n))
+      allocate (compact(n))
       allocate (compact_partitions(n))
 
-      ! Copy valid elements
+      ! Move (never copy) the probes: a deep copy duplicates every probe buffer, which scale with the mesh
       k = 0
       do i = 1, size(output_list)
          if (output_list(i)%outputID /= UNDEFINED_PROBE) then
             k = k + 1
-            tmp(k) = output_list(i)   ! deep copy of all allocatable components
+            compact(k)%outputID = output_list(i)%outputID
+#ifdef CompileWithMPI
+            compact(k)%MPISubcomm = output_list(i)%MPISubcomm
+            compact(k)%MPIRoot = output_list(i)%MPIRoot
+#endif
+            call move_alloc(output_list(i)%pointProbe, compact(k)%pointProbe)
+            call move_alloc(output_list(i)%wireCurrentProbe, compact(k)%wireCurrentProbe)
+            call move_alloc(output_list(i)%wireChargeProbe, compact(k)%wireChargeProbe)
+            call move_alloc(output_list(i)%bulkCurrentProbe, compact(k)%bulkCurrentProbe)
+            call move_alloc(output_list(i)%lineProbe, compact(k)%lineProbe)
+            call move_alloc(output_list(i)%movieProbe, compact(k)%movieProbe)
+            call move_alloc(output_list(i)%frequencySliceProbe, compact(k)%frequencySliceProbe)
+            call move_alloc(output_list(i)%farFieldOutput, compact(k)%farFieldOutput)
+            call move_alloc(output_list(i)%mapvtkOutput, compact(k)%mapvtkOutput)
             compact_partitions(k) = outputPartitions(i)
          end if
       end do
 
-      ! Replace the saved pointer target safely
       if (associated(output_list)) deallocate (output_list)
-      allocate (output_list(n))
-      output_list = tmp
+      output_list => compact
       call move_alloc(compact_partitions, outputPartitions)
 
    end subroutine remove_unused_outputs
