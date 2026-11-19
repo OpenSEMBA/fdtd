@@ -119,9 +119,13 @@ contains
       call write_classification_attributes(this, transport, problemInfo)
       ! Allocated after the classification is written, so its temporary per-point arrays are already freed
       call alloc_and_init(this%timeStep, time_buffer_capacity(this%domain), 0.0_RKIND_TIME)
-      call alloc_and_init(this%xValueForTime, time_buffer_capacity(this%domain), this%nPoints, 0.0_RKIND)
-      call alloc_and_init(this%yValueForTime, time_buffer_capacity(this%domain), this%nPoints, 0.0_RKIND)
-      call alloc_and_init(this%zValueForTime, time_buffer_capacity(this%domain), this%nPoints, 0.0_RKIND)
+      ! Components the movie never writes get no points: a single-component movie needs one buffer, not three
+      call alloc_and_init(this%xValueForTime, time_buffer_capacity(this%domain), &
+                          merge(this%nPoints, 0, any([ICUR, IMEC, IMHC, ICURX, IEXC, IHXC] == this%component)), 0.0_RKIND)
+      call alloc_and_init(this%yValueForTime, time_buffer_capacity(this%domain), &
+                          merge(this%nPoints, 0, any([ICUR, IMEC, IMHC, ICURY, IEYC, IHYC] == this%component)), 0.0_RKIND)
+      call alloc_and_init(this%zValueForTime, time_buffer_capacity(this%domain), &
+                          merge(this%nPoints, 0, any([ICUR, IMEC, IMHC, ICURZ, IEZC, IHZC] == this%component)), 0.0_RKIND)
 
    end subroutine init_movie_probe_output
 

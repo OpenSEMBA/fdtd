@@ -448,8 +448,9 @@ contains
             associate (p => sgg%Observation(ii)%P(i))
                select case (p%what)
                case (ICUR, IMEC, IMHC, ICURX, ICURY, ICURZ, IEXC, IEYC, IEZC, IHXC, IHYC, IHZC)
-                  ! x, y and z buffers are always allocated
-                  frameBytes = frameBytes + 3_8*RKIND*int(p%XE - p%XI + 1, 8)*int(p%YE - p%YI + 1, 8)*int(p%ZE - p%ZI + 1, 8)
+                  ! module movies buffer x, y and z; single-component movies buffer one component
+                  frameBytes = frameBytes + merge(3_8, 1_8, any([ICUR, IMEC, IMHC] == p%what))*RKIND* &
+                               int(p%XE - p%XI + 1, 8)*int(p%YE - p%YI + 1, 8)*int(p%ZE - p%ZI + 1, 8)
                end select
             end associate
          end do
