@@ -901,8 +901,7 @@ contains
             end associate
          case (MOVIE_PROBE_ID)
             associate (p => outputs(i)%movieProbe)
-               bytes(id) = bytes(id) + array_bytes(p%timeStep) + array_bytes(p%coords) + array_bytes(p%tagNumber) + &
-                           array_bytes(p%mediaType) + array_bytes(p%xValueForTime) + &
+               bytes(id) = bytes(id) + array_bytes(p%timeStep) + array_bytes(p%coords) + array_bytes(p%xValueForTime) + &
                            array_bytes(p%yValueForTime) + array_bytes(p%zValueForTime)
             end associate
          case (FREQUENCY_SLICE_PROBE_ID)

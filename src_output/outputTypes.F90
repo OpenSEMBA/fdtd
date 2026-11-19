@@ -310,8 +310,6 @@ module outputTypes_m
       type(cell_coordinate_t) :: auxCoords
       integer(kind=SINGLE)    :: nPoints = -1
       integer(kind=SINGLE), allocatable :: coords(:, :)     !(3, coordIdx)
-      integer(IKINDMTAG), allocatable :: tagNumber(:, :)    !(component, coordIdx)
-      real(kind=RKIND), allocatable :: mediaType(:, :)      !(component, coordIdx)
       real(kind=RKIND), allocatable :: xValueForTime(:, :)  !(time, coordIdx)
       real(kind=RKIND), allocatable :: yValueForTime(:, :)  !(time, coordIdx)
       real(kind=RKIND), allocatable :: zValueForTime(:, :)  !(time, coordIdx)
