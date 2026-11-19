@@ -21,7 +21,7 @@ module output_m
                               spheric_domain_t, cell_coordinate_t, field_data_t, fields_reference_t, &
                               TIME_DOMAIN, FREQUENCY_DOMAIN, BOTH_DOMAIN, UNDEFINED_DOMAIN, volumetric_publication_t, &
                               OUTPUT_ARTIFACT_UNDEFINED, OUTPUT_TIME_BUFFER_SIZE, SMALL_PROBE_BUFFER_SIZE, &
-                              outputFlushSteps
+                              outputFlushSteps_g
 #ifdef CompileWithMPI
    use mpi
 #endif
@@ -456,14 +456,14 @@ contains
          end do
       end do
 
-      outputFlushSteps = OUTPUT_TIME_BUFFER_SIZE
-      do while (outputFlushSteps > 1 .and. outputFlushSteps*frameBytes > MOVIE_BUFFER_BUDGET)
-         outputFlushSteps = outputFlushSteps/2
+      outputFlushSteps_g = OUTPUT_TIME_BUFFER_SIZE
+      do while (outputFlushSteps_g > 1 .and. outputFlushSteps_g*frameBytes > MOVIE_BUFFER_BUDGET)
+         outputFlushSteps_g = outputFlushSteps_g/2
       end do
 #ifdef CompileWithMPI
       if (control%num_procs > 1) then
-         localSteps = outputFlushSteps
-         call MPI_Allreduce(localSteps, outputFlushSteps, 1, MPI_INTEGER, MPI_MIN, SUBCOMM_MPI, mpiError)
+         localSteps = outputFlushSteps_g
+         call MPI_Allreduce(localSteps, outputFlushSteps_g, 1, MPI_INTEGER, MPI_MIN, SUBCOMM_MPI, mpiError)
       end if
 #endif
    end subroutine choose_flush_steps
@@ -777,7 +777,7 @@ contains
       real(kind=RKIND_TIME), allocatable, intent(in) :: timeStep(:)
       if (.not. allocated(timeStep)) return
       if (nTime >= size(timeStep)) call log_msg(LOG_FATAL, 'OUTPUT', &
-                                                    'Probe time buffer full: flush outputs every outputFlushSteps steps')
+                                                    'Probe time buffer full: flush outputs every outputFlushSteps_g steps')
    end subroutine check_time_buffer
 
    logical function is_time_sample_due(domain, timeIndex, discreteTime) result(sampleDue)
@@ -957,7 +957,7 @@ contains
       smallSteps = 0
       regularSteps = 0
       if (any(counts([POINT_PROBE_ID, WIRE_CURRENT_PROBE_ID, WIRE_CHARGE_PROBE_ID, BULK_PROBE_ID]) > 0)) smallSteps = SMALL_PROBE_BUFFER_SIZE
-      if (any(counts([LINE_PROBE_ID, MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID]) > 0)) regularSteps = outputFlushSteps
+      if (any(counts([LINE_PROBE_ID, MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID]) > 0)) regularSteps = outputFlushSteps_g
    end subroutine flush_cadence_from_counts
 
    subroutine report_outputs_memory(layoutnumber, reducedCounts)

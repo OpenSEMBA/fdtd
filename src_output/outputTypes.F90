@@ -24,7 +24,7 @@ module outputTypes_m
    integer, parameter :: OUTPUT_TIME_BUFFER_SIZE = 128
    integer, parameter :: SMALL_PROBE_BUFFER_SIZE = 4096 !point, wire and bulk probes are small; must be a multiple of OUTPUT_TIME_BUFFER_SIZE
    ! Flush period of line and movie probes: OUTPUT_TIME_BUFFER_SIZE halved by init_outputs until the movie buffers fit their budget
-   integer :: outputFlushSteps = OUTPUT_TIME_BUFFER_SIZE
+   integer :: outputFlushSteps_g = OUTPUT_TIME_BUFFER_SIZE
 
    character(len=4), parameter :: BINARYEXTENSION = '.bin'
    character(len=4), parameter :: DATFILEEXTENSION = '.dat'
@@ -375,7 +375,7 @@ contains
       integer, intent(in), optional :: flushSteps
       integer :: steps
 
-      steps = outputFlushSteps
+      steps = outputFlushSteps_g
       if (present(flushSteps)) steps = flushSteps
       time_buffer_capacity = (steps + max(1, domain%tstride) - 1)/max(1, domain%tstride)
    end function time_buffer_capacity
