@@ -498,6 +498,15 @@ contains
                                                      this%publication%file_offset, this%publication%local_shape, status, diagnostic)
          call require_visualisation_success(status, diagnostic, 'Movie HDF5 hyperslab write failed: ')
       case (OUTPUT_PUBLICATION_ROOT_AGGREGATION)
+         if (transport%rank_count == 1 .and. size(local_values, kind=int64) == &
+             (int(this%publication%global_upper%x, int64) - this%publication%global_lower%x + 1)* &
+             (int(this%publication%global_upper%y, int64) - this%publication%global_lower%y + 1)* &
+             (int(this%publication%global_upper%z, int64) - this%publication%global_lower%z + 1)) then
+            ! Sole participant: its slab is the whole movie, so skip the real64 copies of the aggregation
+            call write_visualisation_attribute(this%visualisation, attribute, local_values, status, diagnostic)
+            call require_visualisation_success(status, diagnostic, 'Movie HDF5 write failed: ')
+            return
+         end if
          call gather_global_dense(this, local_values, transport, global_values, transport_status)
          if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
             call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to aggregate movie HDF5 values')
