@@ -1,7 +1,7 @@
 module circuit_m
 
     use ngspice_interface_m
-    use Report_m, only: log_msg, LOG_INFO, LOG_FATAL
+    use Report_m, only: log_msg, LOG_INFO, LOG_WARN, LOG_FATAL
     use FDETYPES_m, only: RKIND, RKIND_TIME, SINGLE
     implicit none
 
@@ -69,6 +69,7 @@ contains
         integer :: i
 
         call start()
+        call warnCodemodelProblems()
         if (present(netlist)) then
             call log_msg(LOG_INFO, 'MTLN', 'Loading netlist '//netlist)
             call this%loadNetlist(netlist)
@@ -83,6 +84,26 @@ contains
 
         do i = 1, size(names)
             this%nodes%names(i) = names(i)
+        end do
+    end subroutine
+
+    ! Warns about each XSPICE code model problem found by start().
+    subroutine warnCodemodelProblems()
+        integer, parameter :: REPORT_LENGTH = 4096
+        character(kind=c_char, len=REPORT_LENGTH) :: report
+        integer :: reportLength, first, last
+
+        reportLength = codemodels_report_text(report, int(REPORT_LENGTH, c_int))
+        first = 1
+        do while (first <= reportLength)
+            last = index(report(first:reportLength), c_new_line)
+            if (last == 0) then
+                last = reportLength
+            else
+                last = first + last - 2
+            end if
+            if (last >= first) call log_msg(LOG_WARN, 'MTLN', report(first:last))
+            first = last + 2
         end do
     end subroutine
 

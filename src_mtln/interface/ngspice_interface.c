@@ -37,6 +37,11 @@ static bool errorflag = false;
    state is probed by matching the text a command prints. */
 static const char* probe_text = NULL;
 static bool probe_hit = false;
+/* Error lines printed by ngspice while capture_errors is set. */
+static bool capture_errors = false;
+static char captured_errors[1024];
+/* Problems found while loading the code models, one per line. */
+static char codemodels_report[4096];
 
 int
 ng_getchar(char* outputreturn, int ident, void* userdata);
@@ -90,24 +95,41 @@ static bool command_prints(const char* cmd, const char* text)
     return probe_hit;
 }
 
+/* Appends one line to the code model report. */
+static void report_codemodel_problem(const char* line)
+{
+    size_t used = strlen(codemodels_report);
+    if (used + 1 >= sizeof(codemodels_report)) return;
+    snprintf(codemodels_report + used, sizeof(codemodels_report) - used, "%s\n", line);
+}
+
 /* XSPICE code models (e.g. 'filesource' used by cable-end generators) are
    shipped next to the executable. They are loaded only if no spinit has
-   already loaded them, so a user spinit keeps precedence. */
+   already loaded them, so a user spinit keeps precedence. Missing files,
+   load failures and a still missing 'filesource' are recorded in
+   codemodels_report. */
 static void load_codemodels_next_to_executable(void)
 {
     static const char* models[] = {"spice2poly.cm", "analog.cm", "digital.cm",
                                    "xtradev.cm", "xtraevt.cm", "table.cm"};
-    char folder[4096], path[4200], cmd[4300];
+    char folder[4096], path[4200], cmd[4300], line[6000];
     size_t i;
     FILE* f;
 
     if (!command_prints("devhelp filesource", "not found")) return;
     executable_folder(folder, sizeof(folder));
-    if (folder[0] == '\0') return;
+    if (folder[0] == '\0') {
+        report_codemodel_problem("Cannot find the executable folder to load the XSPICE code models (*.cm) from.");
+        return;
+    }
     for (i = 0; i < sizeof(models) / sizeof(models[0]); i++) {
         snprintf(path, sizeof(path), "%s%s", folder, models[i]);
         f = fopen(path, "rb");
-        if (!f) continue;
+        if (!f) {
+            snprintf(line, sizeof(line), "XSPICE code model not found: %s", path);
+            report_codemodel_problem(line);
+            continue;
+        }
         fclose(f);
 #ifdef _WIN32
         /* ngspice splits command words on spaces; the 8.3 path has none. */
@@ -118,7 +140,21 @@ static void load_codemodels_next_to_executable(void)
         }
 #endif
         snprintf(cmd, sizeof(cmd), "codemodel %s", path);
+        captured_errors[0] = '\0';
+        capture_errors = true;
         ngSpice_Command(cmd);
+        capture_errors = false;
+        if (captured_errors[0] != '\0') {
+            snprintf(line, sizeof(line), "XSPICE code model %s could not be loaded: %s",
+                     models[i], captured_errors);
+            report_codemodel_problem(line);
+        }
+    }
+    if (command_prints("devhelp filesource", "not found")) {
+        snprintf(line, sizeof(line),
+                 "XSPICE device 'filesource' is not available after loading the code models from %s",
+                 folder);
+        report_codemodel_problem(line);
     }
 }
 
@@ -126,9 +162,21 @@ void start()
 {
     int ret = 0;
     errorflag = false;
+    codemodels_report[0] = '\0';
     ret = ngSpice_Init(ng_getchar, ng_getstat, ng_exit,  ng_data, ng_initdata, ng_thread_runs, NULL);
     load_codemodels_next_to_executable();
     return;
+}
+
+/* Copies the code model report of the last start() into buffer (not null
+   terminated) and returns its length; 0 when the code models loaded fine. */
+int codemodels_report_text(char* buffer, int size)
+{
+    int n = (int)strlen(codemodels_report);
+    if (size <= 0) return 0;
+    if (n > size) n = size;
+    memcpy(buffer, codemodels_report, (size_t)n);
+    return n;
 }
 
 void command(char* input)
@@ -180,6 +228,14 @@ ng_getchar(char* outputreturn, int ident, void* userdata)
     /* ngspice output is silent unless SEMBA_NGSPICE_DEBUG is set. */
     if (getenv("SEMBA_NGSPICE_DEBUG")) printf("%s\n", outputreturn);
     if (probe_text && strstr(outputreturn, probe_text)) probe_hit = true;
+    if (capture_errors && strstr(outputreturn, "rror")) {
+        /* Shared ngspice prefixes every line with its stream name. */
+        const char* text = outputreturn;
+        size_t used = strlen(captured_errors);
+        if (strncmp(text, "stderr ", 7) == 0 || strncmp(text, "stdout ", 7) == 0) text += 7;
+        snprintf(captured_errors + used, sizeof(captured_errors) - used,
+                 "%s%s", used > 0 ? " " : "", text);
+    }
     return 0;
 }
 
