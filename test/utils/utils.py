@@ -150,6 +150,8 @@ def setNgspice(tmp_path):
                 shutil.copy2(file, os.path.join(tmp_path, file.name))
         return
 
+    print('TMP LOG: USING DEFAULT .CM FILES')
+
     if platform == "linux" or platform == "linux2":
         sys_name = "linux/"
     elif platform == "win32":

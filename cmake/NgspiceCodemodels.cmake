@@ -40,8 +40,7 @@ add_executable(ngspice-cmpp
 )
 target_include_directories(ngspice-cmpp PRIVATE "${NGSPICE_CMPP_DIR}")
 if (WIN32)
-	target_compile_definitions(ngspice-cmpp PRIVATE
-		_CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_DEPRECATE YY_NO_UNISTD_H)
+	target_compile_definitions(ngspice-cmpp PRIVATE YY_NO_UNISTD_H)
 endif()
 
 function(_ngspice_read_lst lst_file out_var)
@@ -123,8 +122,7 @@ foreach(cm IN LISTS NGSPICE_CODEMODELS)
 		"${cm_src}"
 		"${NGSPICE_SOURCE_DIR}/src/include")
 	if (WIN32)
-		target_compile_definitions(${target} PRIVATE
-			_CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_DEPRECATE)
+		target_compile_definitions(${target} PRIVATE)
 	else()
 		target_link_libraries(${target} PRIVATE m)
 	endif()
