@@ -47,6 +47,7 @@ module mtln_types_m
       type(cable_t), pointer :: attached_to_cable => null()
       real(kind=rkind) :: resistance = 0.0
       integer(kind=4) :: elementIndex = -1, conductor = -1
+      real(kind=rkind) :: sim_final_time
    contains
       private
       procedure :: wire_source_eq
@@ -57,6 +58,7 @@ module mtln_types_m
       character(len=256) :: path_to_excitation = ""
       integer(kind=4) :: source_type = SOURCE_TYPE_UNDEFINED
       real(kind=rkind) :: resistance
+      real(kind=rkind) :: sim_final_time
    end type
 
    type terminal_circuit_t

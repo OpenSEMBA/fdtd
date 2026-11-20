@@ -90,14 +90,6 @@ contains
 
       call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, &
                                            problemInfo, this%nPoints, this%coords)
-      allocate (this%tagNumber(3, this%nPoints), this%mediaType(3, this%nPoints))
-      this%tagNumber = 0_IKINDMTAG
-      this%mediaType = -1.0_RKIND
-      call store_classification(this, problemInfo)
-      call alloc_and_init(this%timeStep, time_buffer_capacity(this%domain), 0.0_RKIND_TIME)
-      call alloc_and_init(this%xValueForTime, time_buffer_capacity(this%domain), this%nPoints, 0.0_RKIND)
-      call alloc_and_init(this%yValueForTime, time_buffer_capacity(this%domain), this%nPoints, 0.0_RKIND)
-      call alloc_and_init(this%zValueForTime, time_buffer_capacity(this%domain), this%nPoints, 0.0_RKIND)
 
        if (publication%local_is_owner) then
           call create_folder(this%path, error)
@@ -124,7 +116,16 @@ contains
          call log_msg(LOG_FATAL, 'OUTPUT', &
                           'Unable to initialise movie classification transport')
       end if
-      call write_classification_attributes(this, transport)
+      call write_classification_attributes(this, transport, problemInfo)
+      ! Allocated after the classification is written, so its temporary per-point arrays are already freed
+      call alloc_and_init(this%timeStep, time_buffer_capacity(this%domain), 0.0_RKIND_TIME)
+      ! Components the movie never writes get no points: a single-component movie needs one buffer, not three
+      call alloc_and_init(this%xValueForTime, time_buffer_capacity(this%domain), &
+                          merge(this%nPoints, 0, any([ICUR, IMEC, IMHC, ICURX, IEXC, IHXC] == this%component)), 0.0_RKIND)
+      call alloc_and_init(this%yValueForTime, time_buffer_capacity(this%domain), &
+                          merge(this%nPoints, 0, any([ICUR, IMEC, IMHC, ICURY, IEYC, IHYC] == this%component)), 0.0_RKIND)
+      call alloc_and_init(this%zValueForTime, time_buffer_capacity(this%domain), &
+                          merge(this%nPoints, 0, any([ICUR, IMEC, IMHC, ICURZ, IEZC, IHZC] == this%component)), 0.0_RKIND)
 
    end subroutine init_movie_probe_output
 
@@ -377,7 +378,6 @@ contains
       character(len=BUFSIZE) :: diagnostic
       integer :: status, time_index
 
-      call write_classification_attributes(this, transport)
       do time_index = 1, this%nTime
          if (visualisation_is_open(this%visualisation)) then
             call begin_visualisation_step(this%visualisation, real(this%timeStep(time_index), real64), &
@@ -426,9 +426,11 @@ contains
       call publish_dense_attribute(this, attribute, field, transport)
    end subroutine write_external_attribute
 
-   subroutine write_classification_attributes(this, transport)
+   ! Written once at init: the classification is computed while writing it instead of being stored per point
+   subroutine write_classification_attributes(this, transport, problemInfo)
       type(movie_probe_output_t), intent(inout) :: this
       type(output_transport_t), intent(in) :: transport
+      type(problem_info_t), intent(in) :: problemInfo
       integer, parameter :: TAG_ATTRIBUTES(3) = [VISUALISATION_ATTRIBUTE_TAG_X, &
                                                  VISUALISATION_ATTRIBUTE_TAG_Y, &
                                                  VISUALISATION_ATTRIBUTE_TAG_Z]
@@ -440,40 +442,46 @@ contains
       if (this%classificationWritten) return
       if (any([ICUR, IMEC, IMHC] == this%component)) then
          do axis = 1, 3
-            call write_external_classification_attribute(this, TAG_ATTRIBUTES(axis), axis, .true., transport)
-            call write_external_classification_attribute(this, MEDIA_ATTRIBUTES(axis), axis, .false., transport)
+            call write_external_classification_attribute(this, TAG_ATTRIBUTES(axis), axis, .true., transport, problemInfo)
+            call write_external_classification_attribute(this, MEDIA_ATTRIBUTES(axis), axis, .false., transport, problemInfo)
          end do
       else
          do axis = 1, 3
             if (.not. classification_axis_enabled(this%component, axis)) cycle
-            call write_external_classification_attribute(this, VISUALISATION_ATTRIBUTE_TAG, axis, .true., transport)
-            call write_external_classification_attribute(this, VISUALISATION_ATTRIBUTE_MEDIA, axis, .false., transport)
+            call write_external_classification_attribute(this, VISUALISATION_ATTRIBUTE_TAG, axis, .true., transport, problemInfo)
+            call write_external_classification_attribute(this, VISUALISATION_ATTRIBUTE_MEDIA, axis, .false., transport, problemInfo)
          end do
       end if
       this%classificationWritten = .true.
    end subroutine write_classification_attributes
 
-   subroutine write_external_classification_attribute(this, attribute, axis, write_tag, transport)
+   subroutine write_external_classification_attribute(this, attribute, axis, write_tag, transport, problemInfo)
       type(movie_probe_output_t), intent(inout) :: this
       integer, intent(in) :: attribute, axis
       logical, intent(in) :: write_tag
       type(output_transport_t), intent(in) :: transport
+      type(problem_info_t), intent(in) :: problemInfo
 
-      integer :: i, local_index, nx, ny
+      integer :: i, local_index, nx, ny, field
       real(real64), allocatable :: values(:)
 
       nx = int(this%publication%local_shape(1))
       ny = int(this%publication%local_shape(2))
       allocate (values(int(product(this%publication%local_shape))))
       values = 0.0_real64
+      field = get_volumetric_classification_field(this%component, axis)
       do i = 1, this%nPoints
          local_index = this%coords(1, i) - this%mainCoords%x + 1 + &
                        (this%coords(2, i) - this%mainCoords%y)*nx + &
                        (this%coords(3, i) - this%mainCoords%z)*nx*ny
-         if (write_tag) then
-            values(local_index) = real(this%tagNumber(axis, i), real64)
-         else
-            values(local_index) = real(this%mediaType(axis, i), real64)
+         if (classification_point_is_valid(this%component, field, this%coords(:, i), problemInfo)) then
+            if (write_tag) then
+               values(local_index) = real(get_output_tag_number(field, this%coords(:, i), problemInfo), real64)
+            else
+               values(local_index) = real(get_output_media_type(field, this%coords(:, i), problemInfo), real64)
+            end if
+         else if (.not. write_tag) then
+            values(local_index) = -1.0_real64
          end if
       end do
       call publish_dense_attribute(this, attribute, values, transport)
@@ -494,6 +502,15 @@ contains
                                                      this%publication%file_offset, this%publication%local_shape, status, diagnostic)
          call require_visualisation_success(status, diagnostic, 'Movie HDF5 hyperslab write failed: ')
       case (OUTPUT_PUBLICATION_ROOT_AGGREGATION)
+         if (transport%rank_count == 1 .and. size(local_values, kind=int64) == &
+             (int(this%publication%global_upper%x, int64) - this%publication%global_lower%x + 1)* &
+             (int(this%publication%global_upper%y, int64) - this%publication%global_lower%y + 1)* &
+             (int(this%publication%global_upper%z, int64) - this%publication%global_lower%z + 1)) then
+            ! Sole participant: its slab is the whole movie, so skip the real64 copies of the aggregation
+            call write_visualisation_attribute(this%visualisation, attribute, local_values, status, diagnostic)
+            call require_visualisation_success(status, diagnostic, 'Movie HDF5 write failed: ')
+            return
+         end if
          call gather_global_dense(this, local_values, transport, global_values, transport_status)
          if (transport_status /= OUTPUT_TRANSPORT_SUCCESS) then
             call log_msg(LOG_FATAL, 'OUTPUT', 'Unable to aggregate movie HDF5 values')
@@ -572,23 +589,6 @@ contains
          end do
       end do
    end subroutine gather_global_dense
-
-   subroutine store_classification(this, problemInfo)
-      type(movie_probe_output_t), intent(inout) :: this
-      type(problem_info_t), intent(in) :: problemInfo
-
-      integer :: axis, i, field
-
-      do axis = 1, 3
-         if (.not. classification_axis_enabled(this%component, axis)) cycle
-         field = get_volumetric_classification_field(this%component, axis)
-         do i = 1, this%nPoints
-            if (.not. classification_point_is_valid(this%component, field, this%coords(:, i), problemInfo)) cycle
-            this%tagNumber(axis, i) = get_output_tag_number(field, this%coords(:, i), problemInfo)
-            this%mediaType(axis, i) = get_output_media_type(field, this%coords(:, i), problemInfo)
-         end do
-      end do
-   end subroutine store_classification
 
    logical function classification_axis_enabled(component, axis)
       integer(kind=SINGLE), intent(in) :: component
