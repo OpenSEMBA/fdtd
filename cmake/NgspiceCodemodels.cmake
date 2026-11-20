@@ -8,7 +8,8 @@
 # release or built with a different config.h are not ABI compatible and make
 # XSPICE devices such as `filesource` fail to parse.
 #
-# Result: <build>/bin/codemodels/{spinit, *.cm}
+# Result: <build>/bin/codemodels/{spinit, *.cm}, with the *.cm also copied to
+# the executable folder (<build>/bin).
 #
 # Usage: include(NgspiceCodemodels) after add_subdirectory(external/ngspice).
 
@@ -146,4 +147,16 @@ endforeach()
 configure_file("${CMAKE_CURRENT_LIST_DIR}/ngspice_codemodels/spinit"
 	"${NGSPICE_CODEMODELS_OUTPUT_DIR}/spinit" COPYONLY)
 
-add_custom_target(ngspice-codemodels ALL DEPENDS ${_ngspice_codemodel_targets})
+# semba-fdtd loads the code models found next to its executable when no
+# spinit loaded them, and the release archives ship them from there. Copy
+# them on every build so stale, ABI incompatible ones are always replaced.
+set(_ngspice_codemodel_files "")
+foreach(target IN LISTS _ngspice_codemodel_targets)
+	list(APPEND _ngspice_codemodel_files "$<TARGET_FILE:${target}>")
+endforeach()
+add_custom_target(ngspice-codemodels ALL
+	COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different
+		${_ngspice_codemodel_files} "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+	DEPENDS ${_ngspice_codemodel_targets}
+	COMMENT "Copying ngspice code models next to semba-fdtd")

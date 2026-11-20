@@ -7,15 +7,20 @@ set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 
 add_subdirectory(interface)
 
-# Precompiled XSPICE code models, loaded at run time from the executable folder.
-# They land in bin/, so they are shipped with the release archives.
-if (WIN32)
-	set(NGSPICE_CODEMODELS_OS windows)
-else()
-	set(NGSPICE_CODEMODELS_OS linux)
+# XSPICE code models are loaded at run time from the executable folder and
+# shipped from bin/ in the release archives. When they are built from the
+# ngspice submodule (cmake/NgspiceCodemodels.cmake) that build places them in
+# bin/. The precompiled ones come from another ngspice build and are not ABI
+# compatible with the linked library, so they are only a fallback.
+if (NOT SEMBA_FDTD_BUILD_NGSPICE_CODEMODELS)
+	if (WIN32)
+		set(NGSPICE_CODEMODELS_OS windows)
+	else()
+		set(NGSPICE_CODEMODELS_OS linux)
+	endif()
+	file(GLOB NGSPICE_CODEMODELS "${CMAKE_CURRENT_SOURCE_DIR}/../testData/spinit/${NGSPICE_CODEMODELS_OS}/*.cm")
+	file(COPY ${NGSPICE_CODEMODELS} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 endif()
-file(GLOB NGSPICE_CODEMODELS "${CMAKE_CURRENT_SOURCE_DIR}/../testData/spinit/${NGSPICE_CODEMODELS_OS}/*.cm")
-file(COPY ${NGSPICE_CODEMODELS} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
 add_library(mtlnsolver
 	"mtl.F90"
