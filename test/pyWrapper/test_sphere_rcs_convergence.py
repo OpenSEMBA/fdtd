@@ -1,7 +1,7 @@
-"""Compare converged backscatter RCS across all pairs of eight symmetry cases.
+"""Compare converged backscatter RCS across eight sphere symmetry cases.
 
-Each pair's RMS difference is calculated in dBsm over the shared frequency
-grid; every pair must be below the 1.5 dB acceptance limit.
+All pairwise Semba RMS differences must pass before each case is checked
+against the analytical Mie solution up to 300 MHz.
 """
 
 import threading
@@ -11,6 +11,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from scipy.special import spherical_jn, spherical_yn
 
 from test.utils.utils import *
 
@@ -29,6 +30,10 @@ SPHERE_SYMMETRY_CASES = [
 
 # RMS limit for pairwise backscatter-RCS differences, measured in dB.
 RMS_TOL_DB = 1.5
+MIE_RMS_TOL_DB = 1.5
+MIE_MAX_FREQUENCY_HZ = 300e6
+SPHERE_RADIUS_M = 0.5
+C0 = 299792458.0
 
 T_MIN_S = 40e-9
 T_CAP_S = 150e-9
@@ -82,6 +87,34 @@ def _read_backscatter_rcs(folder):
     return selected[:, 0], selected[:, 8]
 
 
+def _mie_backscatter_rcs(frequency_hz, radius_m=SPHERE_RADIUS_M):
+    """Return analytical PEC-sphere monostatic RCS [m^2] via the Mie series."""
+    frequency_hz = np.atleast_1d(np.asarray(frequency_hz, dtype=float))
+    result = np.empty_like(frequency_hz)
+    for index, frequency in enumerate(frequency_hz):
+        x = 2.0 * np.pi * frequency * radius_m / C0
+        n = np.arange(1, int(np.ceil(x + 4.05 * x ** (1.0 / 3.0) + 10.0)) + 1)
+        jn = spherical_jn(n, x)
+        yn = spherical_yn(n, x)
+        psi = x * jn
+        xi = x * (jn + 1j * yn)
+        psi_d = jn + x * spherical_jn(n, x, derivative=True)
+        xi_d = psi_d + 1j * (yn + x * spherical_yn(n, x, derivative=True))
+        series = np.sum((2 * n + 1) * (-1.0) ** n * (psi / xi - psi_d / xi_d))
+        result[index] = np.pi / (x / radius_m) ** 2 * abs(series) ** 2
+    return result
+
+
+def _rms_db_vs_mie(freq, rcs, mie_rcs, max_frequency_hz):
+    if freq.shape != rcs.shape or freq.shape != mie_rcs.shape:
+        raise ValueError("Frequency and RCS arrays must have matching shapes")
+    in_band = freq <= max_frequency_hz
+    if not np.any(in_band):
+        raise ValueError(f"No frequency samples at or below {max_frequency_hz:g} Hz")
+    difference_db = 10.0 * (np.log10(rcs[in_band]) - np.log10(mie_rcs[in_band]))
+    return float(np.sqrt(np.mean(difference_db**2)))
+
+
 def _pairwise_rms_db(results):
     """Calculate RMS dBsm differences for every pair of case RCS curves."""
     pairwise_rms = {}
@@ -103,11 +136,29 @@ def _pairwise_rms_db(results):
     return pairwise_rms
 
 
-def _rms_failures(pairwise_rms):
+def _rms_failures(rms_by_comparison, tolerance_db=RMS_TOL_DB):
     return {
-        pair: rms_db
-        for pair, rms_db in pairwise_rms.items()
-        if rms_db >= RMS_TOL_DB
+        comparison: rms_db
+        for comparison, rms_db in rms_by_comparison.items()
+        if rms_db >= tolerance_db
+    }
+
+
+def test_mie_rms_uses_only_frequencies_through_300_mhz():
+    frequencies = np.array([100e6, 300e6, 300.1e6])
+    mie_rcs = np.ones(3)
+    fdtd_rcs = mie_rcs * 10 ** (np.array([0.5, -0.5, 20.0]) / 10)
+
+    rms_db = _rms_db_vs_mie(frequencies, fdtd_rcs, mie_rcs, MIE_MAX_FREQUENCY_HZ)
+    over_limit_rcs = mie_rcs * 10 ** (np.array([1.6, 1.6, 20.0]) / 10)
+    over_limit_rms_db = _rms_db_vs_mie(
+        frequencies, over_limit_rcs, mie_rcs, MIE_MAX_FREQUENCY_HZ
+    )
+
+    assert rms_db == pytest.approx(0.5)
+    assert _rms_failures({"case": rms_db}, MIE_RMS_TOL_DB) == {}
+    assert _rms_failures({"case": over_limit_rms_db}, MIE_RMS_TOL_DB) == {
+        "case": pytest.approx(1.6)
     }
 
 
@@ -191,11 +242,34 @@ def test_sphere_symmetry_rcs_agrees_across_cases(tmp_path):
     for (left, right), rms_db in pairwise_rms.items():
         status = "FAIL" if rms_db >= RMS_TOL_DB else "PASS"
         print(f"{status}: {left} vs {right}: {rms_db:.3f} dB")
-    print(f"Overall result: {'FAIL' if failures else 'PASS'}")
+    print(f"Pairwise Semba result: {'FAIL' if failures else 'PASS'}")
     assert not failures, (
         f"Pairwise RMS must be below {RMS_TOL_DB:.2f} dB; "
         + ", ".join(
             f"{left} vs {right}: {rms_db:.3f} dB"
             for (left, right), rms_db in failures.items()
         )
+    )
+
+    print(
+        f"\nAll pairwise Semba comparisons passed; checking Mie through "
+        f"{MIE_MAX_FREQUENCY_HZ / 1e6:.0f} MHz:"
+    )
+    mie_rms = {}
+    for case, (freq, rcs) in results.items():
+        in_band = freq <= MIE_MAX_FREQUENCY_HZ
+        mie_freq = freq[in_band]
+        mie_rcs = _mie_backscatter_rcs(mie_freq)
+        mie_rms[case] = _rms_db_vs_mie(
+            mie_freq, rcs[in_band], mie_rcs, MIE_MAX_FREQUENCY_HZ
+        )
+    mie_failures = _rms_failures(mie_rms, MIE_RMS_TOL_DB)
+    for case, rms_db in mie_rms.items():
+        status = "FAIL" if rms_db >= MIE_RMS_TOL_DB else "PASS"
+        print(f"{status}: {case} vs Mie: {rms_db:.3f} dB")
+    print(f"Overall result: {'FAIL' if mie_failures else 'PASS'}")
+    assert not mie_failures, (
+        f"Mie RMS through {MIE_MAX_FREQUENCY_HZ / 1e6:.0f} MHz must be below "
+        f"{MIE_RMS_TOL_DB:.2f} dB; "
+        + ", ".join(f"{case}: {rms_db:.3f} dB" for case, rms_db in mie_failures.items())
     )
