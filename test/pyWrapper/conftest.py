@@ -20,6 +20,12 @@ def pytest_addoption(parser):
         action="store_true",
         help="Copy each tmp_path test directory to test-artifacts for inspection.",
     )
+    parser.addoption(
+        "--sphere-rcs-csv-dir",
+        type=str,
+        default=None,
+        help="Use existing sphere RCS CSV results instead of launching SEMBA.",
+    )
 
 
 def _keep_artifacts(config):

@@ -87,6 +87,27 @@ def _read_backscatter_rcs(folder):
     return selected[:, 0], selected[:, 8]
 
 
+def _read_backscatter_rcs_csvs(folder):
+    """Load the eight precomputed case CSVs without launching SEMBA."""
+    folder = Path(folder)
+    if not folder.is_dir():
+        raise NotADirectoryError(f"Sphere RCS CSV directory does not exist: {folder}")
+
+    results = {}
+    for case in SPHERE_SYMMETRY_CASES:
+        csv_name = case[len("sphere_") :] + "_rcs.csv"
+        path = folder / csv_name
+        if not path.is_file():
+            raise FileNotFoundError(f"Missing RCS results for {case}: {path}")
+        data = np.loadtxt(path, delimiter=",", skiprows=1)
+        if data.ndim == 1:
+            data = data[None, :]
+        if data.ndim != 2 or data.shape[1] < 2:
+            raise ValueError(f"Unexpected RCS CSV format in {path}")
+        results[case] = (data[:, 0], data[:, 1])
+    return results
+
+
 def _mie_backscatter_rcs(frequency_hz, radius_m=SPHERE_RADIUS_M):
     """Return analytical PEC-sphere monostatic RCS [m^2] via the Mie series."""
     frequency_hz = np.atleast_1d(np.asarray(frequency_hz, dtype=float))
@@ -181,60 +202,69 @@ def test_pairwise_rms_db_and_pass_fail_threshold():
 @pytest.mark.farfield
 @pytest.mark.planewave
 @pytest.mark.probes
-def test_sphere_symmetry_rcs_agrees_across_cases(tmp_path):
-    """Run all eight JSON cases and pass only if every pairwise RMS is below 1.5 dB."""
-    results = {}
-    for case in SPHERE_SYMMETRY_CASES:
-        fn = CASES_FOLDER + SYMMETRY_FOLDER + case + ".fdtd.json"
-        solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path / case)
-        solver["general"]["numberOfSteps"] = 20000
+def test_sphere_symmetry_rcs_agrees_across_cases(tmp_path, request):
+    """Compare eight cases from SEMBA runs or existing CSVs."""
+    csv_dir = request.config.getoption("--sphere-rcs-csv-dir")
+    if csv_dir is not None:
+        results = _read_backscatter_rcs_csvs(csv_dir)
+        print(f"Using precomputed RCS CSVs from {csv_dir}; SEMBA was not launched.")
+    else:
+        results = {}
+        for case in SPHERE_SYMMETRY_CASES:
+            fn = CASES_FOLDER + SYMMETRY_FOLDER + case + ".fdtd.json"
+            solver = FDTD(
+                input_filename=fn,
+                path_to_exe=SEMBA_EXE,
+                run_in_folder=tmp_path / case,
+            )
+            solver["general"]["numberOfSteps"] = 20000
 
-        run_error = []
+            run_error = []
 
-        def _run():
-            try:
-                solver.run()
-            except Exception as exc:
-                run_error.append(exc)
+            def _run():
+                try:
+                    solver.run()
+                except Exception as exc:
+                    run_error.append(exc)
 
-        thread = threading.Thread(target=_run, daemon=True)
-        thread.start()
+            thread = threading.Thread(target=_run, daemon=True)
+            thread.start()
 
-        folder = solver.getFolder()
-        stop_file = Path(folder) / "stopflushing"
-        t0 = time.time()
-        stop_reason = None
-        while thread.is_alive():
-            time.sleep(POLL_S)
-            watchdog = _read_watchdog(folder)
-            if watchdog is not None:
-                t, scattered = watchdog
-                if _converged(t, scattered):
-                    stop_reason = "convergence"
-                elif t[-1] >= T_CAP_S:
-                    stop_reason = "simulation-time cap"
-                if stop_reason is not None:
+            folder = solver.getFolder()
+            stop_file = Path(folder) / "stopflushing"
+            t0 = time.time()
+            stop_reason = None
+            while thread.is_alive():
+                time.sleep(POLL_S)
+                watchdog = _read_watchdog(folder)
+                if watchdog is not None:
+                    t, scattered = watchdog
+                    if _converged(t, scattered):
+                        stop_reason = "convergence"
+                    elif t[-1] >= T_CAP_S:
+                        stop_reason = "simulation-time cap"
+                    if stop_reason is not None:
+                        stop_file.touch()
+                        break
+                if time.time() - t0 > WALL_CAP_S:
                     stop_file.touch()
+                    stop_reason = "wall-clock cap"
                     break
-            if time.time() - t0 > WALL_CAP_S:
-                stop_file.touch()
-                stop_reason = "wall-clock cap"
-                break
-        thread.join(timeout=600)
+            thread.join(timeout=600)
 
-        assert not thread.is_alive(), f"{case}: solver did not stop after stopflushing"
-        assert not run_error, f"{case}: solver run failed: {run_error[0]}"
-        assert solver.hasFinishedSuccessfully(), f"{case}: solver did not finish successfully"
-        assert stop_reason in {"convergence", "simulation-time cap"}, (
-            f"{case}: watchdog did not converge before the wall-clock cap"
-        )
+            assert not thread.is_alive(), f"{case}: solver did not stop after stopflushing"
+            assert not run_error, f"{case}: solver run failed: {run_error[0]}"
+            assert solver.hasFinishedSuccessfully(), f"{case}: solver did not finish successfully"
+            assert stop_reason in {"convergence", "simulation-time cap"}, (
+                f"{case}: watchdog did not converge before the wall-clock cap"
+            )
 
-        freq, rcs = _read_backscatter_rcs(folder)
-        assert np.all(np.isfinite(rcs)) and np.all(rcs > 0.0), (
-            f"{case}: RCS contains non-finite or non-positive values"
-        )
-        results[case] = (freq, rcs)
-        print(f"\n{case}: completed ({stop_reason})")
+            freq, rcs = _read_backscatter_rcs(folder)
+            assert np.all(np.isfinite(rcs)) and np.all(rcs > 0.0), (
+                f"{case}: RCS contains non-finite or non-positive values"
+            )
+            results[case] = (freq, rcs)
+            print(f"\n{case}: completed ({stop_reason})")
 
     pairwise_rms = _pairwise_rms_db(results)
     failures = _rms_failures(pairwise_rms)
