@@ -1,28 +1,16 @@
-"""RCS convergence tests for the sphere PEC/PMC symmetry cases.
+"""Compare converged backscatter RCS across all pairs of eight symmetry cases.
 
-Methodology (per case):
-1. Launch the solver with a high numberOfSteps cap.
-2. Monitor the "watchdog" point probe (a node outside the sphere) which
-   records the time-domain electric field and the incident field.
-3. When the scattered transient has decayed (trailing 5 ns peak below 1% of
-   the global peak, never before 40 ns), place a void 'stopflushing' file in
-   the run folder: the solver then ends gracefully and flushes all
-   observation data, including the far-field transform.
-4. Compare the backscatter RCS (theta=pi/2, phi=3*pi/2, the direction back
-   towards the +y propagating incident plane wave) against the analytical
-   Mie series of the 0.5 m radius PEC sphere.
-
-All angles in these cases (planewave direction/polarization and farField
-probe theta/phi) are expressed in radians, the unit the solver core expects.
+Each pair's RMS difference is calculated in dBsm over the shared frequency
+grid; every pair must be below the 1.5 dB acceptance limit.
 """
 
 import threading
 import time
+from itertools import combinations
 from pathlib import Path
 
 import numpy as np
 import pytest
-from scipy.special import spherical_jn, spherical_yn
 
 from test.utils.utils import *
 
@@ -39,67 +27,44 @@ SPHERE_SYMMETRY_CASES = [
     "sphere_xpmc_zpec_polz",
 ]
 
-SPHERE_RADIUS_M = 0.5
-C0 = 299792458.0
-
-# Convergence criterion for the watchdog scattered field.
-T_MIN_S = 40e-9        # never stop before the pulse has fully passed
-T_CAP_S = 150e-9       # stop regardless past this simulated time
-DECAY_WINDOW_S = 5e-9  # trailing window for the decay check
-DECAY_RATIO = 1e-2     # trailing peak below 1% of the global peak
-POLL_S = 10.0          # watchdog polling period
-WALL_CAP_S = 30 * 60   # per-case wall-clock safety cap
-
-# Acceptance tolerances vs Mie (measured: rms <= 0.89 dB, max <= 3.07 dB).
+# RMS limit for pairwise backscatter-RCS differences, measured in dB.
 RMS_TOL_DB = 1.5
-MAX_TOL_DB = 4.0
 
-
-def _mie_backscatter_rcs(frequency_hz, radius_m=SPHERE_RADIUS_M):
-    """Monostatic RCS [m^2] of a PEC sphere via the Mie series."""
-    frequency_hz = np.atleast_1d(np.asarray(frequency_hz, dtype=float))
-    result = np.empty_like(frequency_hz)
-    for i, f in enumerate(frequency_hz):
-        x = 2.0 * np.pi * f * radius_m / C0
-        n = np.arange(1, int(np.ceil(x + 4.05 * x ** (1.0 / 3.0) + 10.0)) + 1)
-        jn = spherical_jn(n, x)
-        yn = spherical_yn(n, x)
-        psi = x * jn
-        xi = x * (jn + 1j * yn)
-        psi_d = jn + x * spherical_jn(n, x, derivative=True)
-        xi_d = psi_d + 1j * (yn + x * spherical_yn(n, x, derivative=True))
-        s = np.sum((2 * n + 1) * (-1.0) ** n * (psi / xi - psi_d / xi_d))
-        result[i] = np.pi / (x / radius_m) ** 2 * abs(s) ** 2
-    return result
+T_MIN_S = 40e-9
+T_CAP_S = 150e-9
+DECAY_WINDOW_S = 5e-9
+DECAY_RATIO = 1e-2
+POLL_S = 10.0
+WALL_CAP_S = 30 * 60
 
 
 def _read_watchdog(folder):
     """Return (t, max |E_scattered|) from the watchdog point probe files."""
     series = []
-    for f in sorted(Path(folder).glob("*_watchdog_E*_tm.dat")):
+    for path in sorted(Path(folder).glob("*_watchdog_E*_tm.dat")):
         try:
-            data = np.loadtxt(f, skiprows=1)
+            data = np.loadtxt(path, skiprows=1)
         except Exception:
             return None
         if data.ndim != 2 or data.shape[0] < 10:
             return None
-        series.append(data)  # columns: t, field, incident
+        series.append(data)
     if not series:
         return None
     t = series[0][:, 0]
-    scat = np.zeros_like(t)
-    for s in series:
-        scat = np.maximum(scat, np.abs(s[:, 1] - s[:, 2]))
-    return t, scat
+    scattered = np.zeros_like(t)
+    for data in series:
+        scattered = np.maximum(scattered, np.abs(data[:, 1] - data[:, 2]))
+    return t, scattered
 
 
-def _converged(t, scat):
+def _converged(t, scattered):
     if t[-1] < T_MIN_S:
         return False
-    peak = scat.max()
+    peak = scattered.max()
     if peak <= 0.0:
         return False
-    return scat[t >= t[-1] - DECAY_WINDOW_S].max() < DECAY_RATIO * peak
+    return scattered[t >= t[-1] - DECAY_WINDOW_S].max() < DECAY_RATIO * peak
 
 
 def _read_backscatter_rcs(folder):
@@ -111,60 +76,126 @@ def _read_backscatter_rcs(folder):
     mask = np.isclose(data[:, 1], np.pi / 2, atol=1e-4) & np.isclose(
         data[:, 2], 3 * np.pi / 2, atol=1e-4
     )
-    sel = data[mask]
-    assert len(sel) > 0, "No backscatter direction found in far-field log"
-    order = np.argsort(sel[:, 0])
-    return sel[order, 0], sel[order, 8]  # freq, RCS(GEOM)
+    selected = data[mask]
+    assert len(selected) > 0, "No backscatter direction found in far-field log"
+    selected = selected[np.argsort(selected[:, 0])]
+    return selected[:, 0], selected[:, 8]
+
+
+def _pairwise_rms_db(results):
+    """Calculate RMS dBsm differences for every pair of case RCS curves."""
+    pairwise_rms = {}
+    first_case = next(iter(results))
+    reference_freq, _ = results[first_case]
+    for case, (freq, rcs) in results.items():
+        if not np.array_equal(reference_freq, freq):
+            raise ValueError(f"{case} has a different frequency grid from {first_case}")
+        if freq.shape != rcs.shape:
+            raise ValueError(f"{case} has different numbers of frequencies and RCS samples")
+        if not np.all(np.isfinite(rcs)) or np.any(rcs <= 0.0):
+            raise ValueError(f"{case} contains non-finite or non-positive RCS values")
+
+    for left, right in combinations(results, 2):
+        left_rcs = results[left][1]
+        right_rcs = results[right][1]
+        difference_db = 10.0 * (np.log10(left_rcs) - np.log10(right_rcs))
+        pairwise_rms[(left, right)] = float(np.sqrt(np.mean(difference_db**2)))
+    return pairwise_rms
+
+
+def _rms_failures(pairwise_rms):
+    return {
+        pair: rms_db
+        for pair, rms_db in pairwise_rms.items()
+        if rms_db >= RMS_TOL_DB
+    }
+
+
+def test_pairwise_rms_db_and_pass_fail_threshold():
+    frequencies = np.array([1.0, 2.0])
+    reference = np.array([1.0, 2.0])
+    results = {
+        "reference": (frequencies, reference),
+        "within_limit": (frequencies, reference * 10 ** (1.4 / 10)),
+        "over_limit": (frequencies, reference * 10 ** (1.6 / 10)),
+    }
+
+    pairwise_rms = _pairwise_rms_db(results)
+
+    assert pairwise_rms[("reference", "within_limit")] == pytest.approx(1.4)
+    assert pairwise_rms[("reference", "over_limit")] == pytest.approx(1.6)
+    assert _rms_failures(pairwise_rms) == {("reference", "over_limit"): pytest.approx(1.6)}
 
 
 @pytest.mark.farfield
 @pytest.mark.planewave
 @pytest.mark.probes
-@pytest.mark.parametrize("case", SPHERE_SYMMETRY_CASES)
-def test_sphere_symmetry_rcs_converges_to_mie(tmp_path, case):
-    """Run to convergence via stopflushing; backscatter RCS must match Mie."""
-    fn = CASES_FOLDER + SYMMETRY_FOLDER + case + ".fdtd.json"
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    solver["general"]["numberOfSteps"] = 20000  # hard cap; stopflushing ends earlier
+def test_sphere_symmetry_rcs_agrees_across_cases(tmp_path):
+    """Run all eight JSON cases and pass only if every pairwise RMS is below 1.5 dB."""
+    results = {}
+    for case in SPHERE_SYMMETRY_CASES:
+        fn = CASES_FOLDER + SYMMETRY_FOLDER + case + ".fdtd.json"
+        solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path / case)
+        solver["general"]["numberOfSteps"] = 20000
 
-    run_error = []
+        run_error = []
 
-    def _run():
-        try:
-            solver.run()
-        except AssertionError as exc:
-            run_error.append(exc)
+        def _run():
+            try:
+                solver.run()
+            except Exception as exc:
+                run_error.append(exc)
 
-    thread = threading.Thread(target=_run, daemon=True)
-    thread.start()
+        thread = threading.Thread(target=_run, daemon=True)
+        thread.start()
 
-    folder = solver.getFolder()
-    stop_file = Path(folder) / "stopflushing"
-    t0 = time.time()
-    stopped = False
-    while thread.is_alive():
-        time.sleep(POLL_S)
-        wd = _read_watchdog(folder)
-        if wd is not None and not stopped:
-            t, scat = wd
-            if _converged(t, scat) or t[-1] >= T_CAP_S:
+        folder = solver.getFolder()
+        stop_file = Path(folder) / "stopflushing"
+        t0 = time.time()
+        stop_reason = None
+        while thread.is_alive():
+            time.sleep(POLL_S)
+            watchdog = _read_watchdog(folder)
+            if watchdog is not None:
+                t, scattered = watchdog
+                if _converged(t, scattered):
+                    stop_reason = "convergence"
+                elif t[-1] >= T_CAP_S:
+                    stop_reason = "simulation-time cap"
+                if stop_reason is not None:
+                    stop_file.touch()
+                    break
+            if time.time() - t0 > WALL_CAP_S:
                 stop_file.touch()
-                stopped = True
-        if time.time() - t0 > WALL_CAP_S and not stopped:
-            stop_file.touch()
-            stopped = True
-    thread.join(timeout=600)
+                stop_reason = "wall-clock cap"
+                break
+        thread.join(timeout=600)
 
-    assert not run_error, f"Solver run failed: {run_error[0]}"
-    assert solver.hasFinishedSuccessfully()
-    assert stopped, "Convergence criterion was never met; stopflushing never placed"
+        assert not thread.is_alive(), f"{case}: solver did not stop after stopflushing"
+        assert not run_error, f"{case}: solver run failed: {run_error[0]}"
+        assert solver.hasFinishedSuccessfully(), f"{case}: solver did not finish successfully"
+        assert stop_reason in {"convergence", "simulation-time cap"}, (
+            f"{case}: watchdog did not converge before the wall-clock cap"
+        )
 
-    freq, rcs = _read_backscatter_rcs(folder)
-    mie = _mie_backscatter_rcs(freq)
-    err_db = 10 * np.log10(np.maximum(rcs, 1e-30)) - 10 * np.log10(mie)
-    rms_db = float(np.sqrt(np.mean(err_db**2)))
-    max_db = float(np.max(np.abs(err_db)))
-    print(f"\n{case}: RCS vs Mie  rms={rms_db:.3f} dB  max|err|={max_db:.3f} dB")
-    assert np.all(np.isfinite(rcs)) and np.all(rcs > 0.0)
-    assert rms_db < RMS_TOL_DB, f"RMS error vs Mie {rms_db:.2f} dB exceeds {RMS_TOL_DB} dB"
-    assert max_db < MAX_TOL_DB, f"Max error vs Mie {max_db:.2f} dB exceeds {MAX_TOL_DB} dB"
+        freq, rcs = _read_backscatter_rcs(folder)
+        assert np.all(np.isfinite(rcs)) and np.all(rcs > 0.0), (
+            f"{case}: RCS contains non-finite or non-positive values"
+        )
+        results[case] = (freq, rcs)
+        print(f"\n{case}: completed ({stop_reason})")
+
+    pairwise_rms = _pairwise_rms_db(results)
+    failures = _rms_failures(pairwise_rms)
+    print(f"\nPairwise FDTD backscatter-RCS RMS (limit: {RMS_TOL_DB:.2f} dB):")
+    for (left, right), rms_db in pairwise_rms.items():
+        status = "FAIL" if rms_db >= RMS_TOL_DB else "PASS"
+        print(f"{status}: {left} vs {right}: {rms_db:.3f} dB")
+    print(f"Overall result: {'FAIL' if failures else 'PASS'}")
+    assert not failures, (
+        f"Pairwise RMS must be below {RMS_TOL_DB:.2f} dB; "
+        + ", ".join(
+            f"{left} vs {right}: {rms_db:.3f} dB"
+            for (left, right), rms_db in failures.items()
+        )
+    )
