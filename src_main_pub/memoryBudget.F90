@@ -5,8 +5,6 @@ module memoryBudget_m
    implicit none
    private
 
-   public :: memory_estimate_t
-   public :: memory_verdict_t
    public :: estimate_solver_memory
    public :: evaluate_memory_budget
    public :: report_memory_verdict
@@ -55,8 +53,8 @@ contains
 
       estimate = memory_estimate_t()
       bytesPerReal = int(storage_size(1.0_RKIND)/8, 8)
-      bytesPerMedia = int(storage_size(int(0, kind=INTEGERSIZEOFMEDIAMATRICES))/8, 8)
-      bytesPerTag = int(storage_size(int(0, kind=IKINDMTAG))/8, 8)
+      bytesPerMedia = int(INTEGERSIZEOFMEDIAMATRICES, 8)
+      bytesPerTag = int(IKINDMTAG, 8)
 
       estimate%fieldBytes = bytesPerReal * (cells_of(sgg%Alloc(IEX)) + cells_of(sgg%Alloc(IEY)) &
                                            + cells_of(sgg%Alloc(IEZ)) + cells_of(sgg%Alloc(IHX)) &

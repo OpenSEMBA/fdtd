@@ -3,7 +3,6 @@ module systemMemory_m
    implicit none
    private
 
-   public :: system_memory_t
    public :: read_system_memory
    public :: system_host_name
 

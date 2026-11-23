@@ -884,7 +884,7 @@ contains
                bufferSteps = int(time_buffer_capacity(domain, SMALL_PROBE_BUFFER_SIZE), 8)
                bytes = bytes + bufferSteps * (bytesPerTime + 2_8 * bytesPerReal)
                if (any(domain%domainType == [FREQUENCY_DOMAIN, BOTH_DOMAIN])) then
-                  bytes = bytes + int(max(1, domain%fnum), 8) * (bytesPerReal + 4_8 * bytesPerComplex)
+                  bytes = bytes + int(max(1_4, int(domain%fnum, 4)), 8) * (bytesPerReal + 4_8 * bytesPerComplex)
                end if
             case (IJX, IJY, IJZ)
                bufferSteps = int(time_buffer_capacity(domain, SMALL_PROBE_BUFFER_SIZE), 8)
@@ -906,7 +906,7 @@ contains
                   bytes = bytes + bufferSteps * (bytesPerTime + 3_8 * regionVolume * bytesPerReal)
                   bytes = bytes + regionVolume * (3_8 * bytesPerTag + 3_8 * bytesPerReal + 4_8 * bytesPerReal)
                else
-                  bytes = bytes + int(max(1, domain%fnum), 8) * (bytesPerReal + 3_8 * regionVolume * bytesPerComplex)
+                  bytes = bytes + int(max(1_4, int(domain%fnum, 4)), 8) * (bytesPerReal + 3_8 * regionVolume * bytesPerComplex)
                   bytes = bytes + regionVolume * (3_8 * bytesPerTag + 3_8 * bytesPerReal + 4_8 * bytesPerReal)
                end if
             case (farfield)
