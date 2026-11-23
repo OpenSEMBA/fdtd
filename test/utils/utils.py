@@ -128,18 +128,37 @@ def createPropertyDictionary(vtkfile, celltype: int, property: str):
     return dict(zip(unique, counts))
 
 
+def builtCodemodelsFolder():
+    """Code models built with the solver (cmake/NgspiceCodemodels.cmake), or None."""
+    folder = Path(SEMBA_EXE).resolve().parent / "codemodels"
+    if (folder / "spinit").is_file() and any(folder.glob("*.cm")):
+        return folder
+    return None
+
+
 def setNgspice(tmp_path):
+    # ngspice reads './spinit' (SPICE_SCRIPTS) to load the code models needed by xspice.
+    env["SPICE_SCRIPTS"] = "./"
+
+    # Code models share C structures with the ngspice library, so they must be
+    # built together with it. The prebuilt ones in testData are a fallback for
+    # builds configured with SEMBA_FDTD_BUILD_NGSPICE_CODEMODELS=OFF.
+    built = builtCodemodelsFolder()
+    if built is not None:
+        for file in built.iterdir():
+            if file.is_file():
+                shutil.copy2(file, os.path.join(tmp_path, file.name))
+        return
+
+    print('TMP LOG: USING DEFAULT .CM FILES')
+
     if platform == "linux" or platform == "linux2":
         sys_name = "linux/"
-        env["SPICE_SCRIPTS"] = "./"
     elif platform == "win32":
         sys_name = "windows/"
-        env["SPICE_SCRIPTS"] = "./"
 
     makeCopy(tmp_path, SPINIT_FOLDER + sys_name + 'spinit')
     copyXSpiceModels(tmp_path, sys_name)
-    # ngspice needs to read file 'spinit' to load code models needed by xspice
-    # setSpiceScriptsFolder()
 
 
 def copyXSpiceModels(temp_dir, sys_name):

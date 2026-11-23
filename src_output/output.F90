@@ -21,7 +21,7 @@ module output_m
                               spheric_domain_t, cell_coordinate_t, field_data_t, fields_reference_t, &
                               TIME_DOMAIN, FREQUENCY_DOMAIN, BOTH_DOMAIN, UNDEFINED_DOMAIN, volumetric_publication_t, &
                               OUTPUT_ARTIFACT_UNDEFINED, OUTPUT_TIME_BUFFER_SIZE, SMALL_PROBE_BUFFER_SIZE, &
-                              time_buffer_capacity
+                              time_buffer_capacity, outputFlushSteps_g
 use memoryBudget_m, only: check_memory_budget
 #ifdef CompileWithMPI
    use mpi
@@ -192,9 +192,6 @@ contains
       if (present(mu0_input)) mu0 = mu0_input
       if (control%resume) call set_resume_trim_time(control%resume_time)
       requestedOutputs = get_required_output_count(sgg)
-      call estimate_outputs_memory_from_requests(sgg, control, requestBytes)
-      call estimate_hdf5_workspace_bytes(sgg, control, hdf5Bytes)
-      call check_memory_budget(requestBytes + hdf5Bytes, 'before output initialization')
 
       problemInfo%geometryToMaterialData => media
       problemInfo%materialList => sgg%Med
@@ -244,6 +241,11 @@ contains
          end if
       end block
 #endif
+
+      call choose_flush_steps(sgg, control)
+      call estimate_outputs_memory_from_requests(sgg, control, requestBytes)
+      call estimate_hdf5_workspace_bytes(sgg, control, hdf5Bytes)
+      call check_memory_budget(requestBytes + hdf5Bytes, 'before output initialization')
 
       do ii = 1, sgg%NumberRequest
          domain = preprocess_domain(sgg%Observation(ii), sgg%time, sgg%dt, control%finaltimestep, &
@@ -430,6 +432,48 @@ contains
 #endif
       return
    contains
+   ! Halves the line/movie flush period until the time buffers of all movies fit MOVIE_BUFFER_BUDGET bytes per rank.
+   ! A full-domain movie keeps OUTPUT_TIME_BUFFER_SIZE frames of every cell otherwise, which does not fit for large meshes.
+   ! The period stays a power of two so it divides SMALL_PROBE_BUFFER_SIZE, and is the same on every rank.
+   subroutine choose_flush_steps(sgg, control)
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      type(sim_control_t), intent(in) :: control
+      integer(kind=8), parameter :: MOVIE_BUFFER_BUDGET = 1073741824_8
+      integer(kind=8) :: frameBytes
+      integer :: ii, i
+      type(domain_t) :: domain
+#ifdef CompileWithMPI
+      integer :: localSteps, mpiError
+#endif
+
+      frameBytes = 0
+      do ii = 1, sgg%NumberRequest
+         domain = preprocess_domain(sgg%Observation(ii), sgg%time, sgg%dt, control%finaltimestep, control%saveall)
+         if (domain%domainType /= TIME_DOMAIN) cycle
+         do i = 1, sgg%Observation(ii)%nP
+            associate (p => sgg%Observation(ii)%P(i))
+               select case (p%what)
+               case (ICUR, IMEC, IMHC, ICURX, ICURY, ICURZ, IEXC, IEYC, IEZC, IHXC, IHYC, IHZC)
+                  ! module movies buffer x, y and z; single-component movies buffer one component
+                  frameBytes = frameBytes + merge(3_8, 1_8, any([ICUR, IMEC, IMHC] == p%what))*RKIND* &
+                               int(p%XE - p%XI + 1, 8)*int(p%YE - p%YI + 1, 8)*int(p%ZE - p%ZI + 1, 8)
+               end select
+            end associate
+         end do
+      end do
+
+      outputFlushSteps_g = OUTPUT_TIME_BUFFER_SIZE
+      do while (outputFlushSteps_g > 1 .and. outputFlushSteps_g*frameBytes > MOVIE_BUFFER_BUDGET)
+         outputFlushSteps_g = outputFlushSteps_g/2
+      end do
+#ifdef CompileWithMPI
+      if (control%num_procs > 1) then
+         localSteps = outputFlushSteps_g
+         call MPI_Allreduce(localSteps, outputFlushSteps_g, 1, MPI_INTEGER, MPI_MIN, SUBCOMM_MPI, mpiError)
+      end if
+#endif
+   end subroutine choose_flush_steps
+
 #ifdef CompileWithMPI
       subroutine configure_far_field_mpi(output, lower_bound, upper_bound)
          type(solver_output_t), intent(inout) :: output
@@ -739,7 +783,7 @@ contains
       real(kind=RKIND_TIME), allocatable, intent(in) :: timeStep(:)
       if (.not. allocated(timeStep)) return
       if (nTime >= size(timeStep)) call log_msg(LOG_FATAL, 'OUTPUT', &
-                                                    'Probe time buffer full: flush outputs every OUTPUT_TIME_BUFFER_SIZE steps')
+                                                    'Probe time buffer full: flush outputs every outputFlushSteps_g steps')
    end subroutine check_time_buffer
 
    logical function is_time_sample_due(domain, timeIndex, discreteTime) result(sampleDue)
@@ -1023,8 +1067,7 @@ contains
             end associate
          case (MOVIE_PROBE_ID)
             associate (p => outputs(i)%movieProbe)
-               bytes(id) = bytes(id) + array_bytes(p%timeStep) + array_bytes(p%coords) + array_bytes(p%tagNumber) + &
-                           array_bytes(p%mediaType) + array_bytes(p%xValueForTime) + &
+               bytes(id) = bytes(id) + array_bytes(p%timeStep) + array_bytes(p%coords) + array_bytes(p%xValueForTime) + &
                            array_bytes(p%yValueForTime) + array_bytes(p%zValueForTime)
             end associate
          case (FREQUENCY_SLICE_PROBE_ID)
@@ -1079,7 +1122,7 @@ contains
       smallSteps = 0
       regularSteps = 0
       if (any(counts([POINT_PROBE_ID, WIRE_CURRENT_PROBE_ID, WIRE_CHARGE_PROBE_ID, BULK_PROBE_ID]) > 0)) smallSteps = SMALL_PROBE_BUFFER_SIZE
-      if (any(counts([LINE_PROBE_ID, MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID]) > 0)) regularSteps = OUTPUT_TIME_BUFFER_SIZE
+      if (any(counts([LINE_PROBE_ID, MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID]) > 0)) regularSteps = outputFlushSteps_g
    end subroutine flush_cadence_from_counts
 
    subroutine report_outputs_memory(layoutnumber, reducedCounts)
@@ -1119,29 +1162,40 @@ contains
       implicit none
       type(solver_output_t), pointer, intent(inout) :: output_list(:)
 
-      type(solver_output_t), allocatable :: tmp(:)
+      type(solver_output_t), pointer :: compact(:)
       type(output_partition_t), allocatable :: compact_partitions(:)
       integer :: i, n, k
 
       n = count(output_list%outputID /= UNDEFINED_PROBE)
 
-      allocate (tmp(n))
+      allocate (compact(n))
       allocate (compact_partitions(n))
 
-      ! Copy valid elements
+      ! Move (never copy) the probes: a deep copy duplicates every probe buffer, which scale with the mesh
       k = 0
       do i = 1, size(output_list)
          if (output_list(i)%outputID /= UNDEFINED_PROBE) then
             k = k + 1
-            tmp(k) = output_list(i)   ! deep copy of all allocatable components
+            compact(k)%outputID = output_list(i)%outputID
+#ifdef CompileWithMPI
+            compact(k)%MPISubcomm = output_list(i)%MPISubcomm
+            compact(k)%MPIRoot = output_list(i)%MPIRoot
+#endif
+            call move_alloc(output_list(i)%pointProbe, compact(k)%pointProbe)
+            call move_alloc(output_list(i)%wireCurrentProbe, compact(k)%wireCurrentProbe)
+            call move_alloc(output_list(i)%wireChargeProbe, compact(k)%wireChargeProbe)
+            call move_alloc(output_list(i)%bulkCurrentProbe, compact(k)%bulkCurrentProbe)
+            call move_alloc(output_list(i)%lineProbe, compact(k)%lineProbe)
+            call move_alloc(output_list(i)%movieProbe, compact(k)%movieProbe)
+            call move_alloc(output_list(i)%frequencySliceProbe, compact(k)%frequencySliceProbe)
+            call move_alloc(output_list(i)%farFieldOutput, compact(k)%farFieldOutput)
+            call move_alloc(output_list(i)%mapvtkOutput, compact(k)%mapvtkOutput)
             compact_partitions(k) = outputPartitions(i)
          end if
       end do
 
-      ! Replace the saved pointer target safely
       if (associated(output_list)) deallocate (output_list)
-      allocate (output_list(n))
-      output_list = tmp
+      output_list => compact
       call move_alloc(compact_partitions, outputPartitions)
 
    end subroutine remove_unused_outputs

@@ -12,7 +12,7 @@ arrays:
 
 | Group | Owner | When |
 |---|---|---|
-| media/tag copies, fields, distances | `memoryBudget_m` | before `create_solver` and before field allocation |
+| fields, distances | `memoryBudget_m` | before `create_solver` and before field allocation |
 | SGBC | `SGBC_nostoch_m` | before `InitSGBCs` |
 | Holland wires | `HollandWires_m` | before `InitWires` |
 | MTLN bundles | `mtln_preprocess_m` | before `InitWires_mtln` |
@@ -22,7 +22,9 @@ arrays:
 | HDF5/transient output work | `output_m` | pre-output and before time stepping |
 
 Each checkpoint uses the resident memory already in use plus only the pending
-allocation for that group, so groups are not counted twice.
+allocation for that group, so groups are not counted twice.  The media and tag
+matrices are moved into the solver at construction time, so they are not
+counted as an additional copy.
 
 ## Available memory
 

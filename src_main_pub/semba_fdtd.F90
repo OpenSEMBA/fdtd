@@ -1087,17 +1087,15 @@ contains
                         this%time_desdelanzamiento)
    end function
 
-   subroutine semba_update_after_simulation(this, success, sgg, eps, mu, media)
+   subroutine semba_update_after_simulation(this, success, sgg, eps, mu)
       class(semba_fdtd_t) :: this
       logical :: success
       type(SGGFDTDINFO_t) :: sgg
-      type(media_matrices_t) :: media
       real(kind=rkind) :: eps ,mu
       this%finishedwithsuccess = success
       this%sgg = sgg
       this%eps0 = eps
       this%mu0 = mu
-      this%media = media
    end subroutine
 
    subroutine semba_launch(this)
@@ -1114,7 +1112,7 @@ contains
 #endif
          this%finishedwithsuccess=.false.
          if ((this%l%finaltimestep >= 0).and.(.not.this%l%skindepthpre)) then
-            call estimate_solver_memory(this%sgg, this%media, this%tag_numbers, .true., memoryEstimate)
+            call estimate_solver_memory(this%sgg, this%media, this%tag_numbers, .false., memoryEstimate)
             call check_memory_budget(memoryEstimate%totalBytes, 'before creating the solver')
          end if
          solver = this%create_solver()
@@ -1123,9 +1121,9 @@ contains
 #endif
          if ((this%l%finaltimestep >= 0).and.(.not.this%l%skindepthpre)) then
             call solver%launch_simulation()
-            call this%update_after_simulation(solver%finishedwithsuccess, solver%sgg, solver%eps0,solver%mu0,solver%media)
+            call this%update_after_simulation(solver%finishedwithsuccess, solver%sgg, solver%eps0,solver%mu0)
 
-            deallocate(this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz,this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz,this%media%sggMiNo,this%media%sggMtag)
+            deallocate(solver%media%sggMiEx, solver%media%sggMiEy, solver%media%sggMiEz,solver%media%sggMiHx, solver%media%sggMiHy, solver%media%sggMiHz,solver%media%sggMiNo,solver%media%sggMtag)
          else
 #ifdef CompileWithMPI
             call MPI_Barrier(SUBCOMM_MPI,this%l%ierr)

@@ -1092,7 +1092,7 @@ contains
         character(len=256), allocatable, intent(inout) :: arr(:)
         character(*), intent(in) :: start_name, end_name
         type(termination_t) :: termination
-        call checkSourceExcitationFile(termination%source%path_to_excitation)
+        call checkSourceExcitationFile(termination%source%path_to_excitation, termination%source%sim_final_time)
         if (isVSource(termination)) then 
             call addVSourceWithSeriesR(arr, start_name, end_name, termination%source)
         else if (isISource(termination)) then 
@@ -1100,9 +1100,40 @@ contains
         end if
     end subroutine
 
-    subroutine checkSourceExcitationFile(path)
+    subroutine checkExcitationRunsUntilSimulationEnd(path, final_time)
         character(len=*), intent(in) :: path
+        real(kind=rkind), intent(in) :: final_time
+        real(kind=RKIND_TIME) :: last_time
+        integer :: unit, ios
+
+        open(newunit=unit, file=trim(path), status='old', action='read', position = 'append', iostat=ios)
+        if (ios /= 0) then
+        call log_msg(LOG_FATAL, 'SMBJSON', 'Cannot open excitation file: '//trim(path))
+        end if
+
+        backspace(unit, iostat=ios)
+        if (ios /= 0) then
+        call log_msg(LOG_FATAL, 'SMBJSON', 'Cannot position excitation file: '//trim(path))
+        end if
+
+        read(unit, *, iostat=ios) last_time
+        if (ios /= 0) then
+        call log_msg(LOG_FATAL, 'SMBJSON', 'Cannot read last excitation time in file: '//trim(path))
+        end if
+
+        close(unit)
+        if (last_time < final_time) then
+        call log_msg(LOG_FATAL, 'SMBJSON', &
+            'Excitation file ends before the simulation final time: '//trim(path))
+        end if
+    end subroutine
+
+
+    subroutine checkSourceExcitationFile(path, final_time)
+        character(len=*), intent(in) :: path
+        real(kind=rkind), intent(in) :: final_time
         character(len=:), allocatable :: message
+        call checkExcitationRunsUntilSimulationEnd(path, final_time)
         if (file_has_samples(trim(adjustl(path)), 2)) return
         message = 'Excitation file '//trim(adjustl(path))//' is empty or contains fewer than two samples'
         call log_msg(LOG_FATAL, 'MTLN', message)
@@ -1650,7 +1681,7 @@ contains
         integer(kind=4) :: i, d, stat, n
 
         do i = 1, size(parsed_generators)
-            call checkSourceExcitationFile(parsed_generators(i)%path_to_excitation)
+            call checkSourceExcitationFile(parsed_generators(i)%path_to_excitation, parsed_generators(i)%sim_final_time)
             call this%cable_name_to_bundle_id%get(key = key(parsed_generators(i)%attached_to_cable%name), &
                                                value = d, &
                                                stat=stat)

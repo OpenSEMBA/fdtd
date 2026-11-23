@@ -8,10 +8,15 @@
   - [HDF5 libraries](#hdf5-libraries)
   - [MTLN and ngspice](#mtln-and-ngspice)
   - [MPI](#mpi)
-- [Windows (intelLLVM) compilation](#windows-intelllvm-compilation)
+- [Windows (Intel oneAPI) compilation](#windows-intel-oneapi-compilation)
   - [Prerequisites](#prerequisites)
+  - [Build environment](#build-environment)
   - [Compilation process](#compilation-process)
+  - [MPI on Windows](#mpi-1)
+  - [Usage](#usage)
+  - [Visual Studio Code (native Windows)](#visual-studio-code-native-windows)
   - [Visual Studio debugging](#debugging-with-visual-studio)
+  - [Windows troubleshooting](#windows-troubleshooting)
 - [WSL2 and Visual Studio Code setup](#wsl2--visual-studio-code--gfortran-setup-guide)
 - [Debugging the project](#debugging-the-project)
   - [MPI debugging](#debugging-with-mpi)
@@ -137,100 +142,308 @@ If you use intel oneapi, make sure to load the mpi environment variables:
   source /opt/intel/oneapi/mpi/latest/env/vars.sh
 ```
 
-## Windows (intelLLVM) Compilation
+## Windows (Intel oneAPI) Compilation
 
-Clone this repository:
+Native Windows builds use the Intel oneAPI compilers (`ifx` for Fortran, `icx` for C and C++)
+together with the MSVC linker and Windows SDK, CMake and Ninja.
+HDF5 and LAPACK are already provided in `precompiled_libraries/` and are selected automatically, so they do not need to be built.
 
-```shell
-  git clone https://github.com/OpenSEMBA/fdtd.git
-```
-
-or, if using SSH keys:
-
-```shell
-  git clone git@github.com:OpenSEMBA/fdtd.git
-```
-
-navigate to the `/fdtd/` folder that has been created, this folder will be referred to as `root` for any future purposes.
+The steps below were validated on Windows 11 with the versions listed in the prerequisites.
+The Windows CI workflow (`.github/workflows/windows.yml`) uses the same Intel compiler version.
 
 ### Prerequisites
 
-This compilation process will use the already available precompiled libraries included with the project, thus it's not required to build them manually.
-This repository has dependencies available as submodules. Initialise them from the root folder before running CMake:
+#### Minimal installation
 
-```shell
-git submodule update --init --recursive
+| Component | Validated version | Why it is needed |
+|---|---|---|
+| [Git for Windows](https://git-scm.com/download/win) | any | Clone the repository and its submodules. |
+| [Visual Studio 2022 Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022), workload *Desktop development with C++* (`Microsoft.VisualStudio.Workload.VCTools`) with its recommended components | 17.14 (MSVC 14.44) | `ifx` uses the MSVC `link.exe` and the Windows SDK. The recommended component *C++ CMake tools for Windows* also provides CMake 3.31 and Ninja. A full Visual Studio 2022 installation with the same workload works too. |
+| Intel Fortran compiler, component `intel.oneapi.win.ifort-compiler` | 2025.2.1 | Provides `ifx`. |
+| Intel C/C++ compiler, component `intel.oneapi.win.cpp-dpcpp-common` | 2025.2.1 | Provides `icx`. ngspice needs a C99 compiler with complex number support, which MSVC `cl` does not provide. |
+| Intel MPI Library, component `intel.oneapi.win.mpi.devel` | 2021.16.1 | **Only for MPI builds.** Installing the compilers brings only the MPI runtime, not the headers, Fortran modules and libraries. |
+| Python 3 | 3.x | **Optional.** Python tests (`requirements.txt`) and the `fortls` language server for VS Code. |
+
+> **CMake version:** CMake 4.x cannot detect the `ifx` Fortran preprocessor on Windows.
+> Use CMake 3.x. The one bundled with Visual Studio 2022 17.14 is 3.31.6.
+> If you install CMake separately, use 3.31.x.
+
+Both installers need administrator rights.
+
+Install the Visual Studio Build Tools, for example with `winget`:
+
+```powershell
+winget install --id Microsoft.VisualStudio.2022.BuildTools -e --override "--quiet --wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
 ```
 
-The default submodule URLs use HTTPS.
+Install only the required Intel components from the offline HPC Toolkit installer.
+This is the same installer used by the CI through `fortran-lang/setup-fortran`. The download is about 2.8 GB:
 
-This software requires [Windows BaseKit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html) and [Windows HPCKit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/hpc-toolkit-download.html). Install these packages with all their features selected.
+```powershell
+curl.exe -L -C - --retry 5 -o hpckit.exe https://registrationcenter-download.intel.com/akdlm/IRC_NAS/e63ac2b4-8a9a-4768-979a-399a8b6299de/intel-oneapi-hpc-toolkit-2025.2.1.46_offline.exe
+.\hpckit.exe -s -x -f hpckit
+.\hpckit\bootstrapper.exe -s --action install --eula=accept --components=intel.oneapi.win.ifort-compiler:intel.oneapi.win.cpp-dpcpp-common:intel.oneapi.win.mpi.devel -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0
+```
 
-Additionally, if not done already, install [CMake](https://cmake.org/download/) and [Ninja](https://github.com/ninja-build/ninja), follow their respective installation steps.
+- The installer runs silently and shows no window. It is done when the command returns.
+- Leave out `intel.oneapi.win.mpi.devel` if you do not need MPI.
+- To add components later, use `--action modify` and list **all** the components, including the ones already installed.
+  Running `--action install` again fails with *"It is already installed"*.
+- Use `-p=NEED_VS2022_INTEGRATION=1` if you also want to debug from the Visual Studio IDE.
+
+#### Full installation (alternative)
+
+Instead of the individual components, you can install the
+[Intel oneAPI Base Toolkit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html) and the
+[Intel oneAPI HPC Toolkit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/hpc-toolkit-download.html)
+with all their features selected. This includes everything listed above plus many unused libraries, so it needs much more disk space.
+You still need the Visual Studio 2022 C++ workload and a CMake 3.x.
+
+#### Repository
+
+```shell
+git clone --recurse-submodules https://github.com/OpenSEMBA/fdtd.git
+```
+
+or, in an existing clone, `git submodule update --init --recursive`.
+
+### Build environment
+
+All commands must run in a `cmd` console with the MSVC and oneAPI environments loaded.
+`scripts/windows/env.bat` does this:
+
+```bat
+call scripts\windows\env.bat
+```
+
+It performs these steps:
+
+1. Clears `NoDefaultCurrentDirectoryInExePath`.
+   If set, `setvars.bat` fails because it calls `vars.bat` through a relative path.
+2. Finds Visual Studio with `vswhere.exe` and calls `vcvars64.bat`.
+   This provides `link.exe`, the Windows SDK, CMake and Ninja.
+   `setvars.bat` does not load MSVC by itself.
+3. Calls the oneAPI `setvars.bat intel64`. This provides `ifx`, `icx` and, if installed, Intel MPI.
+4. Sets `CC=icx`, `CXX=icx` and `FC=ifx`. Otherwise CMake would select MSVC `cl` for C.
+5. Warns if CMake is 4.x, or if the first `link.exe` on `PATH` is not the MSVC linker.
+   Git for Windows ships a `link.exe` in `usr\bin`.
+
+Optional variables:
+- `ONEAPI_ROOT`: oneAPI installation folder. Defaults to `C:\Program Files (x86)\Intel\oneAPI`.
+- `SEMBA_TOOLS_PATH`: folders prepended to `PATH`, for example a standalone CMake 3.x and Ninja.
+
+The equivalent manual steps are:
+
+```bat
+set NoDefaultCurrentDirectoryInExePath=
+call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat" intel64
+set CC=icx
+set CXX=icx
+set FC=ifx
+```
 
 ### Compilation process
 
-Open a command prompt with OneAPI variables initialised, to do this open a new command prompt and type:
+Use the CMake presets. `scripts/windows/build.bat` loads the environment, then configures and builds a preset:
 
-```shell
-"C:\Program Files (x86)\Intel\oneAPI\setvars.bat" intel64
+```bat
+scripts\windows\build.bat rls
 ```
 
-This will load the OneAPI environment for x64.
+The equivalent commands in a console with the environment loaded are:
 
-Navigate to the fdtd root folder, choose between "Debug"/"Release" for `-DCMAKE_BUILD_TYPE`, and "ON"/"OFF" for `-DSEMBA_FDTD_ENABLE_MPI`, for example, a Release version with MPI Support would be:
-
-```shell
-cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DSEMBA_FDTD_ENABLE_MPI=ON --fresh
+```bat
+cmake --preset rls
+cmake --build --preset rls
 ```
 
-Then,
+- The executables are written to `build-<preset>\bin\`, for example `build-rls\bin\semba-fdtd.exe`.
+- The presets that work on Windows are `rls`, `dbg`, `rls-nomtln`, `dbg-nomtln`, `rls-mpi` and `dbg-mpi`.
+  The `intel-*` presets are Linux only: they use `/opt/intel` paths and the `mpiifx` wrappers.
+- Add `--fresh` to the configure step when you change options in an existing build folder.
 
-```shell
-cmake --build build -j
+### MPI
+
+MPI builds need the Intel MPI development component (see [prerequisites](#minimal-installation)).
+Build with the `rls-mpi` or `dbg-mpi` preset:
+
+```bat
+scripts\windows\build.bat rls-mpi
 ```
 
-We should now find the compiled executables in `\build\bin\`.
+- The bundled Windows HDF5 is serial, so the configuration reports `HDF5 parallel: OFF`.
+  Everything works except the parallel HDF5 movie backend.
+- Windows builds are compiled without OpenMP. MPI builds link the Intel OpenMP runtime (`libiomp5md`) only because
+  `timestepping.F90` calls `omp_set_num_threads`.
 
 ### Usage
 
-In order to use semba-fdtd, the executable must have access to the dynamic libraries it has dependencies on. Either move the libraries to the same folder as the executable, or run the executable through a console with the OneAPI environment loaded:
+The executable needs the oneAPI runtime DLLs. Run it with `scripts/windows/run.bat` from the case folder,
+or from a console with the environment loaded:
 
-```shell
-"C:\Program Files (x86)\Intel\oneAPI\setvars.bat" intel64
+```bat
+cd testData\cases\planewave
+..\..\..\scripts\windows\run.bat -i pw-in-box.fdtd.json
 ```
 
-Once the environment is loaded, follow the steps in the next section.
+`run.bat` uses `build-rls` by default. Set `SEMBA_BUILD_DIR` to use another build, for example `set SEMBA_BUILD_DIR=build-dbg`.
+
+Run MPI builds with `mpiexec` through `scripts/windows/run-mpi.bat`, which uses `build-rls-mpi` by default:
+
+```bat
+..\..\..\scripts\windows\run-mpi.bat 2 -i pw-in-box.fdtd.json
+```
+
+- Local `mpiexec` runs need neither the `hydra_service` nor any credentials.
+- An MPI executable also runs without `mpiexec`, as a single process.
+
+The native tests run with CTest from a console with the environment loaded:
+
+```bat
+ctest --test-dir build-rls --output-on-failure
+```
+
+In MPI build folders, CTest also runs the MPI tests through `mpiexec`.
+
+> Known issue: `sync_timeout_aborts_on_stalled_neighbour` times out with Intel MPI on Windows.
+> The test stalls rank 1 with the Unix command `sleep 120`, which runs if Git's `usr\bin` is on `PATH`.
+> Rank 0 then calls `MPI_Abort(SUBCOMM_MPI, ...)`, but the test never initialises `SUBCOMM_MPI`.
+> Intel MPI rejects that communicator, so the stalled rank is not killed.
+
+### Visual Studio Code (native Windows)
+
+#### Extensions
+
+The minimal set of extensions is:
+
+| Extension | Why |
+|---|---|
+| Modern Fortran (`fortran-lang.linter-gfortran`) | Fortran syntax, hover, go to definition and symbols, through `fortls`. |
+| CMake Tools (`ms-vscode.cmake-tools`) | Select a preset, build, and run CTest. |
+| C/C++ (`ms-vscode.cpptools`) | Provides the `cppvsdbg` debugger, which reads the `.pdb` files produced by `ifx`. `gdb` does not work with these binaries. |
+
+The other extensions in `.vscode/extensions.json` are optional on Windows.
+
+Install `fortls` so that Modern Fortran can navigate the code:
+
+```shell
+python -m pip install --user fortls
+```
+
+If `fortls.exe` is not on `PATH`, set `fortran.fortls.path` to its location.
+With `--user` it is installed in `%APPDATA%\Python\Python3XX\Scripts`.
+
+#### Opening the project
+
+VS Code, CMake Tools, the integrated terminal and the debugger inherit the environment of the process that starts VS Code.
+Close every VS Code window, then open the project with:
+
+```bat
+scripts\windows\open-vscode.bat
+```
+
+> If another VS Code window is already open, the new one joins that process and does **not** get the environment.
+> CMake then fails with *"The Fortran compiler identification is unknown"* or *"could not find 'link'"*.
+
+Then select a configure preset, for example `dbg`, in the CMake Tools status bar, and build with **F7**.
+The *CMake: configure/build* tasks in `.vscode/tasks.json` work as well.
+The *Test:* and MPI debugging tasks in that file are Linux only.
+
+#### Settings and launch configurations
+
+`.vscode/settings.json` and `.vscode/launch.json` are not tracked, so create them locally.
+A minimal `settings.json`:
+
+```json
+{
+  "cmake.useCMakePresets": "always",
+  "cmake.configureOnOpen": false,
+  "fortran.fortls.disableAutoupdate": true,
+  "fortran.linter.compiler": "Disabled",
+  "fortran.formatting.formatter": "Disabled",
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+  "terminal.integrated.defaultProfile.windows": "Command Prompt"
+}
+```
+
+- The linter is disabled because its default compiler is `gfortran`.
+- `Command Prompt` makes the integrated terminal inherit the build environment.
+
+A `launch.json` for the `dbg` and `dbg-mpi` presets:
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Win: debug semba-fdtd (dbg)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build-dbg/bin/semba-fdtd.exe",
+      "args": ["-i", "pw-in-box.fdtd.json"],
+      "cwd": "${workspaceFolder}/testData/cases/planewave",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Win: debug fdtd_tests (dbg)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build-dbg/bin/fdtd_tests.exe",
+      "args": ["--gtest_filter=*"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Win MPI: debug semba-fdtd, 1 process (dbg-mpi)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build-dbg-mpi/bin/semba-fdtd.exe",
+      "args": ["-i", "pw-in-box.fdtd.json"],
+      "cwd": "${workspaceFolder}/testData/cases/planewave",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Win MPI: attach to a semba-fdtd process",
+      "type": "cppvsdbg",
+      "request": "attach",
+      "processId": "${command:pickProcess}"
+    }
+  ]
+}
+```
+
+Running a case writes its outputs next to the input file. Copy the case to a scratch folder if you do not want them in `testData/`.
+
+To debug an MPI run with several processes:
+
+1. Start the run from the integrated terminal with the debug build:
+
+   ```bat
+   set SEMBA_BUILD_DIR=build-dbg-mpi
+   scripts\windows\run-mpi.bat 2 -i <case>.fdtd.json
+   ```
+
+2. Use *Win MPI: attach to a semba-fdtd process* and pick the rank's `semba-fdtd.exe`.
 
 ### Debugging with Visual Studio
 
-1. **Install necessary tools**:
-   - Install **Intel Base Kit** and **Intel HPC Kit**.
-   - Install Visual Studio 2022. This must be done **after** the intel Intel compilers.
-   - Ensure **CMake** is installed. 
+1. Install the [prerequisites](#prerequisites) with the Visual Studio 2022 IDE (for example Community) instead of the Build Tools.
+   Enable the Intel Visual Studio integration with `-p=NEED_VS2022_INTEGRATION=1`, or select it in the graphical installer.
+2. Open a `cmd` console and load the environment with `call scripts\windows\env.bat`.
+3. Start Visual Studio from that console with `devenv .`, so that it opens the repository folder and inherits the environment.
+4. Select a configure preset, for example `dbg`, and build.
+5. If you hit [CMake issue 21816](https://gitlab.kitware.com/cmake/cmake/-/issues/21816) with the Visual Studio integration, add
+   `add_compile_options($<$<COMPILE_LANGUAGE:Fortran>:/nofpp>)` to `CMakeLists.txt`.
+   The Ninja command-line and VS Code builds described above do not need it.
+6. **Debugger configuration:**
+   - Select your build as the startup item.
+   - In the debug options, open `Debug and launch settings` for your startup item.
+   - Set **Working Directory** to the folder of the case you want to debug.
+   - Set **Command Arguments** to `-i filename`, where `filename` is the input file.
 
-3. **Open a terminal with the Intel One API variables loaded**:
-   - Launch Visual Studio 2022 with
-     ```
-     "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\devenv.exe"  
-     ```
-   - Open the opensemba/fdtd cloned repo as a folder.
+   You should end up with something like this:
 
-
-4. **Ensure cmake has nofpp option**:
-   - The following command 
-     ```
-     add_compile_options($<$<COMPILE_LANGUAGE:Fortran>:/nofpp>)
-     ```
-     must be present in CMakeLists.txt due to an issue https://gitlab.kitware.com/cmake/cmake/-/issues/21816
-
-6. **Debugger Configuration**:
-   - Select your current build as start up item
-   - In Debug options, open `Debug and launch settings` for your start up item
-   - Configure the following parameters:
-     - **Working Directory**: Set the working directory based on the case you want to debug.
-     - **Command Arguments**: Enter `-i filename` (where `filename` is the required input file).
-     You should end up with something like this.
      ```
       {
         "configurations": [
@@ -252,8 +465,19 @@ Once the environment is loaded, follow the steps in the next section.
       }
      ```
 
-7. **Debug the Project**:
-   - Launch the project by pressing **F5** to begin debugging.
+7. Press **F5** to start debugging.
+
+### Windows troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `"vars.bat" is not recognized as an internal or external command` while loading oneAPI | `NoDefaultCurrentDirectoryInExePath` is set, so `cmd` will not run batch files from the current folder | Clear it (`set NoDefaultCurrentDirectoryInExePath=`). `env.bat` does this. |
+| CMake: *"The Fortran compiler identification is unknown"*, with `link: unknown option -- s` in `CMakeConfigureLog.yaml` | Git for Windows `usr\bin\link.exe` is found before the MSVC linker | Load `vcvars64.bat` (`env.bat`), which puts the MSVC linker first, or remove `Git\usr\bin` from `PATH`. |
+| `ifx: error #10037: could not find 'link'` | The MSVC environment is not loaded. `setvars.bat` alone does not load it | Call `vcvars64.bat` before `setvars.bat`, or use `env.bat`. |
+| CMake: *"Missing variable is: CMAKE_Fortran_PREPROCESS_SOURCE"* | Usually one of the two errors above. With CMake 4.x it also happens with a correct environment | Fix the environment, and use CMake 3.x. |
+| `ninja: error: ...F90-pp.f90.d: no outputs declared` | An interrupted build left truncated dependency files | Delete the affected `.d` files or the build folder, and build again. |
+| Intel installer: *"Cannot install ... It is already installed"* | The product is already installed and you want to add a component | Use `--action modify` with the full list of components. |
+| `semba-fdtd.exe` fails to start because of missing DLLs (`libifcoremd.dll`, `impi.dll`, ...) | oneAPI runtime not on `PATH` | Run it through `run.bat`/`run-mpi.bat`, or load `env.bat` first. |
 
 ## WSL2 + Visual Studio Code + GFortran Setup Guide
 
