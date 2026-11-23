@@ -7,6 +7,7 @@ module SEMBA_FDTD_m
    use FDETYPES_m
    use Solver_m
    use resuming_m
+   use memoryBudget_m, only: estimate_solver_memory, check_memory_budget, memory_estimate_t
    !nfde parser stuff
    use NFDETypes_m
    use nfde_rotate_m
@@ -1104,6 +1105,7 @@ contains
       type(solver_t) :: solver
       character(len=BUFSIZE) :: dubuf
       logical :: dummylog
+      type(memory_estimate_t) :: memoryEstimate
 
       ! call each simulation   !beware that layoutnumbers start at 0
       if (this%l%finaltimestep /= 0) then
@@ -1111,6 +1113,10 @@ contains
          call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
          this%finishedwithsuccess=.false.
+         if ((this%l%finaltimestep >= 0).and.(.not.this%l%skindepthpre)) then
+            call estimate_solver_memory(this%sgg, this%media, this%tag_numbers, .true., memoryEstimate)
+            call check_memory_budget(memoryEstimate%totalBytes, 'before creating the solver')
+         end if
          solver = this%create_solver()
 #ifdef CompileWithMTLN
          solver%mtln_parsed =  this%mtln_parsed

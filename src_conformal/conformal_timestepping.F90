@@ -1,7 +1,7 @@
 module conformal_timestepping_m
     use conformal_types_m, only: map_key_t
     use geometry_m, only: buildEdgesOnFace, buildFacesOnEdge
-    use FDETypes_m, only: face_t, edge_t, FACE_X, FACE_Y, FACE_Z, EDGE_X, EDGE_Y, EDGE_Z, EDGE_REGION_CONFORMAL, EDGE_REGION_I, EDGE_REGION_II
+    use FDETypes_m, only: face_t, edge_t, SGGFDTDINFO_t, FACE_X, FACE_Y, FACE_Z, EDGE_X, EDGE_Y, EDGE_Z, EDGE_REGION_CONFORMAL, EDGE_REGION_I, EDGE_REGION_II
     use NFDETypes_m, only: rkind
     use fhash, only: fhash_tbl_t, key=>fhash_key
     use Report_m
@@ -33,7 +33,49 @@ module conformal_timestepping_m
         type(edge_t), dimension(:), allocatable :: edges
     end type
 
+    public :: estimate_conformal_memory
+
 contains
+
+    ! Upper-bound estimate of the conformal field containers and their
+    ! temporary maps, before initializeConformalFields runs.
+    subroutine estimate_conformal_memory(sgg, bytes)
+        type(SGGFDTDINFO_t), intent(in) :: sgg
+        integer(kind=8), intent(out) :: bytes
+
+        type(face_t) :: faceTemplate
+        type(edge_t) :: edgeTemplate
+        type(map_key_t) :: keyTemplate
+        integer(kind=8) :: faceCount, edgeCount, contourCount, scalarBytes
+        integer(kind=4) :: i, j
+
+        faceCount = 0_8
+        edgeCount = 0_8
+        contourCount = 0_8
+        do i = 1, sgg%NumMedia
+            if (.not. sgg%Med(i)%Is%ConformalPEC) cycle
+            if (.not. sgg%Med(i)%Is%Surface) cycle
+            if (sgg%Med(i)%Is%PML) cycle
+            if (allocated(sgg%Med(i)%ConformalFace)) then
+                faceCount = faceCount + int(size(sgg%Med(i)%ConformalFace), 8)
+                do j = 1, size(sgg%Med(i)%ConformalFace)
+                    if (allocated(sgg%Med(i)%ConformalFace(j)%contour_inside_edges)) then
+                        contourCount = contourCount + int(size(sgg%Med(i)%ConformalFace(j)%contour_inside_edges), 8)
+                    end if
+                end do
+            end if
+            if (allocated(sgg%Med(i)%ConformalEdge)) then
+                edgeCount = edgeCount + int(size(sgg%Med(i)%ConformalEdge), 8)
+            end if
+        end do
+
+        scalarBytes = int(storage_size(1.0_rkind)/8, 8)
+        bytes = faceCount * int(storage_size(faceTemplate)/8, 8)
+        bytes = bytes + (edgeCount + contourCount + 4_8 * faceCount) * int(storage_size(edgeTemplate)/8, 8)
+        bytes = bytes + scalarBytes * (6_8 * faceCount + 6_8 * edgeCount + 24_8 * faceCount)
+        bytes = bytes + (faceCount + edgeCount + 4_8 * faceCount) * &
+                (int(storage_size(keyTemplate)/8, 8) + 256_8)
+    end subroutine estimate_conformal_memory
 
     subroutine addAdditionalConformalFeatures(conf_maps, conformal_edges)
         type(conformal_maps_t), intent(inout) :: conf_maps

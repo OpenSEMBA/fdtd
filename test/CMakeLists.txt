@@ -32,6 +32,7 @@ endif()
 if(SEMBA_FDTD_ENABLE_MPI)
     add_subdirectory(mpi/output)
     add_subdirectory(mpi/sync)
+    add_subdirectory(mpi/memory)
 endif()
 
 add_subdirectory(conformal)
@@ -45,6 +46,9 @@ set(PREPROCESS_TESTS_LIBRARY preprocess_tests)
 
 add_subdirectory(unit/report)
 set(REPORT_TESTS_LIBRARY report_tests)
+
+add_subdirectory(unit/memory)
+set(MEMORY_TESTS_LIBRARY memory_tests)
 
 add_subdirectory(healer)
 set(HEALER_TESTS_LIBRARY healer_tests)
@@ -64,6 +68,7 @@ target_link_libraries(fdtd_tests
     ${BORDER_TESTS_LIBRARY}
     ${PREPROCESS_TESTS_LIBRARY}
     ${REPORT_TESTS_LIBRARY}
+    ${MEMORY_TESTS_LIBRARY}
     ${ROTATE_TESTS_LIBRARY}
     ${OUTPUT_TESTS_LIBRARY}
     ${VTK_API_TESTS_LIBRARY}
