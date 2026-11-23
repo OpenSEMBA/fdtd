@@ -20,6 +20,7 @@ module Solver_m
    use Report_m
    use progress_m
    use memoryBudget_m, only: estimate_solver_memory, check_memory_budget, memory_estimate_t
+   use parallelInfo_m, only: parallel_info_t, collect_parallel_info, report_parallel_info
    use ilumina_m
    use output_m
    use outputTypes_m
@@ -318,7 +319,10 @@ module Solver_m
       character(len=*), intent(in) :: nInputRoot
       integer(kind=4), intent(in) :: layoutnumber
       integer(kind=8) :: wireBytes
+      type(parallel_info_t) :: parallelInfo
 
+      call collect_parallel_info(parallelInfo)
+      call report_parallel_info(parallelInfo, layoutnumber)
       call estimate_mtln_memory(mtln_parsed, bytes=wireBytes)
       call check_memory_budget(wireBytes, 'before MTLN simulation')
       call initializeMTLNProblem(mtln_parsed, nInputRoot)
@@ -468,6 +472,7 @@ module Solver_m
       integer(kind=4) :: counts(0:MTLN_PROBE_ID)
       integer :: smallFlushSteps, regularFlushSteps
       type(memory_estimate_t) :: memoryEstimate
+      type(parallel_info_t) :: parallelInfo
       integer(kind=8) :: hdf5Bytes
 
 ! #ifdef compileWithMPI
@@ -655,7 +660,10 @@ module Solver_m
 #ifdef CompileWithMPI
       call initializeMPI()
 #endif
-      
+
+      call collect_parallel_info(parallelInfo)
+      call report_parallel_info(parallelInfo, this%control%layoutnumber)
+
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif

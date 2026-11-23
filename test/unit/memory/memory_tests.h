@@ -13,6 +13,7 @@ extern "C" {
     int test_conformal_estimate();
 #ifndef CompileWithStochastic
     int test_sgbc_estimate();
+    int test_parallel_info();
 #endif
 }
 
@@ -49,5 +50,9 @@ TEST(memory, sgbc_estimate) {
     EXPECT_EQ(0, test_sgbc_estimate());
 }
 #endif
+
+TEST(memory, parallel_info) {
+    EXPECT_EQ(0, test_parallel_info());
+}
 
 #endif // MEMORY_TESTS_H

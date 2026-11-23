@@ -3,12 +3,15 @@ program test_memory_budget_mpi
    use FDETYPES_m, only: RKIND
    use memoryBudget_m, only: evaluate_memory_budget, memory_verdict_t
    use systemMemory_m, only: system_memory_t
+   use parallelInfo_m, only: parallel_info_t, collect_parallel_info, parallel_info_text
    implicit none
 
    type(system_memory_t) :: status
    type(memory_verdict_t) :: verdict
+   type(parallel_info_t) :: parallelInfo
    integer :: rank, size, ierr
    integer(kind=8) :: pending
+   character(len=1024) :: parallelText
 
    call MPI_Init(ierr)
    call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
@@ -16,6 +19,24 @@ program test_memory_budget_mpi
 
    if (size < 2) then
       if (rank == 0) print *, 'test_memory_budget_mpi requires at least 2 ranks'
+      call MPI_Finalize(ierr)
+      stop 1
+   end if
+
+   call collect_parallel_info(parallelInfo)
+   if (parallelInfo%mpiProcesses /= size) then
+      if (rank == 0) print *, 'test_memory_budget_mpi FAILED: wrong MPI process count'
+      call MPI_Finalize(ierr)
+      stop 1
+   end if
+   if (parallelInfo%mpiNodes < 1) then
+      if (rank == 0) print *, 'test_memory_budget_mpi FAILED: wrong node count'
+      call MPI_Finalize(ierr)
+      stop 1
+   end if
+   parallelText = parallel_info_text(parallelInfo)
+   if (index(parallelText, 'MPI processes:') == 0) then
+      if (rank == 0) print *, 'test_memory_budget_mpi FAILED: missing parallel report'
       call MPI_Finalize(ierr)
       stop 1
    end if

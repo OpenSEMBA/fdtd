@@ -258,3 +258,21 @@ integer function test_conformal_estimate() bind(C, name="test_conformal_estimate
     deallocate(sgg%Med)
     if (status /= 0) print *, 'test_conformal_estimate FAILED'
 end function test_conformal_estimate
+
+integer function test_parallel_info() bind(C, name="test_parallel_info") result(status)
+    use parallelInfo_m
+    implicit none
+
+    type(parallel_info_t) :: info
+    character(len=1024) :: text
+
+    status = 0
+    call collect_parallel_info(info)
+    if (info%mpiProcesses < 1_4) status = 1
+    if (info%mpiNodes < 1_4) status = 1
+    if (info%threadsMin < 1_4 .or. info%threadsMax < info%threadsMin) status = 1
+    text = parallel_info_text(info)
+    if (index(text, 'MPI processes:') == 0) status = 1
+    if (index(text, 'OpenMP threads per process:') == 0) status = 1
+    if (status /= 0) print *, 'test_parallel_info FAILED'
+end function test_parallel_info

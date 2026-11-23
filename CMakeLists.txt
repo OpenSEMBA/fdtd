@@ -213,6 +213,7 @@ add_library(semba-reports
 	"src_main_pub/errorreport.F90"
 	"src_main_pub/progress.F90"
 	"src_main_pub/memoryBudget.F90"
+	"src_main_pub/parallelInfo.F90"
 	"src_main_pub/snapxdmf.F90"
 )
 target_link_libraries(semba-reports semba-types fdtd-utils XDMF::HDF5 ${MPI_Fortran_LIBRARIES})

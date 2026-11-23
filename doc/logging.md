@@ -108,6 +108,20 @@ The warnings file is closed before the time loop starts. Messages emitted
 during time stepping therefore go to **stderr only**. That is where the
 `[n=...]` tag is most useful.
 
+## Parallel configuration
+
+Before the time-stepping loop starts, `_Report.txt` includes a small
+`Parallel configuration` block with:
+
+- the number of MPI processes,
+- the number of MPI nodes and ranks per node,
+- the host running MPI rank 0,
+- the effective number of OpenMP threads per process and, when present, the
+  `OMP_NUM_THREADS` value.
+
+In serial runs the block reports `MPI processes: 1 (serial)`.  When OpenMP is
+not compiled in, it reports `OpenMP threads per process: 1 (OpenMP not enabled)`.
+
 ## Output files
 
 | File | Writer | Content |
