@@ -25,6 +25,12 @@ if (SEMBA_FDTD_ENABLE_MTLN)
 		target_compile_options(ngspice-spicelib PRIVATE "$<$<AND:$<COMPILE_LANGUAGE:CXX>,$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:IntelLLVM>>>:-Wno-invalid-specialization>")
 	endif()
 	# set(NGSPICE_LIB ngspice)
+	option(SEMBA_FDTD_BUILD_NGSPICE_CODEMODELS
+		"Build the ngspice XSPICE code models (*.cm) with the ngspice library" ON)
+	if (SEMBA_FDTD_BUILD_NGSPICE_CODEMODELS)
+		list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../cmake")
+		include(NgspiceCodemodels)
+	endif()
 endif()
 
 add_subdirectory("xdmf-hdf5/")

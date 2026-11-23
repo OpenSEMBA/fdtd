@@ -4100,6 +4100,7 @@ contains
                      res%resistance = this%getRealAt(genSrcs(i)%p, J_SRC_RESISTANCE_GEN, default = 1.0e22_rkind)
                   end if
                   res%path_to_excitation = trim(this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE))
+                  res%sim_final_time = mtln_res%time_step*mtln_res%number_of_steps
                   return
                end if
 
@@ -4254,7 +4255,7 @@ contains
                   call log_msg(LOG_ERROR, 'SMBJSON', 'Field block of source of type generator must be current or voltage')
                end select
                res(n)%path_to_excitation = this%getStrAt(gens(i)%p, J_SRC_MAGNITUDE_FILE)
-
+               res(n)%sim_final_time = mtln_res%time_step*mtln_res%number_of_steps
                idAndPos = getPolylineElemIdAndConductorOfGenerator(gens(i)%p)
                call elemIdToCable%get(key(idAndPos(1)), value=elementIndex)
                coord = GetCoordinateFromElemIdNode(gens(i)%p)
@@ -4269,8 +4270,6 @@ contains
             end if
          end do
       end function
-
-
 
       logical function IsGeneratorOnWire(p)
          type(json_value), pointer :: p

@@ -23,6 +23,8 @@ module outputTypes_m
    integer, parameter :: BOTH_DOMAIN = 2
    integer, parameter :: OUTPUT_TIME_BUFFER_SIZE = 128
    integer, parameter :: SMALL_PROBE_BUFFER_SIZE = 4096 !point, wire and bulk probes are small; must be a multiple of OUTPUT_TIME_BUFFER_SIZE
+   ! Flush period of line and movie probes: OUTPUT_TIME_BUFFER_SIZE halved by init_outputs until the movie buffers fit their budget
+   integer :: outputFlushSteps_g = OUTPUT_TIME_BUFFER_SIZE
 
    character(len=4), parameter :: BINARYEXTENSION = '.bin'
    character(len=4), parameter :: DATFILEEXTENSION = '.dat'
@@ -308,8 +310,6 @@ module outputTypes_m
       type(cell_coordinate_t) :: auxCoords
       integer(kind=SINGLE)    :: nPoints = -1
       integer(kind=SINGLE), allocatable :: coords(:, :)     !(3, coordIdx)
-      integer(IKINDMTAG), allocatable :: tagNumber(:, :)    !(component, coordIdx)
-      real(kind=RKIND), allocatable :: mediaType(:, :)      !(component, coordIdx)
       real(kind=RKIND), allocatable :: xValueForTime(:, :)  !(time, coordIdx)
       real(kind=RKIND), allocatable :: yValueForTime(:, :)  !(time, coordIdx)
       real(kind=RKIND), allocatable :: zValueForTime(:, :)  !(time, coordIdx)
@@ -375,7 +375,7 @@ contains
       integer, intent(in), optional :: flushSteps
       integer :: steps
 
-      steps = OUTPUT_TIME_BUFFER_SIZE
+      steps = outputFlushSteps_g
       if (present(flushSteps)) steps = flushSteps
       time_buffer_capacity = (steps + max(1, domain%tstride) - 1)/max(1, domain%tstride)
    end function time_buffer_capacity
