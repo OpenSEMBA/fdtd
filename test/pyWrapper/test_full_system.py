@@ -884,9 +884,13 @@ def test_sgbc_shielding_effectiveness(tmp_path):
 
 @pytest.mark.sgbc
 @pytest.mark.probes
+@pytest.mark.codemodel
 def test_current_orientation(tmp_path):
     """Verify bulk-current sign follows source rather than mesh orientation."""
     fn = CASES_FOLDER + "current_orientation/currentOrientation.fdtd.json"
+    # The generator uses the XSPICE 'filesource' code model. Without it the
+    # circuit is not parsed, the current stays at 0 and the asserts pass anyway.
+    setNgspice(tmp_path)
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     solver["mesh"]["elements"][12]["coordinateIds"] = [1, 2]
@@ -2543,3 +2547,61 @@ def test_slotted_box_shielding_effectiveness(tmp_path):
     assert np.allclose(
         shielding_effectiveness, robinson_se, atol=robinson_tolerance_db, rtol=0.0
     )
+
+
+@pytest.mark.dielectric
+@pytest.mark.probes
+def test_lorentz_res2_s11(tmp_path):
+    """Verify the resonant Lorentz slab S11 matches the dgtd and scikit-rf vectors."""
+    fn = CASES_FOLDER + "lorentz/lorentz_res2.fdtd.json"
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+    probe = Probe(_get_solved_probe_folder(solver, "reflection"))
+
+    reference = np.loadtxt(OUTPUTS_FOLDER + "lorentz_res2_s11.dat", skiprows=1)
+    frequencies = reference[:, 0]
+    time = probe["time"].to_numpy()
+    field = probe["field"].to_numpy()
+    incident = probe["incident"].to_numpy()
+    s11 = dtft(field - incident, time, frequencies) / dtft(
+        incident, time, frequencies
+    )
+    check_values_are_comparable(s11)
+
+    magnitude = 20.0 * np.log10(np.abs(s11))
+    phase = np.rad2deg(np.angle(s11))
+    for db, deg in (
+        (reference[:, 1], reference[:, 2]),
+        (reference[:, 3], reference[:, 4]),
+    ):
+        assert np.all(np.abs(magnitude - db) < 0.5)
+        assert np.all(np.abs((phase - deg + 180.0) % 360.0 - 180.0) < 15.0)
+
+
+@pytest.mark.dielectric
+@pytest.mark.probes
+def test_lorentz_plasma_s11(tmp_path):
+    """Verify the cold-plasma Lorentz slab S11 matches the dgtd and scikit-rf vectors."""
+    fn = CASES_FOLDER + "lorentz/lorentz_plasma.fdtd.json"
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+    probe = Probe(_get_solved_probe_folder(solver, "reflection"))
+
+    reference = np.loadtxt(OUTPUTS_FOLDER + "lorentz_plasma_s11.dat", skiprows=1)
+    frequencies = reference[:, 0]
+    time = probe["time"].to_numpy()
+    field = probe["field"].to_numpy()
+    incident = probe["incident"].to_numpy()
+    s11 = dtft(field - incident, time, frequencies) / dtft(
+        incident, time, frequencies
+    )
+    check_values_are_comparable(s11)
+
+    magnitude = 20.0 * np.log10(np.abs(s11))
+    phase = np.rad2deg(np.angle(s11))
+    for db, deg in (
+        (reference[:, 1], reference[:, 2]),
+        (reference[:, 3], reference[:, 4]),
+    ):
+        assert np.all(np.abs(magnitude - db) < 0.5)
+        assert np.all(np.abs((phase - deg + 180.0) % 360.0 - 180.0) < 15.0)

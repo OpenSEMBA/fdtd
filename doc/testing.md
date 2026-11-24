@@ -172,6 +172,24 @@ pytest test/ -m "not mpi"
 Available markers are listed in [`../pytest.ini`](../pytest.ini), including
 `mtln`, `hdf`, `mpi`, `spice`, `vtk`, `conformal`, `wires`, and `movie`.
 
+## ngspice Code Models
+
+MTLN circuits with XSPICE devices (for example generators at cable ends, which
+use the `filesource` model) need the ngspice code models (`*.cm`). They share C
+structures with the ngspice library, so they are built from the
+`external/ngspice` sources together with it
+([`../cmake/NgspiceCodemodels.cmake`](../cmake/NgspiceCodemodels.cmake),
+option `SEMBA_FDTD_BUILD_NGSPICE_CODEMODELS`, ON by default). The build writes
+them with a `spinit` file to `<build>/bin/codemodels/`.
+
+Tests marked `codemodel` call `setNgspice(tmp_path)`, which copies that folder
+into the run folder. Code models from another ngspice build are not compatible:
+the circuit fails to parse (`no such parameter on this device`) and the MTLN
+nodes keep zero values. `mtln.codemodels` (native) checks that the built code
+models load and solve a circuit.
+
+Set `SEMBA_NGSPICE_DEBUG=1` to print the ngspice output while debugging.
+
 ## MPI Tests
 
 Configure and build with MPI enabled:
