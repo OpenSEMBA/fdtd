@@ -53,8 +53,8 @@ def test_sphere_symmetry_case_produces_farfield_and_watchdog(tmp_path, case):
     farfield_file = farfield.getTextFile()
     assert farfield_file is not None
     data = np.loadtxt(farfield_file, skiprows=1)
-    # the solver writes one row less than the requested frequency samples
-    assert data.shape[0] == NUMBER_OF_FREQUENCIES - 1
+    # Real4 may round the upper frequency out; real8 includes all samples.
+    assert data.shape[0] in (NUMBER_OF_FREQUENCIES - 1, NUMBER_OF_FREQUENCIES)
     rcs_geom = data[:, 8]
     assert np.all(np.isfinite(rcs_geom))
     assert np.all(rcs_geom > 0.0)

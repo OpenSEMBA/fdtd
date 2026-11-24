@@ -212,10 +212,12 @@ def test_sphere_symmetry_rcs_agrees_across_cases(tmp_path, request):
         results = {}
         for case in SPHERE_SYMMETRY_CASES:
             fn = CASES_FOLDER + SYMMETRY_FOLDER + case + ".fdtd.json"
+            run_folder = tmp_path / case
+            run_folder.mkdir()
             solver = FDTD(
                 input_filename=fn,
                 path_to_exe=SEMBA_EXE,
-                run_in_folder=tmp_path / case,
+                run_in_folder=run_folder,
             )
             solver["general"]["numberOfSteps"] = 20000
 
