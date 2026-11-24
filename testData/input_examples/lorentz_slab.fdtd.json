@@ -1,0 +1,61 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Lorentz material assigned to a volume, a surface and a line.",
+
+    "general": {
+        "timeStep": 10e-12,
+        "numberOfSteps": 2000
+    },
+
+    "boundary": {
+        "xLower": {"type": "pec"},
+        "xUpper": {"type": "pec"},
+        "yLower": {"type": "pmc"},
+        "yUpper": {"type": "pmc"},
+        "zLower": {"type": "mur"},
+        "zUpper": {"type": "mur"}
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [4, 4, 50],
+            "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
+        },
+        "coordinates": [
+            {"id": 1, "relativePosition": [2, 2, 10]}
+        ],
+        "elements": [
+            {"id": 1, "type": "node", "coordinateIds": [1]},
+            {"id": 2, "type": "cell", "name": "volume",  "intervals": [ [ [0, 0, 20], [4, 4, 30] ] ]},
+            {"id": 3, "type": "cell", "name": "surface", "intervals": [ [ [0, 0, 10], [4, 4, 10] ] ]},
+            {"id": 4, "type": "cell", "name": "line",    "intervals": [ [ [0, 0, 5],  [0, 0, 15] ] ]}
+        ]
+    },
+
+    "materials": [
+        {
+            "name": "plasma",
+            "id": 1,
+            "type": "lorentz",
+            "epsInf": 2.0,
+            "omegaP": 899377374.0,
+            "omega1": 599584916.0,
+            "gamma": 89937737.4
+        }
+    ],
+
+    "materialAssociations": [
+        {"materialId": 1, "elementIds": [2, 3, 4]}
+    ],
+
+    "probes": [
+        {
+            "name": "point",
+            "type": "point",
+            "field": "electric",
+            "elementIds": [1],
+            "directions": ["x"],
+            "domain": {"type": "time"}
+        }
+    ]
+}

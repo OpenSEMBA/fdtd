@@ -130,6 +130,7 @@ module Solver_m
       procedure :: init_control => solver_init_control
       procedure, private :: init_fields
       procedure, private :: init_distances
+      procedure, private :: report_memory_estimate
       procedure :: launch_simulation
       procedure :: set_field_value
       procedure :: get_field_value
@@ -176,8 +177,9 @@ module Solver_m
    function solver_ctor(sgg,media,tag_numbers,SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
                         input, maxSourceValue, time_desdelanzamiento) result(res)
       type(SGGFDTDINFO_t), intent(in) :: sgg
-      type(taglist_t), intent(in) :: tag_numbers
-      type(media_matrices_t), intent(in) :: media
+      ! media and tag_numbers are moved into the solver (left unallocated): copying them doubles the per-cell RAM
+      type(taglist_t), intent(inout) :: tag_numbers
+      type(media_matrices_t), intent(inout) :: media
       type(limit_t), dimension(1:6), intent(in) :: SINPML_fullsize,fullsize
       logical, intent(in) :: finishedwithsuccess
       real(kind=RKIND), intent(in) :: eps0,mu0
@@ -189,8 +191,20 @@ module Solver_m
 
       call res%init_control(input,maxSourceValue, time_desdelanzamiento)
       res%sgg = sgg
-      res%media = media
-      res%tag_numbers = tag_numbers 
+      call move_alloc(media%sggMiNo, res%media%sggMiNo)
+      call move_alloc(media%sggMiEx, res%media%sggMiEx)
+      call move_alloc(media%sggMiEy, res%media%sggMiEy)
+      call move_alloc(media%sggMiEz, res%media%sggMiEz)
+      call move_alloc(media%sggMiHx, res%media%sggMiHx)
+      call move_alloc(media%sggMiHy, res%media%sggMiHy)
+      call move_alloc(media%sggMiHz, res%media%sggMiHz)
+      call move_alloc(media%sggMtag, res%media%sggMtag)
+      call move_alloc(tag_numbers%edge%x, res%tag_numbers%edge%x)
+      call move_alloc(tag_numbers%edge%y, res%tag_numbers%edge%y)
+      call move_alloc(tag_numbers%edge%z, res%tag_numbers%edge%z)
+      call move_alloc(tag_numbers%face%x, res%tag_numbers%face%x)
+      call move_alloc(tag_numbers%face%y, res%tag_numbers%face%y)
+      call move_alloc(tag_numbers%face%z, res%tag_numbers%face%z)
       res%sinPML_fullsize = SINPML_fullsize
       res%fullsize = fullsize
       res%eps0 = eps0
@@ -324,6 +338,45 @@ module Solver_m
       this%Ex = 0.0_RKIND; this%Ey = 0.0_RKIND; this%Ez = 0.0_RKIND; this%Hx = 0.0_RKIND; this%Hy = 0.0_RKIND; this%Hz = 0.0_RKIND
    end subroutine
 
+   ! Logs the RAM this rank will need for the field, distance and media arrays before they are allocated
+   subroutine report_memory_estimate(this)
+      class(solver_t) :: this
+      integer(kind=8) :: fieldBytes, distBytes, mediaBytes
+      character(len=bufsize) :: msg
+
+      fieldBytes = RKIND*(cells_of(this%sgg%Alloc(IEX))+cells_of(this%sgg%Alloc(IEY))+cells_of(this%sgg%Alloc(IEZ)) &
+                        + cells_of(this%sgg%Alloc(IHX))+cells_of(this%sgg%Alloc(IHY))+cells_of(this%sgg%Alloc(IHZ)))
+      ! dx/Idx pairs (e and h grids) along each axis
+      distBytes = 2_8*RKIND*(int(this%sgg%Alloc(IHX)%XE-this%sgg%Alloc(IHX)%XI+1,8)+int(this%sgg%Alloc(IHY)%YE-this%sgg%Alloc(IHY)%YI+1,8) &
+                           + int(this%sgg%Alloc(IHZ)%ZE-this%sgg%Alloc(IHZ)%ZI+1,8)+int(this%sgg%Alloc(IEX)%XE-this%sgg%Alloc(IEX)%XI+1,8) &
+                           + int(this%sgg%Alloc(IEY)%YE-this%sgg%Alloc(IEY)%YI+1,8)+int(this%sgg%Alloc(IEZ)%ZE-this%sgg%Alloc(IEZ)%ZI+1,8))
+      mediaBytes = 0
+      if (allocated(this%media%sggMiEx)) mediaBytes = INTEGERSIZEOFMEDIAMATRICES*(size(this%media%sggMiNo,kind=8) &
+                 + size(this%media%sggMiEx,kind=8)+size(this%media%sggMiEy,kind=8)+size(this%media%sggMiEz,kind=8) &
+                 + size(this%media%sggMiHx,kind=8)+size(this%media%sggMiHy,kind=8)+size(this%media%sggMiHz,kind=8)) &
+                 + IKINDMTAG*size(this%media%sggMtag,kind=8)
+      if (allocated(this%tag_numbers%edge%x)) mediaBytes = mediaBytes + IKINDMTAG*(size(this%tag_numbers%edge%x,kind=8) &
+                 + size(this%tag_numbers%edge%y,kind=8)+size(this%tag_numbers%edge%z,kind=8) &
+                 + size(this%tag_numbers%face%x,kind=8)+size(this%tag_numbers%face%y,kind=8)+size(this%tag_numbers%face%z,kind=8))
+
+      msg = 'estimated RAM for this rank: '//mb_text(fieldBytes+distBytes+mediaBytes)//' MB (fields '//mb_text(fieldBytes)// &
+            ' MB, distances '//mb_text(distBytes)//' MB, media '//mb_text(mediaBytes)//' MB)'
+      call log_msg(LOG_INFO, 'MEMORY', trim(msg))
+   end subroutine
+
+   function mb_text(bytes) result(s)
+      integer(kind=8), intent(in) :: bytes
+      character(len=:), allocatable :: s
+      character(len=20) :: buf
+      write(buf,'(f20.1)') real(bytes,8)/1048576.0_8
+      s = trim(adjustl(buf))
+   end function
+
+   pure integer(kind=8) function cells_of(lim) result(n)
+      type(XYZlimit_t), intent(in) :: lim
+      n = int(lim%XE-lim%XI+1,8)*int(lim%YE-lim%YI+1,8)*int(lim%ZE-lim%ZI+1,8)
+   end function
+
    subroutine init_distances(this)
       class(solver_t) :: this
       integer :: i
@@ -450,9 +503,11 @@ module Solver_m
       character(len=bufsize) :: dubuf
       logical :: attinformado = .false.
       logical :: anyObservation
+      integer(kind=4) :: counts(0:MTLN_PROBE_ID)
+      integer :: smallFlushSteps, regularFlushSteps
 
 ! #ifdef compileWithMPI
-      integer(kind=4) :: dummyMin,dummyMax, ierr
+      integer(kind=4) :: dummyMin,dummyMax, ierr, resumeIostat
       real(kind=rkind) :: rdummy
 ! #endif
       this%control%fatalerror=.false.
@@ -481,6 +536,7 @@ module Solver_m
       layoutcharID = trim(adjustl(this%control%nInputRoot))//'_'//trim(adjustl(chari))
       call findbounds(this%bounds)
 
+      call this%report_memory_estimate()
       call this%init_distances()
       Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
 !!!changed here to allow scaling on 211118 due to resuming problems: must read eps0, mu0 before doing numbers
@@ -508,11 +564,13 @@ module Solver_m
          write(dubuf,*) 'Init processing resuming data'
          call print11(this%control%layoutnumber,dubuf)
          if (this%control%resume_fromold) then
-            open (14,file=trim(adjustl(this%control%nresumeable2))//'.old',form='unformatted')
+            open (14,file=trim(adjustl(this%control%nresumeable2))//'.old',form='unformatted',iostat=resumeIostat)
          else
-            open (14,file=trim(adjustl(this%control%nresumeable2)),form='unformatted')
+            open (14,file=trim(adjustl(this%control%nresumeable2)),form='unformatted',iostat=resumeIostat)
          end if
-         call ReadFields(this%sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,this%eps0,this%mu0,Ex,Ey,Ez,Hx,Hy,Hz)
+         !fatal here aborts every rank; a rank left out of the MPI calls below would hang the others
+         if (resumeIostat /= 0) call log_msg(LOG_FATAL, 'RESUMING', 'Cannot open restart fields: '//trim(adjustl(this%control%nresumeable2)))
+         call ReadFields(this%sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,this%eps0,this%mu0,this%control%num_procs,Ex,Ey,Ez,Hx,Hy,Hz)
          this%sgg%dt=ultimodt !to allow scaling
       !!!!!!!!!!!!No need to re-synchronize but I do it !!!!!!!!!!!!!!!!!!!!!!!!!!
 #ifdef CompileWithMPI
@@ -539,8 +597,9 @@ module Solver_m
                call print11(this%control%layoutnumber,dubuf)
                this%control%resume_fromold=.true.
                close (14)
-               open (14,file=trim(adjustl(this%control%nresumeable2))//'.old',form='unformatted')
-               call ReadFields(this%sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,this%eps0,this%mu0,Ex,Ey,Ez,Hx,Hy,Hz)
+               open (14,file=trim(adjustl(this%control%nresumeable2))//'.old',form='unformatted',iostat=resumeIostat)
+               if (resumeIostat /= 0) call log_msg(LOG_FATAL, 'RESUMING', 'Cannot open restart fields: '//trim(adjustl(this%control%nresumeable2))//'.old')
+               call ReadFields(this%sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,this%eps0,this%mu0,this%control%num_procs,Ex,Ey,Ez,Hx,Hy,Hz)
                this%sgg%dt=ultimodt !to allow scaling
                call MPI_AllReduce(this%lastexecutedtimestep, dummyMin, 1_4, MPI_INTEGER, MPI_MIN, SUBCOMM_MPI, ierr)
                call MPI_AllReduce(this%lastexecutedtimestep, dummyMax, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
@@ -565,6 +624,7 @@ module Solver_m
          end if
 #endif
          this%initialtimestep=this%lastexecutedtimestep+1
+         this%control%resume_time = this%lastexecutedtime
          write(dubuf,*) '[OK] processing resuming data. Last executed time step ',this%lastexecutedtimestep
          call print11(this%control%layoutnumber,dubuf)
       end if
@@ -643,13 +703,13 @@ module Solver_m
 
       write(dubuf,*) 'Init Timing...';  call print11(this%control%layoutnumber,dubuf)
       ! Collective on all ranks: thereAre%Observation is rank-local.
-      call report_outputs_memory(this%control%layoutnumber)
+      call report_outputs_memory(this%control%layoutnumber, counts)
       anyObservation = this%thereAre%Observation
 #ifdef CompileWithMPI
       call MPI_AllReduce(this%thereAre%Observation, anyObservation, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
 #endif
-      call InitTiming(this%sgg, this%control, this%control%time_desdelanzamiento, this%initialtimestep, this%control%maxSourceValue, &
-                      merge(OUTPUT_TIME_BUFFER_SIZE, 0, anyObservation))
+      call flush_cadence_from_counts(counts, smallFlushSteps, regularFlushSteps)
+      call InitTiming(this%sgg, this%control, this%initialtimestep, anyObservation, smallFlushSteps, regularFlushSteps)
 
 
       call CLOSEWARNINGFILE(this%control%layoutnumber,this%control%num_procs,this%control%fatalerror,.false.,this%control%simu_devia) !here the stochastic is already split and there are two this%control%layoutnumber=0
@@ -1540,7 +1600,8 @@ contains
          write(dubuf,*) 'Init Observation...';  call print11(this%control%layoutnumber,dubuf)
          call init_outputs(this%sgg, this%media, this%sinPML_fullsize, this%tag_numbers, this%bounds, &
                            this%control, this%thereAre%Observation, this%thereAre%wires, &
-                           eps0_input=this%eps0, mu0_input=this%mu0)
+                           eps0_input=this%eps0, mu0_input=this%mu0, farFieldsExists=this%thereAre%FarFields)
+         if (this%control%resume) call load_outputs_dft_state(this%control%resume_time)
          l_auxinput=this%thereAre%Observation.or.this%thereAre%FarFields
          l_auxoutput=l_auxinput
 
@@ -1891,7 +1952,7 @@ contains
                    end if
                    if (this%control%layoutnumber == 0) call log_msg(LOG_INFO, 'SOLVER', dubuf)
                    if (this%thereAre%Observation) then
-                      call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, flushFF)
+                      call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, flushFF, .TRUE.)
                    end if
                 end if
 
@@ -1956,25 +2017,37 @@ contains
 #endif
 
       subroutine performFlushField()
-         write(dubuf,*)  SEPARADOR,trim(adjustl(this%control%nInputRoot)),SEPARADOR
-         call printMessage(this%control%layoutnumber,dubuf)
-         write(dubuf,*)  'INIT FLUSHING OF RESTARTING FIELDS n=',this%n
-         call printMessage(this%control%layoutnumber,dubuf)
+         integer(kind=8) :: clockStart, clockEnd, clockRate
+         real(kind=8) :: elapsedSeconds
+         ! Only the root rank reports: every rank runs the flush, but the console would repeat the banner
+         if (this%control%layoutnumber == 0) then
+            write(dubuf,*)  SEPARADOR,trim(adjustl(this%control%nInputRoot)),SEPARADOR
+            call printMessage(this%control%layoutnumber,dubuf)
+            write(dubuf,*)  'INIT FLUSHING OF RESTARTING FIELDS n=',this%n
+            call printMessage(this%control%layoutnumber,dubuf)
+         end if
+         call system_clock(clockStart, clockRate)
 
          call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nInputRoot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
          Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
+         call save_outputs_dft_state(this%sgg%time(this%n))
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
-         write(dubuf,*) 'DONE FLUSHING OF RESTARTING FIELDS n=',this%n
-         call printMessageWithSeparator(this%control%layoutnumber, dubuf)
+         call system_clock(clockEnd)
+         if (this%control%layoutnumber == 0) then
+            elapsedSeconds = real(clockEnd - clockStart, kind=8) / real(clockRate, kind=8)
+            write(dubuf,'(a,i0,a,f0.3,a)') 'DONE FLUSHING OF RESTARTING FIELDS n=',this%n, ' (elapsed ', elapsedSeconds, ' s)'
+            call printMessageWithSeparator(this%control%layoutnumber, dubuf)
+         end if
 
       end subroutine performFlushField
 
       subroutine updateAndFlush()
-         if (this%n > 0 .and. mod(this%n, OUTPUT_TIME_BUFFER_SIZE) == 0) then
+         if (this%n > 0 .and. mod(this%n, outputFlushSteps_g) == 0) then
             if (this%thereAre%Observation) then
-               call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, .FALSE.)
+               call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, .FALSE., &
+                                  mod(this%n, SMALL_PROBE_BUFFER_SIZE) == 0)
             end if
 #ifdef CompileWithMPI
             if (this%control%num_procs > 1) call MPI_Barrier(SUBCOMM_MPI, ierr)
@@ -2047,7 +2120,7 @@ contains
 
 #ifdef CompileWithMPI
       if (this%control%num_procs>1) then
-         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call barrier_timed(SUBCOMM_MPI)
          call FlushMPI_E_Cray
       end if
 #endif
@@ -2084,7 +2157,7 @@ contains
       !and I suspect the current Block too, going by the following comment
       !I include an initial flush before entering the loop so that resuming is correct
       if (this%control%num_procs>1) then
-         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call barrier_timed(SUBCOMM_MPI)
          call FlushMPI_H_Cray
       end if
       if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
@@ -2222,13 +2295,16 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medium,Idzhk,Idyhj) 
 #endif
+#ifdef CompileWithACC
+!$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medium,Idzhk,Idyhj)  copyin(Ex,sggMiEx,Hy,Hz,Idyh,Idzh,b,G1,G2) copyout(Ex)
+#endif
       do k=1,this%bounds%sweepEx%NZ
          do j=1,this%bounds%sweepEx%NY
             do i=1,this%bounds%sweepEx%NX
                Idzhk=Idzh(k)
                Idyhj=Idyh(j)
                medium =sggMiEx(i,j,k)
-               Ex(i,j,k)=G1(medium)*Ex(i,j,k)+G2(medium)* &
+               Ex(i,j,k)=this%g%g1(medium)*Ex(i,j,k)+this%g%g2(medium)* &
                ((Hz(i,j,k)-Hz(i,j-1,k))*Idyhj-(Hy(i,j,k)-Hy(i,j,k-1))*Idzhk)
             end do
          end do
@@ -2270,12 +2346,15 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medium,Idzhk)  
 #endif
+#ifdef CompileWithACC
+!$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medium,Idzhk)     copyin(Ey,sggMiEy,Hz,Hx,Idzh,Idxh,b,G1,G2) copyout(Ey)
+#endif
       do k=1,this%bounds%sweepEy%NZ
          do j=1,this%bounds%sweepEy%NY
             do i=1,this%bounds%sweepEy%NX
                Idzhk=Idzh(k)
                medium =sggMiEy(i,j,k)
-               Ey(i,j,k)=G1(medium)*Ey(i,j,k)+G2(medium)*((Hx(i,j,k)-Hx(i,j,k-1))*Idzhk-(Hz(i,j,k)-Hz(i-1,j,k))*Idxh(i))
+               Ey(i,j,k)=this%g%g1(medium)*Ey(i,j,k)+this%g%g2(medium)*((Hx(i,j,k)-Hx(i,j,k-1))*Idzhk-(Hz(i,j,k)-Hz(i-1,j,k))*Idxh(i))
             end do
          end do
       end do
@@ -2321,12 +2400,15 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP  PARALLEL do  DEFAULT(SHARED) collapse (2) private (i,j,k,medium,Idyhj)    
 #endif
+#ifdef CompileWithACC
+!$ACC parallel loop   DEFAULT(present) collapse (2) private (i,j,k,medium,Idyhj)        copyin(Ez,sggMiEz,Hx,Hy,Idxh,Idyh,b,G1,G2) copyout(Ez)
+#endif
       do k=1,this%bounds%sweepEz%NZ
          do j=1,this%bounds%sweepEz%NY
             do i=1,this%bounds%sweepEz%NX
                Idyhj=Idyh(j)
                medium =sggMiEz(i,j,k)
-               Ez(i,j,k)=G1(medium)*Ez(i,j,k)+G2(medium)*((Hy(i,j,k)-Hy(i-1,j,k))*Idxh(i)-(Hx(i,j,k)-Hx(i,j-1,k))*Idyhj)
+               Ez(i,j,k)=this%g%g1(medium)*Ez(i,j,k)+this%g%g2(medium)*((Hy(i,j,k)-Hy(i-1,j,k))*Idxh(i)-(Hx(i,j,k)-Hx(i,j-1,k))*Idyhj)
             end do
          end do
       end do
@@ -2389,13 +2471,16 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP  PARALLEL do  DEFAULT(SHARED) collapse (2) private (i,j,k,medium,Idzek,Idyej)     
 #endif
+#ifdef CompileWithACC
+!$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medium,Idzek,Idyej)       copyin(Hx,sggMiHx,Ey,Ez,Idye,Idze,b,GM1,GM2) copyout(Hx)
+#endif
       do k=1,this%bounds%sweepHx%NZ
          do j=1,this%bounds%sweepHx%NY
             do i=1,this%bounds%sweepHx%NX
             Idzek=Idze(k)
             Idyej=Idye(j)
                medium =sggMiHx(i,j,k)
-               Hx(i,j,k)=GM1(medium)*Hx(i,j,k)+GM2(medium)*((Ey(i,j,k+1)-Ey(i,j,k))*Idzek-(Ez(i,j+1,k)-Ez(i,j,k))*Idyej)
+               Hx(i,j,k)=this%g%gm1(medium)*Hx(i,j,k)+this%g%gm2(medium)*((Ey(i,j,k+1)-Ey(i,j,k))*Idzek-(Ez(i,j+1,k)-Ez(i,j,k))*Idyej)
             end do
          end do
       end do
@@ -2436,12 +2521,15 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medium,Idzek)     
 #endif
+#ifdef CompileWithACC
+!$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medium,Idzek)         copyin(Hy,sggMiHy,Ez,Ex,Idze,Idxe,b,GM1,GM2) copyout(Hy)
+#endif
       do k=1,this%bounds%sweepHy%NZ
          do j=1,this%bounds%sweepHy%NY
             do i=1,this%bounds%sweepHy%NX
                Idzek=Idze(k)
                medium =sggMiHy(i,j,k)
-               Hy(i,j,k)=GM1(medium)*Hy(i,j,k)+GM2(medium)*((Ez(i+1,j,k)-Ez(i,j,k))*Idxe(i)-(Ex(i,j,k+1)-Ex(i,j,k))*Idzek)
+               Hy(i,j,k)=this%g%gm1(medium)*Hy(i,j,k)+this%g%gm2(medium)*((Ez(i+1,j,k)-Ez(i,j,k))*Idxe(i)-(Ex(i,j,k+1)-Ex(i,j,k))*Idzek)
             end do
          end do
       end do
@@ -2480,12 +2568,15 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medium,Idyej)  
 #endif
+#ifdef CompileWithACC
+!$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medium,Idyej)       copyin(Hz,sggMiHz,Ex,Ey,Idxe,Idye,b,GM1,GM2) copyout(Hz)
+#endif
       do k=1,this%bounds%sweepHz%NZ
          do j=1,this%bounds%sweepHz%NY
             do i=1,this%bounds%sweepHz%NX
                Idyej=Idye(j)
                medium =sggMiHz(i,j,k)
-               Hz(i,j,k)=GM1(medium)*Hz(i,j,k)+GM2(medium)*((Ex(i,j+1,k)-Ex(i,j,k))*Idyej-(Ey(i+1,j,k)-Ey(i,j,k))*Idxe(i))
+               Hz(i,j,k)=this%g%gm1(medium)*Hz(i,j,k)+this%g%gm2(medium)*((Ex(i,j+1,k)-Ex(i,j,k))*Idyej-(Ey(i+1,j,k)-Ey(i,j,k))*Idxe(i))
             end do
          end do
       end do
@@ -2939,6 +3030,7 @@ contains
          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
          call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nInputRoot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
          Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
+         call save_outputs_dft_state(this%sgg%time(this%n))
          write(dubuf,'(a,i9)')  ' DONE FINAL FLUSHING OF RESTARTING FIELDS N=',this%n
          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
          call print11(this%control%layoutnumber,dubuf)
@@ -2954,7 +3046,7 @@ contains
       call print11(this%control%layoutnumber,dubuf)
       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
       if (this%thereAre%Observation) then
-         call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, .TRUE.)
+         call flush_outputs(this%sgg%time, this%n, this%control, fieldReference, this%bounds, .TRUE., .TRUE.)
       end if
 #ifdef CompileWithMTLN
       if (this%mtlnObservationInitialized) call CloseMTLNObservation()

@@ -74,7 +74,10 @@ This object must always be present and contains general information regarding th
 Additionally, it may contain the following optional entry:
 
 + `<mtlnProblem>` : A boolean indicating whether the problem is a pure MTLN problem and will solved using only the MTLN solver. If it is not present, its default value is `false`
++ `<restartFlushMinutes>` : An integer number of minutes between restart checkpoints (`.fields` files), the same as `-flush <minutes>`. It must be at least 1; `0` or absence means no periodic checkpoint. Sub-minute intervals are not available. See [resuming a run](output.md#resuming-a-run).
 + `<additionalArguments>` : A string with flags. Keep in mind that flags passed by console have higher priority.
+
+When the same option is set in several places, the priority is: console flags, then `additionalArguments`, then `restartFlushMinutes`.
 
 **Example:**
 
@@ -420,7 +423,7 @@ stack.
 
 ### `thinSlot`
 
-A `thinSlot` represents a gap between two conductive surfaces. Therefore it must be located at a surface and be defined using line cell elements only. Its `<width>` is a real number which defines the distance between the surfaces in meters.
+A `thinSlot` represents a gap between two conductive surfaces. Therefore it must be located at a surface and be defined using line cell intervals or a one-cell-thick strip of surface cell intervals. Surface-defined slots are expanded into one-cell slot segments; branching, wider-than-one-quad strips, isolated quads and four-quad groups are rejected. The signed surface interval orientation is used as the host-face normal, and the mesher must provide a consistent normal orientation along the strip: adjacent coplanar faces with opposite normals are rejected. A slot whose intervals collapse to zero length is accepted and contributes no components. Its `<width>` is a real number which defines the distance between the surfaces in meters.
 
 The sheet containing the gap may be a `pec` material, an `isotropic` material applied as a surface with non-zero `electricConductivity`, or a `multilayeredSurface` (surface impedance) material.
 
@@ -938,6 +941,8 @@ Using MTLN wires there are some restrictions on the position of the generator:
 MTLN voltage(current) generators can have a series(parallel) resistance, which is optional. In case no value is provided, the resistance default value will be 0.0. for `voltage` generators and 1.0e22 for `current` generators.
 
 If the generator is located at the termination of a wire, the series or parallel `resistance` is added to the connection defined in the corresponding `terminal`. If a current generator is located on a wire intermediate position, its Thévenin equivalent (generator + series resistance) is computed to substitute the current generator.  The per-unit-length properties of the corresponding segment are modified according to the `resistance` of the generator.
+
+Generators at the termination of a wire are solved by ngspice with the XSPICE `filesource` model. Its code models (`*.cm`) are shipped next to the `semba-fdtd` executable and loaded from there unless a `spinit` file has already loaded them; the simulation stops with a fatal error if the circuit cannot be parsed.
 
 #### Sources hardness
 

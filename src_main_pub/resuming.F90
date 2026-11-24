@@ -58,6 +58,12 @@ module resuming_m
    real(kind=RKIND), save           :: eps0,mu0
 !!!   
    integer(kind=4), parameter, private  :: BLOCK_SIZE = 1024
+   !first record of every restart file: identifies the process-count header
+   character(len=*), parameter, private :: RESUME_TAG = 'SEMBA_RESUME_NP1'
+   !timing sections of flush_and_save_resume, reported as the maximum over ranks
+   integer(kind=4), parameter, private  :: NSECTIONS = 5
+   character(len=*), parameter, private :: SECTION_NAMES(NSECTIONS) = [character(len=24) :: &
+      'reset checkpoint', 'fields and borders', 'wire exchange', 'modules', 'close']
    public ReadFields,flush_and_save_resume
 
 
@@ -67,9 +73,10 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Read the main stepping program fields from isk for resuming simulation
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine ReadFields(sggalloc,lastexecutedtimestep,lastexecutedtime,ultimodt,eps00,mu00,Ex,Ey,Ez,Hx,Hy,Hz)
+   subroutine ReadFields(sggalloc,lastexecutedtimestep,lastexecutedtime,ultimodt,eps00,mu00,num_procs,Ex,Ey,Ez,Hx,Hy,Hz)
 
       type(XYZlimit_t), dimension(1:6) :: sggalloc
+      integer(kind=4), intent(in) :: num_procs
       real(kind=RKIND)   , intent(inout) :: &
       Ex(sggalloc(IEX)%XI : sggalloc(IEX)%XE,sggalloc(IEX)%YI : sggalloc(IEX)%YE,sggalloc(IEX)%ZI : sggalloc(IEX)%ZE),&
       Ey(sggalloc(IEY)%XI : sggalloc(IEY)%XE,sggalloc(IEY)%YI : sggalloc(IEY)%YE,sggalloc(IEY)%ZI : sggalloc(IEY)%ZE),&
@@ -80,10 +87,24 @@ contains
       real(kind=RKIND_TIME) :: lastexecutedtime,ultimodt
       real(kind=RKIND) :: eps00,mu00
       integer(kind=4) :: lastexecutedtimestep,i,j,k,i_block,n_block,ini,fin
+      character(len=len(RESUME_TAG)) :: tag
+      integer(kind=4) :: savedprocs, ios
+      character(len=BUFSIZE) :: dubuf
 
       eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
       zvac=sqrt(mu0/eps0)
       cluz=1.0_RKIND/sqrt(mu0*eps0)
+
+      !checked before any field is loaded, so every rank aborts here and none waits in MPI
+      read (14, iostat=ios) tag, savedprocs
+      if (ios /= 0) call log_msg(LOG_FATAL, 'RESUMING', 'Cannot read restart header: the file is truncated or corrupt')
+      if (tag /= RESUME_TAG) call log_msg(LOG_FATAL, 'RESUMING', &
+         'Restart file has no process-count header (written by an older version). It cannot be resumed')
+      if (savedprocs /= num_procs) then
+         write(dubuf,'(a,i0,a,i0)') 'Resume needs the same number of MPI processes as the original run: saved with ', &
+            savedprocs, ', current run uses ', num_procs
+         call log_msg(LOG_FATAL, 'RESUMING', trim(dubuf))
+      end if
 
       read (14) lastexecutedtimestep,lastexecutedtime,ultimodt,eps0,mu0
       do k=sggalloc(IEX)%ZI,sggalloc(IEX)%ZE
@@ -167,6 +188,17 @@ contains
 
    !---------------------------------------------------->
    !**************************************************************************************************
+   !elapsed seconds since tickPrev, and moves tickPrev to now
+   subroutine lap(tickPrev, tickRate, lapSec)
+      integer(kind=8), intent(inout) :: tickPrev
+      integer(kind=8), intent(in)    :: tickRate
+      real(kind=8), intent(out)      :: lapSec
+      integer(kind=8) :: tickNow
+      call system_clock(tickNow)
+      lapSec = real(tickNow - tickPrev, kind=8) / real(tickRate, kind=8)
+      tickPrev = tickNow
+   end subroutine lap
+   !**************************************************************************************************
    subroutine flush_and_save_resume(sgg, b, layoutnumber, num_procs, nInputRoot, nresumeable2, thereare, fin,eps00,mu00, everflushed,  &
    Ex, Ey, Ez, Hx, Hy, Hz,wiresflavor,simu_devia,stochastic)
       logical :: simu_devia,stochastic
@@ -196,8 +228,10 @@ contains
       character(len=BUFSIZE) :: dubuf
       real(kind = RKIND) :: eps00,mu00
       !---------------------------> starts flush_and_save_resume <-----------------------------------
-      integer :: my_iostat
-      
+      integer :: my_iostat, i
+      integer(kind=8) :: tickPrev, tickRate
+      real(kind=8) :: sectionSec(NSECTIONS), sectionMax(NSECTIONS)
+
       eps0=eps00; mu0=mu00; !hack to turn the step variables into globals
       zvac=sqrt(mu0/eps0)
       cluz=1.0_RKIND/sqrt(mu0*eps0)
@@ -213,6 +247,7 @@ contains
          call flush(10)
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      call system_clock(tickPrev, tickRate)
       !!!  Open unit 14 and store the fields of each module for resuming pruposesdata
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !
@@ -241,12 +276,14 @@ contains
       my_iostat=0
 8777  if(my_iostat /= 0) write(*,FMT='(a)',advance='no'), '.' !!if(my_iostat /= 0) print '(i5,a1,i4,2x,a)',8777,'.',layoutnumber,trim(adjustl( nresumeable2))//'.old'
       open (14, file = trim(adjustl(nresumeable2)), form = 'unformatted',err=8777,iostat=my_iostat,status='new',action='write')
+      call lap(tickPrev, tickRate, sectionSec(1))
       !--->
-      call StoreFields(sgg,fin,eps0,mu0, b, Ex, Ey, Ez, Hx, Hy, Hz)
+      call StoreFields(sgg,fin,num_procs,eps0,mu0, b, Ex, Ey, Ez, Hx, Hy, Hz)
       !this module data !warning the calling order must be the same that the calling to the init routines
       if(Thereare%PMLBorders)       call StoreFieldsCPMLBorders
       if (Thereare%PMLbodies)        call StorefieldsPMLbodies
       if(Thereare%MURBorders)       call StoreFieldsMURBorders
+      call lap(tickPrev, tickRate, sectionSec(2))
 #ifdef CompileWithMPI
       !do an update of the currents to later read the currents OK
       if (num_procs>1)  then
@@ -270,6 +307,7 @@ contains
       
 
 #endif
+      call lap(tickPrev, tickRate, sectionSec(3))
       if(Thereare%Wires)       then
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
              (trim(adjustl(wiresflavor))=='transition')) then
@@ -317,6 +355,7 @@ contains
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
+      call lap(tickPrev, tickRate, sectionSec(4))
       close (14,err=634)
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -325,6 +364,18 @@ contains
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
+      call lap(tickPrev, tickRate, sectionSec(5))
+#ifdef CompileWithMPI
+      call MPI_Reduce(sectionSec, sectionMax, NSECTIONS, MPI_DOUBLE_PRECISION, MPI_MAX, 0_4, SUBCOMM_MPI, ierr)
+#else
+      sectionMax = sectionSec
+#endif
+      if (layoutnumber == 0) then
+         do i = 1, NSECTIONS
+            write(dubuf,'(a,a,a,f0.3,a)') 'flush section (max over ranks) ', trim(SECTION_NAMES(i)), ': ', sectionMax(i), ' s'
+            call log_msg(LOG_INFO, 'RESUMING', trim(dubuf))
+         end do
+      end if
       goto 635
 634   call log_msg(LOG_WARN, 'RESUMING', 'flushsaveandresume: cannot write restarting fields, ignoring and continuing')
 635   return
@@ -334,11 +385,11 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Flush the main stepping program fields to disk after simulation
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine StoreFields(sgg,finaltimestep,eps0,mu0, b, Ex, Ey, Ez, Hx, Hy, Hz)
+   subroutine StoreFields(sgg,finaltimestep,num_procs,eps0,mu0, b, Ex, Ey, Ez, Hx, Hy, Hz)
       !---------------------------> inputs <----------------------------------------------------------
       type(SGGFDTDINFO_t), intent(in) :: sgg
       type(bounds_t), intent(in) :: b
-      integer(kind = 4), intent(in) :: finaltimestep
+      integer(kind = 4), intent(in) :: finaltimestep, num_procs
       !--->
       real(kind = RKIND), dimension(0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent(in) :: Ex
       real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(in) :: Ey
@@ -351,6 +402,7 @@ contains
       integer(kind = 4) :: i, j, k, i_block, n_block, ini, fin
       real(kind = RKIND) :: eps0,mu0,cluz,zvac
       !---------------------------> starts StoreFields <---------------------------------------------
+      write(14,err=634) RESUME_TAG, num_procs
       write(14,err=634) finaltimestep,sgg%time(finaltimestep),sgg%dt,eps0,mu0
       !--->
       do k = 0, b%Ex%NZ-1

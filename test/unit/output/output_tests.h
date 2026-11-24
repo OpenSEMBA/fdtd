@@ -18,6 +18,7 @@ extern "C" int test_output_point_interface_owner();
 extern "C" int test_output_collective_contract();
 extern "C" int test_output_publication_contract();
 extern "C" int test_output_metadata_contract_edges();
+extern "C" int test_keep_previous_run_files();
 extern "C" int test_output_transport_serial();
 
 // Artifact metadata and binary layout.
@@ -41,6 +42,7 @@ extern "C" int test_multiple_flush_point_probe();
 extern "C" int test_init_movie_probe();
 extern "C" int test_update_movie_probe();
 extern "C" int test_time_buffer_capacity();
+extern "C" int test_flush_cadence_from_counts();
 extern "C" int test_flush_movie_probe();
 extern "C" int test_close_movie_probe();
 extern "C" int test_init_frequency_slice_probe();
@@ -85,6 +87,8 @@ TEST(output, test_metadata_contract_edges) { EXPECT_EQ(0, test_output_metadata_c
 TEST(output, test_transport_serial) { EXPECT_EQ(0, test_output_transport_serial()); }
 // Replaces a completed file without exposing a partial target.
 TEST(output, test_atomic_file_replacement) { EXPECT_EQ(0, test_atomic_file_replacement()); }
+// Moves the files of the previous run aside when a run is resumed.
+TEST(output, test_keep_previous_run_files) { EXPECT_EQ(0, test_keep_previous_run_files()); }
 // Selects the highest supported native precision for mixed-value records.
 TEST(output, test_binary_native_precision) { EXPECT_EQ(0, test_output_binary_native_precision()); }
 // Registers a point probe and its declared output paths.
@@ -118,6 +122,7 @@ TEST(output, test_init_movie_probe_for_pec_surface) { EXPECT_EQ(0, test_init_mov
 TEST(output, test_update_movie_probe_for_pec_surface) { EXPECT_EQ(0, test_update_movie_probe()); }
 // Sizes time buffers to the samples taken between periodic flushes.
 TEST(output, test_time_buffer_capacity) { EXPECT_EQ(0, test_time_buffer_capacity()); }
+TEST(output, test_flush_cadence_from_counts) { EXPECT_EQ(0, test_flush_cadence_from_counts()); }
 // Flushes movie data and creates HDF5 and XDMF artifacts without a binary payload.
 TEST(output, test_flush_movie_probe_data) { EXPECT_EQ(0, test_flush_movie_probe()); }
 // Closes a movie writer without publishing a JSON sidecar.

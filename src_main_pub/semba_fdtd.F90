@@ -252,6 +252,7 @@ contains
       call get_secnds (this%l%time_out2)
 
 
+      status = 0
       if (present(input_flags)) then
          this%l%read_command_line = .false.
          this%l%chain2 = input_flags
@@ -312,6 +313,8 @@ contains
    call data_loader(this%l%filefde, parser)
 
    this%sgg%extraSwitches=parser%switches
+   !JSON default for -flush; additionalArguments and console flags parsed by interpreta override it
+   this%l%flushminutesFields=parser%general%restartFlushMinutes
 !!!gives preference to command-line switches
    call getcommandargument (this%l%chain2, 1, chaindummy, this%l%length, statuse, getBinaryPath())
 
@@ -1083,17 +1086,15 @@ contains
                         this%time_desdelanzamiento)
    end function
 
-   subroutine semba_update_after_simulation(this, success, sgg, eps, mu, media)
+   subroutine semba_update_after_simulation(this, success, sgg, eps, mu)
       class(semba_fdtd_t) :: this
       logical :: success
       type(SGGFDTDINFO_t) :: sgg
-      type(media_matrices_t) :: media
       real(kind=rkind) :: eps ,mu
       this%finishedwithsuccess = success
       this%sgg = sgg
       this%eps0 = eps
       this%mu0 = mu
-      this%media = media
    end subroutine
 
    subroutine semba_launch(this)
@@ -1114,9 +1115,9 @@ contains
 #endif
          if ((this%l%finaltimestep >= 0).and.(.not.this%l%skindepthpre)) then
             call solver%launch_simulation()
-            call this%update_after_simulation(solver%finishedwithsuccess, solver%sgg, solver%eps0,solver%mu0,solver%media)
+            call this%update_after_simulation(solver%finishedwithsuccess, solver%sgg, solver%eps0,solver%mu0)
 
-            deallocate(this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz,this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz,this%media%sggMiNo,this%media%sggMtag)
+            deallocate(solver%media%sggMiEx, solver%media%sggMiEy, solver%media%sggMiEz,solver%media%sggMiHx, solver%media%sggMiHy, solver%media%sggMiHz,solver%media%sggMiNo,solver%media%sggMtag)
          else
 #ifdef CompileWithMPI
             call MPI_Barrier(SUBCOMM_MPI,this%l%ierr)

@@ -82,55 +82,6 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
-    },
-    {
-      "name": "wsl-rls-r4",
-      "generator": "Ninja",
-      "binaryDir": "build-wsl-rls-r4/",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
-      },
-      "environment": {
-        "FC": "gfortran",
-        "CC": "gcc",
-        "CXX": "g++"
-      },
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "SEMBA_FDTD_ENABLE_MPI": "OFF",
-        "SEMBA_FDTD_ENABLE_DOUBLE_PRECISION": "OFF"
-      }
-    },
-    {
-      "name": "wsl-rls-r8",
-      "inherits": "wsl-rls-r4",
-      "binaryDir": "build-wsl-rls-r8/",
-      "cacheVariables": {
-        "SEMBA_FDTD_ENABLE_DOUBLE_PRECISION": "ON"
-      }
-    },
-    {
-      "name": "win-rls-r4",
-      "inherits": "rls",
-      "binaryDir": "build-win-rls-r4/",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      },
-      "cacheVariables": {
-        "SEMBA_FDTD_ENABLE_DOUBLE_PRECISION": "OFF"
-      }
-    },
-    {
-      "name": "win-rls-r8",
-      "inherits": "win-rls-r4",
-      "binaryDir": "build-win-rls-r8/",
-      "cacheVariables": {
-        "SEMBA_FDTD_ENABLE_DOUBLE_PRECISION": "ON"
-      }
     }
   ],
   "buildPresets": [
@@ -169,22 +120,6 @@
     {
       "name": "intel-dbg",
       "configurePreset": "intel-dbg"
-    },
-    {
-      "name": "wsl-rls-r4",
-      "configurePreset": "wsl-rls-r4"
-    },
-    {
-      "name": "wsl-rls-r8",
-      "configurePreset": "wsl-rls-r8"
-    },
-    {
-      "name": "win-rls-r4",
-      "configurePreset": "win-rls-r4"
-    },
-    {
-      "name": "win-rls-r8",
-      "configurePreset": "win-rls-r8"
     }
   ]
 }

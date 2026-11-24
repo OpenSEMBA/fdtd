@@ -495,6 +495,16 @@ class FDTD:
         self._hasRun = True
         assert self.hasFinishedSuccessfully()
 
+    def start(self, start_new_session=False):
+        # non-blocking launch; the caller owns the returned process (poll, kill, wait)
+        return subprocess.Popen(
+            self.run_command,
+            cwd=self.getFolder(),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=start_new_session,
+        )
+
     def hasFinishedSuccessfully(self):
         if self._hasRun and (self.output.returncode == 0):
             return True

@@ -4,6 +4,7 @@ All pairwise Semba RMS differences must pass before each case is checked
 against the analytical Mie solution up to 300 MHz.
 """
 
+import os
 import threading
 import time
 from itertools import combinations
@@ -202,10 +203,11 @@ def test_pairwise_rms_db_and_pass_fail_threshold():
 @pytest.mark.farfield
 @pytest.mark.planewave
 @pytest.mark.probes
-def test_sphere_symmetry_rcs_agrees_across_cases(tmp_path, request):
-    """Compare eight cases from SEMBA runs or existing CSVs."""
-    csv_dir = request.config.getoption("--sphere-rcs-csv-dir")
-    if csv_dir is not None:
+def test_sphere_symmetry_rcs_agrees_across_cases(tmp_path):
+    """Compare eight cases from SEMBA runs, or from existing CSVs when
+    SPHERE_RCS_CSV_DIR points to a folder containing them."""
+    csv_dir = os.environ.get("SPHERE_RCS_CSV_DIR")
+    if csv_dir:
         results = _read_backscatter_rcs_csvs(csv_dir)
         print(f"Using precomputed RCS CSVs from {csv_dir}; SEMBA was not launched.")
     else:

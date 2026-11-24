@@ -16,6 +16,10 @@ module pointProbeOutput_m
    public :: update_point_probe_output
    public :: flush_point_probe_output
    public :: close_point_probe_output
+   public :: save_point_probe_dft_state
+   public :: load_point_probe_dft_state
+
+   character(len=*), parameter :: DFT_STATE_EXTENSION = '.dft'
 
 contains
    subroutine init_point_probe_output(this, coordinates, field, domain, outputTypeExtension, mpidir, timeInterval, &
@@ -43,9 +47,9 @@ contains
       if (present(hasIncident)) this%hasIncident = hasIncident
 
       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
-         call alloc_and_init(this%timeStep, time_buffer_capacity(this%domain), 0.0_RKIND_TIME)
-         call alloc_and_init(this%valueForTime, time_buffer_capacity(this%domain), 0.0_RKIND)
-         if (this%hasIncident) call alloc_and_init(this%incidentForTime, time_buffer_capacity(this%domain), 0.0_RKIND)
+         call alloc_and_init(this%timeStep, time_buffer_capacity(this%domain, SMALL_PROBE_BUFFER_SIZE), 0.0_RKIND_TIME)
+         call alloc_and_init(this%valueForTime, time_buffer_capacity(this%domain, SMALL_PROBE_BUFFER_SIZE), 0.0_RKIND)
+         if (this%hasIncident) call alloc_and_init(this%incidentForTime, time_buffer_capacity(this%domain, SMALL_PROBE_BUFFER_SIZE), 0.0_RKIND)
       end if
       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
          this%nFreq = this%domain%fnum
@@ -312,4 +316,45 @@ contains
          this%fileUnitFreq = 0
       end if
    end subroutine close_point_probe_output
+
+   subroutine save_point_probe_dft_state(this, time)
+      type(point_probe_output_t), intent(in) :: this
+      real(kind=RKIND_TIME), intent(in) :: time
+      integer :: unit, ioStatus
+
+      if (.not. allocated(this%valueForFreq)) return
+      open (newunit=unit, file=trim(this%filePathFreq)//DFT_STATE_EXTENSION, form='unformatted', status='replace', &
+            action='write', iostat=ioStatus)
+      if (ioStatus /= 0) then
+         call log_msg(LOG_WARN, 'OUTPUT', 'Cannot save the frequency sums of '//trim(this%filePathFreq))
+         return
+      end if
+      write (unit) time, this%nFreq, this%hasIncident
+      write (unit) this%valueForFreq
+      if (this%hasIncident) write (unit) this%incidentForFreq
+      close (unit)
+   end subroutine save_point_probe_dft_state
+
+   subroutine load_point_probe_dft_state(this, time)
+      type(point_probe_output_t), intent(inout) :: this
+      real(kind=RKIND_TIME), intent(in) :: time
+      real(kind=RKIND_TIME) :: savedTime
+      integer :: unit, ioStatus, savedNFreq
+      logical :: savedHasIncident
+
+      if (.not. allocated(this%valueForFreq)) return
+      open (newunit=unit, file=trim(this%filePathFreq)//DFT_STATE_EXTENSION, form='unformatted', status='old', &
+            action='read', iostat=ioStatus)
+      if (ioStatus == 0) read (unit, iostat=ioStatus) savedTime, savedNFreq, savedHasIncident
+      if (ioStatus /= 0 .or. savedNFreq /= this%nFreq .or. savedHasIncident .neqv. this%hasIncident .or. &
+          abs(savedTime - time) > 1.0e-9_RKIND_TIME*abs(time)) then
+         call log_msg(LOG_WARN, 'OUTPUT', 'Frequency sums of '//trim(this%filePathFreq)//' not restored, starting from zero')
+         if (ioStatus == 0) close (unit)
+         return
+      end if
+      read (unit, iostat=ioStatus) this%valueForFreq
+      if (this%hasIncident .and. ioStatus == 0) read (unit, iostat=ioStatus) this%incidentForFreq
+      close (unit)
+      if (ioStatus /= 0) call log_msg(LOG_WARN, 'OUTPUT', 'Frequency sums of '//trim(this%filePathFreq)//' are incomplete')
+   end subroutine load_point_probe_dft_state
 end module

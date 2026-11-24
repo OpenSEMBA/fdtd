@@ -22,8 +22,12 @@ extern "C" int test_read_planewave();
 extern "C" int test_read_planewave_empty_elementids();
 extern "C" int test_read_sgbc();
 extern "C" int test_read_dielectricslab();
+extern "C" int test_read_lorentz_material();
 extern "C" int test_read_thinslot();
 extern "C" int test_read_thinslot_ez();
+extern "C" int test_read_thinslot_surface();
+extern "C" int test_read_thinslot_surface_negativenormal();
+extern "C" int test_read_thinslot_zerolength();
 extern "C" int test_read_currentinjection();
 extern "C" int test_read_sphere();
 extern "C" int test_read_airplane();
@@ -41,6 +45,8 @@ extern "C" int test_read_unshielded_multiwires_multipolar_expansion();
 extern "C" int test_read_background_defaults();
 extern "C" int test_read_background_set();
 extern "C" int test_read_wire_probe_defaults();
+extern "C" int test_read_restart_flush_minutes();
+extern "C" int test_read_restart_flush_default();
 extern "C" int test_read_nodal_source_resistance_per_meter();
 extern "C" int test_read_nodal_source_total_resistance();
 extern "C" int test_read_nodal_source_zero_length();
@@ -69,8 +75,13 @@ TEST(smbjson, parser_reject_conformal_nonpec_material) { EXPECT_EQ(0, test_parse
 TEST(smbjson, read_planewave)            { EXPECT_EQ(0, test_read_planewave()); }
 TEST(smbjson, read_planewave_empty_elementids) { EXPECT_EQ(0, test_read_planewave_empty_elementids()); }
 TEST(smbjson, read_dielectricslab)       { EXPECT_EQ(0, test_read_dielectricslab()); }
+TEST(smbjson, read_lorentz_material)     { EXPECT_EQ(0, test_read_lorentz_material()); }
 TEST(smbjson, read_thinslot)             { EXPECT_EQ(0, test_read_thinslot()); }
 TEST(smbjson, read_thinslot_ez)          { EXPECT_EQ(0, test_read_thinslot_ez()); }
+TEST(smbjson, read_thinslot_surface)     { EXPECT_EQ(0, test_read_thinslot_surface()); }
+TEST(smbjson, read_thinslot_surface_negativeNormal) {
+                                           EXPECT_EQ(0, test_read_thinslot_surface_negativenormal()); }
+TEST(smbjson, read_thinslot_zeroLength)  { EXPECT_EQ(0, test_read_thinslot_zerolength()); }
 TEST(smbjson, read_sgbc)                 { EXPECT_EQ(0, test_read_sgbc()); }
 TEST(smbjson, read_sphere)               { EXPECT_EQ(0, test_read_sphere()); }
 TEST(smbjson, read_airplane)             { EXPECT_EQ(0, test_read_airplane()); }
@@ -79,6 +90,8 @@ TEST(smbjson, read_lumped_multi_element) { EXPECT_EQ(0, test_read_lumped_multi_e
 TEST(smbjson, read_background_defaults) { EXPECT_EQ(0, test_read_background_defaults()); }
 TEST(smbjson, read_background_set)      { EXPECT_EQ(0, test_read_background_set()); }
 TEST(smbjson, read_wire_probe_defaults) { EXPECT_EQ(0, test_read_wire_probe_defaults()); }
+TEST(smbjson, read_restart_flush_minutes) { EXPECT_EQ(0, test_read_restart_flush_minutes()); }
+TEST(smbjson, read_restart_flush_default) { EXPECT_EQ(0, test_read_restart_flush_default()); }
 TEST(smbjson, read_nodal_source_resistance_per_meter) {
                                            EXPECT_EQ(0, test_read_nodal_source_resistance_per_meter()); }
 TEST(smbjson, read_nodal_source_total_resistance) {

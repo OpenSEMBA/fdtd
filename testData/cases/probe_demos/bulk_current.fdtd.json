@@ -1,0 +1,49 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Bulk current through a rectangular surface crossed by the plane wave.",
+
+    "general": {
+        "timeStep": 3e-11,
+        "numberOfSteps": 1000
+    },
+
+    "boundary": {
+        "all": {"type": "mur"}
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [30, 30, 30],
+            "steps": { "x": [0.02], "y": [0.02], "z": [0.02] }
+        },
+        "elements": [
+            {"id": 10, "type": "cell", "intervals": [ [ [8, 8, 8], [23, 23, 23] ] ]},
+            {"id": 11, "type": "cell", "intervals": [ [ [15, 10, 10], [15, 20, 20] ] ]}
+        ]
+    },
+
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "gauss.exc",
+            "elementIds": [10],
+            "direction": { "theta": 0.0, "phi": 0.0 },
+            "polarization": { "theta": 1.5708, "phi": 0.0 }
+        }
+    ],
+
+    "probes": [
+        {
+            "name": "bulk_current_surface",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [11],
+            "domain": {
+                "type": "time",
+                "initialTime": 0.0,
+                "finalTime": 3e-8,
+                "samplingPeriod": 3e-11
+            }
+        }
+    ]
+}

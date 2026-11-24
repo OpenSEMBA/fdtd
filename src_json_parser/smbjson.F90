@@ -55,6 +55,7 @@ module smbjson_m
       procedure, private :: readPECRegions
       procedure, private :: readPMCRegions
       procedure, private :: readDielectricRegions
+      procedure, private :: readDispersiveMaterials
       procedure, private :: readLossyThinSurfaces
       procedure, private :: readBoundary
       procedure, private :: readPlanewaves
@@ -180,6 +181,7 @@ contains
       res%pmcRegs = this%readPMCRegions()
       res%dielRegs = this%readDielectricRegions()
       res%lossyThinSurfs = this%readLossyThinSurfaces()
+      res%frqDepMats = this%readDispersiveMaterials()
 
       ! Sources
       res%plnSrc = this%readPlanewaves()
@@ -614,6 +616,8 @@ contains
       res%nmax = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
       if (res%nmax <=0) call log_msg(LOG_ERROR, 'SMBJSON', 'numberOfSteps has to be positive')
       res%mtlnProblem = this%getLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)
+      res%restartFlushMinutes = this%getIntAt(this%root, J_GENERAL//'.'//J_GEN_RESTART_FLUSH_MINUTES, default = 0)
+      if (res%restartFlushMinutes < 0) call log_msg(LOG_FATAL, 'SMBJSON', 'restartFlushMinutes cannot be negative')
    end function
 
    function readMediaMatrix(this) result(res)
@@ -1207,6 +1211,157 @@ contains
          end do
 
          containsCellRegionsWithType = .false.
+      end function
+   end function
+
+   function readDispersiveMaterials(this) result (res)
+      class(parser_t), intent(in) :: this
+      type(FreqDepenMaterials_t) :: res
+
+      type(materialAssociation_t), dimension(:), allocatable :: mAs
+      type(coords_t), dimension(:), pointer :: cs
+      integer :: nVols, nSurfs, nLins
+
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_LORENTZ])
+
+      ! One dispersive entry per material association and cell type, so a
+      ! material can cover volumes, surfaces and lines at the same time.
+      nVols = countAssociations(mAs, CELL_TYPE_VOXEL)
+      nSurfs = countAssociations(mAs, CELL_TYPE_SURFEL)
+      nLins = countAssociations(mAs, CELL_TYPE_LINEL)
+
+      allocate(res%Vols(nVols))
+      allocate(res%Surfs(nSurfs))
+      allocate(res%Lins(nLins))
+      res%nVols = nVols
+      res%nSurfs = nSurfs
+      res%nLins = nLins
+      res%nVols_max = nVols
+      res%nSurfs_max = nSurfs
+      res%nLins_max = nLins
+      res%n_c_max = 0
+
+      call fillEntries(res%Vols, CELL_TYPE_VOXEL)
+      call fillEntries(res%Surfs, CELL_TYPE_SURFEL)
+      call fillEntries(res%Lins, CELL_TYPE_LINEL)
+
+   contains
+      integer function countAssociations(associations, cellType) result(n)
+         type(materialAssociation_t), dimension(:), intent(in) :: associations
+         integer, intent(in) :: cellType
+         integer :: k
+
+         n = 0
+         nullify(cs)
+         do k = 1, size(associations)
+            call this%matAssToCoords(cs, associations(k), cellType)
+            if (size(cs) > 0) n = n + 1
+            deallocate(cs)
+            nullify(cs)
+         end do
+      end function
+
+      subroutine fillEntries(entries, cellType)
+         type(FreqDepenMaterial_t), dimension(:), intent(inout) :: entries
+         integer, intent(in) :: cellType
+         integer :: k, e
+
+         e = 0
+         nullify(cs)
+         do k = 1, size(mAs)
+            call this%matAssToCoords(cs, mAs(k), cellType)
+            if (size(cs) > 0) then
+               e = e + 1
+               entries(e) = readLorentz(mAs(k), cellType)
+               res%n_c_max = max(res%n_c_max, entries(e)%n_c)
+            end if
+            deallocate(cs)
+            nullify(cs)
+         end do
+      end subroutine
+
+      function readLorentz(mA, cellType) result(res)
+         type(materialAssociation_t), intent(in) :: mA
+         integer, intent(in) :: cellType
+         type(FreqDepenMaterial_t) :: res
+         type(json_value_ptr_t) :: matPtr
+         real(kind=RKIND) :: epsInf, omegaP, omega1, gamma
+         real(kind=RKIND) :: omegaD2
+         complex(kind=CKIND) :: d, pole1, pole2, residue1, residue2
+         logical :: found
+         character(len=BUFSIZE) :: errorMsg
+
+         matPtr = this%matTable%getId(mA%materialId)
+
+         call this%matAssToCoords(res%c, mA, cellType)
+         res%n_c = size(res%c)
+
+         epsInf = this%getRealAt(matPtr%p, J_MAT_LORENTZ_EPS_INF, default=1.0_RKIND)
+         omegaP = this%getRealAt(matPtr%p, J_MAT_LORENTZ_OMEGA_P, found)
+         if (.not. found) then
+            write(errorMsg, '(a,i0,a)') 'Lorentz material ', mA%materialId, ': omegaP not found.'
+            call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
+         end if
+         omega1 = this%getRealAt(matPtr%p, J_MAT_LORENTZ_OMEGA_1, default=0.0_RKIND)
+         gamma = this%getRealAt(matPtr%p, J_MAT_LORENTZ_GAMMA, found)
+         if (.not. found) then
+            write(errorMsg, '(a,i0,a)') 'Lorentz material ', mA%materialId, ': gamma not found.'
+            call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
+         end if
+         if (epsInf < 1.0_RKIND) then
+            write(errorMsg, '(a,i0,a)') 'Lorentz material ', mA%materialId, ': epsInf must be >= 1.'
+            call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
+         end if
+         if (omegaP <= 0.0_RKIND) then
+            write(errorMsg, '(a,i0,a)') 'Lorentz material ', mA%materialId, ': omegaP must be > 0.'
+            call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
+         end if
+         if (omega1 < 0.0_RKIND) then
+            write(errorMsg, '(a,i0,a)') 'Lorentz material ', mA%materialId, ': omega1 must be >= 0.'
+            call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
+         end if
+         if (gamma < 0.0_RKIND) then
+            write(errorMsg, '(a,i0,a)') 'Lorentz material ', mA%materialId, ': gamma must be >= 0.'
+            call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
+         end if
+
+         ! Constitutive background in absolute units.
+         res%eps11 = epsInf * EPSILON_VACUUM
+         res%mu11 = MU_VACUUM
+         res%sigma11 = 0.0_RKIND
+         res%sigmam11 = 0.0_RKIND
+
+         ! Single-pole Lorentz pair. In relative units the pole is
+         !   eps_r(w) = epsInf + omegaP^2 / (omega1^2 - w^2 + j*gamma*w)
+         !            = C1/(j*w + b1) + C2/(j*w + b2),
+         ! with d = sqrt(omega1^2 - gamma^2/4), b1 = gamma/2 + j*d,
+         ! b2 = gamma/2 - j*d, C1 = omegaP^2/(b2 - b1) and C2 = -C1.
+         ! For underdamped poles (d real) b2 and C2 are the conjugates of
+         ! b1 and C1; for overdamped/cold-plasma poles (d imaginary) both
+         ! poles and residues are real and distinct, so the explicit
+         ! partial-fraction form is used instead of complex conjugation.
+         omegaD2 = omega1**2 - gamma**2 / 4.0_RKIND
+         if (omegaD2 >= 0.0_RKIND) then
+            d = cmplx(sqrt(omegaD2), 0.0_RKIND, CKIND)
+         else
+            d = cmplx(0.0_RKIND, sqrt(-omegaD2), CKIND)
+         end if
+         pole1 = cmplx(gamma / 2.0_RKIND, 0.0_RKIND, CKIND) + cmplx(0.0_RKIND, 1.0_RKIND, CKIND) * d
+         pole2 = cmplx(gamma / 2.0_RKIND, 0.0_RKIND, CKIND) - cmplx(0.0_RKIND, 1.0_RKIND, CKIND) * d
+         if (abs(pole2 - pole1) <= tiny(1.0_RKIND)) then
+            write(errorMsg, '(a,i0,a)') 'Lorentz material ', mA%materialId, &
+               ': double pole (omega1 = 0 and gamma = 0) is unsupported.'
+            call log_msg(LOG_ERROR, 'SMBJSON', errorMsg)
+         end if
+         residue1 = EPSILON_VACUUM * omegaP**2 / (pole2 - pole1)
+         residue2 = EPSILON_VACUUM * omegaP**2 / (pole1 - pole2)
+
+         res%K11 = 2
+         allocate(res%a11(2), res%b11(2))
+         res%a11(1) = residue1
+         res%b11(1) = pole1
+         res%a11(2) = residue2
+         res%b11(2) = pole2
       end function
    end function
 
@@ -2211,8 +2366,25 @@ contains
          end if
 
          call this%matAssToCoords(cs, mA, CELL_TYPE_LINEL)
-         call coordsToThinSlotComp(res%tgc, cs)
-         res%n_tgc = size(res%tgc)
+         if (size(cs) > 0) then
+            call coordsToThinSlotComp(res%tgc, cs)
+            res%n_tgc = size(res%tgc)
+         else
+            if (associated(cs)) deallocate(cs)
+            call this%matAssToCoords(cs, mA, CELL_TYPE_SURFEL)
+            if (size(cs) > 0) then
+               ! Surface topology is preprocessing, not parsing. Keep the raw
+               ! intervals and expand them after MPI partition rotation.
+               allocate(res%surfaceCoords(size(cs)))
+               res%surfaceCoords = cs
+            else
+               ! Meshers may collapse a slot to zero length. Such a slot is
+               ! valid input and simply contributes no components.
+               allocate(res%tgc(0))
+               res%n_tgc = 0
+            end if
+         end if
+         if (associated(cs)) deallocate(cs)
 
       end function
 
@@ -3928,6 +4100,7 @@ contains
                      res%resistance = this%getRealAt(genSrcs(i)%p, J_SRC_RESISTANCE_GEN, default = 1.0e22_rkind)
                   end if
                   res%path_to_excitation = trim(this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE))
+                  res%sim_final_time = mtln_res%time_step*mtln_res%number_of_steps
                   return
                end if
 
@@ -4082,7 +4255,7 @@ contains
                   call log_msg(LOG_ERROR, 'SMBJSON', 'Field block of source of type generator must be current or voltage')
                end select
                res(n)%path_to_excitation = this%getStrAt(gens(i)%p, J_SRC_MAGNITUDE_FILE)
-
+               res(n)%sim_final_time = mtln_res%time_step*mtln_res%number_of_steps
                idAndPos = getPolylineElemIdAndConductorOfGenerator(gens(i)%p)
                call elemIdToCable%get(key(idAndPos(1)), value=elementIndex)
                coord = GetCoordinateFromElemIdNode(gens(i)%p)
@@ -4097,8 +4270,6 @@ contains
             end if
          end do
       end function
-
-
 
       logical function IsGeneratorOnWire(p)
          type(json_value), pointer :: p

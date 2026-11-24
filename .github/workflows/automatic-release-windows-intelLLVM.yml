@@ -8,7 +8,7 @@ on:
 jobs:
 
   builds-and-tests:
-    runs-on: windows-latest
+    runs-on: windows-2025
     strategy:
       matrix: 
         build-type: ["Release"]
@@ -38,6 +38,7 @@ jobs:
       uses: ilammy/msvc-dev-cmd@v1
       with:
         arch: x64
+        toolset: 14.44
 
     - name: Setup ninja
       uses: seanmiddleditch/gha-setup-ninja@master
@@ -52,8 +53,14 @@ jobs:
         Expand-Archive -Path $archive -DestinationPath $env:RUNNER_TEMP
         "$directory\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
+    # setup-fortran >= v1.11 defaults CC/CXX to cl on Windows. ngspice needs a
+    # C99 complex-capable C compiler, which MSVC does not provide, so select
+    # the Intel compilers documented in doc/development.md instead.
     - name: CMake build
       shell: bash
+      env:
+        CC: icx
+        CXX: icx
       run: |
         cmake -S . -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
@@ -181,6 +188,15 @@ jobs:
     - name: Creating archive
       run: |
           tar -czvf semba-fdtd-windows-intelLLVM.tar.gz build/bin/* LICENSE
+
+    # XSPICE code models are needed by cable-end generators (#485).
+    - name: Verify code models in archive
+      shell: bash
+      run: |
+        contents=$(tar -tzf semba-fdtd-windows-intelLLVM.tar.gz)
+        for cm in spice2poly analog digital xtradev xtraevt table; do
+          echo "$contents" | grep -qx "build/bin/$cm.cm" || { echo "Missing build/bin/$cm.cm"; exit 1; }
+        done
 
     - name: Generating release
       uses: "marvinpinto/action-automatic-releases@latest"

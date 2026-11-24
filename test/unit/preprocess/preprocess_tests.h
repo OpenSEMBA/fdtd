@@ -15,6 +15,7 @@ extern "C" {
     int test_checkLossyTag_duplicate_current();
     int test_checkLossyTag_duplicate_previous();
     int test_file_has_samples();
+    int test_expand_surface_thin_slots();
 }
 
 // Test cases following the conformal_tests.h pattern
@@ -56,6 +57,10 @@ TEST(preprocess, checkLossyTag_duplicate_previous) {
 
 TEST(preprocess, file_has_samples) {
     EXPECT_EQ(0, test_file_has_samples());
+}
+
+TEST(preprocess, expand_surface_thin_slots) {
+    EXPECT_EQ(0, test_expand_surface_thin_slots());
 }
 
 #endif // PREPROCESS_TESTS_H

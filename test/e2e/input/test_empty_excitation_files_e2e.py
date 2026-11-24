@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from test.utils.build_resolver import build_feature_enabled, solver_executable
+from test.utils.utils import run_solver
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -35,13 +36,7 @@ def _empty_file(path: Path) -> None:
 
 
 def _run_solver(cwd: Path, input_path: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [str(SEMBA_EXE), "-i", input_path.name],
-        cwd=cwd,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    return run_solver(input_path, cwd=cwd, exe=SEMBA_EXE)
 
 
 def _assert_solver_reports_empty_file(process, excitation: str) -> None:

@@ -529,19 +529,19 @@ contains
       integer, intent(in) :: NumMedia
       type(bounds_t), intent(in) :: b
       !--->
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiEx%NX-1, 0 :  b%sggMiEx%NY-1, 0 :  b%sggMiEx%NZ-1), intent(in), target :: sggMiEx
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiEy%NX-1, 0 :  b%sggMiEy%NY-1, 0 :  b%sggMiEy%NZ-1), intent(in), target :: sggMiEy
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiEz%NX-1, 0 :  b%sggMiEz%NY-1, 0 :  b%sggMiEz%NZ-1), intent(in), target :: sggMiEz
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiEx%NX-1, 0 :  b%sggMiEx%NY-1, 0 :  b%sggMiEx%NZ-1), intent(in) :: sggMiEx
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiEy%NX-1, 0 :  b%sggMiEy%NY-1, 0 :  b%sggMiEy%NZ-1), intent(in) :: sggMiEy
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiEz%NX-1, 0 :  b%sggMiEz%NY-1, 0 :  b%sggMiEz%NZ-1), intent(in) :: sggMiEz
       !--->
-      real(kind = RKIND), dimension(0 :  NumMedia), intent(in), target :: g2
+      real(kind = RKIND), dimension(0 :  NumMedia), intent(in) :: g2
       !--->
-      real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(in), target :: Hx
-      real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(in), target :: Hy
-      real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(in), target :: Hz
+      real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(in) :: Hx
+      real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(in) :: Hy
+      real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(in) :: Hz
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension(0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent(inout), target :: Ex
-      real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(inout), target :: Ey
-      real(kind = RKIND), dimension(0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent(inout), target :: Ez
+      real(kind = RKIND), dimension(0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent(inout) :: Ex
+      real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(inout) :: Ey
+      real(kind = RKIND), dimension(0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent(inout) :: Ez
       !---------------------------> local variables <-----------------------------------------------
       integer(kind=4) :: REGION, i, j, k, medium, i_m, j_m, k_m
       !---------------------------> starts AdvanceelectricCPML <-------------------------------------
@@ -832,19 +832,19 @@ contains
       integer, intent(in) :: NumMedia
       type(bounds_t), intent(in) :: b
       !--->
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiHx%NX-1, 0 :  b%sggMiHx%NY-1, 0 :  b%sggMiHx%NZ-1), intent(in), target :: sggMiHx
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent(in), target :: sggMiHy
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent(in), target :: sggMiHz
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiHx%NX-1, 0 :  b%sggMiHx%NY-1, 0 :  b%sggMiHx%NZ-1), intent(in) :: sggMiHx
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent(in) :: sggMiHy
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension(0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent(in) :: sggMiHz
       !--->
-      real(kind = RKIND), dimension(0 :  NumMedia), intent(in), target :: gm2
+      real(kind = RKIND), dimension(0 :  NumMedia), intent(in) :: gm2
       !--->
-      real(kind = RKIND), dimension(0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent(in), target :: Ex
-      real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(in), target :: Ey
-      real(kind = RKIND), dimension(0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent(in), target :: Ez
+      real(kind = RKIND), dimension(0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent(in) :: Ex
+      real(kind = RKIND), dimension(0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent(in) :: Ey
+      real(kind = RKIND), dimension(0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent(in) :: Ez
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(inout), target :: Hx
-      real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(inout), target :: Hy
-      real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(inout), target :: Hz
+      real(kind = RKIND), dimension(0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent(inout) :: Hx
+      real(kind = RKIND), dimension(0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent(inout) :: Hy
+      real(kind = RKIND), dimension(0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent(inout) :: Hz
       !---------------------------> local variables <-----------------------------------------------
       integer(kind=4) :: REGION, i, j, k, medium, i_m, j_m, k_m
       !---------------------------> starts AdvanceMagneTicCPML <-------------------------------------

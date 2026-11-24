@@ -35,6 +35,7 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_TYPE_PEC = "pec"
    character(len=*), parameter :: J_MAT_TYPE_PMC = "pmc"
    character(len=*), parameter :: J_MAT_TYPE_ISOTROPIC = "isotropic"
+   character(len=*), parameter :: J_MAT_TYPE_LORENTZ = "lorentz"
    character(len=*), parameter :: J_MAT_TYPE_LUMPED = "lumped"
    character(len=*), parameter :: J_MAT_TYPE_MULTILAYERED_SURFACE = "multilayeredSurface"
    character(len=*), parameter :: J_MAT_TYPE_SLOT = "thinSlot"
@@ -43,6 +44,11 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_TYPE_UNSHIELDED_MULTIWIRE = "unshieldedMultiwire"
    character(len=*), parameter :: J_MAT_TYPE_TERMINAL = "terminal"
    character(len=*), parameter :: J_MAT_TYPE_CONNECTOR = "connector"
+
+   character(len=*), parameter :: J_MAT_LORENTZ_EPS_INF = "epsInf"
+   character(len=*), parameter :: J_MAT_LORENTZ_OMEGA_P = "omegaP"
+   character(len=*), parameter :: J_MAT_LORENTZ_OMEGA_1 = "omega1"
+   character(len=*), parameter :: J_MAT_LORENTZ_GAMMA = "gamma"
 
    character(len=*), parameter :: J_MAT_WIRE_RADIUS = "radius"
    character(len=*), parameter :: J_MAT_WIRE_RESISTANCE = "resistancePerMeter"
@@ -160,6 +166,7 @@ module smbjson_labels_m
    character(len=*), parameter :: J_GEN_NUMBER_OF_STEPS = "numberOfSteps"
    character(len=*), parameter :: J_GEN_MTLN_PROBLEM = "mtlnProblem"
    character(len=*), parameter :: J_GEN_ADDITIONAL_ARGUMENTS = "additionalArguments"
+   character(len=*), parameter :: J_GEN_RESTART_FLUSH_MINUTES = "restartFlushMinutes"
 
    ! background
    character(len=*), parameter :: J_BACKGROUND = "background"

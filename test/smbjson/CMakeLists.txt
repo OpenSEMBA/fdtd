@@ -8,8 +8,10 @@ add_library (smbjson_test_fortran
     "test_parser.F90"    
     "test_read_planewave.F90"
     "test_read_dielectricSlab.F90"
+    "test_read_lorentz.F90"
     "test_read_thinSlot.F90"
     "test_read_thinSlot_ez.F90"
+    "test_read_thinSlot_surface.F90"
     "test_read_sgbc.F90"
     "test_read_currentInjection.F90"
     "test_read_nodal_source_resistance.F90"
@@ -20,6 +22,7 @@ add_library (smbjson_test_fortran
     "test_read_lumped_multi_element.F90"
     "test_read_background.F90"
     "test_read_wire_probe_defaults.F90"
+    "test_read_restart_flush.F90"
 )
 if(SEMBA_FDTD_ENABLE_MTLN)
     target_sources(smbjson_test_fortran PRIVATE

@@ -176,6 +176,13 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 		# limited Windows thread stack even when the final executable uses a larger stack.
 		add_compile_options($<$<COMPILE_LANGUAGE:Fortran>:/heap-arrays>)
 
+		# Windows builds are not compiled with OpenMP, but CompileWithOpenMP is defined
+		# globally and MPI builds call omp_set_num_threads (timestepping.F90). Link the
+		# Intel OpenMP runtime so that symbol resolves.
+		if(SEMBA_FDTD_ENABLE_MPI)
+			link_libraries(libiomp5md)
+		endif()
+
 		# This prevents a compilation error happening due to visual studio headers being too strict.
 		# It can possibly can be removed in the future.
 		#add_compile_definitions("$<$<COMPILE_LANGUAGE:C,CXX>:-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH>")
