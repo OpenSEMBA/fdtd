@@ -1,5 +1,14 @@
 cmake_minimum_required (VERSION 3.15)
 
+# ifx uses a MSVC-style front-end on Windows and does not preprocess the
+# compiler-id and ABI test sources by default. Provide /fpp before project()
+# so CMake can identify the compiler and locate its preprocessor.
+if(WIN32 AND ("$ENV{FC}" MATCHES "ifx"
+		OR "${CMAKE_Fortran_COMPILER}" MATCHES "ifx"
+		OR "${CMAKE_GENERATOR_FC}" MATCHES "ifx"))
+	set(CMAKE_Fortran_FLAGS "/fpp" CACHE STRING "Fortran compiler flags")
+endif()
+
 project(semba-fdtd LANGUAGES Fortran C)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -161,6 +170,10 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 	message(STATUS "Using Windows flags")
 	if(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
 		message(STATUS "Using IntelLLVM (ifx) flags")
+		# ifx on Windows uses MSVC-style options for preprocessing.
+		set(CMAKE_Fortran_COMPILE_OPTIONS_PREPROCESS_ON "/fpp")
+		set(CMAKE_Fortran_COMPILE_OPTIONS_PREPROCESS_OFF "/nofpp")
+		set(CMAKE_Fortran_PREPROCESS_SOURCE "<CMAKE_Fortran_COMPILER> /fpp <DEFINES> <INCLUDES> <FLAGS> -P <SOURCE> -Fi<PREPROCESSED_SOURCE>")
 		# MSVC links executables with a 1 MiB stack by default, which is too small
 		# for HDF output initialisation with the Intel Fortran runtime.
 		add_link_options(/STACK:67108864)

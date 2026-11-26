@@ -34,7 +34,7 @@ jobs:
     - name: Setup ninja
       uses: seanmiddleditch/gha-setup-ninja@master
 
-    # CMake 4.x cannot detect the ifx Fortran preprocessor on Windows.
+    # Keep the CMake version validated for the Windows Intel build.
     - name: Setup CMake
       shell: pwsh
       run: |

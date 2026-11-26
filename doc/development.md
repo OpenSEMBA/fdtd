@@ -170,9 +170,10 @@ The Windows CI workflow (`.github/workflows/windows.yml`) uses the same Intel co
 | Intel MPI Library, component `intel.oneapi.win.mpi.devel` | 2021.19.0 | **Only for MPI builds.** Installing the compilers brings only the MPI runtime, not the headers, Fortran modules and libraries. |
 | Python 3 | 3.x | **Optional.** Python tests (`requirements.txt`) and the `fortls` language server for VS Code. |
 
-> **CMake version:** CMake 4.x cannot detect the `ifx` Fortran preprocessor on Windows.
-> Use CMake 3.x. The one bundled with Visual Studio 2022 17.14 is 3.31.6.
-> If you install CMake separately, use 3.31.x.
+> **CMake version:** The Windows CI uses CMake 3.31.6, which is also provided
+> by the *C++ CMake tools for Windows* component of Visual Studio 2022 17.14.
+> The build passes `/fpp` explicitly for `ifx` so CMake can identify and
+> preprocess Fortran sources.
 
 Both installers need administrator rights.
 
