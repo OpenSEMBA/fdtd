@@ -118,18 +118,31 @@ runs:
         call "%ProgramFiles(x86)%\Intel\oneAPI\setvars.bat" --force
         set | findstr /i /c:"oneapi" >> "%GITHUB_ENV%"
 
-    - name: Remove non-MSVC linkers from PATH
+    - name: Shorten PATH for the Intel build
       shell: pwsh
       run: |
-        $path = ($env:PATH -split ';' |
-          Where-Object {
-            $_ -and
-            $_ -notmatch '\\Git\\(usr|ucrt64|mingw64)\\bin' -and
-            $_ -notmatch '\\LLVM\\bin' -and
-            $_ -notmatch '\\Strawberry\\c\\bin' -and
-            $_ -notmatch '^C:\\mingw64\\bin'
-          }) -join ';'
-        "PATH=$path" >> $env:GITHUB_ENV
+        $oneapi = $env:ONEAPI_ROOT
+        $msvc = Join-Path $env:VCToolsInstallDir "bin\HostX64\x64"
+        $sdk = Join-Path $env:WindowsSdkDir "bin\$env:UCRTVersion\x64"
+        $python = Split-Path (Get-Command python).Source -Parent
+        $path = @(
+          $msvc,
+          $sdk,
+          (Join-Path $oneapi "compiler\latest\bin"),
+          (Join-Path $oneapi "mpi\latest\bin"),
+          (Join-Path $oneapi "tbb\latest\bin"),
+          (Join-Path $oneapi "tcm\latest\bin"),
+          (Join-Path $oneapi "umf\latest\bin"),
+          $python,
+          (Join-Path $python "Scripts"),
+          "C:\Program Files\Git\cmd",
+          "C:\Program Files\Git\bin",
+          "C:\Windows\System32",
+          "C:\Windows",
+          "C:\Windows\System32\Wbem",
+          "C:\Program Files\PowerShell\7"
+        ) | Where-Object { Test-Path $_ } | Select-Object -Unique
+        "PATH=$($path -join ';')" >> $env:GITHUB_ENV
 
     - name: Verify oneAPI environment
       shell: cmd

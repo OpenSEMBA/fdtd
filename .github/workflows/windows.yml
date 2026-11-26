@@ -45,15 +45,15 @@ jobs:
     #  with:
     #    mpi: 'intelmpi'
 
-    - name: Setup Intel oneAPI Toolkit
-      uses: ./.github/actions/setup-intel-oneapi
-
     # ifx requires MSVC's linker and Windows SDK environment on the hosted runner.
     - name: Setup MSVC toolchain
       uses: ilammy/msvc-dev-cmd@v1
       with:
         arch: x64
         toolset: 14.44
+
+    - name: Setup Intel oneAPI Toolkit
+      uses: ./.github/actions/setup-intel-oneapi
 
     - name: Verify MSVC linker
       shell: pwsh
