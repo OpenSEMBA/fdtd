@@ -187,7 +187,7 @@ This is the same installer used by the CI through `.github/actions/setup-intel-o
 
 ```powershell
 curl.exe -L -C - --retry 5 -o toolkit.exe https://registrationcenter-download.intel.com/akdlm/IRC_NAS/728c4418-1b40-47a9-ad51-31530fb27c94/intel-oneapi-toolkit-2026.2.0.661_offline.exe
-.\toolkit.exe -s -a --silent --eula accept --components intel.oneapi.win.ifort-compiler:intel.oneapi.win.cpp-dpcpp-common:intel.oneapi.win.mpi.devel -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 -p=NEED_VS2026_INTEGRATION=0
+.\toolkit.exe -s -a --silent --eula accept --action install --components intel.oneapi.win.ifort-compiler:intel.oneapi.win.cpp-dpcpp-common:intel.oneapi.win.mpi.devel -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 -p=NEED_VS2026_INTEGRATION=0
 ```
 
 - The installer runs silently and shows no window. It is done when the command returns.

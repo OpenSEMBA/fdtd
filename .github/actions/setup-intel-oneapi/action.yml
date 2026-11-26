@@ -51,7 +51,7 @@ runs:
         }
 
         Write-Host "Installing Intel oneAPI components: ${{ inputs.components }}"
-        & $installer -s -a --silent --eula accept `
+        & $installer -s -a --silent --eula accept --action install `
           --components "${{ inputs.components }}" `
           -p=NEED_VS2017_INTEGRATION=0 `
           -p=NEED_VS2019_INTEGRATION=0 `
@@ -73,14 +73,26 @@ runs:
         foreach ($tool in @("ifx.exe", "icx.exe")) {
           $path = Join-Path $bin $tool
           if (-not (Test-Path $path)) {
-            if (Test-Path "C:\Program Files (x86)\Intel\oneAPI") {
-              Write-Host "oneAPI directories:"
-              Get-ChildItem "C:\Program Files (x86)\Intel\oneAPI" -Directory |
-                ForEach-Object { Write-Host "  $($_.FullName)" }
+            foreach ($root in @("C:\Program Files (x86)\Intel\oneAPI", "C:\Program Files\Intel\oneAPI")) {
+              if (Test-Path $root) {
+                Write-Host "oneAPI directories under $root:"
+                Get-ChildItem $root -Directory |
+                  ForEach-Object { Write-Host "  $($_.FullName)" }
+              }
             }
-            Get-ChildItem $env:RUNNER_TEMP -Filter "*.log" -ErrorAction SilentlyContinue |
+            $logRoots = @(
+              $env:RUNNER_TEMP,
+              (Join-Path $env:LOCALAPPDATA "Intel"),
+              (Join-Path $env:ProgramData "Intel")
+            )
+            $logs = foreach ($root in $logRoots) {
+              if (Test-Path $root) {
+                Get-ChildItem $root -Recurse -Filter "*.log" -ErrorAction SilentlyContinue
+              }
+            }
+            $logs |
               Sort-Object LastWriteTime -Descending |
-              Select-Object -First 3 |
+              Select-Object -First 5 |
               ForEach-Object {
                 Write-Host "--- $($_.FullName) ---"
                 Get-Content $_.FullName -Tail 200
