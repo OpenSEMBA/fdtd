@@ -64,6 +64,16 @@ runs:
           throw "Intel oneAPI installer failed with exit code $installExitCode"
         }
 
+        # The full toolkit bootstrapper can return after starting a detached
+        # install client. Keep the step alive until the compilers appear.
+        $ifx = "C:\Program Files (x86)\Intel\oneAPI\compiler\latest\bin\ifx.exe"
+        $icx = "C:\Program Files (x86)\Intel\oneAPI\compiler\latest\bin\icx.exe"
+        $deadline = (Get-Date).AddMinutes(10)
+        while (-not ((Test-Path $ifx) -and (Test-Path $icx)) -and (Get-Date) -lt $deadline) {
+          Write-Host "Waiting for the Intel oneAPI install client to finish..."
+          Start-Sleep -Seconds 10
+        }
+
         Remove-Item $installer -Force -ErrorAction SilentlyContinue
 
     - name: Validate oneAPI installation
@@ -75,7 +85,7 @@ runs:
           if (-not (Test-Path $path)) {
             foreach ($root in @("C:\Program Files (x86)\Intel\oneAPI", "C:\Program Files\Intel\oneAPI")) {
               if (Test-Path $root) {
-                Write-Host "oneAPI directories under $root:"
+                Write-Host "oneAPI directories under ${root}:"
                 Get-ChildItem $root -Directory |
                   ForEach-Object { Write-Host "  $($_.FullName)" }
               }
