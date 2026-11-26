@@ -1,0 +1,115 @@
+name: Setup Intel oneAPI Toolkit
+description: >-
+  Install a pinned Intel oneAPI Toolkit for Windows and activate its
+  environment. The full toolkit is required because the standalone Fortran
+  installer does not ship icx, which the ngspice build needs.
+
+inputs:
+  version:
+    description: Intel oneAPI Toolkit release to install.
+    required: false
+    default: "2026.2.0"
+  installer-url:
+    description: Offline installer URL for that release.
+    required: false
+    default: "https://registrationcenter-download.intel.com/akdlm/IRC_NAS/728c4418-1b40-47a9-ad51-31530fb27c94/intel-oneapi-toolkit-2026.2.0.661_offline.exe"
+  components:
+    description: Colon-separated Intel installer component list.
+    required: false
+    default: "intel.oneapi.win.ifort-compiler:intel.oneapi.win.cpp-dpcpp-common:intel.oneapi.win.mpi.devel"
+
+runs:
+  using: composite
+  steps:
+    - name: Verify Windows runner
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        echo "setup-intel-oneapi only supports Windows runners." >&2
+        exit 1
+
+    - name: Restore oneAPI cache
+      id: cache
+      uses: actions/cache/restore@v4
+      with:
+        path: 'C:\Program Files (x86)\Intel\oneAPI'
+        key: ${{ runner.os }}-oneapi-${{ inputs.version }}-${{ hashFiles('.github/actions/setup-intel-oneapi/action.yml') }}
+
+    - name: Install Intel oneAPI Toolkit
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = "Stop"
+
+        $installer = Join-Path $env:RUNNER_TEMP "intel-oneapi-toolkit.exe"
+        $extractDir = Join-Path $env:RUNNER_TEMP "intel-oneapi-toolkit"
+        $extractLog = Join-Path $env:RUNNER_TEMP "intel-oneapi-extract.log"
+
+        if (Test-Path $extractDir) {
+          Remove-Item $extractDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+
+        Write-Host "Downloading ${{ inputs.installer-url }}"
+        curl.exe --fail --location --retry 5 --retry-delay 5 `
+          --output $installer "${{ inputs.installer-url }}"
+        if ($LASTEXITCODE -ne 0) {
+          throw "Intel oneAPI Toolkit download failed with exit code $LASTEXITCODE"
+        }
+
+        Write-Host "Extracting Intel oneAPI Toolkit installer"
+        $extract = Start-Process -FilePath $installer `
+          -ArgumentList @("-s", "-x", "-f", $extractDir, "--log", $extractLog) `
+          -Wait -PassThru
+        if ($extract.ExitCode -notin @(0, 1001)) {
+          throw "Intel installer extraction failed with exit code $($extract.ExitCode)"
+        }
+
+        Write-Host "Installing Intel oneAPI components: ${{ inputs.components }}"
+        & (Join-Path $extractDir "bootstrapper.exe") -s --action install `
+          "--components=${{ inputs.components }}" `
+          --eula=accept `
+          -p=NEED_VS2017_INTEGRATION=0 `
+          -p=NEED_VS2019_INTEGRATION=0 `
+          -p=NEED_VS2022_INTEGRATION=0 `
+          -p=NEED_VS2026_INTEGRATION=0 `
+          "--log-dir=$env:RUNNER_TEMP"
+
+        $installExitCode = $LASTEXITCODE
+        if ($installExitCode -notin @(0, 1001)) {
+          throw "Intel oneAPI installer failed with exit code $installExitCode"
+        }
+
+        Remove-Item $installer -Force -ErrorAction SilentlyContinue
+        Remove-Item $extractDir -Recurse -Force -ErrorAction SilentlyContinue
+
+    - name: Validate oneAPI installation
+      shell: pwsh
+      run: |
+        $bin = "C:\Program Files (x86)\Intel\oneAPI\compiler\latest\bin"
+        foreach ($tool in @("ifx.exe", "icx.exe")) {
+          $path = Join-Path $bin $tool
+          if (-not (Test-Path $path)) {
+            throw "$tool not found at $path"
+          }
+        }
+
+    - name: Activate oneAPI environment
+      shell: cmd
+      run: |
+        set NoDefaultCurrentDirectoryInExePath=
+        call "%ProgramFiles(x86)%\Intel\oneAPI\setvars.bat" --force
+        set | findstr /i /c:"oneapi" >> "%GITHUB_ENV%"
+
+    - name: Verify oneAPI environment
+      shell: cmd
+      run: |
+        ifx --version
+        icx --version
+
+    - name: Save oneAPI cache
+      if: steps.cache.outputs.cache-hit != 'true'
+      continue-on-error: true
+      uses: actions/cache/save@v4
+      with:
+        path: 'C:\Program Files (x86)\Intel\oneAPI'
+        key: ${{ runner.os }}-oneapi-${{ inputs.version }}-${{ hashFiles('.github/actions/setup-intel-oneapi/action.yml') }}

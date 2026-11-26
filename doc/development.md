@@ -50,6 +50,12 @@ If you use intel oneapi compiler, make sure to run
   export CXX=icpx
 ```
 
+> **ifx 2026.2:** the compiler can crash in `for_finalize` while finalizing a
+> routine with extensive internal I/O when that routine is compiled with
+> `-qopenmp`. The build compiles `src_main_pub/preprocess_geom.F90` without
+> OpenMP as a workaround; the file contains no OpenMP directives. Remove the
+> override in `CMakeLists.txt` once Intel fixes the compiler.
+
 ### Compilation options
 
 #### HDF5 Libraries
@@ -159,9 +165,9 @@ The Windows CI workflow (`.github/workflows/windows.yml`) uses the same Intel co
 |---|---|---|
 | [Git for Windows](https://git-scm.com/download/win) | any | Clone the repository and its submodules. |
 | [Visual Studio 2022 Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022), workload *Desktop development with C++* (`Microsoft.VisualStudio.Workload.VCTools`) with its recommended components | 17.14 (MSVC 14.44) | `ifx` uses the MSVC `link.exe` and the Windows SDK. The recommended component *C++ CMake tools for Windows* also provides CMake 3.31 and Ninja. A full Visual Studio 2022 installation with the same workload works too. |
-| Intel Fortran compiler, component `intel.oneapi.win.ifort-compiler` | 2025.2.1 | Provides `ifx`. |
-| Intel C/C++ compiler, component `intel.oneapi.win.cpp-dpcpp-common` | 2025.2.1 | Provides `icx`. ngspice needs a C99 compiler with complex number support, which MSVC `cl` does not provide. |
-| Intel MPI Library, component `intel.oneapi.win.mpi.devel` | 2021.16.1 | **Only for MPI builds.** Installing the compilers brings only the MPI runtime, not the headers, Fortran modules and libraries. |
+| Intel Fortran compiler, component `intel.oneapi.win.ifort-compiler` | 2026.2.0 | Provides `ifx`. |
+| Intel C/C++ compiler, component `intel.oneapi.win.cpp-dpcpp-common` | 2026.2.0 | Provides `icx`. ngspice needs a C99 compiler with complex number support, which MSVC `cl` does not provide. |
+| Intel MPI Library, component `intel.oneapi.win.mpi.devel` | 2021.19.0 | **Only for MPI builds.** Installing the compilers brings only the MPI runtime, not the headers, Fortran modules and libraries. |
 | Python 3 | 3.x | **Optional.** Python tests (`requirements.txt`) and the `fortls` language server for VS Code. |
 
 > **CMake version:** CMake 4.x cannot detect the `ifx` Fortran preprocessor on Windows.
@@ -176,27 +182,26 @@ Install the Visual Studio Build Tools, for example with `winget`:
 winget install --id Microsoft.VisualStudio.2022.BuildTools -e --override "--quiet --wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
 ```
 
-Install only the required Intel components from the offline HPC Toolkit installer.
-This is the same installer used by the CI through `fortran-lang/setup-fortran`. The download is about 2.8 GB:
+Install only the required Intel components from the offline oneAPI Toolkit installer.
+This is the same installer used by the CI through `.github/actions/setup-intel-oneapi`. The download is about 2.4 GB:
 
 ```powershell
-curl.exe -L -C - --retry 5 -o hpckit.exe https://registrationcenter-download.intel.com/akdlm/IRC_NAS/e63ac2b4-8a9a-4768-979a-399a8b6299de/intel-oneapi-hpc-toolkit-2025.2.1.46_offline.exe
-.\hpckit.exe -s -x -f hpckit
-.\hpckit\bootstrapper.exe -s --action install --eula=accept --components=intel.oneapi.win.ifort-compiler:intel.oneapi.win.cpp-dpcpp-common:intel.oneapi.win.mpi.devel -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0
+curl.exe -L -C - --retry 5 -o toolkit.exe https://registrationcenter-download.intel.com/akdlm/IRC_NAS/728c4418-1b40-47a9-ad51-31530fb27c94/intel-oneapi-toolkit-2026.2.0.661_offline.exe
+.\toolkit.exe -s -x -f toolkit
+.\toolkit\bootstrapper.exe -s --action install --eula=accept --components=intel.oneapi.win.ifort-compiler:intel.oneapi.win.cpp-dpcpp-common:intel.oneapi.win.mpi.devel -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 -p=NEED_VS2026_INTEGRATION=0
 ```
 
 - The installer runs silently and shows no window. It is done when the command returns.
 - Leave out `intel.oneapi.win.mpi.devel` if you do not need MPI.
 - To add components later, use `--action modify` and list **all** the components, including the ones already installed.
   Running `--action install` again fails with *"It is already installed"*.
-- Use `-p=NEED_VS2022_INTEGRATION=1` if you also want to debug from the Visual Studio IDE.
+- Use `-p=NEED_VS2022_INTEGRATION=1` (or `-p=NEED_VS2026_INTEGRATION=1`) if you also want to debug from the Visual Studio IDE.
 
 #### Full installation (alternative)
 
 Instead of the individual components, you can install the
-[Intel oneAPI Base Toolkit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html) and the
-[Intel oneAPI HPC Toolkit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/hpc-toolkit-download.html)
-with all their features selected. This includes everything listed above plus many unused libraries, so it needs much more disk space.
+[Intel oneAPI Toolkit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/oneapi-toolkit-download.html)
+with all features selected. This includes everything listed above plus many unused libraries, so it needs much more disk space.
 You still need the Visual Studio 2022 C++ workload and a CMake 3.x.
 
 #### Repository

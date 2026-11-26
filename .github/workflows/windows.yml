@@ -19,7 +19,7 @@ jobs:
       matrix:
         os: [windows-2025]
         compiler: [
-          {name: 'intel', version: '2025.2.1'}
+          {name: 'intel'}
         ]
         build-type: ["Release"]
         mpi: ["OFF"]
@@ -45,12 +45,8 @@ jobs:
     #  with:
     #    mpi: 'intelmpi'
 
-    - name: Setup intel fortran
-      uses: fortran-lang/setup-fortran@v1
-      id: setup-fortran
-      with:
-        compiler: ${{ matrix.compiler.name }}
-        version: ${{ matrix.compiler.version }}
+    - name: Setup Intel oneAPI Toolkit
+      uses: ./.github/actions/setup-intel-oneapi
 
     # ifx requires MSVC's linker and Windows SDK environment on the hosted runner.
     - name: Setup MSVC toolchain
@@ -62,7 +58,7 @@ jobs:
     - name: Setup ninja
       uses: seanmiddleditch/gha-setup-ninja@master
 
-    # CMake 4.4 cannot detect the ifx 2025.2 Fortran preprocessor on Windows.
+    # CMake 4.x cannot detect the ifx Fortran preprocessor on Windows.
     - name: Setup CMake
       shell: pwsh
       run: |
@@ -72,14 +68,14 @@ jobs:
         Expand-Archive -Path $archive -DestinationPath $env:RUNNER_TEMP
         "$directory\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-    # setup-fortran >= v1.11 defaults CC/CXX to cl on Windows. ngspice needs a
-    # C99 complex-capable C compiler, which MSVC does not provide, so select
-    # the Intel compilers documented in doc/development.md instead.
+    # Select the Intel compilers explicitly. Otherwise CMake can choose MSVC
+    # cl, which lacks the C99 complex support ngspice needs.
     - name: CMake build
       shell: bash
       env:
         CC: icx
         CXX: icx
+        FC: ifx
       run: |
         cmake -S . -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \

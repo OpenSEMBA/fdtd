@@ -143,6 +143,12 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 		
 		set(CMAKE_Fortran_FLAGS_DEBUG "-check all,nouninit -debug full -traceback")
 
+		# ifx 2026.2 can crash in for_finalize/for__calc_num_elts while
+		# finalizing this large preprocessing routine when it is compiled with
+		# -qopenmp. The routine contains no OpenMP directives, so compile this
+		# file serially.
+		set_source_files_properties("src_main_pub/preprocess_geom.F90" PROPERTIES COMPILE_OPTIONS "-qno-openmp")
+
 	
 	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC")
 		message(STATUS "Using nvhpc flags")
