@@ -42,12 +42,6 @@ runs:
         $ErrorActionPreference = "Stop"
 
         $installer = Join-Path $env:RUNNER_TEMP "intel-oneapi-toolkit.exe"
-        $extractDir = Join-Path $env:RUNNER_TEMP "intel-oneapi-toolkit"
-        $extractLog = Join-Path $env:RUNNER_TEMP "intel-oneapi-extract.log"
-
-        if (Test-Path $extractDir) {
-          Remove-Item $extractDir -Recurse -Force -ErrorAction SilentlyContinue
-        }
 
         Write-Host "Downloading ${{ inputs.installer-url }}"
         curl.exe --fail --location --retry 5 --retry-delay 5 `
@@ -56,31 +50,21 @@ runs:
           throw "Intel oneAPI Toolkit download failed with exit code $LASTEXITCODE"
         }
 
-        Write-Host "Extracting Intel oneAPI Toolkit installer"
-        $extract = Start-Process -FilePath $installer `
-          -ArgumentList @("-s", "-x", "-f", $extractDir, "--log", $extractLog) `
-          -Wait -PassThru
-        if ($extract.ExitCode -notin @(0, 1001)) {
-          throw "Intel installer extraction failed with exit code $($extract.ExitCode)"
-        }
-
         Write-Host "Installing Intel oneAPI components: ${{ inputs.components }}"
-        & (Join-Path $extractDir "bootstrapper.exe") -s --action install `
-          "--components=${{ inputs.components }}" `
-          --eula=accept `
+        & $installer -s -a --silent --eula accept `
+          --components "${{ inputs.components }}" `
           -p=NEED_VS2017_INTEGRATION=0 `
           -p=NEED_VS2019_INTEGRATION=0 `
           -p=NEED_VS2022_INTEGRATION=0 `
           -p=NEED_VS2026_INTEGRATION=0 `
-          "--log-dir=$env:RUNNER_TEMP"
+          --log-dir $env:RUNNER_TEMP
 
         $installExitCode = $LASTEXITCODE
-        if ($installExitCode -notin @(0, 1001)) {
+        if ($installExitCode -notin @(0, 1001, 3010)) {
           throw "Intel oneAPI installer failed with exit code $installExitCode"
         }
 
         Remove-Item $installer -Force -ErrorAction SilentlyContinue
-        Remove-Item $extractDir -Recurse -Force -ErrorAction SilentlyContinue
 
     - name: Validate oneAPI installation
       shell: pwsh
@@ -89,6 +73,18 @@ runs:
         foreach ($tool in @("ifx.exe", "icx.exe")) {
           $path = Join-Path $bin $tool
           if (-not (Test-Path $path)) {
+            if (Test-Path "C:\Program Files (x86)\Intel\oneAPI") {
+              Write-Host "oneAPI directories:"
+              Get-ChildItem "C:\Program Files (x86)\Intel\oneAPI" -Directory |
+                ForEach-Object { Write-Host "  $($_.FullName)" }
+            }
+            Get-ChildItem $env:RUNNER_TEMP -Filter "*.log" -ErrorAction SilentlyContinue |
+              Sort-Object LastWriteTime -Descending |
+              Select-Object -First 3 |
+              ForEach-Object {
+                Write-Host "--- $($_.FullName) ---"
+                Get-Content $_.FullName -Tail 200
+              }
             throw "$tool not found at $path"
           }
         }
