@@ -118,11 +118,17 @@ runs:
         call "%ProgramFiles(x86)%\Intel\oneAPI\setvars.bat" --force
         set | findstr /i /c:"oneapi" >> "%GITHUB_ENV%"
 
-    - name: Remove Git link from PATH
+    - name: Remove non-MSVC linkers from PATH
       shell: pwsh
       run: |
         $path = ($env:PATH -split ';' |
-          Where-Object { $_ -and $_ -notmatch '\\Git\\usr\\bin' }) -join ';'
+          Where-Object {
+            $_ -and
+            $_ -notmatch '\\Git\\(usr|ucrt64|mingw64)\\bin' -and
+            $_ -notmatch '\\LLVM\\bin' -and
+            $_ -notmatch '\\Strawberry\\c\\bin' -and
+            $_ -notmatch '^C:\\mingw64\\bin'
+          }) -join ';'
         "PATH=$path" >> $env:GITHUB_ENV
 
     - name: Verify oneAPI environment

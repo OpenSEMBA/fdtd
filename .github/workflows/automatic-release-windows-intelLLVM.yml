@@ -31,6 +31,15 @@ jobs:
         arch: x64
         toolset: 14.44
 
+    - name: Verify MSVC linker
+      shell: pwsh
+      run: |
+        $link = (Get-Command link.exe -ErrorAction SilentlyContinue).Source
+        Write-Host "link.exe -> $link"
+        if ($link -notmatch '\\MSVC\\') {
+          throw "Unexpected linker on PATH: $link"
+        }
+
     - name: Setup ninja
       uses: seanmiddleditch/gha-setup-ninja@master
 
