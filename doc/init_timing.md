@@ -36,7 +36,7 @@ Reporting simulation info every 1 minutes
 | Old line | What it claimed | What actually happens |
 |---|---|---|
 | `every 10000001 minutes` | A time-based flush every ~19 years | `TOPCPUTIME` is the "no time-based flush" sentinel; the extra `1` came from a single-precision `seconds/60.0` division. |
-| `every 1024 steps` | Buffer flush every `BUFFOBSE` steps | `BUFFOBSE` is legacy. Volumetric and line probes flush every `OUTPUT_TIME_BUFFER_SIZE` (128) steps; point, wire-current, wire-charge and bulk probes flush every `SMALL_PROBE_BUFFER_SIZE` (4096) steps. |
+| `every 1024 steps` | Buffer flush every `BUFFOBSE` steps | `BUFFOBSE` is legacy. Volumetric and line probes flush every `OUTPUT_TIME_BUFFER_SIZE` (128) steps; point, wire-current, wire-charge and bulk probes flush every `SMALL_PROBE_BUFFER_SIZE` (1024) steps. |
 | `NO flushing of observation DATA scheduled` | No probe data is written | The step-based flush always runs; the warning was removed. |
 
 ## Lines
@@ -46,7 +46,7 @@ Reporting simulation info every 1 minutes
 | `Probe buffer memory` | `report_outputs_memory` (`src_output/output.F90`) | Only printed when there are probes. One row per probe type in use, then the total. Counts are per output object, summed over ranks: `point` counts probe x component, and `movie` counts movies x regions (one per MPI rank holding part of a movie), so a single movie on 4 ranks shows `4 probes`. |
 | `Total Mcells` | Sweep extent, summed over MPI ranks | Millions of cells. |
 | `Restart FIELDS flush` | `-flush <minutes>`, `general.restartFlushMinutes`, `maxCPUtime` | `every N minutes`, `at the end, after N minutes`, or `none scheduled`. |
-| `Observation DATA flush` | `OUTPUT_TIME_BUFFER_SIZE`, `SMALL_PROBE_BUFFER_SIZE`, `-flushdata <minutes>` | `every 128 steps (line, movie, frequency slice)` and/or `every 4096 steps (point, wire, bulk)`, joined by `, ` for the groups present on any rank; `at the end only` when only far-field probes exist; `no probes` when there is nothing to observe. Then `; time-based: none` or `; time-based: every N minutes`. |
+| `Observation DATA flush` | `OUTPUT_TIME_BUFFER_SIZE`, `SMALL_PROBE_BUFFER_SIZE`, `-flushdata <minutes>` | `every 128 steps (line, movie, frequency slice)` and/or `every 1024 steps (point, wire, bulk)`, joined by `, ` for the groups present on any rank; `at the end only` when only far-field probes exist; `no probes` when there is nothing to observe. Then `; time-based: none` or `; time-based: every N minutes`. |
 | `Reporting simulation info` | `REPORTINGSECONDS` | Minutes between progress reports. |
 
 ## How probe data reaches disk
@@ -56,7 +56,7 @@ flowchart LR
   S[time step n] --> U[update_outputs: sample into buffer]
   S --> M{n mod 128 == 0}
   M -->|yes| F[flush_outputs: volumetric and line probes]
-  F --> SP{n mod 4096 == 0}
+  F --> SP{n mod 1024 == 0}
   SP -->|yes| PP[point, wire and bulk probes]
   T[Timing, about every 60 s] --> D{elapsed > flushdata minutes}
   D -->|yes, if -flushdata given| ALL[flush all probes]
@@ -74,7 +74,7 @@ flowchart TD
 `estimate_outputs_memory` adds `size * storage_size` of every allocated buffer
 held by each probe: time samples, frequency accumulators, coordinates and
 material tags. Time buffers have a fixed size of `ceil(flushSteps / tstride)` samples
-(`time_buffer_capacity`), with `flushSteps` 4096 (`SMALL_PROBE_BUFFER_SIZE`) for point, wire-current, wire-charge and bulk probes and 128 (`OUTPUT_TIME_BUFFER_SIZE`) for the rest, so the figure is valid for the whole run.
+(`time_buffer_capacity`), with `flushSteps` 1024 (`SMALL_PROBE_BUFFER_SIZE`) for point, wire-current, wire-charge and bulk probes and 128 (`OUTPUT_TIME_BUFFER_SIZE`) for the rest, so the figure is valid for the whole run.
 
 Each row is the sum over all probes of that type. Two rows come from outside
 the `outputs` array:

@@ -6,7 +6,7 @@ the probe name, `F` is the sampled field or component, `C` is the coordinate,
 and `B` is the probe bounding box.
 
 Time-domain probes buffer samples in memory and are flushed to disk every 128
-steps (`OUTPUT_TIME_BUFFER_SIZE`). Point, wire and bulk probes are flushed every 4096 steps
+steps (`OUTPUT_TIME_BUFFER_SIZE`). Point, wire and bulk probes are flushed every 1024 steps
 (`SMALL_PROBE_BUFFER_SIZE`) because they are small; volumetric probes (movies)
 and line probes keep the 128-step cadence. `-flushdata <minutes>` adds a time-based flush that
 flushes every probe type. The estimated buffer memory per probe type is printed at `Init Timing`
