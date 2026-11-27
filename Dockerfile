@@ -105,9 +105,10 @@ RUN mkdir -p /home/${USERNAME}/.config \
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}/workspaces/fdtd
 
-# Intel oneAPI 2025.0 ships the compilers, Intel MPI, and matching runtime
+# Intel oneAPI 2026.2 ships the compilers, Intel MPI, and matching runtime
 # libraries as a tested toolkit rather than relying on Intel's APT repository.
-FROM intel/oneapi-hpckit:2025.0.0-0-devel-ubuntu24.04 AS intel-quality
+# Base and HPC toolkits were consolidated into `intel/oneapi` with 2026.0.
+FROM intel/oneapi:2026.2.0-devel-ubuntu24.04 AS intel-quality
 
 USER root
 

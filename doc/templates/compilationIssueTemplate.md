@@ -3,16 +3,16 @@
 ## 📌 Environment Information
 
 - **Intel oneAPI Version (if applicable):**  
-  > e.g., 2024.1.0
+  > e.g., 2026.2.0
 
 - **CMake Version:**  
   > e.g., 3.28.2
 
 - **Operating System:**  
-  > e.g., Ubuntu 22.04 / Windows 11 / WSL2
+  > e.g., Ubuntu 24.04 / Windows 11 / WSL2
 
 - **Fortran Compiler:**  
-  > e.g., ifx 2024.1 / ifort / gfortran 13
+  > e.g., ifx 2026.2 / gfortran 13
 
 - **CMake Generator:**  
   > e.g., Ninja / Unix Makefiles / Visual Studio 17 2022

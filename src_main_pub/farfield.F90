@@ -1023,8 +1023,12 @@ contains
 
       pozi=index(FF%filefarfield,'_log_')
       if (pozi/=0) then
-         FF%InitialFreq=log10(FF%InitialFreq)
-         FF%FinalFreq=log10(FF%FinalFreq)
+         ! Single-precision log10 is only accurate to one ulp, which shifts the
+         ! endpoints of the logarithmic frequency axis by more than 1 Hz at
+         ! 1 MHz. Compute the logarithms in double precision so the stored
+         ! bounds reconstruct the requested frequencies.
+         FF%InitialFreq=real(log10(real(FF%InitialFreq, 8)), Rkind)
+         FF%FinalFreq=real(log10(real(FF%FinalFreq, 8)), Rkind)
          if (FF%NumFreqs > 1) then
             FF%FreqStep=abs(FF%InitialFreq-FF%FinalFreq)/(FF%NumFreqs-1)
          else
