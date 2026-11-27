@@ -59,8 +59,126 @@ module BORDERS_CPML_m
    !
    public  :: InitCPMLBorders, AdvanceelectricCPML,AdvanceMagneticCPML,StoreFieldsCPMLBorders,DestroyCPMLBorders,AdvanceelectricCPML_freespace,AdvanceMagneticCPML_freespace
    public  :: calc_cpmlconstants
+   public  :: estimate_cpml_memory
    !!!public  :: FreeSpace_AdvanceMagneticCPML,calc_cpmlconstants
 contains
+
+   ! Sets the six PML region limits used by both InitCPMLBorders and the
+   ! pre-allocation estimator.
+   subroutine set_cpml_limits(sgg, sinpml, thereAre)
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      type(limit_t), dimension(1:6), intent(in) :: sinpml
+      logical, intent(out) :: thereAre
+      integer(kind=4) :: field
+
+      thereAre = sgg%Border%IsBackPML .or. sgg%Border%IsFrontPML .or. &
+                 sgg%Border%IsLeftPML .or. sgg%Border%IsRightPML .or. &
+                 sgg%Border%IsUpPML .or. sgg%Border%IsDownPML
+      if (.not. thereAre) return
+
+      do field = IEX, IHZ
+         PMLc(field)%XI(DOWN)  =                        sgg%Sweep(field)%XI
+         PMLc(field)%XE(DOWN)  =                        sgg%Sweep(field)%XE
+         PMLc(field)%YI(DOWN)  =                        sgg%Sweep(field)%YI
+         PMLc(field)%YE(DOWN)  =                        sgg%Sweep(field)%YE
+         PMLc(field)%ZI(DOWN)  =                        sgg%Sweep(field)%ZI
+         PMLc(field)%ZE(DOWN)  = min(sinpml(field)%ZI - 1, sgg%Sweep(field)%ZE)
+         PMLc(field)%XI(UP)    =                        sgg%Sweep(field)%XI
+         PMLc(field)%XE(UP)    =                        sgg%Sweep(field)%XE
+         PMLc(field)%YI(UP)    =                        sgg%Sweep(field)%YI
+         PMLc(field)%YE(UP)    =                        sgg%Sweep(field)%YE
+         PMLc(field)%ZI(UP)    = max(sinpml(field)%ZE + 1, sgg%Sweep(field)%ZI)
+         PMLc(field)%ZE(UP)    =                        sgg%Sweep(field)%ZE
+         PMLc(field)%XI(LEFT)  =                        sgg%Sweep(field)%XI
+         PMLc(field)%XE(LEFT)  =                        sgg%Sweep(field)%XE
+         PMLc(field)%YI(LEFT)  =                        sgg%Sweep(field)%YI
+         PMLc(field)%YE(LEFT)  = min(sinpml(field)%YI - 1, sgg%Sweep(field)%YE)
+         PMLc(field)%ZI(LEFT)  =                        sgg%Sweep(field)%ZI
+         PMLc(field)%ZE(LEFT)  =                        sgg%Sweep(field)%ZE
+         PMLc(field)%XI(RIGHT) =                        sgg%Sweep(field)%XI
+         PMLc(field)%XE(RIGHT) =                        sgg%Sweep(field)%XE
+         PMLc(field)%YI(RIGHT) = max(sinpml(field)%YE + 1, sgg%Sweep(field)%YI)
+         PMLc(field)%YE(RIGHT) =                        sgg%Sweep(field)%YE
+         PMLc(field)%ZI(RIGHT) =                        sgg%Sweep(field)%ZI
+         PMLc(field)%ZE(RIGHT) =                        sgg%Sweep(field)%ZE
+         PMLc(field)%XI(BACK)  =                        sgg%Sweep(field)%XI
+         PMLc(field)%XE(BACK)  = min(sinpml(field)%XI - 1, sgg%Sweep(field)%XE)
+         PMLc(field)%YI(BACK)  =                        sgg%Sweep(field)%YI
+         PMLc(field)%YE(BACK)  =                        sgg%Sweep(field)%YE
+         PMLc(field)%ZI(BACK)  =                        sgg%Sweep(field)%ZI
+         PMLc(field)%ZE(BACK)  =                        sgg%Sweep(field)%ZE
+         PMLc(field)%XI(FRONT) = max(sinpml(field)%XE + 1, sgg%Sweep(field)%XI)
+         PMLc(field)%XE(FRONT) =                        sgg%Sweep(field)%XE
+         PMLc(field)%YI(FRONT) =                        sgg%Sweep(field)%YI
+         PMLc(field)%YE(FRONT) =                        sgg%Sweep(field)%YE
+         PMLc(field)%ZI(FRONT) =                        sgg%Sweep(field)%ZI
+         PMLc(field)%ZE(FRONT) =                        sgg%Sweep(field)%ZE
+      end do
+   end subroutine set_cpml_limits
+
+   subroutine estimate_cpml_memory(sgg, sinpml, bytes)
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      type(limit_t), dimension(1:6), intent(in) :: sinpml
+      integer(kind=8), intent(out) :: bytes
+
+      logical :: thereAre
+      integer(kind=8) :: bytesPerReal
+      integer(kind=8) :: lenIH, lenIE
+
+      call set_cpml_limits(sgg, sinpml, thereAre)
+      bytesPerReal = int(storage_size(1.0_RKIND)/8, 8)
+      lenIH = int(sgg%Alloc(IHX)%XE - sgg%Alloc(IHX)%XI + 1, 8) + &
+              int(sgg%Alloc(IHY)%YE - sgg%Alloc(IHY)%YI + 1, 8) + &
+              int(sgg%Alloc(IHZ)%ZE - sgg%Alloc(IHZ)%ZI + 1, 8)
+      lenIE = int(sgg%Alloc(IEX)%XE - sgg%Alloc(IEX)%XI + 1, 8) + &
+              int(sgg%Alloc(IEY)%YE - sgg%Alloc(IEY)%YI + 1, 8) + &
+              int(sgg%Alloc(IEZ)%ZE - sgg%Alloc(IEZ)%ZI + 1, 8)
+
+      ! dxe/dye/dze and dxh/dyh/dzh are allocated before the early return.
+      bytes = bytesPerReal * (lenIE + lenIH)
+      if (.not. thereAre) return
+
+      ! P_ce/P_cm/P_be/P_bm (12 arrays over the IH axes) and
+      ! ce/cm/Ice/Icm (12 arrays over the IH axes).
+      bytes = bytes + bytesPerReal * 24_8 * lenIH
+      bytes = bytes + 18_8 * bytesPerReal
+
+      ! Match the fake limits used by InitCPMLBorders for non-PML borders.
+      if (.not. sgg%Border%IsDownPML)  PMLc(1:6)%ZI(DOWN)  = PMLc(1:6)%ZE(DOWN) + 100
+      if (.not. sgg%Border%IsUpPML)    PMLc(1:6)%ZI(UP)    = PMLc(1:6)%ZE(UP) + 100
+      if (.not. sgg%Border%IsLeftPML)  PMLc(1:6)%ZI(LEFT)  = PMLc(1:6)%ZE(LEFT) + 100
+      if (.not. sgg%Border%IsRightPML) PMLc(1:6)%ZI(RIGHT) = PMLc(1:6)%ZE(RIGHT) + 100
+      if (.not. sgg%Border%IsFrontPML) PMLc(1:6)%ZI(FRONT) = PMLc(1:6)%ZE(FRONT) + 100
+      if (.not. sgg%Border%IsBackPML)  PMLc(1:6)%ZI(BACK)  = PMLc(1:6)%ZE(BACK) + 100
+
+      bytes = bytes + psi_region_bytes(IEX, IEZ, IHX, IHZ, LEFT, RIGHT, bytesPerReal)
+      bytes = bytes + psi_region_bytes(IEY, IEX, IHY, IHX, DOWN, UP, bytesPerReal)
+      bytes = bytes + psi_region_bytes(IEZ, IEY, IHZ, IHY, BACK, FRONT, bytesPerReal)
+   contains
+
+      integer(kind=8) function psi_region_bytes(f1, f2, f3, f4, firstRegion, lastRegion, bytesPerReal) result(total)
+         integer(kind=4), intent(in) :: f1, f2, f3, f4, firstRegion, lastRegion
+         integer(kind=8), intent(in) :: bytesPerReal
+         integer(kind=4) :: region
+         total = 0_8
+         do region = firstRegion, lastRegion
+            total = total + psi_bytes(f1, region, bytesPerReal)
+            total = total + psi_bytes(f2, region, bytesPerReal)
+            total = total + psi_bytes(f3, region, bytesPerReal)
+            total = total + psi_bytes(f4, region, bytesPerReal)
+         end do
+      end function psi_region_bytes
+
+      integer(kind=8) function psi_bytes(field, region, bytesPerReal) result(total)
+         integer(kind=4), intent(in) :: field, region
+         integer(kind=8), intent(in) :: bytesPerReal
+         integer(kind=8) :: nx, ny, nz
+         nx = max(0_8, int(PMLc(field)%XE(region) - PMLc(field)%XI(region) + 1, 8))
+         ny = max(0_8, int(PMLc(field)%YE(region) - PMLc(field)%YI(region) + 1, 8))
+         nz = max(0_8, int(PMLc(field)%ZE(region) - PMLc(field)%ZI(region) + 1, 8))
+         total = nx * ny * nz * bytesPerReal
+      end function psi_bytes
+   end subroutine estimate_cpml_memory
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Initializes PML data
@@ -114,60 +232,8 @@ contains
       !integer(kind=4) :: layoutnumber
 
       !
-      ThereArePMLBorders=.false.
-      if (sgg%Border%IsBackPML.or.sgg%Border%IsFrontPML.or.sgg%Border%IsLeftPML.or.sgg%Border%IsRightPML.or. &
-      sgg%Border%IsUpPML.or.sgg%Border%IsDownPML) ThereArePMLBorders=.true.
+      call set_cpml_limits(sgg, temp_SINPML_Fullsize, ThereArePMLBorders)
       if (.not.(ThereArePMLBorders)) return
-
-
-      !Find the limits of each of the 6 padding PML regions for each field component
-
-
-      do field=IEX,IHZ
-         !
-         PMLc(field)%XI(DOWN)  =                                sgg%Sweep(field)%XI
-         PMLc(field)%XE(DOWN)  =                                sgg%Sweep(field)%XE
-         PMLc(field)%YI(DOWN)  =                                sgg%Sweep(field)%YI
-         PMLc(field)%YE(DOWN)  =                                sgg%Sweep(field)%YE
-         PMLc(field)%ZI(DOWN)  =                                sgg%Sweep(field)%ZI
-         PMLc(field)%ZE(DOWN)  =min(SINPML_Fullsize(field)%ZI-1,sgg%Sweep(field)%ZE)
-         !
-         PMLc(field)%XI(UP)    =                                sgg%Sweep(field)%XI
-         PMLc(field)%XE(UP)    =                                sgg%Sweep(field)%XE
-         PMLc(field)%YI(UP)    =                                sgg%Sweep(field)%YI
-         PMLc(field)%YE(UP)    =                                sgg%Sweep(field)%YE
-         PMLc(field)%ZI(UP)    =max(SINPML_Fullsize(field)%ZE+1,sgg%Sweep(field)%ZI)
-         PMLc(field)%ZE(UP)    =                                sgg%Sweep(field)%ZE
-         !
-         PMLc(field)%XI(LEFT)  =                                sgg%Sweep(field)%XI
-         PMLc(field)%XE(LEFT)  =                                sgg%Sweep(field)%XE
-         PMLc(field)%YI(LEFT)  =                                sgg%Sweep(field)%YI
-         PMLc(field)%YE(LEFT)  =min(SINPML_Fullsize(field)%YI-1,sgg%Sweep(field)%YE)
-         PMLc(field)%ZI(LEFT)  =                                sgg%Sweep(field)%ZI
-         PMLc(field)%ZE(LEFT)  =                                sgg%Sweep(field)%ZE
-         !
-         PMLc(field)%XI(RIGHT) =                                sgg%Sweep(field)%XI
-         PMLc(field)%XE(RIGHT) =                                sgg%Sweep(field)%XE
-         PMLc(field)%YI(RIGHT) =max(SINPML_Fullsize(field)%YE+1,sgg%Sweep(field)%YI)
-         PMLc(field)%YE(RIGHT) =                                sgg%Sweep(field)%YE
-         PMLc(field)%ZI(RIGHT) =                                sgg%Sweep(field)%ZI
-         PMLc(field)%ZE(RIGHT) =                                sgg%Sweep(field)%ZE
-         !
-         PMLc(field)%XI(BACK)  =                                sgg%Sweep(field)%XI
-         PMLc(field)%XE(BACK)  =min(SINPML_Fullsize(field)%XI-1,sgg%Sweep(field)%XE)
-         PMLc(field)%YI(BACK)  =                                sgg%Sweep(field)%YI
-         PMLc(field)%YE(BACK)  =                                sgg%Sweep(field)%YE
-         PMLc(field)%ZI(BACK)  =                                sgg%Sweep(field)%ZI
-         PMLc(field)%ZE(BACK)  =                                sgg%Sweep(field)%ZE
-         !
-         PMLc(field)%XI(Front) =max(SINPML_Fullsize(field)%XE+1,sgg%Sweep(field)%XI)
-         PMLc(field)%XE(Front) =                                sgg%Sweep(field)%XE
-         PMLc(field)%YI(Front) =                                sgg%Sweep(field)%YI
-         PMLc(field)%YE(Front) =                                sgg%Sweep(field)%YE
-         PMLc(field)%ZI(Front) =                                sgg%Sweep(field)%ZI
-         PMLc(field)%ZE(Front) =                                sgg%Sweep(field)%ZE
-         !
-      end do
 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

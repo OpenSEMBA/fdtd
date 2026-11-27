@@ -19,6 +19,8 @@ module Solver_m
    use FDETYPES_m
    use Report_m
    use progress_m
+   use memoryBudget_m, only: estimate_solver_memory, check_memory_budget, memory_estimate_t
+   use parallelInfo_m, only: parallel_info_t, collect_parallel_info, report_parallel_info
    use ilumina_m
    use output_m
    use outputTypes_m
@@ -78,6 +80,7 @@ module Solver_m
 #ifdef CompileWithMTLN
    use mtln_types_m, only: mtln_t
    use Wire_bundles_mtln_m
+   use mtln_preprocess_m, only: estimate_mtln_memory
 #endif
 !!
 #ifdef CompileWithProfiling
@@ -127,7 +130,6 @@ module Solver_m
       procedure :: init_control => solver_init_control
       procedure, private :: init_fields
       procedure, private :: init_distances
-      procedure, private :: report_memory_estimate
       procedure :: launch_simulation
       procedure :: set_field_value
       procedure :: get_field_value
@@ -316,7 +318,13 @@ module Solver_m
       type(mtln_t) :: mtln_parsed
       character(len=*), intent(in) :: nInputRoot
       integer(kind=4), intent(in) :: layoutnumber
+      integer(kind=8) :: wireBytes
+      type(parallel_info_t) :: parallelInfo
 
+      call collect_parallel_info(parallelInfo)
+      call report_parallel_info(parallelInfo, layoutnumber)
+      call estimate_mtln_memory(mtln_parsed, bytes=wireBytes)
+      call check_memory_budget(wireBytes, 'before MTLN simulation')
       call initializeMTLNProblem(mtln_parsed, nInputRoot)
       call runMTLNProblem()
       call reportSimulationEnd(layoutnumber)
@@ -334,45 +342,6 @@ module Solver_m
       this%Hz(this%sgg%Alloc(IHZ)%XI : this%sgg%Alloc(IHZ)%XE,this%sgg%Alloc(IHZ)%YI : this%sgg%Alloc(IHZ)%YE,this%sgg%Alloc(IHZ)%ZI : this%sgg%Alloc(IHZ)%ZE))
       this%Ex = 0.0_RKIND; this%Ey = 0.0_RKIND; this%Ez = 0.0_RKIND; this%Hx = 0.0_RKIND; this%Hy = 0.0_RKIND; this%Hz = 0.0_RKIND
    end subroutine
-
-   ! Logs the RAM this rank will need for the field, distance and media arrays before they are allocated
-   subroutine report_memory_estimate(this)
-      class(solver_t) :: this
-      integer(kind=8) :: fieldBytes, distBytes, mediaBytes
-      character(len=bufsize) :: msg
-
-      fieldBytes = RKIND*(cells_of(this%sgg%Alloc(IEX))+cells_of(this%sgg%Alloc(IEY))+cells_of(this%sgg%Alloc(IEZ)) &
-                        + cells_of(this%sgg%Alloc(IHX))+cells_of(this%sgg%Alloc(IHY))+cells_of(this%sgg%Alloc(IHZ)))
-      ! dx/Idx pairs (e and h grids) along each axis
-      distBytes = 2_8*RKIND*(int(this%sgg%Alloc(IHX)%XE-this%sgg%Alloc(IHX)%XI+1,8)+int(this%sgg%Alloc(IHY)%YE-this%sgg%Alloc(IHY)%YI+1,8) &
-                           + int(this%sgg%Alloc(IHZ)%ZE-this%sgg%Alloc(IHZ)%ZI+1,8)+int(this%sgg%Alloc(IEX)%XE-this%sgg%Alloc(IEX)%XI+1,8) &
-                           + int(this%sgg%Alloc(IEY)%YE-this%sgg%Alloc(IEY)%YI+1,8)+int(this%sgg%Alloc(IEZ)%ZE-this%sgg%Alloc(IEZ)%ZI+1,8))
-      mediaBytes = 0
-      if (allocated(this%media%sggMiEx)) mediaBytes = INTEGERSIZEOFMEDIAMATRICES*(size(this%media%sggMiNo,kind=8) &
-                 + size(this%media%sggMiEx,kind=8)+size(this%media%sggMiEy,kind=8)+size(this%media%sggMiEz,kind=8) &
-                 + size(this%media%sggMiHx,kind=8)+size(this%media%sggMiHy,kind=8)+size(this%media%sggMiHz,kind=8)) &
-                 + IKINDMTAG*size(this%media%sggMtag,kind=8)
-      if (allocated(this%tag_numbers%edge%x)) mediaBytes = mediaBytes + IKINDMTAG*(size(this%tag_numbers%edge%x,kind=8) &
-                 + size(this%tag_numbers%edge%y,kind=8)+size(this%tag_numbers%edge%z,kind=8) &
-                 + size(this%tag_numbers%face%x,kind=8)+size(this%tag_numbers%face%y,kind=8)+size(this%tag_numbers%face%z,kind=8))
-
-      msg = 'estimated RAM for this rank: '//mb_text(fieldBytes+distBytes+mediaBytes)//' MB (fields '//mb_text(fieldBytes)// &
-            ' MB, distances '//mb_text(distBytes)//' MB, media '//mb_text(mediaBytes)//' MB)'
-      call log_msg(LOG_INFO, 'MEMORY', trim(msg))
-   end subroutine
-
-   function mb_text(bytes) result(s)
-      integer(kind=8), intent(in) :: bytes
-      character(len=:), allocatable :: s
-      character(len=20) :: buf
-      write(buf,'(f20.1)') real(bytes,8)/1048576.0_8
-      s = trim(adjustl(buf))
-   end function
-
-   pure integer(kind=8) function cells_of(lim) result(n)
-      type(XYZlimit_t), intent(in) :: lim
-      n = int(lim%XE-lim%XI+1,8)*int(lim%YE-lim%YI+1,8)*int(lim%ZE-lim%ZI+1,8)
-   end function
 
    subroutine init_distances(this)
       class(solver_t) :: this
@@ -502,6 +471,9 @@ module Solver_m
       logical :: anyObservation
       integer(kind=4) :: counts(0:MTLN_PROBE_ID)
       integer :: smallFlushSteps, regularFlushSteps
+      type(memory_estimate_t) :: memoryEstimate
+      type(parallel_info_t) :: parallelInfo
+      integer(kind=8) :: hdf5Bytes
 
 ! #ifdef compileWithMPI
       integer(kind=4) :: dummyMin,dummyMax, ierr, resumeIostat
@@ -533,7 +505,8 @@ module Solver_m
       layoutcharID = trim(adjustl(this%control%nInputRoot))//'_'//trim(adjustl(chari))
       call findbounds(this%bounds)
 
-      call this%report_memory_estimate()
+      call estimate_solver_memory(this%sgg, this%media, this%tag_numbers, .false., memoryEstimate)
+      call check_memory_budget(memoryEstimate%totalBytes, 'before field allocation')
       call this%init_distances()
       Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
 !!!changed here to allow scaling on 211118 due to resuming problems: must read eps0, mu0 before doing numbers
@@ -687,7 +660,10 @@ module Solver_m
 #ifdef CompileWithMPI
       call initializeMPI()
 #endif
-      
+
+      call collect_parallel_info(parallelInfo)
+      call report_parallel_info(parallelInfo, this%control%layoutnumber)
+
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -707,6 +683,9 @@ module Solver_m
 #endif
       call flush_cadence_from_counts(counts, smallFlushSteps, regularFlushSteps)
       call InitTiming(this%sgg, this%control, this%initialtimestep, anyObservation, smallFlushSteps, regularFlushSteps)
+
+      call estimate_hdf5_workspace_bytes(this%sgg, this%control, hdf5Bytes)
+      call check_memory_budget(hdf5Bytes, 'before time stepping')
 
 
       call CLOSEWARNINGFILE(this%control%layoutnumber,this%control%num_procs,this%control%fatalerror,.false.,this%control%simu_devia) !here the stochastic is already split and there are two this%control%layoutnumber=0
@@ -1131,6 +1110,7 @@ contains
       subroutine initializeBorders()
          character(len=BUFSIZE) :: dubuf
          logical :: l_auxinput, l_auxoutput
+         integer(kind=8) :: cpmlBytes
 #ifdef CompileWithMPI
          integer(kind=4) :: ierr
 #endif
@@ -1152,6 +1132,8 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init CPML Borders...';  call print11(this%control%layoutnumber,dubuf)
+         call estimate_cpml_memory(this%sgg, this%sinPML_fullsize, cpmlBytes)
+         call check_memory_budget(cpmlBytes, 'before CPML initialization')
          call InitCPMLBorders     (this%sgg,this%sinPML_fullsize,this%thereAre%PMLBorders,this%control, &
                                  dxe,dye,dze,dxh,dyh,dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,this%eps0,this%mu0)
 
@@ -1229,6 +1211,7 @@ contains
          real(kind=RKIND_TIME) :: dtcritico, newdtcritico
          character(len=BUFSIZE) :: dubuf, buff
          logical :: l_auxinput, l_auxoutput
+         integer(kind=8) :: wireBytes
 #ifdef CompileWithMPI
          integer(kind=4) :: ierr
 #endif
@@ -1238,6 +1221,8 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
             write(dubuf,*) 'Init MTLN Wires...';  call print11(this%control%layoutnumber,dubuf)
+            call estimate_mtln_memory(this%mtln_parsed, this%sgg%alloc, wireBytes)
+            call check_memory_budget(wireBytes, 'before MTLN wire initialization')
             call InitWires_mtln(this%sgg,Ex,Ey,Ez,&
                                 this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,&
                                 this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,&
@@ -1249,6 +1234,8 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
             write(dubuf,*) 'Init Holland Wires...';  call print11(this%control%layoutnumber,dubuf)
+            call estimate_holland_wires_memory(this%sgg, wireBytes)
+            call check_memory_budget(wireBytes, 'before Holland wire initialization')
             call InitWires(this%sgg,this%media%sggMiNo,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, & 
                            this%thereAre%Wires, Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, &
                            this%g%g2,this%sinPML_fullsize, this%fullsize,dtcritico,this%eps0,this%mu0,this%control)
@@ -1388,6 +1375,7 @@ contains
       subroutine initializeSGBC()
          character(len=BUFSIZE) :: dubuf
          logical :: l_auxinput, l_auxoutput
+         integer(kind=8) :: sgbcBytes
 #ifdef CompileWithMPI
          integer(kind=4) :: ierr
 #endif
@@ -1397,6 +1385,13 @@ contains
               call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
                write(dubuf,*) 'Init Multi sgbc...';  call print11(this%control%layoutnumber,dubuf)
+#ifndef CompileWithStochastic
+               call estimate_sgbc_memory(this%sgg, this%media, .true., this%control%sgbccrank, &
+                                         this%control%sgbcFreq, this%control%sgbcresol, &
+                                         this%control%sgbcdepth, this%control%sgbcDispersive, &
+                                         this%eps0, this%mu0, sgbcBytes)
+               call check_memory_budget(sgbcBytes, 'before SGBC initialization')
+#endif
                call Initsgbcs(this%sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, &
                               this%control%layoutnumber,this%control%num_procs, this%g, this%thereAre%sgbcs,this%control%resume, &
                               this%control%sgbccrank,this%control%sgbcFreq,this%control%sgbcresol,this%control%sgbcdepth,this%control%sgbcDispersive, &
@@ -1444,10 +1439,13 @@ contains
       end subroutine initializeMultiports
 
       subroutine initializeConformal()
+         integer(kind=8) :: conformalBytes
 #ifdef CompileWithMPI
          integer :: ierr
          call MPI_Barrier(SUBCOMM_MPI, ierr)
 #endif
+         call estimate_conformal_memory(this%sgg, conformalBytes)
+         call check_memory_budget(conformalBytes, 'before conformal initialization')
          call initializeConformalFields(this)
          ! call initializeConformalSurfaceStates(this)
       end subroutine initializeConformal

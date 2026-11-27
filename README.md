@@ -53,8 +53,9 @@ It can be run with
   semba-fdtd -i CASE_NAME.fdtd.json
 ```
 
-See the [output guide](doc/output.md) for probe artifact formats and
-the [testing guide](doc/testing.md) for native, Python, and MPI test commands.
+See the [output guide](doc/output.md) for probe artifact formats,
+the [startup memory checks](doc/memory.md), and the
+[testing guide](doc/testing.md) for native, Python, and MPI test commands.
 
 Tests must be run from the root folder. Python tests automatically select the
 first compatible preset binary, preferring Release builds, based on

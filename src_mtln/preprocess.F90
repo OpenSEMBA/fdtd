@@ -51,8 +51,123 @@ module mtln_preprocess_m
     end type
 
     private :: checkSourceExcitationFile
+    public :: estimate_mtln_memory
 
 contains
+
+    ! Count-only estimate of the transmission-line arrays allocated by
+    ! mtlnCtor.  It walks the same cable bundles and slice logic as
+    ! preprocess, but never allocates the PUL matrices.
+    subroutine estimate_mtln_memory(parsed, alloc, bytes)
+        type(parsed_mtln_t), intent(in) :: parsed
+        type(XYZlimit_t), dimension(1:6), intent(in), optional :: alloc
+        integer(kind=8), intent(out) :: bytes
+
+        type(cable_bundle_t), dimension(:), allocatable :: cable_bundles
+        type(segment_t) :: segmentTemplate
+        integer(kind=8) :: bytesPerReal
+        integer(kind=8) :: lineBytes
+        integer(kind=8) :: bundleBytes
+        integer(kind=8) :: lineMatrixBytes
+        integer(kind=8) :: bundleMatrixBytes
+        integer(kind=8) :: ndiv, ncond, bundleCond, bundleDiv
+        integer(kind=4) :: i, j, k
+        integer(kind=4), dimension(2) :: alloc_z
+
+        bytes = 0_8
+        if (.not. allocated(parsed%cables)) return
+        if (size(parsed%cables) == 0) return
+
+        if (present(alloc)) then
+            alloc_z(1) = alloc(3)%zi
+            alloc_z(2) = alloc(3)%ze
+        else
+            alloc_z = 0_4
+        end if
+
+        bytesPerReal = int(storage_size(0.0_rkind)/8, 8)
+        cable_bundles = buildCableBundles(parsed%cables)
+
+        do i = 1, size(cable_bundles)
+            bundleCond = 0_8
+            bundleDiv = 0_8
+            lineBytes = 0_8
+            bundleBytes = 0_8
+
+            do j = 1, size(cable_bundles(i)%levels)
+                do k = 1, size(cable_bundles(i)%levels(j)%cables)
+                    ncond = int(cable_conductor_count(cable_bundles(i)%levels(j)%cables(k)%ptr), 8)
+                    ndiv = int(local_divisions(cable_bundles(i)%levels(j)%cables(k)%ptr, alloc_z, present(alloc)), 8)
+                    if (ncond <= 0_8) cycle
+                    if (ndiv < 0_8) ndiv = 0_8
+
+                    ! mtl_t: lpul, cpul, rpul, gpul and du.
+                    lineMatrixBytes = (5_8 * ndiv + 2_8) * ncond * ncond * bytesPerReal
+                    lineBytes = lineBytes + lineMatrixBytes
+                    ! step_size and segments arrays.
+                    lineBytes = lineBytes + ndiv * (8_8 + int(storage_size(segmentTemplate)/8, 8))
+
+                    bundleCond = bundleCond + ncond
+                    bundleDiv = max(bundleDiv, ndiv)
+                end do
+            end do
+
+            ! mtl_bundle_t: lpul, rpul, du, cpul, gpul, i_term, v_diff,
+            ! v_term and i_diff.
+            bundleMatrixBytes = (9_8 * bundleDiv + 4_8) * bundleCond * bundleCond * bytesPerReal
+            bundleBytes = bundleMatrixBytes + 10_8 * bundleCond * bundleDiv * bytesPerReal
+            bytes = bytes + lineBytes + bundleBytes
+        end do
+    end subroutine estimate_mtln_memory
+
+    function cable_conductor_count(cable) result(ncond)
+        class(cable_t), pointer :: cable
+        integer(kind=4) :: ncond
+
+        ncond = 0
+        select type (cable)
+        type is (shielded_multiwire_t)
+            if (allocated(cable%inductance_per_meter)) ncond = size(cable%inductance_per_meter, 1)
+        type is (unshielded_multiwire_t)
+            if (allocated(cable%cell_inductance_per_meter)) ncond = size(cable%cell_inductance_per_meter, 1)
+        end select
+    end function cable_conductor_count
+
+    function local_divisions(cable, alloc_z, useAlloc) result(ndiv)
+        class(cable_t), pointer :: cable
+        integer(kind=4), dimension(2), intent(in) :: alloc_z
+        logical, intent(in) :: useAlloc
+        integer(kind=4) :: ndiv
+
+        integer(kind=4) :: j, blocks
+        logical :: inLayer
+
+        if (.not. useAlloc) then
+            if (allocated(cable%step_size)) then
+                ndiv = size(cable%step_size, 1)
+            else
+                ndiv = 0
+            end if
+            return
+        end if
+
+        ndiv = 0
+        if (.not. allocated(cable%segments)) return
+        blocks = 0
+        inLayer = .false.
+        do j = 1, size(cable%segments)
+            if (cable%segments(j)%z >= alloc_z(1) .and. cable%segments(j)%z <= alloc_z(2)) then
+                ndiv = ndiv + 1
+                if (.not. inLayer) then
+                    blocks = blocks + 1
+                    inLayer = .true.
+                end if
+            else
+                inLayer = .false.
+            end if
+        end do
+        if (blocks > 1) ndiv = ndiv + blocks - 1
+    end function local_divisions
 
 
     function preprocess(parsed, alloc) result(res)

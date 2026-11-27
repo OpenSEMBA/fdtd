@@ -34,10 +34,60 @@ module HollandWires_m
    private
 
    public InitWires,AdvanceWiresE,AdvanceWiresH,AdvanceWiresEcrank,StoreFieldsWires,DestroyWires,DestroyWireMedia, GetHwires,ReportWireJunctions,calc_wirehollandconstants,evolucion
+   public estimate_holland_wires_memory
 
 
 
 contains
+
+   ! Upper-bound estimate of the arrays allocated by InitWires.  Duplicate
+   ! segments and merged charge nodes are not subtracted, so the result is
+   ! intentionally conservative.
+   subroutine estimate_holland_wires_memory(sgg, bytes)
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      integer(kind=8), intent(out) :: bytes
+
+      type(CurrentSegments_t) :: segmentTemplate
+      type(ChargeNodes_t) :: nodeTemplate
+      integer(kind=8) :: segmentBytes, nodeBytes, segmentCount
+      integer(kind=8) :: bytesPerWireReal
+      integer(kind=4) :: jmed, iwj, i, j, k, field, numSegments
+
+      bytes = 0_8
+      segmentBytes = int(storage_size(segmentTemplate)/8, 8)
+      nodeBytes = int(storage_size(nodeTemplate)/8, 8)
+      bytesPerWireReal = int(storage_size(0.0_RKIND_WIRES)/8, 8)
+      segmentCount = 0_8
+
+      do jmed = 1, sgg%NumMedia
+         if (.not. sgg%Med(jmed)%Is%ThinWire) cycle
+         if (.not. associated(sgg%Med(jmed)%Wire)) cycle
+         if (size(sgg%Med(jmed)%Wire) == 0) cycle
+         if (.not. associated(sgg%Med(jmed)%Wire(1)%segm)) cycle
+         numSegments = sgg%Med(jmed)%Wire(1)%numsegmentos
+         if (sgg%Med(jmed)%Is%Multiwire) then
+            ! R/L/C and b1I/b2I/b3I matrices for the multiwire groups.
+            bytes = bytes + int(numSegments, 8) * int(numSegments, 8) * 6_8 * bytesPerWireReal
+         end if
+         do iwj = 1, numSegments
+            i = sgg%Med(jmed)%Wire(1)%segm(iwj)%i
+            j = sgg%Med(jmed)%Wire(1)%segm(iwj)%j
+            k = sgg%Med(jmed)%Wire(1)%segm(iwj)%k
+            field = sgg%Med(jmed)%Wire(1)%segm(iwj)%ori
+            if (field < IEX .or. field > IHZ) cycle
+            if (i < sgg%Alloc(field)%XI .or. i > sgg%Alloc(field)%XE) cycle
+            if (j < sgg%Alloc(field)%YI .or. j > sgg%Alloc(field)%YE) cycle
+            if (k < sgg%Alloc(field)%ZI .or. k > sgg%Alloc(field)%ZE) cycle
+            segmentCount = segmentCount + 1_8
+         end do
+      end do
+
+      bytes = segmentCount * segmentBytes + 2_8 * segmentCount * nodeBytes
+#ifdef CompileWithMPI
+      ! Shared/needed current segment arrays and charge-node halo arrays.
+      bytes = bytes + 4_8 * segmentCount * segmentBytes + 4_8 * segmentCount * nodeBytes
+#endif
+   end subroutine estimate_holland_wires_memory
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! subroutine to initialize the parameters

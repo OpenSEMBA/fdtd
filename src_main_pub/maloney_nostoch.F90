@@ -88,8 +88,183 @@ integer(kind=4), save:: SGBCdepth
 public Malon_t,SGBCSurface_t !the type is public
 public AdvanceSGBCE,AdvanceSGBCH,InitSGBCs,DestroySGBCs,StoreFieldsSGBCs,calc_SGBCconstants,GetSGBCs
 public solve_tridiag_iguales
+public estimate_sgbc_memory
 
 contains
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Estimates the arrays allocated by InitSGBCs before they are created.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+subroutine estimate_sgbc_memory(sgg, media, sgbc, crank, freq, resol, depthOption, dispersive, eps00, mu00, bytes)
+   type(SGGFDTDINFO_t), intent(in) :: sgg
+   type(media_matrices_t), intent(in) :: media
+   logical, intent(in) :: sgbc, crank
+   real(kind=RKIND), intent(in) :: freq, resol
+   integer(kind=4), intent(in) :: depthOption
+   logical, intent(in) :: dispersive
+   real(kind=RKIND), intent(in) :: eps00, mu00
+   integer(kind=8), intent(out) :: bytes
+
+   integer(kind=8), allocatable :: nodeCount(:)
+   integer(kind=8) :: bytesPerReal, bytesPerComplex, bytesPerInt
+   integer(kind=8) :: staticNodeBytes, staticMediaBytes
+   integer(kind=8) :: nodeBytes
+   integer(kind=4) :: jmed, i, j, k, depthValue, numPoles
+   type(SGBCSurface_t) :: temporaryNode
+   type(SGBCSurface_t), pointer :: estimatorNode => null()
+   type(MalDisp_t) :: temporaryMedia
+   type(MDfield_t) :: temporaryMDfield
+
+   bytes = 0_8
+   if (.not. sgbc) return
+   if (.not. allocated(media%sggMiEx)) return
+   if (.not. allocated(media%sggMiEy)) return
+   if (.not. allocated(media%sggMiEz)) return
+
+   allocate(nodeCount(0:sgg%NumMedia))
+   nodeCount = 0_8
+
+   do k = sgg%SINPMLSweep(IEX)%ZI, sgg%SINPMLSweep(IEX)%ZE
+      do j = sgg%SINPMLSweep(IEX)%YI, sgg%SINPMLSweep(IEX)%YE
+         do i = sgg%SINPMLSweep(IEX)%XI, sgg%SINPMLSweep(IEX)%XE
+            jmed = media%sggMiEx(i, j, k)
+            call count_node(jmed)
+         end do
+      end do
+   end do
+   do k = sgg%SINPMLSweep(IEY)%ZI, sgg%SINPMLSweep(IEY)%ZE
+      do j = sgg%SINPMLSweep(IEY)%YI, sgg%SINPMLSweep(IEY)%YE
+         do i = sgg%SINPMLSweep(IEY)%XI, sgg%SINPMLSweep(IEY)%XE
+            jmed = media%sggMiEy(i, j, k)
+            call count_node(jmed)
+         end do
+      end do
+   end do
+   do k = sgg%SINPMLSweep(IEZ)%ZI, sgg%SINPMLSweep(IEZ)%ZE
+      do j = sgg%SINPMLSweep(IEZ)%YI, sgg%SINPMLSweep(IEZ)%YE
+         do i = sgg%SINPMLSweep(IEZ)%XI, sgg%SINPMLSweep(IEZ)%XE
+            jmed = media%sggMiEz(i, j, k)
+            call count_node(jmed)
+         end do
+      end do
+   end do
+
+   bytesPerReal = int(storage_size(1.0_RKIND)/8, 8)
+   bytesPerComplex = int(storage_size((1.0_CKIND, 1.0_CKIND))/8, 8)
+   bytesPerInt = int(storage_size(0_4)/8, 8)
+   staticNodeBytes = int(storage_size(temporaryNode)/8, 8)
+   staticMediaBytes = int(storage_size(temporaryMedia)/8, 8)
+
+   do jmed = 1, sgg%NumMedia
+      if (nodeCount(jmed) == 0_8) cycle
+      if (.not. sgg%Med(jmed)%Is%SGBC) cycle
+      if (.not. associated(sgg%Med(jmed)%Multiport)) cycle
+
+      eps0 = eps00
+      mu0 = mu00
+      SGBCFreq = freq
+      SGBCresol = resol
+      SGBCdepth = depthOption
+      SGBCDispersive = dispersive
+
+      allocate(estimatorNode)
+      estimatorNode%jmed = jmed
+      call depth(estimatorNode, sgg, jmed, SGBCFreq, SGBCresol, SGBCdepth)
+      depthValue = estimatorNode%depth
+      if (allocated(estimatorNode%layerIndex)) deallocate(estimatorNode%layerIndex)
+      if (allocated(estimatorNode%delta_entreEinterno)) deallocate(estimatorNode%delta_entreEinterno)
+      deallocate(estimatorNode)
+
+      numPoles = 0
+      if (dispersive) call read_pole_count(sgg%Med(jmed), numPoles)
+      nodeBytes = sgbc_node_bytes(depthValue, numPoles, crank, dispersive, &
+                                  bytesPerReal, bytesPerComplex, bytesPerInt, temporaryMDfield)
+      bytes = bytes + nodeCount(jmed) * (nodeBytes + staticNodeBytes)
+   end do
+
+   if (maxval(nodeCount) == 0_8) then
+      deallocate(nodeCount)
+      return
+   end if
+
+   ! malon%Nodes and malon%dispersiveMedia descriptors and pole data.
+   bytes = bytes + int(sgg%NumMedia, 8) * staticMediaBytes
+   do jmed = 1, sgg%NumMedia
+      if (.not. sgg%Med(jmed)%Is%SGBCDispersive) cycle
+      if (.not. sgg%Med(jmed)%Is%SGBC) cycle
+      numPoles = 0
+      if (dispersive) call read_pole_count(sgg%Med(jmed), numPoles)
+      bytes = bytes + 2_8 * int(numPoles, 8) * bytesPerComplex
+   end do
+
+   deallocate(nodeCount)
+
+contains
+
+   subroutine count_node(medium)
+      integer(kind=4), intent(in) :: medium
+      if (medium < 1 .or. medium > sgg%NumMedia) return
+      if (.not. sgg%Med(medium)%Is%SGBC) return
+      nodeCount(medium) = nodeCount(medium) + 1_8
+   end subroutine count_node
+
+end subroutine estimate_sgbc_memory
+
+pure integer(kind=8) function sgbc_node_bytes(depthValue, numPoles, crank, dispersive, &
+                                               bytesPerReal, bytesPerComplex, bytesPerInt, mdfieldTemplate) result(bytes)
+   integer(kind=4), intent(in) :: depthValue, numPoles
+   logical, intent(in) :: crank, dispersive
+   integer(kind=8), intent(in) :: bytesPerReal, bytesPerComplex, bytesPerInt
+   type(MDfield_t), intent(in) :: mdfieldTemplate
+   integer(kind=4) :: span, interior
+
+   span = 2 * depthValue + 1
+   interior = max(0, 2 * depthValue - 1)
+   bytes = int(span, 8) * bytesPerReal                     ! E
+   bytes = bytes + int(span, 8) * bytesPerReal             ! E_past
+   if (depthValue > 0) then
+      bytes = bytes + int(2 * depthValue, 8) * bytesPerReal ! H
+      bytes = bytes + int(2 * depthValue, 8) * bytesPerInt  ! layerIndex
+      bytes = bytes + int(2 * depthValue, 8) * bytesPerReal ! delta_entreEinterno
+   else
+      bytes = bytes + bytesPerInt
+      bytes = bytes + bytesPerReal
+   end if
+   if (crank) bytes = bytes + int(span, 8) * bytesPerReal
+   bytes = bytes + int(2 * depthValue, 8) * bytesPerReal * 2_8 ! GM1, GM2
+   bytes = bytes + int(interior, 8) * bytesPerReal * 2_8       ! G1, G2
+   bytes = bytes + int(6 * span, 8) * bytesPerReal             ! a,b,c,rb,rh,rhm1
+   if (dispersive) then
+      bytes = bytes + int(5 * numPoles, 8) * bytesPerComplex
+      bytes = bytes + int(span, 8) * int(storage_size(mdfieldTemplate)/8, 8)
+      bytes = bytes + int(span, 8) * int(numPoles, 8) * bytesPerComplex
+   end if
+end function sgbc_node_bytes
+
+subroutine read_pole_count(medium, numPoles)
+   type(MediaData_t), intent(in) :: medium
+   integer(kind=4), intent(out) :: numPoles
+   character(len=BUFSIZE) :: filePoles
+   integer(kind=4) :: i1, unitNumber, iostat
+   integer(kind=4) :: idummy1, idummy2, idummy3
+   real(kind=RKIND) :: dummy1, dummy2, dummy3, dummy4
+
+   numPoles = 0
+   if (.not. associated(medium%Multiport)) return
+   if (size(medium%Multiport) == 0) return
+   filePoles = medium%Multiport(1)%multiportFileZ11
+   i1 = index(filePoles, '_z11.txt')
+   if (i1 > 0) filePoles = filePoles(1:i1 - 1)
+   filePoles = trim(adjustl(filePoles))
+
+   open(newunit=unitNumber, file=filePoles, form='formatted', status='old', iostat=iostat)
+   if (iostat /= 0) return
+   read(unitNumber, *, iostat=iostat) dummy1, dummy2, dummy3, dummy4
+   if (iostat == 0) read(unitNumber, *, iostat=iostat) numPoles, idummy1, idummy2, idummy3
+   close(unitNumber)
+   if (iostat /= 0) numPoles = 0
+end subroutine read_pole_count
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! subroutine to initialize the parameters

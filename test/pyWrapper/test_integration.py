@@ -63,6 +63,23 @@ def test_fdtd_set_new_folder_to_run(tmp_path):
     assert solver.hasFinishedSuccessfully()
 
 @pytest.mark.planewave
+def test_report_contains_parallel_configuration(tmp_path):
+    input_filename = os.path.join(CASES_FOLDER, "planewave", "pw-in-box.fdtd.json")
+    solver = FDTD(input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver["general"]["numberOfSteps"] = 1
+
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+    report = Path(tmp_path) / f"{solver.getCaseName()}_Report.txt"
+    assert report.is_file()
+    text = report.read_text()
+    assert "Parallel configuration:" in text
+    assert "MPI processes:" in text
+    assert "OpenMP threads per process:" in text
+
+
+@pytest.mark.planewave
 def test_fdtd_with_string_args(tmp_path):
     input_filename = os.path.join(CASES_FOLDER, "planewave", "pw-in-box.fdtd.json")
     solver = FDTD(input_filename, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path, flags="-h")

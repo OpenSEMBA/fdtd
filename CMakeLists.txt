@@ -226,14 +226,16 @@ add_library(semba-types
 )
 target_link_libraries(semba-types ${MPI_Fortran_LIBRARIES})
 
+add_subdirectory(src_utils)
+
 add_library(semba-reports
 	"src_main_pub/errorreport.F90"
 	"src_main_pub/progress.F90"
+	"src_main_pub/memoryBudget.F90"
+	"src_main_pub/parallelInfo.F90"
 	"src_main_pub/snapxdmf.F90"
 )
-target_link_libraries(semba-reports semba-types XDMF::HDF5)
-
-add_subdirectory(src_utils)
+target_link_libraries(semba-reports semba-types fdtd-utils XDMF::HDF5 ${MPI_Fortran_LIBRARIES})
 
 if(SEMBA_FDTD_ENABLE_SMBJSON)
 	add_subdirectory(src_json_parser)
@@ -343,9 +345,9 @@ if(SEMBA_FDTD_EXECUTABLE)
 	# that are defined later in the same static archive.  RESCAN is unsupported
 	# by the Windows linker used by Intel oneAPI there.
 	if (UNIX AND CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
-		target_link_libraries(semba-fdtd "$<LINK_GROUP:RESCAN,semba-main>" semba-reports)
+		target_link_libraries(semba-fdtd "$<LINK_GROUP:RESCAN,semba-main>" semba-reports fdtd-utils)
 	else()
-		target_link_libraries(semba-fdtd semba-main semba-reports)
+		target_link_libraries(semba-fdtd semba-main semba-reports fdtd-utils)
 	endif()
 	target_link_libraries(semba-fdtd ${MPI_Fortran_LIBRARIES})
 endif()

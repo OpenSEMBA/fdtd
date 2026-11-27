@@ -21,7 +21,8 @@ module output_m
                               spheric_domain_t, cell_coordinate_t, field_data_t, fields_reference_t, &
                               TIME_DOMAIN, FREQUENCY_DOMAIN, BOTH_DOMAIN, UNDEFINED_DOMAIN, volumetric_publication_t, &
                               OUTPUT_ARTIFACT_UNDEFINED, OUTPUT_TIME_BUFFER_SIZE, SMALL_PROBE_BUFFER_SIZE, &
-                              outputFlushSteps_g
+                              time_buffer_capacity, outputFlushSteps_g
+use memoryBudget_m, only: check_memory_budget
 #ifdef CompileWithMPI
    use mpi
 #endif
@@ -47,6 +48,7 @@ module output_m
    public :: delete_outputs
    public :: GetOutputPartition
    public :: estimate_outputs_memory, report_outputs_memory, flush_cadence_from_counts
+   public :: estimate_outputs_memory_from_requests, estimate_hdf5_workspace_bytes
    public :: POINT_PROBE_ID, WIRE_CURRENT_PROBE_ID, WIRE_CHARGE_PROBE_ID, BULK_PROBE_ID, &
              MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID, FAR_FIELD_PROBE_ID, LINE_PROBE_ID, MTLN_PROBE_ID
    !===========================
@@ -169,6 +171,7 @@ contains
       integer(kind=SINGLE) :: NODE
       integer(kind=SINGLE) :: outputCount
       integer(kind=SINGLE) :: requestedOutputs
+      integer(kind=8) :: requestBytes, hdf5Bytes
       logical :: mapHasData
       character(len=BUFSIZE) :: outputTypeExtension
 #ifdef CompileWithMPI
@@ -240,6 +243,9 @@ contains
 #endif
 
       call choose_flush_steps(sgg, control)
+      call estimate_outputs_memory_from_requests(sgg, control, requestBytes)
+      call estimate_hdf5_workspace_bytes(sgg, control, hdf5Bytes)
+      call check_memory_budget(requestBytes + hdf5Bytes, 'before output initialization')
 
       do ii = 1, sgg%NumberRequest
          domain = preprocess_domain(sgg%Observation(ii), sgg%time, sgg%dt, control%finaltimestep, &
@@ -862,6 +868,165 @@ contains
          end select
       end do
    end subroutine load_outputs_dft_state
+
+   function request_domain(observation, simulationTimeStep) result(domain)
+      type(Obses_t), intent(in) :: observation
+      real(kind=RKIND_TIME), intent(in) :: simulationTimeStep
+      type(domain_t) :: domain
+
+      domain = domain_t()
+      if (observation%TimeDomain .and. observation%FreqDomain) then
+         domain%domainType = BOTH_DOMAIN
+         domain%fnum = frequency_count(observation)
+      else if (observation%TimeDomain) then
+         domain%domainType = TIME_DOMAIN
+      else if (observation%FreqDomain) then
+         domain%domainType = FREQUENCY_DOMAIN
+         domain%fnum = frequency_count(observation)
+      else
+         domain%domainType = UNDEFINED_DOMAIN
+      end if
+      if (simulationTimeStep > 0.0_RKIND_TIME .and. observation%TimeStep > 0.0_RKIND_TIME) then
+         domain%tstride = max(1_SINGLE, int(observation%TimeStep/simulationTimeStep, kind=SINGLE))
+      else
+         domain%tstride = 1_SINGLE
+      end if
+   end function request_domain
+
+   ! Conservative estimate of the persistent probe buffers before init_outputs
+   ! constructs them.  The post-allocation estimate_outputs_memory remains the
+   ! authoritative value for the buffers that actually exist.
+   subroutine estimate_outputs_memory_from_requests(sgg, control, bytes)
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      type(sim_control_t), intent(in) :: control
+      integer(kind=8), intent(out) :: bytes
+
+      type(domain_t) :: domain
+      integer(kind=8) :: bytesPerReal, bytesPerTime, bytesPerComplex, bytesPerTag
+      integer(kind=8) :: regionVolume, bufferSteps, surfaceCells
+      integer(kind=8) :: nx, ny, nz
+      integer(kind=4) :: ii, i, what
+
+      bytes = 0_8
+      bytesPerReal = int(storage_size(1.0_RKIND)/8, 8)
+      bytesPerTime = int(storage_size(1.0_RKIND_TIME)/8, 8)
+      bytesPerComplex = int(storage_size((1.0_CKIND, 1.0_CKIND))/8, 8)
+      bytesPerTag = int(storage_size(0_IKINDMTAG)/8, 8)
+
+      do ii = 1, sgg%NumberRequest
+         domain = request_domain(sgg%Observation(ii), sgg%dt)
+         if (domain%domainType == UNDEFINED_DOMAIN) cycle
+         do i = 1, sgg%Observation(ii)%nP
+            what = sgg%Observation(ii)%P(i)%What
+            nx = int(max(1, sgg%Observation(ii)%P(i)%XE - sgg%Observation(ii)%P(i)%XI + 1), 8)
+            ny = int(max(1, sgg%Observation(ii)%P(i)%YE - sgg%Observation(ii)%P(i)%YI + 1), 8)
+            nz = int(max(1, sgg%Observation(ii)%P(i)%ZE - sgg%Observation(ii)%P(i)%ZI + 1), 8)
+            regionVolume = nx * ny * nz
+            surfaceCells = nx * ny + nx * nz + ny * nz
+            select case (what)
+            case (IEX, IEY, IEZ, IHX, IHY, IHZ)
+               bufferSteps = int(time_buffer_capacity(domain, SMALL_PROBE_BUFFER_SIZE), 8)
+               bytes = bytes + bufferSteps * (bytesPerTime + 2_8 * bytesPerReal)
+               if (any(domain%domainType == [FREQUENCY_DOMAIN, BOTH_DOMAIN])) then
+                  bytes = bytes + int(max(1_4, int(domain%fnum, 4)), 8) * (bytesPerReal + 4_8 * bytesPerComplex)
+               end if
+            case (IJX, IJY, IJZ)
+               bufferSteps = int(time_buffer_capacity(domain, SMALL_PROBE_BUFFER_SIZE), 8)
+               bytes = bytes + bufferSteps * (bytesPerTime + 5_8 * bytesPerReal)
+            case (IQX, IQY, IQZ)
+               bufferSteps = int(time_buffer_capacity(domain, SMALL_PROBE_BUFFER_SIZE), 8)
+               bytes = bytes + bufferSteps * (bytesPerTime + bytesPerReal)
+            case (IBLOQUEJX, IBLOQUEJY, IBLOQUEJZ, IBLOQUEMX, IBLOQUEMY, IBLOQUEMZ)
+               bufferSteps = int(time_buffer_capacity(domain, SMALL_PROBE_BUFFER_SIZE), 8)
+               bytes = bytes + bufferSteps * (bytesPerTime + bytesPerReal)
+            case (LINEINTEGRAL)
+               bufferSteps = int(time_buffer_capacity(domain), 8)
+               bytes = bytes + int(size(sgg%Observation(ii)%P(i)%line), 8) * 8_8
+               bytes = bytes + bufferSteps * int(size(sgg%Observation(ii)%P(i)%line), 8) * &
+                       (bytesPerTime + bytesPerReal)
+            case (ICUR, IMEC, IMHC, ICURX, ICURY, ICURZ, IEXC, IEYC, IEZC, IHXC, IHYC, IHZC)
+               bufferSteps = int(time_buffer_capacity(domain), 8)
+               if (domain%domainType == TIME_DOMAIN) then
+                  bytes = bytes + bufferSteps * (bytesPerTime + 3_8 * regionVolume * bytesPerReal)
+                  bytes = bytes + regionVolume * (3_8 * bytesPerTag + 3_8 * bytesPerReal + 4_8 * bytesPerReal)
+               else
+                  bytes = bytes + int(max(1_4, int(domain%fnum, 4)), 8) * (bytesPerReal + 3_8 * regionVolume * bytesPerComplex)
+                  bytes = bytes + regionVolume * (3_8 * bytesPerTag + 3_8 * bytesPerReal + 4_8 * bytesPerReal)
+               end if
+            case (farfield)
+               ! The far-field accumulators occupy the six box faces; before
+               ! init_outputs they do not exist yet, so use a face bound.
+               bytes = bytes + surfaceCells * 64_8 * bytesPerComplex
+            case (MAPVTK)
+               bytes = bytes + regionVolume * (4_8 * bytesPerReal + 2_8 * 4_8)
+            case default
+               continue
+            end select
+         end do
+      end do
+#ifdef CompileWithMTLN
+      block
+         type(mtln_solver_t), pointer :: mtln_solver
+         integer :: bundle, probe
+         mtln_solver => GetSolverPtr()
+         if (allocated(mtln_solver%bundles)) then
+            do bundle = 1, size(mtln_solver%bundles)
+               if (.not. allocated(mtln_solver%bundles(bundle)%probes)) cycle
+               do probe = 1, size(mtln_solver%bundles(bundle)%probes)
+                  bytes = bytes + int(SMALL_PROBE_BUFFER_SIZE, 8) * 5_8 * bytesPerReal
+               end do
+            end do
+         end if
+      end block
+#endif
+   end subroutine estimate_outputs_memory_from_requests
+
+   ! Estimate of semba-fdtd's own HDF5 staging buffers plus a conservative
+   ! allowance for the HDF5 chunk cache.  HDF5 internal allocations are not
+   ! directly observable; the chunk target used by the writer is 1 MiB.
+   subroutine estimate_hdf5_workspace_bytes(sgg, control, bytes)
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      type(sim_control_t), intent(in) :: control
+      integer(kind=8), intent(out) :: bytes
+
+      type(domain_t) :: domain
+      integer(kind=8) :: regionVolume, datasetCache, fileOverhead
+      integer(kind=4) :: ii, i, what, datasetCount
+
+      bytes = 0_8
+      datasetCache = 1048576_8
+      fileOverhead = 16_8 * 1048576_8
+      datasetCount = 0
+
+      do ii = 1, sgg%NumberRequest
+         domain = request_domain(sgg%Observation(ii), sgg%dt)
+         if (domain%domainType == UNDEFINED_DOMAIN) cycle
+         do i = 1, sgg%Observation(ii)%nP
+            what = sgg%Observation(ii)%P(i)%What
+            select case (what)
+            case (ICUR, IMEC, IMHC, ICURX, ICURY, ICURZ, IEXC, IEYC, IEZC, IHXC, IHYC, IHZC)
+               if (domain%domainType == TIME_DOMAIN) then
+                  regionVolume = int(max(1, sgg%Observation(ii)%P(i)%XE - sgg%Observation(ii)%P(i)%XI + 1), 8) * &
+                                 int(max(1, sgg%Observation(ii)%P(i)%YE - sgg%Observation(ii)%P(i)%YI + 1), 8) * &
+                                 int(max(1, sgg%Observation(ii)%P(i)%ZE - sgg%Observation(ii)%P(i)%ZI + 1), 8)
+                  bytes = bytes + 2_8 * regionVolume * 8_8
+                  datasetCount = datasetCount + 6
+               else
+                  regionVolume = int(max(1, sgg%Observation(ii)%P(i)%XE - sgg%Observation(ii)%P(i)%XI + 1), 8) * &
+                                 int(max(1, sgg%Observation(ii)%P(i)%YE - sgg%Observation(ii)%P(i)%YI + 1), 8) * &
+                                 int(max(1, sgg%Observation(ii)%P(i)%ZE - sgg%Observation(ii)%P(i)%ZI + 1), 8)
+                  bytes = bytes + regionVolume * 8_8 * 4_8
+                  datasetCount = datasetCount + 6
+               end if
+            case (MAPVTK)
+               datasetCount = datasetCount + 4
+            end select
+         end do
+      end do
+
+      bytes = bytes + int(datasetCount, 8) * datasetCache
+      if (datasetCount > 0) bytes = bytes + fileOverhead
+   end subroutine estimate_hdf5_workspace_bytes
 
    ! Solver-side probe buffers per outputID; HDF5/transport/metadata buffers are not counted.
    subroutine estimate_outputs_memory(bytes, counts)
