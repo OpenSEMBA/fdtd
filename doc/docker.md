@@ -34,9 +34,9 @@ git submodule update --init --recursive
 | Service | Purpose | Included tools |
 |---|---|---|
 | `quality` | Compile, test, run examples, and inspect generated output | GNU C/C++/Fortran compilers, CMake, Ninja, MPI, HDF5, Python, and ParaView |
-| `intel-quality` | Validate Intel oneAPI compiler and Intel MPI builds | Intel oneAPI HPCKit, Intel MPI, CMake, Ninja, and the Intel HDF5 runtime |
+| `intel-quality` | Validate Intel oneAPI compiler and Intel MPI builds | Intel oneAPI Toolkit 2026.2, Intel MPI, CMake, Ninja, and the Intel HDF5 runtime |
 | `dev` | GNU interactive development and Dev Container | Everything in `quality`, plus Git, GitHub CLI, SSH client, Node/npm, OpenCode, Fortran tools, and debuggers |
-| `intel-dev` | Intel interactive development and Dev Container | Intel oneAPI HPCKit and Intel MPI, plus the development tools and GDB debugging support |
+| `intel-dev` | Intel interactive development and Dev Container | Intel oneAPI Toolkit 2026.2 and Intel MPI, plus the development tools and GDB debugging support |
 
 `quality` intentionally excludes developer-only tools.
 `quality`, `dev`, and `intel-dev` include ParaView.

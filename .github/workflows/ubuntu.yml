@@ -16,11 +16,11 @@ jobs:
   builds-and-test:
     strategy:
       matrix: 
-        # ubuntu-latest moved to 26.04, whose HDF5/OpenMPI modules are built
-        # with gfortran 16 and whose oneAPI 2025.1 binaries segfault.
+        # ubuntu-latest is 26.04, whose HDF5/OpenMPI modules are built with
+        # gfortran 16 and do not match the gcc 11 row. Keep 24.04.
         os: [ubuntu-24.04]
         compiler: [
-          {name: 'intel', version: '2025.1'},
+          {name: 'intel', version: '2026.2'},
           # Match the HDF5 Fortran ABI used by the Ubuntu packages.
           {name: 'gcc', version: 11}
         ]

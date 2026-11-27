@@ -88,10 +88,15 @@ def _read_watchdog(folder):
         series.append(data)  # columns: t, field, incident
     if not series:
         return None
-    t = series[0][:, 0]
+    # The solver writes the watchdog files while this runs, so one file can be
+    # a flush ahead of another. Compare only the samples all files share.
+    length = min(s.shape[0] for s in series)
+    if length < 10:
+        return None
+    t = series[0][:length, 0]
     scat = np.zeros_like(t)
     for s in series:
-        scat = np.maximum(scat, np.abs(s[:, 1] - s[:, 2]))
+        scat = np.maximum(scat, np.abs(s[:length, 1] - s[:length, 2]))
     return t, scat
 
 
