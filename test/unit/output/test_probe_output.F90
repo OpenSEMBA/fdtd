@@ -91,7 +91,7 @@ integer function test_init_point_probe() bind(c) result(err)
 end function
 
 integer function test_estimate_point_probe_memory() bind(c) result(err)
-   ! Verifies the memory estimate counts one time buffer of OUTPUT_TIME_BUFFER_SIZE samples.
+   ! Verifies the memory estimate counts one time buffer of SMALL_PROBE_BUFFER_SIZE samples.
    use FDETYPES_m
    use fdetypes_tools_m
    use output_m
@@ -895,13 +895,13 @@ integer function test_update_time_probe_ranges() bind(c) result(err)
                                                'Unexpected line output id')
 
    ! tstep = 2*dt, so buffers only need ceil(flushSteps/2) samples between flushes: SMALL_PROBE_BUFFER_SIZE for wire and bulk, OUTPUT_TIME_BUFFER_SIZE for line.
-   test_err = test_err + assert_integer_equal(size(outputs(CURRENT_OUTPUT)%wireCurrentProbe%timeStep), 2048, &
+   test_err = test_err + assert_integer_equal(size(outputs(CURRENT_OUTPUT)%wireCurrentProbe%timeStep), 512, &
                                                'Wire-current buffer not sized to its sampling stride')
-   test_err = test_err + assert_integer_equal(size(outputs(CURRENT_OUTPUT)%wireCurrentProbe%currentValues), 2048, &
+   test_err = test_err + assert_integer_equal(size(outputs(CURRENT_OUTPUT)%wireCurrentProbe%currentValues), 512, &
                                                'Wire-current values not sized to its sampling stride')
-   test_err = test_err + assert_integer_equal(size(outputs(CHARGE_OUTPUT)%wireChargeProbe%chargeValue), 2048, &
+   test_err = test_err + assert_integer_equal(size(outputs(CHARGE_OUTPUT)%wireChargeProbe%chargeValue), 512, &
                                                'Wire-charge buffer not sized to its sampling stride')
-   test_err = test_err + assert_integer_equal(size(outputs(BULK_OUTPUT)%bulkCurrentProbe%valueForTime), 2048, &
+   test_err = test_err + assert_integer_equal(size(outputs(BULK_OUTPUT)%bulkCurrentProbe%valueForTime), 512, &
                                                'Bulk buffer not sized to its sampling stride')
    test_err = test_err + assert_integer_equal(size(outputs(LINE_OUTPUT)%lineProbe%valueForTime), 64, &
                                                'Line buffer not sized to its sampling stride')
@@ -2160,7 +2160,7 @@ integer function test_time_buffer_capacity() bind(c) result(err)
    integer :: i
    integer, parameter :: strides(5) = [1, 3, 10, 128, 200]
    integer, parameter :: expected(5) = [128, 43, 13, 1, 1]
-   integer, parameter :: expectedPoint(5) = [4096, 1366, 410, 32, 21]
+   integer, parameter :: expectedPoint(5) = [1024, 342, 103, 8, 6]
 
    err = 0
    do i = 1, size(strides)

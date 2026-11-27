@@ -22,7 +22,7 @@ module outputTypes_m
    integer, parameter :: FREQUENCY_DOMAIN = 1
    integer, parameter :: BOTH_DOMAIN = 2
    integer, parameter :: OUTPUT_TIME_BUFFER_SIZE = 128
-   integer, parameter :: SMALL_PROBE_BUFFER_SIZE = 4096 !point, wire and bulk probes are small; must be a multiple of OUTPUT_TIME_BUFFER_SIZE
+   integer, parameter :: SMALL_PROBE_BUFFER_SIZE = 1024 !point, wire and bulk probes are small; must be a multiple of OUTPUT_TIME_BUFFER_SIZE
    ! Flush period of line and movie probes: OUTPUT_TIME_BUFFER_SIZE halved by init_outputs until the movie buffers fit their budget
    integer :: outputFlushSteps_g = OUTPUT_TIME_BUFFER_SIZE
 
