@@ -42,7 +42,7 @@ pip3 install --break-system-packages -r requirements.txt
 
 
 echo "=== Adding Intel oneAPI apt repository ==="
-COMPILER_VERSION="2025.1"
+COMPILER_VERSION="2026.2"
 KEY="GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB"
 curl -fsSL "https://apt.repos.intel.com/intel-gpg-keys/$KEY" \
     | sudo apt-key add -
